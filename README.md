@@ -68,41 +68,49 @@
 
 ## 起動方法（Docker）
 
-```bash
-# ビルド & 起動
-docker compose up -d
+### 1. リポジトリをクローン
 
-# ブラウザで開く
+```bash
+git clone https://github.com/nishi-25/Skill-Map.git
+cd Skill-Map
+```
+
+### 2. 環境変数を設定
+
+```bash
+# .env.example をコピー
+cp .env.example .env
+
+# SECRET_KEY をランダムな値に変更
+python3 -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32))" > .env
+```
+
+必要に応じて `.env` を編集し、`APP_URL` も設定できます（デフォルト: `http://localhost:8190`）。
+
+| 変数         | 既定値                    | 説明                                       |
+| ------------ | ------------------------- | ------------------------------------------ |
+| `SECRET_KEY` | `change-me-in-production` | セッション署名キー（**本番では必ず変更**） |
+| `APP_URL`    | `http://localhost:8190`   | メール内リンクに使用する公開 URL           |
+
+> **注意**: SECRET_KEY を後から変更すると全ユーザーのセッションが無効化され、再ログインが必要になります。
+
+### 3. ビルド & 起動
+
+```bash
+docker compose up -d
+```
+
+### 4. ブラウザで開く
+
+```bash
 open http://localhost:8190
 ```
 
 初回起動時は `/setup` にリダイレクトされ、管理者アカウントを作成します。
 
-### 環境変数
+### メール設定
 
-| 変数         | 既定値                    | 説明                                       |
-| ------------ | ------------------------- | ------------------------------------------ |
-| `SECRET_KEY` | `change-me-in-production` | セッション署名キー（本番運用時は必ず変更） |
-| `APP_URL`    | `http://localhost:8190`   | アプリケーションの公開 URL                 |
-
-メール（SMTP）設定は管理画面（`/admin/mail-settings`）から GUI で行えます。
-
-### SECRET_KEY の設定（推奨）
-
-`SECRET_KEY` はセッション Cookie の署名に使用されます。本番環境では必ず変更してください。
-
-```bash
-# ランダムなキーを生成
-python3 -c "import secrets; print(secrets.token_hex(32))"
-```
-
-プロジェクトルートに `.env` ファイルを作成し、生成した値を設定します。
-
-```
-SECRET_KEY=生成した文字列をここに貼り付け
-```
-
-> **注意**: SECRET_KEY を変更すると全ユーザーのセッションが無効化され、再ログインが必要になります。
+SMTP（メール通知）は管理画面（`/admin/mail-settings`）から GUI で設定できます。
 
 ## ローカル起動（開発用）
 
