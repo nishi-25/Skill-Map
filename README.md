@@ -87,6 +87,23 @@ open http://localhost:8190
 
 メール（SMTP）設定は管理画面（`/admin/mail-settings`）から GUI で行えます。
 
+### SECRET_KEY の設定（推奨）
+
+`SECRET_KEY` はセッション Cookie の署名に使用されます。本番環境では必ず変更してください。
+
+```bash
+# ランダムなキーを生成
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+プロジェクトルートに `.env` ファイルを作成し、生成した値を設定します。
+
+```
+SECRET_KEY=生成した文字列をここに貼り付け
+```
+
+> **注意**: SECRET_KEY を変更すると全ユーザーのセッションが無効化され、再ログインが必要になります。
+
 ## ローカル起動（開発用）
 
 ```bash
