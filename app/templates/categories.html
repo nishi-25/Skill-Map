@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}カテゴリー - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-tags me-2" style="color:#6366f1;"></i>カテゴリー</h1>
+    <p class="text-muted mb-0 small">スキルの分類グループを管理します（{{ categories|length }} 件）</p>
+  </div>
+  <a href="/categories/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-plus-lg me-1"></i>新規追加
+  </a>
+</div>
+
+{% if categories %}
+<div class="row g-3">
+  {% for c in categories %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100" style="border-left: 4px solid {{ c.color }};">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div style="width:14px;height:14px;border-radius:50%;background:{{ c.color }};flex-shrink:0;box-shadow:0 0 8px {{ c.color }}44;"></div>
+          <h6 class="fw-bold mb-0">{{ c.name }}</h6>
+          <span class="badge bg-light text-dark ms-auto" style="font-size:.73rem;">
+            {{ c.skills | length }} スキル
+          </span>
+        </div>
+        {% if c.description %}
+        <p class="text-muted small mb-2">{{ c.description }}</p>
+        {% endif %}
+        {% if c.skills %}
+        <div class="d-flex flex-wrap gap-1 mt-2">
+          {% for s in c.skills[:5] %}
+          <span class="badge bg-light text-muted" style="font-size:.68rem;font-weight:500;">{{ s.name }}</span>
+          {% endfor %}
+          {% if c.skills|length > 5 %}
+          <span class="badge bg-light text-muted" style="font-size:.68rem;">+{{ c.skills|length - 5 }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0 pb-2 d-flex gap-2">
+        <a href="/categories/{{ c.id }}/edit" class="btn btn-sm btn-outline-primary flex-fill" style="border-radius:20px;">
+          <i class="bi bi-pencil me-1"></i>編集
+        </a>
+        <form method="post" action="/categories/{{ c.id }}/delete" class="flex-fill"
+              onsubmit="return confirm('「{{ c.name }}」を削除しますか？このカテゴリーに属するスキルは未分類になります。')">
+          <button class="btn btn-sm btn-outline-danger w-100" style="border-radius:20px;">
+            <i class="bi bi-trash me-1"></i>削除
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-tags fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>カテゴリーがありません</h5>
+    <p class="small">スキルを整理するためのカテゴリーを作成しましょう。</p>
+    <a href="/categories/new" class="btn btn-primary btn-sm" style="border-radius:20px;">カテゴリーを追加</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,1141 @@
+{% extends "base.html" %}
+{% block title %}ダッシュボード - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-speedometer2 me-2" style="color:#6366f1;"></i>ダッシュボード</h1>
+    <p class="text-muted mb-0 small">{{ view_label }}</p>
+  </div>
+  {% if view_mode == 'self' %}
+  <a href="/skills" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-lightning-charge me-1"></i>スキルマップを更新
+  </a>
+  {% endif %}
+</div>
+
+<!-- ═══ フィルターバー ═══ -->
+{% if all_users or all_groups %}
+<div class="card mb-4" style="border-left:3px solid #6366f1;">
+  <div class="card-body py-2">
+    <form method="get" action="/dashboard" class="d-flex flex-wrap gap-2 align-items-center">
+      <i class="bi bi-funnel-fill text-muted me-1"></i>
+      <span class="text-muted small fw-semibold me-2">絞り込み:</span>
+
+      <!-- ユーザー選択 -->
+      <select name="user_id" class="form-select form-select-sm"
+              style="max-width:200px;border-radius:20px;font-size:.85rem;"
+              onchange="if(this.value){this.form.elements['group_id'].value='0';}this.form.submit();">
+        <option value="0">-- ユーザーで絞り込み --</option>
+        {% for u in all_users %}
+        <option value="{{ u.id }}" {% if sel_user_id == u.id %}selected{% endif %}>
+          {{ u.display_name or u.username }}
+          {% if u.id == current_user.id %}(自分){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+
+      <!-- グループ選択 -->
+      {% if all_groups %}
+      <select name="group_id" class="form-select form-select-sm"
+              style="max-width:200px;border-radius:20px;font-size:.85rem;"
+              onchange="if(this.value){this.form.elements['user_id'].value='0';}this.form.submit();">
+        <option value="0">-- グループで絞り込み --</option>
+        {% for g in all_groups %}
+        <option value="{{ g.id }}" {% if sel_group_id == g.id %}selected{% endif %}>
+          {{ g.name }} ({{ g.memberships|length }}名)
+        </option>
+        {% endfor %}
+      </select>
+      {% endif %}
+
+      {% if sel_user_id or sel_group_id %}
+      <a href="/dashboard" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">
+        <i class="bi bi-x-lg me-1"></i>クリア
+      </a>
+      {% endif %}
+
+      <!-- プリセットボタン -->
+      <div class="ms-auto d-flex gap-1">
+        {% for g in all_groups[:3] %}
+        <a href="/dashboard?group_id={{ g.id }}" class="btn btn-sm {% if sel_group_id == g.id %}btn-primary{% else %}btn-outline-secondary{% endif %}" style="border-radius:20px;font-size:.8rem;">
+          <i class="bi bi-people-fill me-1"></i>{{ g.name }}
+        </a>
+        {% endfor %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- ═══ ビューモード表示バッジ ═══ -->
+{% if view_mode not in ('self', 'all') %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  {% if view_mode == 'user' and target_user %}
+  <span class="badge" style="background:linear-gradient(135deg,#6366f1,#a78bfa);font-size:.85rem;padding:.45rem .9rem;border-radius:20px;">
+    <i class="bi bi-person-fill me-1"></i>{{ target_user.display_name or target_user.username }}
+  </span>
+  {% elif view_mode == 'group' and target_group %}
+  <span class="badge" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);font-size:.85rem;padding:.45rem .9rem;border-radius:20px;">
+    <i class="bi bi-people-fill me-1"></i>{{ target_group.name }}
+    <span class="badge bg-light text-dark ms-1" style="font-size:.75rem;">{{ members|length }}名</span>
+  </span>
+  {% endif %}
+  <a href="/dashboard" class="text-muted small" style="text-decoration:none;">
+    <i class="bi bi-arrow-left me-1"></i>概要に戻る
+  </a>
+</div>
+{% endif %}
+
+<!-- ═══ ALL モード: 管理者概要 ═══ -->
+{% if view_mode == 'all' %}
+
+<!-- サマリーカード -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total_members }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">対象メンバー</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">総申告スキル</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f59e0b;"><i class="bi bi-bar-chart-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ avg_level }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">全体平均レベル</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-collection-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ catalog_total }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">カタログ総数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- グループ別サマリー -->
+{% if group_summary %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-people-fill me-2" style="color:#0ea5e9;"></i>グループ別スキル状況</h6>
+    <div class="row g-3">
+      {% for gs in group_summary %}
+      <div class="col-sm-6 col-lg-4">
+        <a href="/dashboard?group_id={{ gs.group.id }}" class="text-decoration-none">
+          <div class="border rounded-3 p-3 h-100 position-relative" style="border-color:#e2e8f0 !important;transition:all .2s;cursor:pointer;" onmouseenter="this.style.boxShadow='0 4px 12px rgba(99,102,241,.15)';this.style.borderColor='#6366f1 !important'" onmouseleave="this.style.boxShadow='none';this.style.borderColor='#e2e8f0 !important'">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="fw-bold" style="color:#1e293b;">{{ gs.group.name }}</div>
+                <div class="text-muted" style="font-size:.78rem;">{{ gs.member_count }}名</div>
+              </div>
+              <span class="badge" style="background:linear-gradient(135deg,#6366f1,#818cf8);font-size:.85rem;padding:.35rem .7rem;">
+                {{ gs.avg }}
+              </span>
+            </div>
+            <div class="progress mb-1" style="height:6px;border-radius:10px;">
+              <div class="progress-bar" style="width:{{ (gs.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:10px;"></div>
+            </div>
+            <div class="d-flex justify-content-between" style="font-size:.72rem;">
+              <span class="text-muted">申告 {{ gs.total }}件</span>
+              <span class="text-muted">平均Lv {{ gs.avg }}/4.0</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ティア別進捗 -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>難易度ティア別 達成状況</h6>
+    <div class="row g-3">
+      {% for tk, tv in SKILL_TIERS.items() %}
+      {% set ts = tier_stats[tk] %}
+      {% set pct = (ts.done / ts.total * 100)|int if ts.total else 0 %}
+      <div class="col-6 col-md-3">
+        <div class="border rounded-3 p-3 text-center h-100 position-relative" style="border-color:#e2e8f0 !important;overflow:hidden;">
+          <div class="position-absolute top-0 start-0 end-0" style="height:3px;background:var(--bs-{{ TIER_COLORS[tk] }});opacity:.5;"></div>
+          <span class="badge bg-{{ TIER_COLORS[tk] }} mb-2" style="font-size:.8rem;">{{ tv }}</span>
+          <div class="mx-auto mb-2" style="width:70px;height:70px;">
+            <svg viewBox="0 0 36 36" class="progress-ring" style="width:100%;height:100%;transform:rotate(-90deg);">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3"></circle>
+              <circle cx="18" cy="18" r="15.9" fill="none"
+                      stroke="var(--bs-{{ TIER_COLORS[tk] }})"
+                      stroke-width="3" stroke-linecap="round"
+                      stroke-dasharray="100" stroke-dashoffset="{{ 100 - pct }}"
+                      style="transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);"></circle>
+            </svg>
+            <div style="margin-top:-57px;font-size:.85rem;font-weight:700;color:var(--bs-{{ TIER_COLORS[tk] }});" class="text-center">{{ pct }}%</div>
+          </div>
+          <div class="fw-bold" style="font-size:.9rem;">{{ ts.done }} <span class="text-muted fw-normal" style="font-size:.8rem;">/ {{ ts.total }}</span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- レーダーチャート -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2" style="color:#0ea5e9;"></i>メンバー別 カテゴリーレーダー</h6>
+        <div style="position:relative;max-height:320px;">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- レベル分布 -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>レベル分布</h6>
+        <div style="position:relative;max-height:320px;">
+          <canvas id="levelChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- メンバーランキング -->
+{% if member_summary %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>メンバーランキング</h6>
+    <div class="table-responsive">
+      <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th style="width:50px;">#</th>
+            <th>メンバー</th>
+            <th class="text-center">申告スキル数</th>
+            <th class="text-center">平均レベル</th>
+            <th style="min-width:140px;">レベルバー</th>
+            <th class="text-end">詳細</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in member_summary %}
+          <tr class="skill-row">
+            <td>
+              {% if loop.index == 1 %}<span style="font-size:1.2rem;">🥇</span>
+              {% elif loop.index == 2 %}<span style="font-size:1.2rem;">🥈</span>
+              {% elif loop.index == 3 %}<span style="font-size:1.2rem;">🥉</span>
+              {% else %}<span class="text-muted">{{ loop.index }}</span>{% endif %}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if ms.user.avatar_path %}
+                <img src="{{ ms.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                {% else %}
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                  {{ (ms.user.display_name or ms.user.username)[0].upper() }}
+                </div>
+                {% endif %}
+                <div>
+                  <div class="fw-semibold">{{ ms.user.display_name or ms.user.username }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">@{{ ms.user.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-light text-dark" style="font-size:.85rem;">{{ ms.total }}</span>
+            </td>
+            <td class="text-center">
+              <span class="fw-bold" style="color:#6366f1;font-size:.95rem;">{{ ms.avg }}</span>
+              <span class="text-muted" style="font-size:.7rem;"> / 4.0</span>
+            </td>
+            <td>
+              <div class="progress" style="height:8px;border-radius:10px;">
+                <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:10px;"></div>
+              </div>
+            </td>
+            <td class="text-end">
+              <a href="/members/{{ ms.user.id }}/skills" class="btn btn-xs btn-outline-primary" style="border-radius:20px;font-size:.78rem;">
+                <i class="bi bi-eye me-1"></i>スキル詳細
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- 成長速度ランキング（直近30日） -->
+{% if growth_ranking %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow me-2" style="color:#22c55e;"></i>成長速度ランキング<span class="text-muted fw-normal" style="font-size:.75rem;"> （直近30日）</span></h6>
+    {% set active_growers = growth_ranking | selectattr('total_gain', 'greaterthan', 0) | list %}
+    {% if active_growers %}
+    <div class="table-responsive">
+      <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th style="width:50px;">#</th>
+            <th>メンバー</th>
+            <th class="text-center">レベルUP回数</th>
+            <th class="text-center">合計上昇量</th>
+            <th style="min-width:160px;">成長バー</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set max_gain = active_growers[0].total_gain if active_growers else 1 %}
+          {% for gr in active_growers[:10] %}
+          <tr>
+            <td>
+              {% if loop.index == 1 %}<span style="font-size:1.2rem;">🚀</span>
+              {% elif loop.index == 2 %}<span style="font-size:1.2rem;">⚡</span>
+              {% elif loop.index == 3 %}<span style="font-size:1.2rem;">🔥</span>
+              {% else %}<span class="text-muted">{{ loop.index }}</span>{% endif %}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if gr.user.avatar_path %}
+                <img src="{{ gr.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                {% else %}
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#4ade80);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                  {{ (gr.user.display_name or gr.user.username)[0].upper() }}
+                </div>
+                {% endif %}
+                <div>
+                  <div class="fw-semibold">{{ gr.user.display_name or gr.user.username }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">@{{ gr.user.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge" style="background:#dcfce7;color:#166534;font-size:.85rem;">{{ gr.ups }} 回</span>
+            </td>
+            <td class="text-center">
+              <span class="fw-bold" style="color:#22c55e;font-size:.95rem;">+{{ gr.total_gain }}</span>
+            </td>
+            <td>
+              <div class="progress" style="height:8px;border-radius:10px;">
+                <div class="progress-bar" style="width:{{ (gr.total_gain / max_gain * 100)|int }}%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:10px;"></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-3" style="font-size:.85rem;">
+      <i class="bi bi-hourglass-split fs-4 d-block mb-2" style="color:#d1d5db;"></i>
+      直近30日間にレベルアップした記録がありません
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ═══ スキルカバレッジ分析 ═══ -->
+{% if coverage_summary is defined and coverage_summary.total_skills > 0 %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2" style="color:#0ea5e9;"></i>スキルカバレッジ分析<span class="text-muted fw-normal" style="font-size:.75rem;"> （属人化リスク・空白スキルの可視化）</span></h6>
+      <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;" type="button" data-bs-toggle="collapse" data-bs-target="#coveragePanel">
+        <i class="bi bi-chevron-down me-1"></i>開閉
+      </button>
+    </div>
+
+    <!-- サマリーカード -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:12px;padding:.8rem 1rem;text-align:center;">
+          <div class="fw-bold fs-5" style="color:#6366f1;">{{ coverage_summary.total_skills }}</div>
+          <div class="text-muted" style="font-size:.75rem;">全スキル数</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:12px;padding:.8rem 1rem;text-align:center;">
+          <div class="fw-bold fs-5" style="color:#22c55e;">{{ coverage_summary.coverage_pct }}%</div>
+          <div class="text-muted" style="font-size:.75rem;">カバー率</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-radius:12px;padding:.8rem 1rem;text-align:center;">
+          <div class="fw-bold fs-5" style="color:#f59e0b;">{{ coverage_summary.single_holder }}</div>
+          <div class="text-muted" style="font-size:.75rem;">⚠️ 属人化リスク</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border-radius:12px;padding:.8rem 1rem;text-align:center;">
+          <div class="fw-bold fs-5" style="color:#ef4444;">{{ coverage_summary.vacant }}</div>
+          <div class="text-muted" style="font-size:.75rem;">🔴 空白スキル</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapse show" id="coveragePanel">
+      <!-- タブ: 属人化リスク / 空白スキル / カテゴリー別 -->
+      <ul class="nav nav-tabs mb-3" id="coverageTab" role="tablist" style="font-size:.85rem;">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabSingle" type="button" style="border-radius:12px 12px 0 0;">
+            <i class="bi bi-exclamation-triangle me-1" style="color:#f59e0b;"></i>属人化リスク <span class="badge bg-warning text-dark ms-1">{{ coverage_summary.single_holder }}</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabVacant" type="button" style="border-radius:12px 12px 0 0;">
+            <i class="bi bi-x-octagon me-1" style="color:#ef4444;"></i>空白スキル <span class="badge bg-danger ms-1">{{ coverage_summary.vacant }}</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCatCoverage" type="button" style="border-radius:12px 12px 0 0;">
+            <i class="bi bi-bar-chart me-1" style="color:#6366f1;"></i>カテゴリー別
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- 属人化リスクタブ -->
+        <div class="tab-pane fade show active" id="tabSingle" role="tabpanel">
+          {% set single_skills = [] %}
+          {% for c in coverage_data if c.risk == 'single' %}
+            {% if single_skills.append(c) %}{% endif %}
+          {% endfor %}
+          {% if single_skills %}
+          <div class="alert alert-warning py-2 mb-3" style="border-radius:10px;font-size:.85rem;">
+            <i class="bi bi-info-circle me-1"></i>以下のスキルは <strong>1人のみ</strong> が保有しています。退職・異動時にナレッジが失われるリスクがあります。
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:.85rem;">
+              <thead class="table-light">
+                <tr><th>スキル名</th><th>カテゴリー</th><th>難易度</th><th>唯一の保有者</th><th>レベル</th></tr>
+              </thead>
+              <tbody>
+                {% for c in coverage_data if c.risk == 'single' %}
+                <tr>
+                  <td class="fw-semibold">{{ c.skill.name }}</td>
+                  <td>
+                    {% if c.skill.category %}
+                    <span class="badge" style="background:{{ c.skill.category.color }};font-size:.72rem;">{{ c.skill.category.name }}</span>
+                    {% else %}-{% endif %}
+                  </td>
+                  <td><span class="badge bg-{{ TIER_COLORS[c.skill.tier] }}" style="font-size:.72rem;">{{ SKILL_TIERS[c.skill.tier] }}</span></td>
+                  <td>
+                    <span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fcd34d;font-size:.78rem;">
+                      <i class="bi bi-person-fill me-1"></i>{{ c.holders[0] }}
+                    </span>
+                  </td>
+                  <td><span class="fw-bold" style="color:#f59e0b;">Lv {{ c.avg_level|int }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-check-circle fs-3 d-block mb-2" style="color:#22c55e;"></i>
+            属人化リスクのあるスキルはありません
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 空白スキルタブ -->
+        <div class="tab-pane fade" id="tabVacant" role="tabpanel">
+          {% set vacant_skills = [] %}
+          {% for c in coverage_data if c.risk == 'vacant' %}
+            {% if vacant_skills.append(c) %}{% endif %}
+          {% endfor %}
+          {% if vacant_skills %}
+          <div class="alert alert-danger py-2 mb-3" style="border-radius:10px;font-size:.85rem;">
+            <i class="bi bi-info-circle me-1"></i>以下のスキルは <strong>誰も保有していません</strong>。組織として習得を検討してください。
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:.85rem;">
+              <thead class="table-light">
+                <tr><th>スキル名</th><th>カテゴリー</th><th>難易度</th><th>ステータス</th></tr>
+              </thead>
+              <tbody>
+                {% for c in coverage_data if c.risk == 'vacant' %}
+                <tr>
+                  <td class="fw-semibold">{{ c.skill.name }}</td>
+                  <td>
+                    {% if c.skill.category %}
+                    <span class="badge" style="background:{{ c.skill.category.color }};font-size:.72rem;">{{ c.skill.category.name }}</span>
+                    {% else %}-{% endif %}
+                  </td>
+                  <td><span class="badge bg-{{ TIER_COLORS[c.skill.tier] }}" style="font-size:.72rem;">{{ SKILL_TIERS[c.skill.tier] }}</span></td>
+                  <td><span class="badge bg-danger" style="font-size:.72rem;">保有者なし</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-check-circle fs-3 d-block mb-2" style="color:#22c55e;"></i>
+            空白スキルはありません
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- カテゴリー別カバレッジタブ -->
+        <div class="tab-pane fade" id="tabCatCoverage" role="tabpanel">
+          {% if cat_coverage is defined %}
+          <div style="max-height:350px;position:relative;">
+            <canvas id="catCoverageChart"></canvas>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- 最近の申告・更新 -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-warning"></i>最近の申告・更新</h6>
+    {% if recent %}
+    <div class="table-responsive">
+      <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr><th>メンバー</th><th>スキル名</th><th>難易度</th><th>カテゴリー</th><th>申告レベル</th><th>更新日</th></tr>
+        </thead>
+        <tbody>
+          {% for sl in recent %}
+          <tr class="skill-row">
+            <td class="fw-semibold" style="font-size:.85rem;">{{ sl.user.display_name or sl.user.username }}</td>
+            <td class="fw-semibold">{{ sl.skill.name }}</td>
+            <td><span class="badge bg-{{ TIER_COLORS[sl.skill.tier] }}" style="font-size:.72rem;">{{ SKILL_TIERS[sl.skill.tier] }}</span></td>
+            <td>
+              {% if sl.skill.category %}
+              <span class="badge" style="background:{{ sl.skill.category.color }};font-size:.75rem;">{{ sl.skill.category.name }}</span>
+              {% else %}<span class="text-muted">-</span>{% endif %}
+            </td>
+            <td>
+              <div class="level-dots">
+                {% for i in range(1, 5) %}
+                <span class="level-dot {% if i <= sl.level %}active lv-{{ sl.level }}{% endif %}"></span>
+                {% endfor %}
+                <span class="badge bg-{{ LEVEL_COLORS[sl.level] }} ms-1" style="font-size:.72rem;">{{ SKILL_LEVELS[sl.level] }}</span>
+              </div>
+            </td>
+            <td class="text-muted">{{ sl.updated_at | jst }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+      <i class="bi bi-inbox fs-3 d-block mb-2"></i>まだスキル申告がありません
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+{# ── self / user / group モード (既存) ── #}
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">申告済みスキル</div>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="progress progress-animated" style="height:4px;">
+          <div class="progress-bar" style="width:{% if catalog_total %}{{ (total / catalog_total * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+        </div>
+        <div class="text-muted mt-1" style="font-size:.7rem;">カタログの {{ (total / catalog_total * 100)|int if catalog_total else 0 }}%</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-collection-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ catalog_total }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">カタログ総数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f59e0b;"><i class="bi bi-bar-chart-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ avg_level }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">平均レベル</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-trophy-fill"></i></div>
+        <div>
+          <div class="fw-bold" style="font-size:.95rem;line-height:1.3;">
+            {% if max_sl %}{{ SKILL_LEVELS[max_sl.level] }}{% else %}-{% endif %}
+          </div>
+          <div class="text-muted" style="font-size:.78rem;">最高レベル</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ティア別進捗 -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>難易度ティア別 達成状況</h6>
+    <div class="row g-3">
+      {% for tk, tv in SKILL_TIERS.items() %}
+      {% set ts = tier_stats[tk] %}
+      {% set pct = (ts.done / ts.total * 100)|int if ts.total else 0 %}
+      <div class="col-6 col-md-3">
+        <div class="border rounded-3 p-3 text-center h-100 position-relative" style="border-color:#e2e8f0 !important;overflow:hidden;">
+          <div class="position-absolute top-0 start-0 end-0" style="height:3px;background:var(--bs-{{ TIER_COLORS[tk] }});opacity:.5;"></div>
+          <span class="badge bg-{{ TIER_COLORS[tk] }} mb-2" style="font-size:.8rem;">{{ tv }}</span>
+          <!-- Progress Ring -->
+          <div class="mx-auto mb-2" style="width:70px;height:70px;">
+            <svg viewBox="0 0 36 36" class="progress-ring" style="width:100%;height:100%;transform:rotate(-90deg);">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3"></circle>
+              <circle cx="18" cy="18" r="15.9" fill="none"
+                      stroke="var(--bs-{{ TIER_COLORS[tk] }})"
+                      stroke-width="3" stroke-linecap="round"
+                      stroke-dasharray="100" stroke-dashoffset="{{ 100 - pct }}"
+                      style="transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);"></circle>
+            </svg>
+            <div style="margin-top:-57px;font-size:.85rem;font-weight:700;color:var(--bs-{{ TIER_COLORS[tk] }});" class="text-center">{{ pct }}%</div>
+          </div>
+          <div class="fw-bold" style="font-size:.9rem;">{{ ts.done }} <span class="text-muted fw-normal" style="font-size:.8rem;">/ {{ ts.total }}</span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Radar Chart -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">
+          {% if view_mode == 'group' %}
+          <i class="bi bi-diagram-3 me-2" style="color:#0ea5e9;"></i>メンバー別 カテゴリーレーダー
+          {% else %}
+          <i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>カテゴリー別スキルレーダー
+          {% endif %}
+        </h6>
+        <div style="position:relative;max-height:320px;">
+          <canvas id="radarChart"></canvas>
+        </div>
+        {% if not top_cats and view_mode != 'group' %}
+        <div class="text-center text-muted small py-3">
+          <i class="bi bi-inbox me-1"></i>データがありません
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Distribution (Bar Chart) -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>レベル分布</h6>
+        <div style="position:relative;max-height:320px;">
+          <canvas id="levelChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ グループ: スキルギャップ分析 ═══ -->
+  {% if view_mode == 'group' and gap_data is defined and gap_summary is defined and gap_summary.total_required > 0 %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-bullseye me-2" style="color:#ef4444;"></i>スキルギャップ分析<span class="text-muted fw-normal" style="font-size:.75rem;"> （グループ必須スキル vs メンバー習得状況）</span></h6>
+          <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;" type="button" data-bs-toggle="collapse" data-bs-target="#gapPanel">
+            <i class="bi bi-chevron-down me-1"></i>開閉
+          </button>
+        </div>
+
+        <!-- サマリーバー -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <span class="badge" style="background:#6366f1;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
+            <i class="bi bi-list-check me-1"></i>必須スキル {{ gap_summary.total_required }}件
+          </span>
+          <span class="badge" style="background:#22c55e;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
+            <i class="bi bi-check-circle me-1"></i>完全カバー {{ gap_summary.fully_covered }}
+          </span>
+          <span class="badge" style="background:#f59e0b;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
+            <i class="bi bi-exclamation-triangle me-1"></i>部分カバー {{ gap_summary.partially_covered }}
+          </span>
+          <span class="badge" style="background:#ef4444;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
+            <i class="bi bi-x-circle me-1"></i>未カバー {{ gap_summary.not_covered }}
+          </span>
+        </div>
+
+        <!-- 全体カバー率プログレス -->
+        {% set gap_overall_pct = ((gap_summary.fully_covered / gap_summary.total_required) * 100)|int if gap_summary.total_required else 0 %}
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="text-muted small">全体カバー率</span>
+          <div class="progress flex-fill" style="height:10px;border-radius:10px;">
+            <div class="progress-bar" style="width:{{ gap_overall_pct }}%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:10px;"></div>
+          </div>
+          <span class="fw-bold small" style="color:#22c55e;">{{ gap_overall_pct }}%</span>
+        </div>
+
+        <div class="collapse show" id="gapPanel">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:.85rem;">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width:160px;">必須スキル</th>
+                  <th class="text-center">カテゴリー</th>
+                  <th class="text-center">難易度</th>
+                  {% for m in members %}
+                  <th class="text-center" style="font-size:.75rem;white-space:nowrap;padding:4px 6px;">
+                    {{ (m.display_name or m.username)[:6] }}
+                  </th>
+                  {% endfor %}
+                  <th class="text-center" style="min-width:100px;">カバー率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for g in gap_data %}
+                <tr>
+                  <td class="fw-semibold">{{ g.skill.name }}</td>
+                  <td class="text-center">
+                    {% if g.skill.category %}
+                    <span class="badge" style="background:{{ g.skill.category.color }};font-size:.7rem;">{{ g.skill.category.name }}</span>
+                    {% else %}<span class="text-muted">-</span>{% endif %}
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-{{ TIER_COLORS[g.skill.tier] }}" style="font-size:.7rem;">{{ SKILL_TIERS[g.skill.tier] }}</span>
+                  </td>
+                  {% for ml in g.members %}
+                  <td class="text-center">
+                    {% if ml.level == 0 %}
+                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#fef2f2;border:2px solid #fca5a5;line-height:24px;font-size:.7rem;color:#ef4444;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: 未習得">✕</span>
+                    {% elif ml.level == 1 %}
+                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#ecfdf5;border:2px solid #86efac;line-height:24px;font-size:.7rem;color:#22c55e;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
+                    {% elif ml.level == 2 %}
+                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#eef2ff;border:2px solid #a5b4fc;line-height:24px;font-size:.7rem;color:#6366f1;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
+                    {% elif ml.level == 3 %}
+                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#fffbeb;border:2px solid #fcd34d;line-height:24px;font-size:.7rem;color:#f59e0b;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
+                    {% else %}
+                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#fef2f2;border:2px solid #f87171;line-height:24px;font-size:.7rem;color:#ef4444;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
+                    {% endif %}
+                  </td>
+                  {% endfor %}
+                  <td>
+                    <div class="d-flex align-items-center gap-1">
+                      <div class="progress flex-fill" style="height:6px;border-radius:10px;">
+                        <div class="progress-bar" style="width:{{ g.coverage_pct }}%;background:{% if g.coverage_pct == 100 %}#22c55e{% elif g.coverage_pct > 0 %}#f59e0b{% else %}#ef4444{% endif %};border-radius:10px;"></div>
+                      </div>
+                      <span class="fw-bold" style="font-size:.75rem;color:{% if g.coverage_pct == 100 %}#22c55e{% elif g.coverage_pct > 0 %}#f59e0b{% else %}#ef4444{% endif %};min-width:35px;text-align:right;">{{ g.coverage_pct }}%</span>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% elif view_mode == 'group' and (gap_data is not defined or gap_summary is not defined or gap_summary.total_required == 0) %}
+  <div class="col-12">
+    <div class="card" style="border-left:3px solid #d1d5db;">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-bullseye fs-3 d-block mb-2" style="color:#d1d5db;"></i>
+        <div class="text-muted small">このグループにはスキルが割り当てられていません。<a href="/groups/{{ target_group.id }}/edit">グループ編集</a>からスキルを割り当てるとギャップ分析が表示されます。</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ═══ グループ: メンバーランキング ═══ -->
+  {% if view_mode == 'group' and member_summary %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>メンバーランキング</h6>
+        <div class="table-responsive">
+          <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+            <thead class="table-light">
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>メンバー</th>
+                <th class="text-center">申告スキル数</th>
+                <th class="text-center">平均レベル</th>
+                <th style="min-width:140px;">レベルバー</th>
+                <th class="text-end">詳細</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ms in member_summary %}
+              <tr class="skill-row">
+                <td>
+                  {% if loop.index == 1 %}
+                  <span style="font-size:1.2rem;">🥇</span>
+                  {% elif loop.index == 2 %}
+                  <span style="font-size:1.2rem;">🥈</span>
+                  {% elif loop.index == 3 %}
+                  <span style="font-size:1.2rem;">🥉</span>
+                  {% else %}
+                  <span class="text-muted">{{ loop.index }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if ms.user.avatar_path %}
+                    <img src="{{ ms.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                    {% else %}
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                      {{ (ms.user.display_name or ms.user.username)[0].upper() }}
+                    </div>
+                    {% endif %}
+                    <div>
+                      <div class="fw-semibold">{{ ms.user.display_name or ms.user.username }}</div>
+                      <div class="text-muted" style="font-size:.75rem;">@{{ ms.user.username }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-light text-dark" style="font-size:.85rem;">{{ ms.total }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="fw-bold" style="color:#6366f1;font-size:.95rem;">{{ ms.avg }}</span>
+                  <span class="text-muted" style="font-size:.7rem;"> / 4.0</span>
+                </td>
+                <td>
+                  <div class="progress" style="height:8px;border-radius:10px;">
+                    <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:10px;"></div>
+                  </div>
+                </td>
+                <td class="text-end">
+                  <a href="/members/{{ ms.user.id }}/skills" class="btn btn-xs btn-outline-primary" style="border-radius:20px;font-size:.78rem;">
+                    <i class="bi bi-eye me-1"></i>スキル詳細
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent Updates -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-warning"></i>最近の申告・更新</h6>
+          {% if view_mode == 'self' %}
+          <a href="/skills" class="btn btn-sm btn-outline-primary" style="border-radius:20px;">スキルマップへ</a>
+          {% endif %}
+        </div>
+        {% if recent %}
+        <div class="table-responsive">
+          <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+            <thead class="table-light">
+              <tr>
+                {% if view_mode == 'group' %}<th>メンバー</th>{% endif %}
+                <th>スキル名</th><th>難易度</th><th>カテゴリー</th><th>申告レベル</th><th>更新日</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sl in recent %}
+              <tr class="skill-row">
+                {% if view_mode == 'group' %}
+                <td class="fw-semibold" style="font-size:.85rem;">
+                  {{ sl.user.display_name or sl.user.username }}
+                </td>
+                {% endif %}
+                <td class="fw-semibold">{{ sl.skill.name }}</td>
+                <td>
+                  <span class="badge bg-{{ TIER_COLORS[sl.skill.tier] }}" style="font-size:.72rem;">
+                    {{ SKILL_TIERS[sl.skill.tier] }}
+                  </span>
+                </td>
+                <td>
+                  {% if sl.skill.category %}
+                  <span class="badge" style="background:{{ sl.skill.category.color }};font-size:.75rem;">{{ sl.skill.category.name }}</span>
+                  {% else %}<span class="text-muted">-</span>{% endif %}
+                </td>
+                <td>
+                  <div class="level-dots">
+                    {% for i in range(1, 5) %}
+                    <span class="level-dot {% if i <= sl.level %}active lv-{{ sl.level }}{% endif %}"></span>
+                    {% endfor %}
+                    <span class="badge bg-{{ LEVEL_COLORS[sl.level] }} ms-1" style="font-size:.72rem;">{{ SKILL_LEVELS[sl.level] }}</span>
+                  </div>
+                </td>
+                <td class="text-muted">{{ sl.updated_at | jst }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+          まだスキルを申告していません。<a href="/skills">スキルマップで申告する</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}{# end view_mode == 'all' #}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const radarCtx = document.getElementById('radarChart');
+  const levelCtx = document.getElementById('levelChart');
+
+  /* ── Radar Chart ── */
+  {% if view_mode in ('group', 'all') and members and categories|length > 2 %}
+  /* グループモード: メンバー比較レーダー */
+  {
+    const labels = [{% for c in categories %}'{{ c.name }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const colors = [
+      {bg: 'rgba(99,102,241,.15)', border: '#6366f1'},
+      {bg: 'rgba(14,165,233,.15)', border: '#0ea5e9'},
+      {bg: 'rgba(245,158,11,.15)', border: '#f59e0b'},
+      {bg: 'rgba(239,68,68,.15)', border: '#ef4444'},
+      {bg: 'rgba(34,197,94,.15)', border: '#22c55e'},
+      {bg: 'rgba(168,85,247,.15)', border: '#a855f7'},
+      {bg: 'rgba(236,72,153,.15)', border: '#ec4899'},
+      {bg: 'rgba(249,115,22,.15)', border: '#f97316'},
+    ];
+    const datasets = [];
+    {% for m in members %}
+    {
+      const data = [{% for c in categories %}{{ member_radar.get(m.id, {}).get(c.name, 0) }}{% if not loop.last %},{% endif %}{% endfor %}];
+      const ci = {{ loop.index0 }} % colors.length;
+      datasets.push({
+        label: '{{ m.display_name or m.username }}',
+        data: data,
+        backgroundColor: colors[ci].bg,
+        borderColor: colors[ci].border,
+        borderWidth: 2,
+        pointBackgroundColor: colors[ci].border,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+        pointRadius: 4,
+      });
+    }
+    {% endfor %}
+    new Chart(radarCtx, {
+      type: 'radar',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        scales: {
+          r: {
+            beginAtZero: true, max: 4,
+            ticks: { stepSize: 1, font: { size: 10 }, backdropColor: 'transparent' },
+            grid: { color: 'rgba(0,0,0,.06)' },
+            pointLabels: { font: { size: 11, family: "'Noto Sans JP', sans-serif" } },
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+        },
+        animation: { duration: 1200, easing: 'easeOutQuart' },
+      }
+    });
+  }
+  {% elif top_cats %}
+  /* 個人モード: カテゴリー別レーダー */
+  new Chart(radarCtx, {
+    type: 'radar',
+    data: {
+      labels: [{% for name, count in top_cats %}'{{ name }}'{% if not loop.last %},{% endif %}{% endfor %}],
+      datasets: [{
+        label: '申告数',
+        data: [{% for name, count in top_cats %}{{ count }}{% if not loop.last %},{% endif %}{% endfor %}],
+        backgroundColor: 'rgba(99, 102, 241, .15)',
+        borderColor: '#6366f1',
+        borderWidth: 2,
+        pointBackgroundColor: '#6366f1',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,.06)' },
+          pointLabels: { font: { size: 12, family: "'Noto Sans JP', sans-serif" } },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+      },
+      animation: { duration: 1200, easing: 'easeOutQuart' },
+    }
+  });
+  {% endif %}
+
+  /* ── Level Distribution Chart ── */
+  const levelNames = ['未経験', '入門', '基礎', '実務可', 'エキスパート'];
+  const levelColors = ['#94a3b8', '#06b6d4', '#6366f1', '#f59e0b', '#ef4444'];
+  const levelData = [{{ level_dist[0] }}, {{ level_dist[1] }}, {{ level_dist[2] }}, {{ level_dist[3] }}, {{ level_dist[4] }}];
+
+  new Chart(levelCtx, {
+    type: 'doughnut',
+    data: {
+      labels: levelNames,
+      datasets: [{
+        data: levelData,
+        backgroundColor: levelColors.map(c => c + '22'),
+        borderColor: levelColors,
+        borderWidth: 2,
+        hoverBackgroundColor: levelColors.map(c => c + '44'),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 15, usePointStyle: true, pointStyle: 'circle', font: { size: 12, family: "'Noto Sans JP', sans-serif" } }
+        },
+      },
+      animation: { duration: 1000, easing: 'easeOutQuart', animateRotate: true },
+    }
+  });
+
+  /* ── Progress ring animation ── */
+  document.querySelectorAll('.progress-ring circle:nth-child(2)').forEach(c => {
+    const target = c.getAttribute('stroke-dashoffset');
+    c.setAttribute('stroke-dashoffset', '100');
+    requestAnimationFrame(() => {
+      c.setAttribute('stroke-dashoffset', target);
+    });
+  });
+
+  /* ── Category Coverage Chart (all mode) ── */
+  {% if view_mode == 'all' and cat_coverage is defined %}
+  const catCovCtx = document.getElementById('catCoverageChart');
+  if (catCovCtx) {
+    const catData = {{ cat_coverage | tojson }};
+    new Chart(catCovCtx, {
+      type: 'bar',
+      data: {
+        labels: catData.map(c => c.name),
+        datasets: [{
+          label: 'カバー率 (%)',
+          data: catData.map(c => c.pct),
+          backgroundColor: catData.map(c => {
+            if (c.pct >= 80) return 'rgba(34,197,94,.7)';
+            if (c.pct >= 50) return 'rgba(245,158,11,.7)';
+            return 'rgba(239,68,68,.7)';
+          }),
+          borderColor: catData.map(c => {
+            if (c.pct >= 80) return '#22c55e';
+            if (c.pct >= 50) return '#f59e0b';
+            return '#ef4444';
+          }),
+          borderWidth: 1.5,
+          borderRadius: 6,
+          barThickness: 24,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        scales: {
+          x: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, callback: v => v + '%', font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,.04)' },
+            title: { display: true, text: 'カバー率 (%)', font: { size: 11 } },
+          },
+          y: {
+            ticks: { font: { size: 11 } },
+            grid: { display: false },
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const c = catData[ctx.dataIndex];
+                return `${c.covered}/${c.total} スキル (${c.pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+  {% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+# 環境変数（機密情報）
+.env
+
+# アプリデータ（DB, config, アバター画像）
+app/data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+*.log

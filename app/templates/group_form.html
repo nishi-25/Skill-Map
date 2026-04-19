@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}{{ 'グループ編集' if group else 'グループ作成' }} - スキルマップ{% endblock %}
+
+{% block head %}
+<style>
+  .skill-check-grid { columns: 2; column-gap: 1rem; }
+  @media (max-width: 576px) { .skill-check-grid { columns: 1; } }
+  .cat-section { break-inside: avoid; margin-bottom: 1rem; }
+  .cat-section .cat-header {
+    font-size: .82rem; font-weight: 700; padding: .35rem .6rem;
+    background: #f8fafc; border-radius: 8px; margin-bottom: .4rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cat-section .form-check { font-size: .82rem; margin-bottom: .15rem; padding-left: 1.6rem; }
+  .cat-section .form-check-input { margin-top: .22rem; }
+  .select-count { font-size: .72rem; color: #6366f1; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>
+    <i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>
+    グループ{{ '編集' if group else '作成' }}
+  </h1>
+</div>
+
+<div class="row">
+  <div class="col-lg-5 mb-4">
+    <div class="card">
+      <div class="card-body p-4">
+        {% if error %}
+        <div class="alert alert-danger py-2 small">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/groups/{% if group %}{{ group.id }}/edit{% else %}new{% endif %}" id="groupForm">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">グループ名 <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required autofocus
+                   value="{{ group.name if group else '' }}" placeholder="例: バックエンドチーム">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">説明</label>
+            <textarea name="description" class="form-control" rows="2"
+                      placeholder="このグループの説明">{{ group.description if group else '' }}</textarea>
+          </div>
+          {% if current_user.role == 'admin' %}
+          <div class="mb-4">
+            <label class="form-label fw-semibold">担当Manager</label>
+            <select name="manager_id" class="form-select">
+              <option value="0">なし</option>
+              {% for m in managers %}
+              <option value="{{ m.id }}"
+                {% if group and group.manager_id == m.id %}selected{% endif %}>
+                {{ m.display_name or m.username }}
+                ({{ m.role }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-diagram-3 me-1" style="color:#6366f1;"></i>親グループ
+            </label>
+            <select name="parent_id" class="form-select" id="parentSelect" onchange="onParentChange()">
+              <option value="0">なし（ルートグループ）</option>
+              {% for g in all_groups %}
+              <option value="{{ g.id }}"
+                {% if group and group.parent_id == g.id %}selected{% endif %}>
+                {{ g.name }}
+                {% if g.parent %}(親: {{ g.parent.name }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text" style="font-size:.75rem;">親グループのスキルが自動的に継承されます</div>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill fw-semibold">
+              <i class="bi bi-check-lg me-1"></i>{{ '更新する' if group else '作成する' }}
+            </button>
+            <a href="/groups" class="btn btn-outline-secondary">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- スキル割当 -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header bg-white d-flex align-items-center justify-content-between py-2">
+        <span class="fw-semibold" style="font-size:.9rem;">
+          <i class="bi bi-lightning-charge-fill me-1" style="color:#f59e0b;"></i>対象スキル割当
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="select-count" id="inheritedCount" style="color:#0ea5e9;display:none;">0件継承</span>
+          <span class="select-count" id="selectedCount">0件選択中</span>
+        </div>
+      </div>
+      <div class="card-body" style="max-height:520px;overflow-y:auto;">
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <div class="input-group input-group-sm" style="max-width:240px;">
+            <span class="input-group-text" style="border-radius:20px 0 0 20px;"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="skillSearchInput" placeholder="スキル・カテゴリーを検索..."
+                   style="border-radius:0 20px 20px 0;font-size:.78rem;" oninput="filterSkills()">
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.78rem;" onclick="selectAll(true)">
+            <i class="bi bi-check-all me-1"></i>全選択
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;" onclick="selectAll(false)">
+            <i class="bi bi-x-lg me-1"></i>全解除
+          </button>
+        </div>
+        <div class="skill-check-grid" id="skillCheckGrid">
+          {% for cat in all_categories %}
+          {% set cat_skills = skills_by_cat.get(cat.id, []) %}
+          {% if cat_skills %}
+          <div class="cat-section" data-cat-name="{{ cat.name }}">
+            <div class="cat-header">
+              <span>
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ cat.color }};margin-right:6px;"></span>
+                {{ cat.name }}
+              </span>
+              <button type="button" class="btn btn-sm p-0 text-primary" style="font-size:.7rem;" onclick="toggleCategory({{ cat.id }})">全選択</button>
+            </div>
+            {% for sk in cat_skills %}
+            <div class="form-check skill-item" data-skill-name="{{ sk.name }}" data-cat-name="{{ cat.name }}" data-skill-id="{{ sk.id }}">
+              {% if sk.id in inherited_skill_ids %}
+              <input class="form-check-input" type="checkbox" checked disabled
+                     style="opacity:.5;" id="sk_{{ sk.id }}_inh">
+              <label class="form-check-label text-muted" for="sk_{{ sk.id }}_inh">
+                {{ sk.name }} <span class="badge bg-info" style="font-size:.6rem;vertical-align:middle;">継承</span>
+              </label>
+              {% else %}
+              <input class="form-check-input skill-check" type="checkbox"
+                     name="skill_ids" value="{{ sk.id }}" form="groupForm"
+                     id="sk_{{ sk.id }}" data-cat="{{ cat.id }}"
+                     {% if group and sk.id in assigned_skill_ids %}checked{% endif %}>
+              <label class="form-check-label" for="sk_{{ sk.id }}">{{ sk.name }}</label>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        <div id="noResults" class="text-center text-muted py-3 small" style="display:none;">
+          <i class="bi bi-search me-1"></i>該当するスキルが見つかりません
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateCount() {
+  const n = document.querySelectorAll('.skill-check:checked').length;
+  document.getElementById('selectedCount').textContent = n + '件選択中';
+  const inh = document.querySelectorAll('.inherited-item').length;
+  const inhEl = document.getElementById('inheritedCount');
+  if (inh > 0) { inhEl.textContent = inh + '件継承'; inhEl.style.display = ''; }
+  else { inhEl.style.display = 'none'; }
+}
+function selectAll(on) {
+  document.querySelectorAll('.skill-check').forEach(cb => {
+    if (cb.closest('.skill-item').style.display !== 'none') cb.checked = on;
+  });
+  updateCount();
+}
+function toggleCategory(catId) {
+  const cbs = [...document.querySelectorAll(`.skill-check[data-cat="${catId}"]`)].filter(cb => cb.closest('.skill-item').style.display !== 'none');
+  const allOn = cbs.every(cb => cb.checked);
+  cbs.forEach(cb => cb.checked = !allOn);
+  updateCount();
+}
+function filterSkills() {
+  const q = document.getElementById('skillSearchInput').value.trim().toLowerCase();
+  const sections = document.querySelectorAll('.cat-section');
+  let totalVisible = 0;
+  sections.forEach(sec => {
+    const catName = (sec.dataset.catName || '').toLowerCase();
+    const items = sec.querySelectorAll('.skill-item');
+    let sectionVisible = 0;
+    items.forEach(item => {
+      const skillName = (item.dataset.skillName || '').toLowerCase();
+      const match = !q || skillName.includes(q) || catName.includes(q);
+      item.style.display = match ? '' : 'none';
+      if (match) sectionVisible++;
+    });
+    sec.style.display = sectionVisible > 0 ? '' : 'none';
+    totalVisible += sectionVisible;
+  });
+  document.getElementById('noResults').style.display = totalVisible === 0 ? '' : 'none';
+}
+function onParentChange() {
+  const parentId = document.getElementById('parentSelect').value;
+  if (!parentId || parentId === '0') {
+    // 親なし → 継承スキルをクリア
+    document.querySelectorAll('.inherited-item').forEach(el => {
+      el.classList.remove('inherited-item');
+      const inp = el.querySelector('input[disabled]');
+      if (inp) {
+        // 戻す: disabled → 有効なcheckbox に
+        inp.disabled = false;
+        inp.checked = false;
+        inp.style.opacity = '';
+        inp.classList.add('skill-check');
+        inp.name = 'skill_ids';
+        inp.value = el.dataset.skillId;
+        inp.setAttribute('form', 'groupForm');
+        const label = el.querySelector('label');
+        if (label) {
+          label.classList.remove('text-muted');
+          const badge = label.querySelector('.badge');
+          if (badge) badge.remove();
+        }
+      }
+    });
+    updateCount();
+    return;
+  }
+  // API で親グループのスキルIDを取得して反映
+  fetch(`/groups/api/${parentId}/inherited-skills`)
+    .then(r => r.json())
+    .then(data => {
+      const inheritedIds = new Set(data.skill_ids.map(String));
+      document.querySelectorAll('.skill-item').forEach(item => {
+        const sid = item.dataset.skillId;
+        const isInherited = inheritedIds.has(sid);
+        if (isInherited) {
+          item.classList.add('inherited-item');
+          // チェックボックスを継承表示に切り替え
+          let inp = item.querySelector('input');
+          if (inp) {
+            inp.disabled = true;
+            inp.checked = true;
+            inp.style.opacity = '.5';
+            inp.classList.remove('skill-check');
+            inp.removeAttribute('name');
+            const label = item.querySelector('label');
+            if (label) {
+              label.classList.add('text-muted');
+              if (!label.querySelector('.badge')) {
+                label.insertAdjacentHTML('beforeend', ' <span class="badge bg-info" style="font-size:.6rem;vertical-align:middle;">継承</span>');
+              }
+            }
+          }
+        } else {
+          item.classList.remove('inherited-item');
+          let inp = item.querySelector('input');
+          if (inp && inp.disabled) {
+            inp.disabled = false;
+            inp.checked = false;
+            inp.style.opacity = '';
+            inp.classList.add('skill-check');
+            inp.name = 'skill_ids';
+            inp.setAttribute('form', 'groupForm');
+            const label = item.querySelector('label');
+            if (label) {
+              label.classList.remove('text-muted');
+              const badge = label.querySelector('.badge');
+              if (badge) badge.remove();
+            }
+          }
+        }
+      });
+      updateCount();
+    });
+}
+document.querySelectorAll('.skill-check').forEach(cb => cb.addEventListener('change', updateCount));
+document.addEventListener('DOMContentLoaded', updateCount);
+</script>
+{% endblock %}

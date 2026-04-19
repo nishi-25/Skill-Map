@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}スキルマップ{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700|noto-sans-jp:400,500,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --sidebar-width: 230px;
+      --sidebar-collapsed-width: 62px;
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --sidebar-bg: #0f0e2a;
+      --sidebar-line: rgba(255,255,255,.07);
+      --transition: .22s cubic-bezier(.4,0,.2,1);
+      --card-radius: 14px;
+    }
+    body { background: #f1f3f9; color: #1a1a2e; font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh;
+      width: var(--sidebar-width); background: var(--sidebar-bg);
+      color: #fff; z-index: 100;
+      display: flex; flex-direction: column;
+      transition: width var(--transition);
+      overflow: hidden;
+      box-shadow: 4px 0 24px rgba(0,0,0,.25);
+    }
+    .sidebar::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #6366f1, #a78bfa, #38bdf8);
+    }
+    .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+    .brand {
+      font-size: 1.15rem; font-weight: 700;
+      padding: 1.1rem 1.2rem;
+      border-bottom: 1px solid var(--sidebar-line);
+      white-space: nowrap; overflow: hidden;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .brand .brand-text { transition: opacity var(--transition); }
+    .sidebar.collapsed .brand-text { opacity: 0; width: 0; overflow: hidden; pointer-events: none; }
+    .brand .brand-accent { background: linear-gradient(135deg, #818cf8, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-items { flex: 1; overflow-y: auto; overflow-x: hidden; padding: .5rem 0; }
+    .nav-items::-webkit-scrollbar { width: 4px; }
+    .nav-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+    .nav-label {
+      font-size: .72rem; letter-spacing: .08em; text-transform: uppercase;
+      color: rgba(255,255,255,.35); padding: .8rem 1.2rem .3rem;
+      white-space: nowrap; overflow: hidden;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .nav-label { opacity: 0; height: 0; padding: 0; }
+    .nav-link-item {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .55rem 1.15rem;
+      color: rgba(255,255,255,.72);
+      text-decoration: none; font-size: .9rem;
+      border-radius: 8px; margin: 0 .4rem;
+      transition: background .15s, color .15s, transform .15s;
+      white-space: nowrap; overflow: hidden;
+    }
+    .nav-link-item:hover { background: rgba(255,255,255,.07); color: #fff; transform: translateX(3px); }
+    .nav-link-item.active { background: rgba(99,102,241,.25); color: #a5b4fc; }
+    .nav-link-item .nav-icon { font-size: 1.05rem; min-width: 20px; text-align: center; transition: transform .2s; }
+    .nav-link-item:hover .nav-icon { transform: scale(1.15); }
+    .nav-link-item .nav-text { transition: opacity var(--transition); }
+    .sidebar.collapsed .nav-text { opacity: 0; width: 0; overflow: hidden; pointer-events: none; }
+    .sidebar-footer {
+      border-top: 1px solid var(--sidebar-line);
+      padding: .8rem 1rem;
+    }
+    .user-info {
+      display: flex; align-items: center; gap: .6rem;
+      color: rgba(255,255,255,.7); font-size: .82rem;
+      white-space: nowrap; overflow: hidden;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #a78bfa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 600; color: #fff;
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+    .user-avatar:hover { transform: scale(1.1); }
+    .logout-icon:hover { color: #f87171 !important; background: rgba(248,113,113,.12); }
+    .sidebar.collapsed .user-details { opacity: 0; width: 0; overflow: hidden; pointer-events: none; }
+    .sidebar.collapsed .logout-icon { display: none !important; }
+    .collapse-btn {
+      background: none; border: none; color: rgba(255,255,255,.4);
+      padding: .5rem 1.2rem; font-size: .8rem; width: 100%;
+      text-align: right; cursor: pointer;
+      transition: color .15s;
+    }
+    .collapse-btn:hover { color: #fff; }
+
+    /* ── Main ── */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      transition: margin-left var(--transition);
+      min-height: 100vh; padding: 1.5rem 2rem;
+    }
+    .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed-width); }
+
+    /* ── Cards ── */
+    .stat-card {
+      background: #fff; border-radius: var(--card-radius);
+      padding: 1.4rem 1.6rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light, #818cf8));
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .stat-card:hover::after { opacity: 1; }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(99,102,241,.15); }
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+      transition: transform .3s;
+    }
+    .stat-card:hover .stat-icon { transform: scale(1.1) rotate(-5deg); }
+    .card { border-radius: var(--card-radius); border: none; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .level-badge { font-size: .75rem; padding: .25em .6em; border-radius: 6px; font-weight: 600; }
+
+    /* ── Page header ── */
+    .page-header { margin-bottom: 1.5rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #1e1b4b; margin: 0; }
+
+    /* ── Mobile overlay ── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,.5); z-index: 99;
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* ── Mobile burger ── */
+    .mobile-burger {
+      display: none;
+      position: fixed; top: .8rem; left: .8rem;
+      z-index: 101;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 10px;
+      width: 40px; height: 40px;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 10px rgba(99,102,241,.3);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .main-content { margin-left: 0 !important; padding: 1rem; padding-top: 3.5rem; }
+      .mobile-burger { display: flex; align-items: center; justify-content: center; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- Mobile burger -->
+<button class="mobile-burger" onclick="toggleMobile()">
+  <i class="bi bi-list"></i>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobile()"></div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+  <div class="brand">
+    <i class="bi bi-map" style="font-size:1.3rem;color:#818cf8;flex-shrink:0;"></i>
+    <span class="brand-text">スキル<span class="brand-accent">マップ</span></span>
+  </div>
+
+  <div class="nav-items">
+    <div class="nav-label">メインメニュー</div>
+    <a href="/dashboard" class="nav-link-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2 nav-icon"></i><span class="nav-text">ダッシュボード</span>
+    </a>
+    {% if not current_user or current_user.role == 'user' %}
+    <a href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}">
+      <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text">スキルマップ</span>
+    </a>
+    <a href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}">
+      <i class="bi bi-send nav-icon"></i><span class="nav-text">自分の申請状況</span>
+    </a>
+    {% endif %}
+    {% if not current_user or current_user.role == 'user' %}
+    <a href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}">
+      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text">成長タイムライン</span>
+    </a>
+    {% endif %}
+
+    {% if current_user and current_user.role in ('admin', 'manager') %}
+    <div class="nav-label">承認</div>
+    <a href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}">
+      <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">承認依頼</span>
+      {% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %}
+      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_approval_count }}</span>
+      {% endif %}
+    </a>
+    {% endif %}
+
+    {% if current_user and current_user.role in ('admin', 'manager') %}
+    <div class="nav-label">分析</div>
+    <a href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}">
+      <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text">スキルマトリクス</span>
+    </a>
+    <div class="nav-label">カタログ管理</div>
+    <a href="/skills/catalog" class="nav-link-item {% if '/skills/catalog' in request.url.path %}active{% endif %}">
+      <i class="bi bi-collection nav-icon"></i><span class="nav-text">スキルカタログ</span>
+    </a>
+    <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}">
+      <i class="bi bi-tags nav-icon"></i><span class="nav-text">カテゴリー</span>
+    </a>
+    <div class="nav-label">グループ</div>
+    <a href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}">
+      <i class="bi bi-people-fill nav-icon"></i><span class="nav-text">グループ管理</span>
+    </a>
+    {% endif %}
+
+    {% if current_user and current_user.role == 'admin' %}
+    <div class="nav-label">管理</div>
+    <a href="/admin" class="nav-link-item {% if request.url.path == '/admin' %}active{% endif %}">
+      <i class="bi bi-shield-check nav-icon"></i><span class="nav-text">管理パネル</span>
+    </a>
+    <a href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}">
+      <i class="bi bi-people nav-icon"></i><span class="nav-text">ユーザー管理</span>
+      {% if request.state.pending_user_count is defined and request.state.pending_user_count > 0 %}
+      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_user_count }}</span>
+      {% endif %}
+    </a>
+    <a href="/admin/settings/mail" class="nav-link-item {% if '/admin/settings' in request.url.path %}active{% endif %}">
+      <i class="bi bi-envelope-at nav-icon"></i><span class="nav-text">メール設定</span>
+    </a>
+    {% endif %}
+
+    <div class="nav-label">ヘルプ</div>
+    <a href="/manual" class="nav-link-item {% if request.url.path == '/manual' %}active{% endif %}">
+      <i class="bi bi-book nav-icon"></i><span class="nav-text">利用マニュアル</span>
+    </a>
+
+  </div>
+
+  {% if current_user %}
+  <div class="sidebar-footer">
+    <div class="user-info" style="display:flex;align-items:center;gap:10px;">
+      <a href="/profile" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;min-width:0;">
+        {% if current_user.avatar_path %}
+        <img src="{{ current_user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+        {% else %}
+        <div class="user-avatar">{{ (current_user.display_name or current_user.username)[0].upper() }}</div>
+        {% endif %}
+        <div class="user-details" style="min-width:0;">
+          <div style="font-weight:600;color:#e0e7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.display_name or current_user.username }}</div>
+          <div style="font-size:.75rem;color:rgba(255,255,255,.4);">
+            {% if current_user.role == 'admin' %}
+              <span class="badge" style="background:#6366f1;font-size:.65rem;">Admin</span>
+            {% elif current_user.role == 'manager' %}
+              <span class="badge" style="background:#0ea5e9;font-size:.65rem;">Manager</span>
+            {% else %}
+              <span style="font-size:.72rem;">User</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      <a href="/logout" title="ログアウト" class="logout-icon" style="flex-shrink:0;color:rgba(255,255,255,.45);font-size:1.15rem;padding:4px;border-radius:6px;transition:all .2s;display:flex;align-items:center;">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+    <i class="bi bi-chevron-double-left" id="collapseIcon"></i>
+  </button>
+</nav>
+
+<!-- Main -->
+<div class="main-content" id="mainContent">
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  /* ── Sidebar toggle ── */
+  function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const icon = document.getElementById('collapseIcon');
+    sb.classList.toggle('collapsed');
+    icon.className = sb.classList.contains('collapsed')
+      ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
+    localStorage.setItem('sb_collapsed', sb.classList.contains('collapsed'));
+  }
+  (function() {
+    if (localStorage.getItem('sb_collapsed') === 'true') {
+      document.getElementById('sidebar').classList.add('collapsed');
+      document.getElementById('collapseIcon').className = 'bi bi-chevron-double-right';
+    }
+  })();
+
+  /* ── Mobile sidebar ── */
+  function toggleMobile() {
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sidebarOverlay');
+    sb.classList.toggle('mobile-open');
+    ov.classList.toggle('active');
+  }
+
+  /* ── Toast system ── */
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast-msg toast-' + type;
+    const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
+    el.innerHTML = '<i class="bi ' + icon + '" style="color:' + (type === 'success' ? '#22c55e' : '#ef4444') + ';"></i>' + message;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('toast-out');
+      setTimeout(() => el.remove(), 300);
+    }, 2500);
+  }
+
+  /* ── Counter animation ── */
+  function animateCounter(el, target, duration = 800) {
+    const start = 0;
+    const startTime = performance.now();
+    const isFloat = String(target).includes('.');
+    function update(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = start + (target - start) * eased;
+      el.textContent = isFloat ? value.toFixed(1) : Math.round(value);
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  /* ── Animate counters on page load ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-counter]').forEach(el => {
+      const target = parseFloat(el.dataset.counter);
+      animateCounter(el, target);
+    });
+    /* Animate progress bars */
+    document.querySelectorAll('.progress-animated .progress-bar').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0';
+      requestAnimationFrame(() => { bar.style.width = w; });
+    });
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

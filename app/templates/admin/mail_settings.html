@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}メール設定 - 管理パネル{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-envelope-at me-2" style="color:#6366f1;"></i>メール通知設定</h1>
+  <p class="text-muted mb-0 small">SMTP サーバーの設定を管理します</p>
+</div>
+
+{% if success %}
+<div class="alert alert-success d-flex align-items-center mb-3 animate__animated animate__fadeIn">
+  <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-danger d-flex align-items-center mb-3 animate__animated animate__fadeIn">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <!-- SMTP 設定フォーム -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-gear me-2"></i><span class="fw-bold">SMTP サーバー設定</span>
+      </div>
+      <div class="card-body">
+        <form method="post" action="/admin/settings/mail">
+
+          <!-- プリセット選択 -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-muted">クイック設定</label>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="setPreset('gmail')">
+                <i class="bi bi-google me-1"></i>Gmail
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="setPreset('outlook')">
+                <i class="bi bi-microsoft me-1"></i>Outlook / 365
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setPreset('clear')">
+                <i class="bi bi-x-circle me-1"></i>クリア
+              </button>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label for="smtp_host" class="form-label fw-semibold small">SMTP ホスト <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="smtp_host" name="smtp_host"
+                     value="{{ settings.get('smtp_host', '') }}" placeholder="smtp.gmail.com">
+            </div>
+            <div class="col-md-4">
+              <label for="smtp_port" class="form-label fw-semibold small">ポート</label>
+              <input type="text" class="form-control" id="smtp_port" name="smtp_port"
+                     value="{{ settings.get('smtp_port', '587') }}" placeholder="587">
+            </div>
+            <div class="col-12">
+              <label for="smtp_user" class="form-label fw-semibold small">メールアドレス (ユーザー) <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="smtp_user" name="smtp_user"
+                     value="{{ settings.get('smtp_user', '') }}" placeholder="your-email@gmail.com">
+            </div>
+            <div class="col-12">
+              <label for="smtp_password" class="form-label fw-semibold small">パスワード / アプリパスワード <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="password" class="form-control" id="smtp_password" name="smtp_password"
+                       value="{{ settings.get('smtp_password', '') }}" placeholder="アプリパスワードを入力">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()" id="togglePwBtn">
+                  <i class="bi bi-eye" id="togglePwIcon"></i>
+                </button>
+              </div>
+              <div class="form-text">
+                Gmail の場合は <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-decoration-none">アプリパスワード</a>（16文字）を使用してください
+              </div>
+            </div>
+
+            <hr class="my-2">
+
+            <div class="col-md-6">
+              <label for="smtp_from_name" class="form-label fw-semibold small">差出人名</label>
+              <input type="text" class="form-control" id="smtp_from_name" name="smtp_from_name"
+                     value="{{ settings.get('smtp_from_name', 'スキルマップ') }}" placeholder="スキルマップ">
+            </div>
+            <div class="col-md-6">
+              <label for="app_url" class="form-label fw-semibold small">アプリ URL</label>
+              <input type="url" class="form-control" id="app_url" name="app_url"
+                     value="{{ settings.get('app_url', 'http://localhost:8190') }}" placeholder="http://localhost:8190">
+              <div class="form-text">メール内リンクに使われます</div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check2-circle me-1"></i>設定を保存
+            </button>
+            <a href="/admin" class="btn btn-outline-secondary ms-2">戻る</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右サイド: テスト送信 + ヘルプ -->
+  <div class="col-lg-5">
+    <!-- テスト送信 -->
+    <div class="card mb-3">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-send me-2"></i><span class="fw-bold">テスト送信</span>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">設定を保存した後、テストメールを送信して正しく動作するか確認できます。</p>
+        <form method="post" action="/admin/settings/mail/test">
+          <div class="input-group">
+            <input type="email" class="form-control" name="test_email" placeholder="送信先メールアドレス"
+                   value="{{ current_user.email or '' }}" required>
+            <button class="btn btn-outline-primary" type="submit">
+              <i class="bi bi-send me-1"></i>送信
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ステータス -->
+    <div class="card mb-3">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-info-circle me-2"></i><span class="fw-bold">現在のステータス</span>
+      </div>
+      <div class="card-body">
+        {% set has_host = settings.get('smtp_host', '') %}
+        {% set has_user = settings.get('smtp_user', '') %}
+        {% set has_pass = settings.get('smtp_password', '') %}
+        {% if has_host and has_user and has_pass %}
+        <div class="d-flex align-items-center text-success">
+          <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+          <div>
+            <div class="fw-semibold">メール通知: 有効</div>
+            <div class="text-muted small">{{ settings.get('smtp_host', '') }} を使用中</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="d-flex align-items-center text-warning">
+          <i class="bi bi-exclamation-circle-fill fs-4 me-2"></i>
+          <div>
+            <div class="fw-semibold">メール通知: 無効</div>
+            <div class="text-muted small">
+              {% if not has_host %}ホスト未設定 {% endif %}
+              {% if not has_user %}ユーザー未設定 {% endif %}
+              {% if not has_pass %}パスワード未設定{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ヘルプ -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-question-circle me-2"></i><span class="fw-bold">設定ガイド</span>
+      </div>
+      <div class="card-body small text-muted" style="line-height:1.8;">
+        <p class="fw-semibold text-dark mb-2"><i class="bi bi-google text-danger me-1"></i>Gmail の場合</p>
+        <ol class="ps-3 mb-3">
+          <li>Google アカウントで <strong>2段階認証</strong> を有効にする</li>
+          <li><a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-decoration-none">アプリパスワード</a> を発行 (16文字)</li>
+          <li>ホストに <code>smtp.gmail.com</code> を設定</li>
+          <li>パスワードにアプリパスワードを入力</li>
+        </ol>
+        <p class="fw-semibold text-dark mb-2"><i class="bi bi-microsoft text-primary me-1"></i>Outlook / Microsoft 365</p>
+        <ol class="ps-3 mb-0">
+          <li>ホストに <code>smtp.office365.com</code> を設定</li>
+          <li>メールアドレスとパスワードを入力</li>
+          <li>ポートは <code>587</code> のまま</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setPreset(type) {
+  const host = document.getElementById('smtp_host');
+  const port = document.getElementById('smtp_port');
+  if (type === 'gmail') {
+    host.value = 'smtp.gmail.com';
+    port.value = '587';
+  } else if (type === 'outlook') {
+    host.value = 'smtp.office365.com';
+    port.value = '587';
+  } else {
+    host.value = '';
+    port.value = '587';
+    document.getElementById('smtp_user').value = '';
+    document.getElementById('smtp_password').value = '';
+    document.getElementById('smtp_from_name').value = 'スキルマップ';
+    document.getElementById('app_url').value = 'http://localhost:8190';
+  }
+}
+
+function togglePassword() {
+  const pw = document.getElementById('smtp_password');
+  const icon = document.getElementById('togglePwIcon');
+  if (pw.type === 'password') {
+    pw.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    pw.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+</script>
+{% endblock %}

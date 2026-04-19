@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}{{ target.display_name or target.username }} のスキル状況 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/dashboard" class="text-muted" style="text-decoration:none;font-size:1.2rem;">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h1 class="mb-0" style="font-size:1.5rem;">
+        <i class="bi bi-person-lines-fill me-2" style="color:#6366f1;"></i>メンバースキル詳細
+      </h1>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/skills/timeline?user_id={{ target.id }}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-graph-up-arrow me-1"></i>成長タイムライン
+    </a>
+    <a href="/dashboard?user_id={{ target.id }}" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-speedometer2 me-1"></i>ダッシュボード
+    </a>
+  </div>
+</div>
+
+<!-- ═══ ユーザー情報カード ═══ -->
+<div class="card mb-4" style="border-left:4px solid #6366f1;">
+  <div class="card-body">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      {% if target.avatar_path %}
+      <img src="{{ target.avatar_path }}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;">
+      {% else %}
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;font-weight:700;">
+        {{ (target.display_name or target.username)[0].upper() }}
+      </div>
+      {% endif %}
+      <div>
+        <div class="fw-bold fs-5">{{ target.display_name or target.username }}</div>
+        <div class="text-muted" style="font-size:.85rem;">@{{ target.username }}
+          <span class="badge bg-{{ 'primary' if target.role == 'admin' else 'info' if target.role == 'manager' else 'secondary' }} ms-2" style="font-size:.72rem;">{{ target.role }}</span>
+        </div>
+      </div>
+      <div class="ms-auto d-flex gap-3 flex-wrap">
+        {% if user_groups %}
+        <div>
+          <div class="text-muted" style="font-size:.72rem;">所属グループ</div>
+          <div class="d-flex gap-1 flex-wrap">
+            {% for g in user_groups %}
+            <a href="/dashboard?group_id={{ g.id }}" class="badge text-decoration-none" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);font-size:.75rem;">
+              <i class="bi bi-people-fill me-1"></i>{{ g.name }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ サマリーカード ═══ -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ total }}</div>
+          <div class="text-muted" style="font-size:.78rem;">取得スキル</div>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="progress" style="height:4px;">
+          <div class="progress-bar" style="width:{% if catalog_total %}{{ (total / catalog_total * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+        </div>
+        <div class="text-muted mt-1" style="font-size:.7rem;">カタログの {{ (total / catalog_total * 100)|int if catalog_total else 0 }}%</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-collection-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ catalog_total }}</div>
+          <div class="text-muted" style="font-size:.78rem;">カタログ総数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f59e0b;"><i class="bi bi-bar-chart-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ avg_level }}</div>
+          <div class="text-muted" style="font-size:.78rem;">平均レベル</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-bar-chart-steps"></i></div>
+        <div>
+          <div class="fw-bold" style="font-size:1rem;line-height:1.3;">
+            {{ level_dist[4] }}<span class="text-muted fw-normal" style="font-size:.78rem;"> エキスパート</span>
+          </div>
+          <div class="text-muted" style="font-size:.78rem;">最高ランク数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ティア別 + レベル分布 ═══ -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>難易度ティア別 取得状況</h6>
+        <div class="row g-3">
+          {% for tk, tv in SKILL_TIERS.items() %}
+          {% set ts = tier_stats[tk] %}
+          {% set pct = (ts.done / ts.total * 100)|int if ts.total else 0 %}
+          <div class="col-6 col-md-3">
+            <div class="border rounded-3 p-3 text-center h-100 position-relative" style="border-color:#e2e8f0 !important;overflow:hidden;">
+              <div class="position-absolute top-0 start-0 end-0" style="height:3px;background:var(--bs-{{ TIER_COLORS[tk] }});opacity:.5;"></div>
+              <span class="badge bg-{{ TIER_COLORS[tk] }} mb-2" style="font-size:.78rem;">{{ tv }}</span>
+              <div class="mx-auto mb-2" style="width:60px;height:60px;">
+                <svg viewBox="0 0 36 36" style="width:100%;height:100%;transform:rotate(-90deg);">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3"></circle>
+                  <circle cx="18" cy="18" r="15.9" fill="none"
+                          stroke="var(--bs-{{ TIER_COLORS[tk] }})"
+                          stroke-width="3" stroke-linecap="round"
+                          stroke-dasharray="100" stroke-dashoffset="{{ 100 - pct }}"></circle>
+                </svg>
+                <div style="margin-top:-48px;font-size:.8rem;font-weight:700;color:var(--bs-{{ TIER_COLORS[tk] }});" class="text-center">{{ pct }}%</div>
+              </div>
+              <div class="fw-bold" style="font-size:.85rem;">{{ ts.done }} <span class="text-muted fw-normal" style="font-size:.75rem;">/ {{ ts.total }}</span></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2 text-primary"></i>レベル分布</h6>
+        <div style="max-height:200px;">
+          <canvas id="levelChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ カテゴリー別スキル一覧 ═══ -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#6366f1;"></i>カテゴリー別スキル一覧</h6>
+      <input type="text" id="skillSearch" class="form-control form-control-sm" placeholder="スキルを検索..."
+             oninput="filterDetailSkills()" style="max-width:220px;border-radius:20px;font-size:.85rem;">
+    </div>
+
+    {% if not cat_skills and not uncategorized %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+      <p>まだスキルが登録されていません</p>
+    </div>
+    {% else %}
+
+    {% for cat_name, skills in cat_skills.items() %}
+    <div class="cat-section mb-3" data-cat="{{ cat_name }}">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge" style="background:{{ skills[0].skill.category.color if skills[0].skill.category else '#6366f1' }};font-size:.78rem;">{{ cat_name }}</span>
+        <span class="text-muted" style="font-size:.75rem;">{{ skills|length }}件</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0" style="font-size:.88rem;">
+          <thead class="table-light">
+            <tr>
+              <th>スキル名</th>
+              <th style="width:100px;">難易度</th>
+              <th style="width:200px;">レベル</th>
+              <th style="width:120px;">更新日</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sl in skills %}
+            <tr class="skill-item" data-skill="{{ sl.skill.name }}">
+              <td>
+                <div class="fw-semibold">{{ sl.skill.name }}</div>
+                {% if sl.skill.description %}
+                <div class="text-muted" style="font-size:.75rem;">{{ sl.skill.description[:60] }}{% if sl.skill.description|length > 60 %}…{% endif %}</div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-{{ TIER_COLORS[sl.skill.tier] }}" style="font-size:.72rem;">{{ SKILL_TIERS[sl.skill.tier] }}</span>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="level-dots">
+                    {% for i in range(1, 5) %}
+                    <span class="level-dot {% if i <= sl.level %}active lv-{{ sl.level }}{% endif %}"></span>
+                    {% endfor %}
+                  </div>
+                  <span class="badge bg-{{ LEVEL_COLORS[sl.level] }}" style="font-size:.72rem;">{{ SKILL_LEVELS[sl.level] }}</span>
+                </div>
+              </td>
+              <td class="text-muted" style="font-size:.8rem;">{{ sl.updated_at | jst }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if uncategorized %}
+    <div class="cat-section mb-3" data-cat="未分類">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-secondary" style="font-size:.78rem;">未分類</span>
+        <span class="text-muted" style="font-size:.75rem;">{{ uncategorized|length }}件</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0" style="font-size:.88rem;">
+          <thead class="table-light">
+            <tr>
+              <th>スキル名</th>
+              <th style="width:100px;">難易度</th>
+              <th style="width:200px;">レベル</th>
+              <th style="width:120px;">更新日</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sl in uncategorized %}
+            <tr class="skill-item" data-skill="{{ sl.skill.name }}">
+              <td class="fw-semibold">{{ sl.skill.name }}</td>
+              <td><span class="badge bg-{{ TIER_COLORS[sl.skill.tier] }}" style="font-size:.72rem;">{{ SKILL_TIERS[sl.skill.tier] }}</span></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="level-dots">
+                    {% for i in range(1, 5) %}
+                    <span class="level-dot {% if i <= sl.level %}active lv-{{ sl.level }}{% endif %}"></span>
+                    {% endfor %}
+                  </div>
+                  <span class="badge bg-{{ LEVEL_COLORS[sl.level] }}" style="font-size:.72rem;">{{ SKILL_LEVELS[sl.level] }}</span>
+                </div>
+              </td>
+              <td class="text-muted" style="font-size:.8rem;">{{ sl.updated_at | jst }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══ 最近の成長履歴 ═══ -->
+{% if recent_history %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-warning"></i>最近の成長履歴</h6>
+      <a href="/skills/timeline?user_id={{ target.id }}" class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.8rem;">
+        <i class="bi bi-graph-up-arrow me-1"></i>全履歴を見る
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0" style="font-size:.88rem;">
+        <thead class="table-light">
+          <tr><th>スキル</th><th>変更</th><th>日時</th></tr>
+        </thead>
+        <tbody>
+          {% for h in recent_history %}
+          <tr>
+            <td class="fw-semibold">{{ h.skill.name }}</td>
+            <td>
+              <span class="badge bg-{{ LEVEL_COLORS[h.previous_level or 0] }}" style="font-size:.7rem;">{{ SKILL_LEVELS[h.previous_level or 0] }}</span>
+              <i class="bi bi-arrow-right mx-1 text-muted" style="font-size:.7rem;"></i>
+              <span class="badge bg-{{ LEVEL_COLORS[h.level] }}" style="font-size:.7rem;">{{ SKILL_LEVELS[h.level] }}</span>
+            </td>
+            <td class="text-muted" style="font-size:.8rem;">{{ h.changed_at | jst }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  /* ── レベル分布ドーナツ ── */
+  const ctx = document.getElementById('levelChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['未経験', '入門', '基礎', '実務可', 'エキスパート'],
+        datasets: [{
+          data: [{{ level_dist[0] }}, {{ level_dist[1] }}, {{ level_dist[2] }}, {{ level_dist[3] }}, {{ level_dist[4] }}],
+          backgroundColor: ['#94a3b822', '#06b6d422', '#6366f122', '#f59e0b22', '#ef444422'],
+          borderColor: ['#94a3b8', '#06b6d4', '#6366f1', '#f59e0b', '#ef4444'],
+          borderWidth: 2,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+        },
+      }
+    });
+  }
+});
+
+/* ── スキル検索フィルター ── */
+function filterDetailSkills() {
+  const q = document.getElementById('skillSearch').value.toLowerCase();
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    let anyVisible = false;
+    sec.querySelectorAll('.skill-item').forEach(row => {
+      const name = (row.dataset.skill || '').toLowerCase();
+      const match = !q || name.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    sec.style.display = anyVisible ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

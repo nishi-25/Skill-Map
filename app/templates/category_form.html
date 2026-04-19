@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ 'カテゴリー編集' if category else 'カテゴリー追加' }} - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>
+    <i class="bi bi-tags me-2" style="color:#6366f1;"></i>
+    カテゴリー{{ '編集' if category else '追加' }}
+  </h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card">
+      <div class="card-body p-4">
+        {% if error %}
+        <div class="alert alert-danger py-2 small">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/categories/{% if category %}{{ category.id }}/edit{% else %}new{% endif %}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">カテゴリー名 <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required autofocus
+                   value="{{ category.name if category else '' }}"
+                   placeholder="例: プログラミング言語, インフラ...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">説明</label>
+            <textarea name="description" class="form-control" rows="2"
+                      placeholder="このカテゴリーの説明">{{ category.description if category else '' }}</textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">カラー</label>
+            <div class="d-flex align-items-center gap-3">
+              <input type="color" name="color" class="form-control form-control-color"
+                     value="{{ category.color if category else '#6366f1' }}" style="width:60px;height:40px;">
+              <span class="text-muted small">カードのアクセントカラーとして使用されます</span>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill fw-semibold">
+              <i class="bi bi-check-lg me-1"></i>{{ '更新する' if category else '追加する' }}
+            </button>
+            <a href="/categories" class="btn btn-outline-secondary">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

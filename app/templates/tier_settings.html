@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}ティア名設定 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-sliders me-2" style="color:#6366f1;"></i>ティア名設定</h1>
+    <p class="text-muted mb-0 small">スキルの難易度ティアの表示名をカスタマイズできます</p>
+  </div>
+  <a href="/skills/catalog" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">
+    <i class="bi bi-arrow-left me-1"></i>カタログに戻る
+  </a>
+</div>
+
+{% if success %}
+<div class="alert alert-success py-2 small mb-3" style="border-radius:12px;">
+  <i class="bi bi-check-circle-fill me-1"></i>ティア名を保存しました。
+</div>
+{% endif %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body p-4">
+        <form method="post" action="/skills/tier-settings">
+          {% for tk in tier_order %}
+          <div class="d-flex align-items-center gap-3 {% if not loop.last %}mb-3 pb-3{% endif %}" {% if not loop.last %}style="border-bottom:1px solid #f1f5f9;"{% endif %}>
+            <div class="d-flex align-items-center justify-content-center" style="width:44px;height:44px;border-radius:12px;background:var(--bs-{{ TIER_COLORS[tk] }});color:#fff;font-size:1.1rem;flex-shrink:0;">
+              <i class="{{ TIER_ICONS[tk] }}"></i>
+            </div>
+            <div class="flex-grow-1">
+              <label class="form-label small fw-semibold mb-1 text-muted">ティア {{ loop.index }}（内部キー: {{ tk }}）</label>
+              <input type="text" name="tier_{{ tk }}" class="form-control"
+                     value="{{ tier_names[tk] }}" placeholder="{{ tier_names[tk] }}">
+            </div>
+          </div>
+          {% endfor %}
+
+          <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius:20px;padding:.5rem 1.5rem;">
+              <i class="bi bi-check-lg me-1"></i>保存する
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

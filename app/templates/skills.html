@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}スキルマップ - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    {% if overview_mode %}
+    <h1><i class="bi bi-lightning-charge me-2" style="color:#6366f1;"></i>スキルマップ</h1>
+    <p class="text-muted mb-0 small">難易度ティアを選択してスキル申告を行います</p>
+    {% else %}
+    <h1>
+      <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="text-decoration-none" style="color:#6366f1;">
+        <i class="bi bi-arrow-left-circle me-2" style="font-size:1.1rem;"></i>
+      </a>
+      <span class="badge bg-{{ TIER_COLORS[sel_tier] }}" style="font-size:1rem;padding:.4em .8em;vertical-align:middle;">
+        <i class="{{ TIER_ICONS[sel_tier] }} me-1"></i>{{ TIER_NAMES[sel_tier] }}
+      </span>
+    </h1>
+    {% if current_user.role in ('admin', 'manager') %}
+    <p class="text-muted mb-0 small">各スキルに対して自分のレベルを申告します（Admin/Managerは自動承認されます）</p>
+    {% else %}
+    <p class="text-muted mb-0 small">各スキルに対して自分のレベルを申告します（承認者の確認後に登録されます）</p>
+    {% endif %}
+    {% endif %}
+  </div>
+  <div class="text-end">
+    <div class="d-flex gap-2 justify-content-end mb-1">
+      <a href="/approvals/my" class="btn btn-outline-primary btn-sm" style="border-radius:20px;font-size:.8rem;">
+        <i class="bi bi-send me-1"></i>自分の申請状況
+      </a>
+      {% if current_user.role in ('admin', 'manager') %}
+      <a href="/approvals" class="btn btn-outline-warning btn-sm" style="border-radius:20px;font-size:.8rem;">
+        <i class="bi bi-check2-square me-1"></i>承認依頼
+      </a>
+      {% endif %}
+    </div>
+    <div class="fw-semibold" style="font-size:.95rem;">
+      <span data-counter="{{ total_set }}" style="color:#6366f1;">0</span>
+      <span class="text-muted">/ {{ total_catalog }}</span>
+      <span class="text-muted small ms-1">申告済み</span>
+    </div>
+    <div class="progress progress-animated mt-1" style="height:6px;width:140px;border-radius:3px;">
+      <div class="progress-bar" style="width:{% if total_catalog %}{{ (total_set / total_catalog * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:3px;"></div>
+    </div>
+  </div>
+</div>
+
+{% if overview_mode %}
+<!-- ═══════ ティア概要（overview_mode） ═══════ -->
+
+{% if my_groups %}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+      <select name="group_id" class="form-select form-select-sm" style="max-width:200px;border-radius:20px;" onchange="this.form.submit()">
+        <option value="0">すべてのグループ</option>
+        {% for g in my_groups %}
+        <option value="{{ g.id }}" {% if sel_group == g.id %}selected{% endif %}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+      {% if sel_group %}
+      <a href="/skills" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<style>
+  .tier-card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
+  .tier-card-link .card {
+    transition: transform .25s, box-shadow .25s;
+    border: 2px solid transparent;
+    overflow: hidden;
+    height: 100%;
+  }
+  .tier-card-link:hover .card {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.12);
+  }
+  .tier-card-link:hover .card.border-success { border-color: var(--bs-success); }
+  .tier-card-link:hover .card.border-primary { border-color: var(--bs-primary); }
+  .tier-card-link:hover .card.border-warning { border-color: var(--bs-warning); }
+  .tier-card-link:hover .card.border-danger  { border-color: var(--bs-danger); }
+  .tier-icon-wrap {
+    width: 64px; height: 64px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; color: #fff; margin: 0 auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,.15);
+  }
+  .tier-card-count {
+    font-size: 2rem; font-weight: 800; line-height: 1;
+  }
+</style>
+
+<div class="row g-3">
+  {% set tier_gradients = {
+    "beginner":     "linear-gradient(135deg,#22c55e,#16a34a)",
+    "basic":        "linear-gradient(135deg,#6366f1,#4f46e5)",
+    "intermediate": "linear-gradient(135deg,#f59e0b,#d97706)",
+    "advanced":     "linear-gradient(135deg,#ef4444,#dc2626)"
+  } %}
+  {% for tk in tier_order %}
+  {% set ts = tier_summary[tk] %}
+  <div class="col-6 col-lg-3">
+    <a href="/skills?tier={{ tk }}{% if sel_group %}&group_id={{ sel_group }}{% endif %}" class="tier-card-link">
+      <div class="card border-{{ TIER_COLORS[tk] }}">
+        <div class="card-body text-center py-4">
+          <div class="tier-icon-wrap" style="background:{{ tier_gradients[tk] }};">
+            <i class="{{ TIER_ICONS[tk] }}"></i>
+          </div>
+          <h5 class="fw-bold mt-3 mb-1">{{ TIER_NAMES[tk] }}</h5>
+          <p class="text-muted small mb-3">{{ TIER_DESCRIPTIONS[tk] }}</p>
+          <div class="tier-card-count text-{{ TIER_COLORS[tk] }}">
+            {{ ts.acquired }}
+            <span class="text-muted" style="font-size:1rem;font-weight:400;">/ {{ ts.total }}</span>
+          </div>
+          <div class="text-muted small mb-2">スキル習得</div>
+          <div class="progress" style="height:8px;border-radius:4px;">
+            <div class="progress-bar bg-{{ TIER_COLORS[tk] }}" style="width:{% if ts.total %}{{ (ts.acquired / ts.total * 100)|int }}{% else %}0{% endif %}%;border-radius:4px;"></div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent text-center py-2" style="border-top:1px solid #f1f5f9;">
+          <span class="small fw-semibold text-{{ TIER_COLORS[tk] }}">
+            詳細を見る <i class="bi bi-chevron-right ms-1"></i>
+          </span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+{% if current_user.role in ('admin', 'manager') %}
+<div class="text-center mt-3">
+  <a href="/skills/tier-settings" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.8rem;">
+    <i class="bi bi-gear me-1"></i>ティア名を設定
+  </a>
+</div>
+{% endif %}
+
+{% else %}
+<!-- ═══════ スキル詳細一覧（tierが選択されている場合） ═══════ -->
+
+<!-- フィルター + 検索 -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <form method="get" class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
+        <input type="hidden" name="tier" value="{{ sel_tier }}">
+        {% if my_groups %}
+        <select name="group_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
+          <option value="0">すべてのグループ</option>
+          {% for g in my_groups %}
+          <option value="{{ g.id }}" {% if sel_group == g.id %}selected{% endif %}>{{ g.name }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <select name="category_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
+          <option value="0">すべてのカテゴリー</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}" {% if sel_category == c.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        {% if sel_category or sel_group %}
+        <a href="/skills?tier={{ sel_tier }}" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
+        {% endif %}
+      </form>
+      <div class="search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="skillSearch" class="form-control form-control-sm" placeholder="スキルを検索..." style="width:200px;">
+      </div>
+    </div>
+  </div>
+</div>
+
+{% for tier_key in tier_order %}
+{% set tier_skills = by_tier.get(tier_key, []) %}
+{% if tier_skills %}
+<div class="tier-section" data-tier="{{ tier_key }}">
+  <div class="tier-header" onclick="toggleTier(this)">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-{{ TIER_COLORS[tier_key] }}" style="font-size:.85rem;padding:.4em .8em;">
+        <i class="{{ TIER_ICONS[tier_key] }} me-1"></i>{{ TIER_NAMES[tier_key] }}
+      </span>
+      <span class="text-muted small">{{ tier_skills | length }} スキル</span>
+      {% set tier_done = tier_skills | selectattr('id', 'in', my_level_map.keys()) | list | length %}
+      <div class="d-flex align-items-center gap-2 ms-2">
+        <div class="tier-progress-mini" style="width:80px;">
+          <div class="bar bg-{{ TIER_COLORS[tier_key] }}" style="width:{% if tier_skills %}{{ (tier_done / tier_skills|length * 100)|int }}{% else %}0{% endif %}%;"></div>
+        </div>
+        <span class="text-muted" style="font-size:.75rem;">{{ tier_done }}/{{ tier_skills|length }}</span>
+      </div>
+    </div>
+    <i class="bi bi-chevron-down tier-chevron"></i>
+  </div>
+  <div class="tier-body">
+    <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:-1px;">
+      <div class="table-responsive">
+        <table class="table table-skill align-middle mb-0" style="font-size:.88rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:22%;">スキル</th>
+              <th style="width:10%;">カテゴリー</th>
+              <th style="width:20%;" class="hide-mobile">説明</th>
+              <th style="width:24%;" class="text-center">自分のレベル</th>
+              {% if current_user.role not in ('admin', 'manager') %}
+              <th style="width:12%;" class="text-center">承認者</th>
+              {% endif %}
+              <th style="width:12%;" class="text-center">ステータス</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sk in tier_skills %}
+            {% set cur_level = my_level_map.get(sk.id, 0) %}
+            {% set cur_status = my_approval_map.get(sk.id, '') %}
+            <tr class="skill-row" data-skill-name="{{ sk.name }}" data-skill-id="{{ sk.id }}">
+              <td>
+                <div class="fw-semibold">{{ sk.name }}</div>
+              </td>
+              <td>
+                {% if sk.category %}
+                <span class="badge" style="background:{{ sk.category.color }};font-size:.7rem;">{{ sk.category.name }}</span>
+                {% else %}<span class="text-muted">-</span>{% endif %}
+              </td>
+              <td class="text-muted hide-mobile" style="font-size:.82rem;">{{ sk.description or '' }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2 justify-content-center flex-wrap">
+                  <!-- Level dots -->
+                  <div class="level-dots" id="dots-{{ sk.id }}">
+                    {% for i in range(1, 5) %}
+                    <span class="level-dot {% if i <= cur_level %}active lv-{{ cur_level }}{% endif %}"
+                          data-level="{{ i }}" data-skill="{{ sk.id }}"
+                          onclick="openApprovalModal({{ sk.id }}, {{ i }})"
+                          title="{{ SKILL_LEVELS[i] }}"></span>
+                    {% endfor %}
+                  </div>
+                  <!-- Select -->
+                  <div class="level-select-wrap">
+                    <select class="level-select-modal"
+                            data-skill="{{ sk.id }}"
+                            aria-label="レベル選択">
+                      {% for lv, lv_name in SKILL_LEVELS.items() %}
+                      <option value="{{ lv }}" {% if cur_level == lv %}selected{% endif %}>{{ lv_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <!-- Badge -->
+                  <span class="badge bg-{{ LEVEL_COLORS[cur_level] }} badge-level" id="badge-{{ sk.id }}"
+                        style="font-size:.72rem;white-space:nowrap;{% if cur_level == 0 %}opacity:.4;{% endif %}">
+                    {{ SKILL_LEVELS[cur_level] }}
+                  </span>
+                </div>
+              </td>
+              {% if current_user.role not in ('admin', 'manager') %}
+              <td class="text-center">
+                {% if my_approver_map.get(sk.id) %}
+                  {% set approver_user = approvers | selectattr('id', 'equalto', my_approver_map[sk.id]) | first %}
+                  {% if approver_user %}
+                  <span class="small text-muted">{{ approver_user.display_name or approver_user.username }}</span>
+                  {% else %}<span class="text-muted">-</span>{% endif %}
+                {% else %}<span class="text-muted">-</span>{% endif %}
+              </td>
+              {% endif %}
+              <td class="text-center" id="status-{{ sk.id }}">
+                {% if cur_status %}
+                <span class="badge bg-{{ APPROVAL_STATUS_COLORS[cur_status] }}" style="font-size:.7rem;">
+                  {{ APPROVAL_STATUS[cur_status] }}
+                </span>
+                {% else %}<span class="text-muted small">未申請</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if not by_tier %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>このティアにはスキルがありません</h5>
+    <p class="small">管理者またはマネージャーにスキルカタログの追加を依頼してください。</p>
+    <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-arrow-left me-1"></i>ティア一覧に戻る
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- 承認者選択モーダル（一般ユーザーのみ） -->
+{% if current_user.role not in ('admin', 'manager') %}
+<div class="modal fade" id="approverModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-send me-2 text-primary"></i>スキルレベル申請</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">申告レベル</label>
+          <div class="d-flex align-items-center gap-2">
+            <span id="modalLevelBadge" class="badge" style="font-size:.9rem;padding:.5em .9em;"></span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">承認者を選択 <span class="text-danger">*</span></label>
+          <select id="modalApprover" class="form-select" required>
+            <option value="">-- 承認者を選択してください --</option>
+            {% for u in approvers %}
+            <option value="{{ u.id }}">{{ u.display_name or u.username }}{% if u.role == 'admin' %} (Admin){% elif u.role == 'manager' %} (Manager){% endif %}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">選択した承認者がスキルレベルを確認・承認します</div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" id="modalSubmitBtn" onclick="submitApproval()" style="border-radius:20px;">
+          <i class="bi bi-send me-1"></i>申請する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{# end if overview_mode else #}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const LEVEL_NAMES = {0:'未経験', 1:'入門', 2:'基礎', 3:'実務可', 4:'エキスパート'};
+  const LEVEL_COLORS = {0:'secondary', 1:'info', 2:'primary', 3:'warning', 4:'danger'};
+  const APPROVAL_COLORS = {'pending':'warning', 'approved':'success', 'rejected':'danger'};
+  const APPROVAL_NAMES = {'pending':'承認待ち', 'approved':'承認済み', 'rejected':'差し戻し'};
+  const IS_AUTO_APPROVE = {{ 'true' if current_user.role in ('admin', 'manager') else 'false' }};
+
+  let pendingSkillId = null;
+  let pendingLevel = null;
+
+  /* ── Tier accordion toggle ── */
+  function toggleTier(header) {
+    header.classList.toggle('collapsed');
+    const body = header.nextElementSibling;
+    body.classList.toggle('collapsed');
+  }
+
+  /* ── Open approval modal or auto-submit ── */
+  function openApprovalModal(skillId, level) {
+    pendingSkillId = skillId;
+    pendingLevel = level;
+
+    if (IS_AUTO_APPROVE) {
+      // Admin/Manager: 直接送信（承認者不要）
+      submitAutoApprove(skillId, level);
+      return;
+    }
+
+    const badge = document.getElementById('modalLevelBadge');
+    badge.className = 'badge bg-' + LEVEL_COLORS[level];
+    badge.textContent = LEVEL_NAMES[level];
+    badge.style.fontSize = '.9rem';
+    badge.style.padding = '.5em .9em';
+    document.getElementById('modalApprover').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('approverModal'));
+    modal.show();
+  }
+
+  /* ── Auto-approve for Admin/Manager ── */
+  async function submitAutoApprove(skillId, level) {
+    const formData = new FormData();
+    formData.append('level', level);
+    formData.append('approver_id', '0');
+    try {
+      const res = await fetch('/api/skills/' + skillId + '/level', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.ok) {
+        updateSkillUI(skillId, data);
+        showToast(data.level_name + ' で登録しました', 'success');
+      } else {
+        showToast(data.error || '登録に失敗しました', 'error');
+      }
+    } catch (err) {
+      showToast('登録に失敗しました', 'error');
+    }
+  }
+
+  /* ── Submit approval request via AJAX ── */
+  async function submitApproval() {
+    const approverId = document.getElementById('modalApprover').value;
+    if (!approverId) {
+      showToast('承認者を選択してください', 'error');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('level', pendingLevel);
+    formData.append('approver_id', approverId);
+    try {
+      const res = await fetch('/api/skills/' + pendingSkillId + '/level', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.ok) {
+        updateSkillUI(pendingSkillId, data);
+        showToast(data.level_name + ' で申請しました（承認待ち）', 'success');
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('approverModal'));
+        if (modal) modal.hide();
+      } else {
+        showToast(data.error || '申請に失敗しました', 'error');
+      }
+    } catch (err) {
+      showToast('申請に失敗しました', 'error');
+    }
+  }
+
+  /* ── Shared UI update ── */
+  function updateSkillUI(skillId, data) {
+    // Update dots
+    const dots = document.querySelectorAll('#dots-' + skillId + ' .level-dot');
+    dots.forEach(dot => {
+      const dl = parseInt(dot.dataset.level);
+      dot.className = 'level-dot';
+      if (dl <= data.level && data.level > 0) {
+        dot.classList.add('active', 'lv-' + data.level);
+      }
+    });
+    // Update badge
+    const badge = document.getElementById('badge-' + skillId);
+    if (badge) {
+      badge.className = 'badge bg-' + data.level_color + ' badge-level badge-pop';
+      badge.textContent = data.level_name;
+      badge.style.opacity = data.level === 0 ? '.4' : '1';
+    }
+    // Update status
+    const statusCell = document.getElementById('status-' + skillId);
+    if (statusCell) {
+      const statusColor = APPROVAL_COLORS[data.approval_status] || 'secondary';
+      const statusName = data.approval_status_name || data.approval_status;
+      statusCell.innerHTML = '<span class="badge bg-' + statusColor + '" style="font-size:.7rem;">' + statusName + '</span>';
+    }
+    // Flash row
+    const row = document.querySelector('tr[data-skill-id="' + skillId + '"]');
+    if (row) {
+      row.classList.add('just-updated');
+      setTimeout(() => row.classList.remove('just-updated'), 600);
+    }
+    // Update select
+    const sel = document.querySelector('select[data-skill="' + skillId + '"]');
+    if (sel) sel.value = data.level;
+  }
+
+  /* ── Select change → open modal ── */
+  document.querySelectorAll('.level-select-modal').forEach(sel => {
+    sel.addEventListener('change', function() {
+      const skillId = parseInt(this.dataset.skill);
+      const level = parseInt(this.value);
+      if (level > 0) {
+        openApprovalModal(skillId, level);
+      }
+    });
+  });
+
+  /* ── Client-side search ── */
+  const searchEl = document.getElementById('skillSearch');
+  if (searchEl) {
+    searchEl.addEventListener('input', function() {
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll('.skill-row').forEach(row => {
+        const name = row.dataset.skillName.toLowerCase();
+        row.style.display = !q || name.includes(q) ? '' : 'none';
+      });
+      // Show/hide tier sections if all rows hidden
+      document.querySelectorAll('.tier-section').forEach(section => {
+        const visible = section.querySelectorAll('.skill-row[style=""], .skill-row:not([style])');
+        const hidden = section.querySelectorAll('.skill-row[style*="display: none"]');
+        const allRows = section.querySelectorAll('.skill-row');
+        section.style.display = (hidden.length === allRows.length && q) ? 'none' : '';
+      });
+    });
+  }
+</script>
+{% endblock %}

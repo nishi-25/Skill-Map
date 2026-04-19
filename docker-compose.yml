@@ -1,0 +1,21 @@
+services:
+  skillmap:
+    build: .
+    image: skill-map:latest
+    container_name: skillmap
+    ports:
+      - "8190:8000"
+    volumes:
+      - skillmap_data:/app/data
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - APP_URL=${APP_URL:-http://localhost:8190}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  skillmap_data:

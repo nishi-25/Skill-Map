@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}管理パネル - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-shield-check me-2" style="color:#6366f1;"></i>管理パネル</h1>
+  <p class="text-muted mb-0 small">システム全体の管理</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3 text-primary">{{ user_count }}</div>
+      <div class="text-muted small">全ユーザー</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center" style="{% if pending_count %}border-left:3px solid #f59e0b;{% endif %}">
+      <div class="fw-bold fs-3 text-warning">{{ pending_count }}</div>
+      <div class="text-muted small">承認待ち</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3 text-success">{{ skill_count }}</div>
+      <div class="text-muted small">全スキル</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3" style="color:#8b5cf6;">{{ cat_count }}</div>
+      <div class="text-muted small">カテゴリー</div>
+    </div>
+  </div>
+</div>
+
+{% if pending_count %}
+<div class="alert alert-warning d-flex align-items-center mb-3">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+  <span>{{ pending_count }} 件の承認待ちユーザーがいます。</span>
+  <a href="/admin/users?filter=pending" class="btn btn-sm btn-warning ms-auto">承認する</a>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold"><i class="bi bi-people me-2"></i>ユーザー一覧</span>
+    <div class="d-flex gap-2">
+      <a href="/admin/settings/mail" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-envelope-at me-1"></i>メール設定
+      </a>
+      <a href="/admin/users" class="btn btn-sm btn-outline-primary">詳細管理</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" style="font-size:.9rem;">
+      <thead class="table-light">
+        <tr>
+          <th>ユーザー名</th><th>表示名</th><th>メール</th>
+          <th>権限</th><th>ステータス</th><th>登録日</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="fw-semibold">{{ u.username }}</td>
+          <td>{{ u.display_name or '-' }}</td>
+          <td class="text-muted">{{ u.email or '-' }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+            <span class="badge" style="background:#6366f1;">Admin</span>
+            {% elif u.role == 'manager' %}
+            <span class="badge" style="background:#0ea5e9;">Manager</span>
+            {% else %}
+            <span class="badge bg-secondary">User</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_approved %}
+            <span class="badge bg-success">承認済み</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">承認待ち</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ u.created_at | jst('%Y/%m/%d') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

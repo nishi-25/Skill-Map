@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>初期セットアップ - スキルマップ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, #0f0e2a 0%, #1e1b4b 50%, #312e81 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .setup-card { width: 100%; max-width: 540px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.4); padding: 2.5rem 2rem; }
+    .brand { font-size: 1.8rem; font-weight: 800; color: #1e1b4b; }
+    .brand span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .btn-primary { background: #6366f1; border-color: #6366f1; }
+    .btn-primary:hover { background: #4f46e5; border-color: #4f46e5; }
+    .form-control:focus { border-color: #6366f1; box-shadow: 0 0 0 .2rem rgba(99,102,241,.2); }
+    .step-badge { background: #6366f1; color: #fff; font-size: .75rem; border-radius: 999px; padding: .2em .8em; }
+    .step-section { background: #f8fafc; border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
+    .step-section h6 { font-size: .85rem; font-weight: 700; margin-bottom: .8rem; color: #1e1b4b; }
+    .mail-toggle { cursor: pointer; user-select: none; }
+    .mail-fields { transition: max-height .3s ease; overflow: hidden; }
+    .preset-btn { font-size: .72rem; padding: .15rem .5rem; }
+  </style>
+</head>
+<body>
+<div class="setup-card">
+  <div class="text-center mb-4">
+    <i class="bi bi-map" style="font-size:2.5rem;color:#6366f1;"></i>
+    <div class="brand mt-2">スキル<span>マップ</span></div>
+    <p class="text-muted small mt-1">初期セットアップ <span class="step-badge">Step 1 / 1</span></p>
+  </div>
+
+  <div class="alert alert-primary py-2 small mb-3">
+    <i class="bi bi-shield-check me-1"></i>管理者アカウントを作成し、メール通知を設定します。
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger py-2 small">
+    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ error }}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/setup">
+    <!-- Step 1: 管理者アカウント -->
+    <div class="step-section">
+      <h6><span class="step-badge me-2">1</span>管理者アカウント</h6>
+      <div class="mb-2">
+        <label class="form-label small fw-semibold">管理者ユーザー名 <span class="text-danger">*</span></label>
+        <input type="text" name="username" class="form-control form-control-sm" required autofocus placeholder="admin">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small fw-semibold">メールアドレス</label>
+        <input type="email" name="email" class="form-control form-control-sm" placeholder="admin@example.com">
+      </div>
+      <div class="mb-0">
+        <label class="form-label small fw-semibold">パスワード <span class="text-danger">*</span></label>
+        <input type="password" name="password" class="form-control form-control-sm" required placeholder="6文字以上">
+      </div>
+    </div>
+
+    <!-- Step 2: メール設定 -->
+    <div class="step-section">
+      <h6 class="mail-toggle d-flex align-items-center justify-content-between"
+          onclick="toggleMail()">
+        <span><span class="step-badge me-2">2</span>メール通知設定 <span class="text-muted fw-normal" style="font-size:.72rem;">（任意・後から変更可）</span></span>
+        <i class="bi bi-chevron-down" id="mailChevron" style="transition:transform .2s;"></i>
+      </h6>
+      <div class="mail-fields" id="mailFields" style="max-height:0;">
+        <p class="text-muted small mb-2">パスワードリセットメールやスキル承認通知に使います。</p>
+
+        <div class="d-flex gap-1 mb-2">
+          <button type="button" class="btn btn-outline-danger preset-btn" onclick="setPreset('gmail')">
+            <i class="bi bi-google me-1"></i>Gmail
+          </button>
+          <button type="button" class="btn btn-outline-primary preset-btn" onclick="setPreset('outlook')">
+            <i class="bi bi-microsoft me-1"></i>Outlook
+          </button>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-8">
+            <label class="form-label small fw-semibold">SMTP ホスト</label>
+            <input type="text" name="smtp_host" id="smtp_host" class="form-control form-control-sm" placeholder="smtp.gmail.com">
+          </div>
+          <div class="col-4">
+            <label class="form-label small fw-semibold">ポート</label>
+            <input type="text" name="smtp_port" id="smtp_port" class="form-control form-control-sm" value="587" placeholder="587">
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">メールアドレス</label>
+            <input type="email" name="smtp_user" id="smtp_user" class="form-control form-control-sm" placeholder="your-email@gmail.com">
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">パスワード / アプリパスワード</label>
+            <input type="password" name="smtp_password" id="smtp_password" class="form-control form-control-sm" placeholder="アプリパスワード">
+            <div class="form-text" style="font-size:.7rem;">Gmailは<a href="https://myaccount.google.com/apppasswords" target="_blank">アプリパスワード</a>を使用</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-semibold">差出人名</label>
+            <input type="text" name="smtp_from_name" class="form-control form-control-sm" value="スキルマップ">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-semibold">アプリ URL</label>
+            <input type="url" name="app_url" class="form-control form-control-sm" value="http://localhost:8190">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+      <i class="bi bi-rocket-takeoff-fill me-2"></i>セットアップを完了する
+    </button>
+  </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleMail() {
+  const f = document.getElementById('mailFields');
+  const c = document.getElementById('mailChevron');
+  if (f.style.maxHeight === '0px' || f.style.maxHeight === '0') {
+    f.style.maxHeight = '600px';
+    c.style.transform = 'rotate(180deg)';
+  } else {
+    f.style.maxHeight = '0';
+    c.style.transform = '';
+  }
+}
+function setPreset(name) {
+  const presets = {
+    gmail:   { smtp_host: 'smtp.gmail.com', smtp_port: '587' },
+    outlook: { smtp_host: 'smtp.office365.com', smtp_port: '587' },
+  };
+  const p = presets[name];
+  if (p) {
+    document.getElementById('smtp_host').value = p.smtp_host;
+    document.getElementById('smtp_port').value = p.smtp_port;
+  }
+}
+</script>
+</body>
+</html>

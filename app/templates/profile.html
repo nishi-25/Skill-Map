@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}プロフィール - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-person-circle me-2" style="color:#6366f1;"></i>プロフィール</h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    {% if success %}
+    <div class="alert alert-success py-2 small mb-3">
+      <i class="bi bi-check-circle-fill me-1"></i>プロフィールを更新しました。
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-body text-center py-4">
+        <div class="position-relative d-inline-block mb-3">
+          {% if current_user.avatar_path %}
+          <img src="{{ current_user.avatar_path }}" alt="avatar"
+               style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #e0e7ff;">
+          {% else %}
+          <div class="mx-auto" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;font-weight:700;">
+            {{ (current_user.display_name or current_user.username)[0].upper() }}
+          </div>
+          {% endif %}
+          <label for="avatarInput" class="position-absolute" style="bottom:0;right:-4px;width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;font-size:.75rem;" title="写真を変更">
+            <i class="bi bi-camera-fill"></i>
+          </label>
+        </div>
+        <form id="avatarForm" method="post" action="/profile/avatar" enctype="multipart/form-data" style="display:none;">
+          <input type="file" id="avatarInput" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp"
+                 onchange="document.getElementById('avatarForm').submit();">
+        </form>
+        {% if current_user.avatar_path %}
+        <div class="mb-2">
+          <form method="post" action="/profile/avatar/delete" style="display:inline;">
+            <button type="submit" class="btn btn-outline-secondary btn-sm" style="font-size:.72rem;border-radius:12px;">
+              <i class="bi bi-trash3 me-1"></i>写真を削除
+            </button>
+          </form>
+        </div>
+        {% endif %}
+        <div class="fw-bold fs-5">{{ current_user.display_name or current_user.username }}</div>
+        <div class="text-muted small">@{{ current_user.username }}</div>
+        <div class="mt-1">
+          {% if current_user.role == 'admin' %}
+          <span class="badge" style="background:#6366f1;">Admin</span>
+          {% else %}
+          <span class="badge bg-secondary">User</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 所属グループ -->
+    {% if my_groups %}
+    <div class="card mb-3">
+      <div class="card-header fw-bold"><i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>所属グループ</div>
+      <div class="card-body p-3">
+        <div class="d-flex flex-wrap gap-2">
+          {% for g in my_groups %}
+          <div class="d-flex align-items-center gap-2 px-3 py-2" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+            <i class="bi bi-people-fill" style="color:#6366f1;"></i>
+            <div>
+              <div class="fw-semibold" style="font-size:.88rem;">{{ g.name }}</div>
+              {% if g.manager %}
+              <div class="text-muted" style="font-size:.72rem;">管理者: {{ g.manager.display_name or g.manager.username }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header fw-bold"><i class="bi bi-pencil me-2"></i>情報を編集</div>
+      <div class="card-body p-4">
+        {% if error %}
+        <div class="alert alert-danger py-2 small">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/profile">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">表示名</label>
+            <input type="text" name="display_name" class="form-control"
+                   value="{{ current_user.display_name or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">メールアドレス</label>
+            <input type="email" name="email" class="form-control"
+                   value="{{ current_user.email or '' }}">
+          </div>
+          <hr class="my-3">
+          <p class="small text-muted mb-2">パスワードを変更する場合のみ入力してください。</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">現在のパスワード</label>
+            <input type="password" name="current_password" class="form-control" placeholder="••••••••">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">新しいパスワード</label>
+            <input type="password" name="new_password" class="form-control" placeholder="6文字以上">
+          </div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>保存する
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

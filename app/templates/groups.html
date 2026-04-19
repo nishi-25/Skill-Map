@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}グループ管理 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>グループ管理</h1>
+    <p class="text-muted mb-0 small">グループを管理し、メンバーのスキルマップを参照します</p>
+  </div>
+  <a href="/groups/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-plus-lg me-1"></i>グループ作成
+  </a>
+</div>
+
+{% if groups %}
+<div class="row g-3">
+  {% for g in groups %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between mb-2">
+          <h6 class="fw-bold mb-0">{{ g.name }}</h6>
+          <span class="badge" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;font-size:.78rem;">
+            <i class="bi bi-people-fill me-1"></i>{{ g.memberships | length }} 名
+          </span>
+        </div>
+        {% if g.description %}
+        <p class="text-muted small mb-2">{{ g.description }}</p>
+        {% endif %}
+        {% if g.parent %}
+        <div class="mb-2">
+          <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.7rem;">
+            <i class="bi bi-diagram-3 me-1"></i>親: {{ g.parent.name }}
+          </span>
+        </div>
+        {% endif %}
+        {% if g.children %}
+        <div class="mb-2">
+          {% for child in g.children %}
+          <span class="badge" style="background:#f0fdf4;color:#166534;font-size:.68rem;">
+            <i class="bi bi-arrow-return-right me-1"></i>{{ child.name }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2" style="font-size:.78rem;">
+          {% if g.manager and g.manager.avatar_path %}
+          <img src="{{ g.manager.avatar_path }}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+          {% else %}
+          <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:700;">
+            {% if g.manager %}{{ (g.manager.display_name or g.manager.username)[0].upper() }}{% else %}?{% endif %}
+          </div>
+          {% endif %}
+          <span class="text-muted">
+            {% if g.manager %}{{ g.manager.display_name or g.manager.username }}{% else %}-{% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0 pb-2 d-flex gap-2 flex-wrap">
+        <a href="/groups/{{ g.id }}" class="btn btn-sm btn-primary flex-fill" style="border-radius:20px;">
+          <i class="bi bi-people-fill me-1"></i>メンバー管理
+        </a>
+        <a href="/dashboard?group_id={{ g.id }}" class="btn btn-sm btn-outline-primary" style="border-radius:20px;" title="グループダッシュボード">
+          <i class="bi bi-speedometer2"></i>
+        </a>
+        <a href="/groups/{{ g.id }}/edit" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;" title="グループを編集">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <form method="post" action="/groups/{{ g.id }}/delete"
+              onsubmit="return confirm('「{{ g.name }}」を削除しますか？')">
+          <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;" title="グループを削除">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-people fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>グループがありません</h5>
+    <p class="small">グループを作成してメンバーのスキルを管理しましょう。</p>
+    <a href="/groups/new" class="btn btn-primary btn-sm" style="border-radius:20px;">グループを作成</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

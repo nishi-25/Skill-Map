@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}自分の申請状況 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-send me-2" style="color:#6366f1;"></i>自分の申請状況</h1>
+    <p class="text-muted mb-0 small">自分が申請したスキルレベルの承認状況を確認できます</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/approvals" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-check2-square me-1"></i>承認依頼
+    </a>
+    <a href="/skills" class="btn btn-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-lightning-charge me-1"></i>スキルマップ
+    </a>
+  </div>
+</div>
+
+<!-- 統計 -->
+{% set pending_count = records | selectattr('approval_status', 'equalto', 'pending') | list | length %}
+{% set approved_count = records | selectattr('approval_status', 'equalto', 'approved') | list | length %}
+{% set rejected_count = records | selectattr('approval_status', 'equalto', 'rejected') | list | length %}
+
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="card text-center py-3">
+      <div class="fw-bold fs-4 text-warning">{{ pending_count }}</div>
+      <div class="text-muted small">承認待ち</div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card text-center py-3">
+      <div class="fw-bold fs-4 text-success">{{ approved_count }}</div>
+      <div class="text-muted small">承認済み</div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card text-center py-3">
+      <div class="fw-bold fs-4 text-danger">{{ rejected_count }}</div>
+      <div class="text-muted small">差し戻し</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.88rem;">
+        <thead class="table-light">
+          <tr>
+            <th>スキル</th>
+            <th>カテゴリー</th>
+            <th class="text-center">申告レベル</th>
+            <th class="text-center">ステータス</th>
+            <th>承認者</th>
+            <th>コメント</th>
+            <th>更新日</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in records %}
+          <tr>
+            <td class="fw-semibold">{{ rec.skill.name }}</td>
+            <td>
+              {% if rec.skill.category %}
+              <span class="badge" style="background:{{ rec.skill.category.color }};font-size:.7rem;">{{ rec.skill.category.name }}</span>
+              {% else %}<span class="text-muted">-</span>{% endif %}
+            </td>
+            <td class="text-center">
+              <span class="badge bg-{{ LEVEL_COLORS[rec.level] }}" style="font-size:.78rem;">
+                {{ SKILL_LEVELS[rec.level] }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-{{ APPROVAL_STATUS_COLORS[rec.approval_status] }}" style="font-size:.72rem;">
+                {{ APPROVAL_STATUS[rec.approval_status] }}
+              </span>
+            </td>
+            <td>
+              {% if rec.approver %}
+              <span class="small">{{ rec.approver.display_name or rec.approver.username }}</span>
+              {% else %}<span class="text-muted">-</span>{% endif %}
+            </td>
+            <td class="text-muted small">{{ rec.approver_comment or '-' }}</td>
+            <td class="text-muted small">
+              {% if rec.approved_at %}{{ rec.approved_at|jst }}{% else %}{{ rec.updated_at|jst }}{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-inbox fs-1 d-block mb-2" style="color:#c7d2fe;"></i>
+      <p class="mb-0">まだスキルレベルの申請がありません</p>
+      <a href="/skills" class="btn btn-primary btn-sm mt-3" style="border-radius:20px;">
+        <i class="bi bi-lightning-charge me-1"></i>スキルマップへ
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

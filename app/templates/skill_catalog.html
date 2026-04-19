@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}スキルカタログ管理 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-collection me-2" style="color:#6366f1;"></i>スキルカタログ管理</h1>
+    <p class="text-muted mb-0 small">ユーザーが申告できるスキルの一覧を管理します</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/skills/tier-settings" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-sliders me-1"></i>ティア名設定
+    </a>
+    <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-plus-lg me-1"></i>スキルを追加
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-3">
+  <div class="col-auto">
+    <div class="stat-card px-4 py-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-collection-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ skills|length }}">0</div>
+          <div class="text-muted" style="font-size:.78rem;">スキル総数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- フィルター + 検索 -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <form method="get" class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
+        <select name="category_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
+          <option value="0">すべてのカテゴリー</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}" {% if sel_category == c.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        <select name="tier" class="form-select form-select-sm" style="max-width:150px;border-radius:20px;" onchange="this.form.submit()">
+          <option value="">すべての難易度</option>
+          {% for tk, tv in SKILL_TIERS.items() %}
+          <option value="{{ tk }}" {% if sel_tier == tk %}selected{% endif %}>{{ tv }}</option>
+          {% endfor %}
+        </select>
+        {% if sel_category or sel_tier %}
+        <a href="/skills/catalog" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
+        {% endif %}
+        <span class="text-muted small ms-auto">{{ skills | length }} 件</span>
+      </form>
+      <div class="search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="catalogSearch" class="form-control form-control-sm" placeholder="スキルを検索..." style="width:200px;">
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if skills %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-skill align-middle mb-0" style="font-size:.88rem;">
+      <thead class="table-light">
+        <tr>
+          <th style="width:25%;">スキル名</th>
+          <th style="width:15%;">カテゴリー</th>
+          <th style="width:12%;">難易度</th>
+          <th style="width:30%;" class="hide-mobile">説明</th>
+          <th style="width:8%;" class="text-center">申告数</th>
+          <th class="text-end">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in skills %}
+        <tr class="skill-row" data-skill-name="{{ s.name }}">
+          <td class="fw-semibold">{{ s.name }}</td>
+          <td>
+            {% if s.category %}
+            <span class="badge" style="background:{{ s.category.color }};font-size:.72rem;">{{ s.category.name }}</span>
+            {% else %}<span class="text-muted">-</span>{% endif %}
+          </td>
+          <td>
+            <span class="badge bg-{{ TIER_COLORS[s.tier] }}" style="font-size:.72rem;">
+              {{ SKILL_TIERS[s.tier] }}
+            </span>
+          </td>
+          <td class="text-muted hide-mobile" style="font-size:.82rem;">{{ s.description or '-' }}</td>
+          <td class="text-center">
+            {% set count = s.user_levels | selectattr('level', 'gt', 0) | list | length %}
+            <span class="badge bg-light text-dark" style="font-size:.78rem;">{{ count }}</span>
+          </td>
+          <td class="text-end">
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="/skills/catalog/{{ s.id }}/edit" class="btn btn-xs btn-outline-primary" style="border-radius:20px;">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post" action="/skills/catalog/{{ s.id }}/delete"
+                    onsubmit="return confirm('「{{ s.name }}」を削除しますか？ユーザーの申告データも削除されます。')">
+                <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-collection fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>スキルがありません</h5>
+    <p class="small">最初のスキルをカタログに追加しましょう。</p>
+    <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;">スキルを追加</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('catalogSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.skill-row').forEach(row => {
+      const name = row.dataset.skillName.toLowerCase();
+      row.style.display = !q || name.includes(q) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}
