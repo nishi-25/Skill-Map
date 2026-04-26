@@ -56,12 +56,19 @@
       {% endif %}
 
       <!-- プリセットボタン -->
-      <div class="ms-auto d-flex gap-1">
+      <div class="ms-auto d-flex gap-1 align-items-center">
         {% for g in all_groups[:3] %}
         <a href="/dashboard?group_id={{ g.id }}" class="btn btn-sm {% if sel_group_id == g.id %}btn-primary{% else %}btn-outline-secondary{% endif %}" style="border-radius:20px;font-size:.8rem;">
           <i class="bi bi-people-fill me-1"></i>{{ g.name }}
         </a>
         {% endfor %}
+        <!-- CSVエクスポートボタン -->
+        <a href="/export/skills-matrix{% if sel_group_id %}?group_id={{ sel_group_id }}{% endif %}"
+           class="btn btn-outline-secondary btn-sm"
+           style="border-radius:20px;font-size:.8rem;"
+           title="スキルマトリクスをCSVでダウンロード">
+          <i class="bi bi-download me-1"></i>CSV エクスポート
+        </a>
       </div>
     </form>
   </div>
@@ -136,6 +143,18 @@
       </div>
     </div>
   </div>
+  {% if bus_factor_skills is defined and bus_factor_skills %}
+  <div class="col-6 col-lg-3">
+    <div class="card border-warning h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-2 mb-2"></i>
+        <div class="fw-bold fs-4 text-warning">{{ bus_factor_skills|length }}</div>
+        <div class="text-muted small">単一依存スキル</div>
+        <div class="text-muted" style="font-size:0.75rem;">習得者1人以下</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <!-- グループ別サマリー -->
@@ -361,6 +380,52 @@
       直近30日間にレベルアップした記録がありません
     </div>
     {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if bus_factor_skills is defined and bus_factor_skills %}
+<div class="card mb-4 border-warning">
+  <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+    <strong>⚠️ 単一依存スキル（バスファクター1）</strong>
+    <span class="badge bg-warning text-dark ms-2">{{ bus_factor_skills|length }}件</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>スキル名</th>
+          <th>カテゴリ</th>
+          <th class="text-center">習得者数</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for skill in bus_factor_skills %}
+        <tr>
+          <td>{{ skill.skill_name }}</td>
+          <td><span class="badge bg-secondary">{{ skill.category_name }}</span></td>
+          <td class="text-center">
+            <span class="badge {% if skill.holder_count == 0 %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+              {{ skill.holder_count }}人
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if skill_trends %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center">
+    <i class="bi bi-graph-up-arrow me-2"></i>
+    <strong>スキル成長トレンド（カテゴリ別・過去6ヶ月）</strong>
+  </div>
+  <div class="card-body">
+    <canvas id="trendChart" height="120"></canvas>
   </div>
 </div>
 {% endif %}
@@ -622,6 +687,18 @@
       </div>
     </div>
   </div>
+  {% if bus_factor_skills is defined and bus_factor_skills %}
+  <div class="col-6 col-md-3">
+    <div class="card border-warning h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-2 mb-2"></i>
+        <div class="fw-bold fs-4 text-warning">{{ bus_factor_skills|length }}</div>
+        <div class="text-muted small">単一依存スキル</div>
+        <div class="text-muted" style="font-size:0.75rem;">習得者1人以下</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <!-- ティア別進捗 -->
@@ -870,6 +947,84 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if view_mode == 'group' and bus_factor_skills is defined and bus_factor_skills %}
+  <div class="col-12">
+    <div class="card mb-4 border-warning">
+      <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+        <strong>⚠️ 単一依存スキル（バスファクター1）</strong>
+        <span class="badge bg-warning text-dark ms-2">{{ bus_factor_skills|length }}件</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>スキル名</th>
+              <th>カテゴリ</th>
+              <th class="text-center">習得者数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for skill in bus_factor_skills %}
+            <tr>
+              <td>{{ skill.skill_name }}</td>
+              <td><span class="badge bg-secondary">{{ skill.category_name }}</span></td>
+              <td class="text-center">
+                <span class="badge {% if skill.holder_count == 0 %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                  {{ skill.holder_count }}人
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if view_mode == 'group' and skill_trends %}
+  <div class="col-12">
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-graph-up-arrow me-2"></i>
+        <strong>スキル成長トレンド（カテゴリ別・過去6ヶ月）</strong>
+      </div>
+      <div class="card-body">
+        <canvas id="trendChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if view_mode in ('self', 'user') and recommended_skills is defined and recommended_skills %}
+  <div class="col-12">
+    <div class="card mb-4 border-primary">
+      <div class="card-header bg-primary bg-opacity-10 d-flex align-items-center">
+        <i class="bi bi-lightbulb-fill text-primary me-2"></i>
+        <strong>次のステップ：推奨スキル</strong>
+      </div>
+      <div class="card-body">
+        {% for skill in recommended_skills %}
+        <div class="d-flex align-items-center mb-2 p-2 rounded {% if loop.first %}bg-light{% endif %}">
+          <div class="flex-grow-1">
+            <div class="fw-semibold">
+              {{ skill.skill_name }}
+              {% if skill.is_required %}<span class="badge bg-danger ms-1 small">必須</span>{% endif %}
+            </div>
+            <div class="progress mt-1" style="height:6px;">
+              <div class="progress-bar bg-primary" style="width:{{ (skill.user_level / 4 * 100)|int }}%"></div>
+            </div>
+            <small class="text-muted">現在Lv{{ skill.user_level }} / チーム平均{{ "%.1f"|format(skill.team_avg) }}</small>
+          </div>
+          <span class="badge bg-primary ms-3 fs-6">Lv{{ skill.user_level }}</span>
+        </div>
+        {% endfor %}
       </div>
     </div>
   </div>
@@ -1135,6 +1290,46 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  {% endif %}
+
+  /* ── Skill Trend Chart ── */
+  {% if skill_trends %}
+  (function() {
+    const trendData = {{ skill_trends | tojson }};
+    const categories = Object.keys(trendData);
+    const trendCanvas = document.getElementById('trendChart');
+    if (categories.length === 0 || !trendCanvas) return;
+
+    const monthSet = new Set();
+    categories.forEach(cat => trendData[cat].forEach(d => monthSet.add(d.month)));
+    const labels = Array.from(monthSet).sort();
+
+    const colors = ['#0d6efd','#6f42c1','#d63384','#fd7e14','#20c997','#0dcaf0','#ffc107','#198754'];
+    const datasets = categories.map((cat, i) => {
+      const monthMap = {};
+      trendData[cat].forEach(d => monthMap[d.month] = d.avg_level);
+      return {
+        label: cat,
+        data: labels.map(m => monthMap[m] !== undefined ? monthMap[m] : null),
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length] + '33',
+        tension: 0.3,
+        spanGaps: true,
+      };
+    });
+
+    new Chart(trendCanvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          y: { min: 0, max: 4, ticks: { stepSize: 1 } }
+        }
+      }
+    });
+  })();
   {% endif %}
 });
 </script>

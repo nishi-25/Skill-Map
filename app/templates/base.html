@@ -229,6 +229,9 @@
     <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}">
       <i class="bi bi-tags nav-icon"></i><span class="nav-text">カテゴリー</span>
     </a>
+    <a href="/tags" class="nav-link-item {% if request.url.path == '/tags' %}active{% endif %}">
+      <i class="bi bi-bookmark-fill nav-icon"></i><span class="nav-text">タグ管理</span>
+    </a>
     <div class="nav-label">グループ</div>
     <a href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}">
       <i class="bi bi-people-fill nav-icon"></i><span class="nav-text">グループ管理</span>

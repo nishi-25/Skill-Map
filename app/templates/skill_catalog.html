@@ -32,35 +32,73 @@
   </div>
 </div>
 
-<!-- フィルター + 検索 -->
+<!-- 検索 + フィルター -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <form method="get" class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
-        <select name="category_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
-          <option value="0">すべてのカテゴリー</option>
-          {% for c in categories %}
-          <option value="{{ c.id }}" {% if sel_category == c.id %}selected{% endif %}>{{ c.name }}</option>
-          {% endfor %}
-        </select>
-        <select name="tier" class="form-select form-select-sm" style="max-width:150px;border-radius:20px;" onchange="this.form.submit()">
-          <option value="">すべての難易度</option>
-          {% for tk, tv in SKILL_TIERS.items() %}
-          <option value="{{ tk }}" {% if sel_tier == tk %}selected{% endif %}>{{ tv }}</option>
-          {% endfor %}
-        </select>
-        {% if sel_category or sel_tier %}
-        <a href="/skills/catalog" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
-        {% endif %}
-        <span class="text-muted small ms-auto">{{ skills | length }} 件</span>
-      </form>
+    <!-- インクリメンタル検索 -->
+    <div class="mb-2">
       <div class="search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="catalogSearch" class="form-control form-control-sm" placeholder="スキルを検索..." style="width:200px;">
+        <input type="text" id="skillSearch" class="form-control form-control-sm"
+               placeholder="スキル名・説明で検索..." oninput="filterSkills()" style="padding-left:2rem;">
       </div>
+    </div>
+    <!-- クライアントサイドフィルター -->
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <select id="filterCategory" class="form-select form-select-sm w-auto" onchange="filterSkills()">
+        <option value="">全カテゴリ</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}">{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      <select id="filterTier" class="form-select form-select-sm w-auto" onchange="filterSkills()">
+        <option value="">全ティア</option>
+        {% for tk, tv in SKILL_TIERS.items() %}
+        <option value="{{ tk }}">{{ tv }}</option>
+        {% endfor %}
+      </select>
+      <select id="filterArchived" class="form-select form-select-sm w-auto" onchange="filterSkills()">
+        <option value="active">有効のみ</option>
+        <option value="archived">アーカイブのみ</option>
+        <option value="all">すべて</option>
+      </select>
+      {% if all_tags is defined and all_tags %}
+      <select id="filterTag" class="form-select form-select-sm w-auto" onchange="filterSkills()">
+        <option value="">全タグ</option>
+        {% for tag in all_tags %}
+        <option value="{{ tag.id }}">{{ tag.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <span class="text-muted small ms-auto" id="visibleCount">{{ skills | length }} 件</span>
     </div>
   </div>
 </div>
+
+<!-- 一括操作フォーム -->
+<form id="bulkActionForm" method="post" action="/skills/bulk-action">
+  <div class="d-flex gap-2 align-items-center mb-2" id="bulkActionBar" style="display:none!important;">
+    <span id="selectedCount" class="text-muted small">0件選択中</span>
+    <select name="action" class="form-select form-select-sm w-auto" id="bulkActionSelect" onchange="toggleBulkOptions()">
+      <option value="">操作を選択...</option>
+      <option value="archive">アーカイブ</option>
+      <option value="unarchive">アーカイブ解除</option>
+      <option value="change_category">カテゴリ変更</option>
+      <option value="change_tier">ティア変更</option>
+    </select>
+    <select name="category_id" class="form-select form-select-sm w-auto" id="bulkCategorySelect" style="display:none;">
+      {% for cat in categories %}
+      <option value="{{ cat.id }}">{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="tier" class="form-select form-select-sm w-auto" id="bulkTierSelect" style="display:none;">
+      {% for tk, tv in SKILL_TIERS.items() %}
+      <option value="{{ tk }}">{{ tv }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-sm btn-primary">実行</button>
+  </div>
+</form>
 
 {% if skills %}
 <div class="card">
@@ -68,18 +106,43 @@
     <table class="table table-skill align-middle mb-0" style="font-size:.88rem;">
       <thead class="table-light">
         <tr>
-          <th style="width:25%;">スキル名</th>
+          <th style="width:2%;"><input type="checkbox" id="selectAll" class="form-check-input" onclick="toggleAll(this)"></th>
+          <th style="width:24%;">スキル名</th>
           <th style="width:15%;">カテゴリー</th>
           <th style="width:12%;">難易度</th>
-          <th style="width:30%;" class="hide-mobile">説明</th>
+          <th style="width:28%;" class="hide-mobile">説明</th>
           <th style="width:8%;" class="text-center">申告数</th>
           <th class="text-end">操作</th>
         </tr>
       </thead>
       <tbody>
         {% for s in skills %}
-        <tr class="skill-row" data-skill-name="{{ s.name }}">
-          <td class="fw-semibold">{{ s.name }}</td>
+        <tr class="skill-row"
+            data-skill="{{ s.id }}"
+            data-name="{{ s.name | lower }}"
+            data-desc="{{ (s.description | lower) if s.description else '' }}"
+            data-category-id="{{ s.category_id or '' }}"
+            data-tier="{{ s.tier }}"
+            data-archived="{{ 'true' if s.is_archived is defined and s.is_archived else 'false' }}"
+            data-tag-ids="{% if s.tags is defined %}{% for t in s.tags %}{{ t.id }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+            {% if s.is_archived is defined and s.is_archived %}class="opacity-50"{% endif %}>
+          <td>
+            <input type="checkbox" class="form-check-input skill-checkbox" value="{{ s.id }}"
+                   form="bulkActionForm" name="skill_ids" onchange="updateBulkBar()">
+          </td>
+          <td class="fw-semibold">
+            {{ s.name }}
+            {% if s.is_archived is defined and s.is_archived %}
+            <span class="badge bg-secondary ms-1" style="font-size:.65rem;">アーカイブ</span>
+            {% endif %}
+            {% if s.tags is defined and s.tags %}
+            <div class="d-flex flex-wrap gap-1 mt-1">
+              {% for tag in s.tags %}
+              <span class="badge" style="background-color:{{ tag.color }};font-size:.65rem;">{{ tag.name }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </td>
           <td>
             {% if s.category %}
             <span class="badge" style="background:{{ s.category.color }};font-size:.72rem;">{{ s.category.name }}</span>
@@ -128,12 +191,58 @@
 
 {% block scripts %}
 <script>
-  document.getElementById('catalogSearch').addEventListener('input', function() {
-    const q = this.value.toLowerCase().trim();
-    document.querySelectorAll('.skill-row').forEach(row => {
-      const name = row.dataset.skillName.toLowerCase();
-      row.style.display = !q || name.includes(q) ? '' : 'none';
+  function filterSkills() {
+    const search = document.getElementById('skillSearch').value.toLowerCase();
+    const catFilter = document.getElementById('filterCategory').value;
+    const tierFilter = document.getElementById('filterTier').value;
+    const archivedFilter = document.getElementById('filterArchived').value;
+    const tagFilterEl = document.getElementById('filterTag');
+    const tagFilter = tagFilterEl ? tagFilterEl.value : '';
+
+    let visible = 0;
+    document.querySelectorAll('tbody tr[data-skill]').forEach(row => {
+      const name = row.dataset.name || '';
+      const desc = row.dataset.desc || '';
+      const catId = row.dataset.categoryId || '';
+      const tier = row.dataset.tier || '';
+      const isArchived = row.dataset.archived === 'true';
+      const tagIds = (row.dataset.tagIds || '').split(',').filter(Boolean);
+
+      let show = true;
+      if (search && !name.includes(search) && !desc.includes(search)) show = false;
+      if (catFilter && catId !== catFilter) show = false;
+      if (tierFilter && tier !== tierFilter) show = false;
+      if (archivedFilter === 'active' && isArchived) show = false;
+      if (archivedFilter === 'archived' && !isArchived) show = false;
+      if (tagFilter && !tagIds.includes(tagFilter)) show = false;
+
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
-  });
+    const vc = document.getElementById('visibleCount');
+    if (vc) vc.textContent = visible + ' 件';
+    updateBulkBar();
+  }
+
+  function updateBulkBar() {
+    const checked = document.querySelectorAll('.skill-checkbox:checked').length;
+    const countEl = document.getElementById('selectedCount');
+    const bar = document.getElementById('bulkActionBar');
+    if (countEl) countEl.textContent = checked + '件選択中';
+    if (bar) bar.style.display = checked > 0 ? 'flex' : 'none';
+  }
+
+  function toggleAll(master) {
+    document.querySelectorAll('tbody tr[data-skill]:not([style*="display: none"]) .skill-checkbox').forEach(cb => {
+      cb.checked = master.checked;
+    });
+    updateBulkBar();
+  }
+
+  function toggleBulkOptions() {
+    const action = document.getElementById('bulkActionSelect').value;
+    document.getElementById('bulkCategorySelect').style.display = action === 'change_category' ? '' : 'none';
+    document.getElementById('bulkTierSelect').style.display = action === 'change_tier' ? '' : 'none';
+  }
 </script>
 {% endblock %}

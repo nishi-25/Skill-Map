@@ -63,6 +63,26 @@
               初心者向け：入門・基礎操作 ／ 基礎：実務の基本 ／ 中級：応用・チーム開発 ／ 上級：深い専門知識
             </div>
           </div>
+
+          {% if all_tags is defined and all_tags %}
+          <div class="mb-4">
+            <label class="form-label fw-semibold">タグ</label>
+            <div class="d-flex flex-wrap gap-2">
+              {% for tag in all_tags %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                       name="tag_ids" value="{{ tag.id }}"
+                       id="tag_{{ tag.id }}"
+                       {% if skill is defined and skill and tag in skill.tags %}checked{% endif %}>
+                <label class="form-check-label" for="tag_{{ tag.id }}">
+                  <span class="badge" style="background-color:{{ tag.color }};font-size:.85rem;">{{ tag.name }}</span>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-fill fw-semibold">
               <i class="bi bi-check-lg me-1"></i>{{ '更新する' if skill else '追加する' }}

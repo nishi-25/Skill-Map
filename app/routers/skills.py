@@ -1,5 +1,6 @@
+from typing import List, Optional
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from collections import defaultdict
@@ -127,10 +128,12 @@ def catalog_list(
         q = q.filter(models.Skill.tier == tier)
     skills = q.order_by(models.Skill.tier, models.Skill.name).all()
     categories = db.query(models.Category).order_by(models.Category.name).all()
+    all_tags = db.query(models.SkillTag).order_by(models.SkillTag.name).all()
     return templates.TemplateResponse(request, "skill_catalog.html", {
         "current_user": user, "skills": skills,
         "categories": categories,
         "sel_category": category_id, "sel_tier": tier,
+        "all_tags": all_tags,
     })
 
 
@@ -138,9 +141,11 @@ def catalog_list(
 def catalog_new_get(request: Request, db: Session = Depends(get_db)):
     user = auth.require_manager_or_admin(request, db)
     categories = db.query(models.Category).order_by(models.Category.name).all()
+    all_tags = db.query(models.SkillTag).order_by(models.SkillTag.name).all()
     return templates.TemplateResponse(request, "skill_catalog_form.html", {
         "current_user": user, "skill": None,
         "categories": categories, "error": None,
+        "all_tags": all_tags,
     })
 
 
@@ -151,16 +156,21 @@ def catalog_new_post(
     description: str = Form(""),
     category_id: int = Form(0),
     tier: str = Form("basic"),
+    tag_ids: List[int] = Form(default=[]),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
-    db.add(models.Skill(
+    skill = models.Skill(
         name=name,
         description=description or None,
         category_id=category_id or None,
         tier=tier,
         created_by=user.id,
-    ))
+    )
+    db.add(skill)
+    db.flush()
+    if tag_ids:
+        skill.tags = db.query(models.SkillTag).filter(models.SkillTag.id.in_(tag_ids)).all()
     db.commit()
     return RedirectResponse("/skills/catalog", status_code=303)
 
@@ -172,9 +182,11 @@ def catalog_edit_get(skill_id: int, request: Request, db: Session = Depends(get_
     if not skill:
         return RedirectResponse("/skills/catalog", status_code=303)
     categories = db.query(models.Category).order_by(models.Category.name).all()
+    all_tags = db.query(models.SkillTag).order_by(models.SkillTag.name).all()
     return templates.TemplateResponse(request, "skill_catalog_form.html", {
         "current_user": user, "skill": skill,
         "categories": categories, "error": None,
+        "all_tags": all_tags,
     })
 
 
@@ -186,6 +198,7 @@ def catalog_edit_post(
     description: str = Form(""),
     category_id: int = Form(0),
     tier: str = Form("basic"),
+    tag_ids: List[int] = Form(default=[]),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
@@ -196,6 +209,11 @@ def catalog_edit_post(
     skill.description = description or None
     skill.category_id = category_id or None
     skill.tier = tier
+    # タグの更新
+    if tag_ids:
+        skill.tags = db.query(models.SkillTag).filter(models.SkillTag.id.in_(tag_ids)).all()
+    else:
+        skill.tags = []
     db.commit()
     return RedirectResponse("/skills/catalog", status_code=303)
 
@@ -579,8 +597,6 @@ def my_approvals(request: Request, db: Session = Depends(get_db)):
 # ════════════════════════════════════════════════════════════════
 # JSON API（AJAX 用）
 # ════════════════════════════════════════════════════════════════
-
-from fastapi.responses import JSONResponse
 
 @router.post("/api/skills/{skill_id}/level")
 def api_set_skill_level(
@@ -1118,3 +1134,88 @@ def api_skill_timeline(
         })
 
     return JSONResponse({"ok": True, "data": data})
+
+
+# ════════════════════════════════════════════════════════════════
+# スキルタグ管理
+# ════════════════════════════════════════════════════════════════
+
+@router.get("/tags", response_class=HTMLResponse)
+def tags_list(request: Request, db: Session = Depends(get_db)):
+    user = auth.require_approved(request, db)
+    tags = db.query(models.SkillTag).order_by(models.SkillTag.name).all()
+    try:
+        return templates.TemplateResponse(request, "tags.html", {
+            "current_user": user, "tags": tags
+        })
+    except Exception:
+        return JSONResponse([
+            {"id": t.id, "name": t.name, "color": t.color} for t in tags
+        ])
+
+
+@router.post("/tags/new")
+def tag_new_post(
+    request: Request,
+    name: str = Form(...),
+    color: str = Form("#6c757d"),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    if not db.query(models.SkillTag).filter(models.SkillTag.name == name).first():
+        db.add(models.SkillTag(name=name, color=color))
+        db.commit()
+    return RedirectResponse("/tags", status_code=303)
+
+
+@router.post("/tags/{tag_id}/delete")
+def tag_delete(tag_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    tag = db.query(models.SkillTag).filter(models.SkillTag.id == tag_id).first()
+    if tag:
+        db.delete(tag)
+        db.commit()
+    return RedirectResponse("/tags", status_code=303)
+
+
+# ════════════════════════════════════════════════════════════════
+# スキル一括操作
+# ════════════════════════════════════════════════════════════════
+
+@router.post("/skills/bulk-action")
+def skills_bulk_action(
+    request: Request,
+    skill_ids: List[int] = Form(default=[]),
+    action: str = Form(...),
+    category_id: Optional[int] = Form(default=None),
+    tier: Optional[str] = Form(default=None),
+    tag_id: Optional[int] = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    if not skill_ids:
+        return RedirectResponse("/skills/catalog", status_code=303)
+
+    skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all()
+
+    if action == "archive":
+        for skill in skills:
+            skill.is_archived = True
+    elif action == "unarchive":
+        for skill in skills:
+            skill.is_archived = False
+    elif action == "change_category" and category_id is not None:
+        for skill in skills:
+            skill.category_id = category_id or None
+    elif action == "change_tier" and tier:
+        for skill in skills:
+            skill.tier = tier
+    elif action == "add_tag" and tag_id is not None:
+        tag = db.query(models.SkillTag).filter(models.SkillTag.id == tag_id).first()
+        if tag:
+            for skill in skills:
+                if tag not in skill.tags:
+                    skill.tags.append(tag)
+
+    db.commit()
+    return RedirectResponse("/skills/catalog", status_code=303)

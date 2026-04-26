@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}タグ管理 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-bookmark-fill me-2" style="color:#6366f1;"></i>タグ管理</h1>
+    <p class="text-muted mb-0 small">スキルに付けるタグを管理します</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- タグ一覧 -->
+  <div class="col-lg-8">
+    {% if tags %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0" style="font-size:.9rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40%;">タグ名</th>
+              <th style="width:20%;">色</th>
+              <th style="width:20%;" class="text-center">使用スキル数</th>
+              {% if current_user.role in ('admin', 'manager') %}
+              <th class="text-end">操作</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for tag in tags %}
+            <tr>
+              <td>
+                <span class="badge fs-6 fw-semibold" style="background-color:{{ tag.color }};">{{ tag.name }}</span>
+              </td>
+              <td>
+                <span class="d-inline-flex align-items-center gap-2">
+                  <span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:{{ tag.color }};border:1px solid rgba(0,0,0,.1);"></span>
+                  <code class="small text-muted">{{ tag.color }}</code>
+                </span>
+              </td>
+              <td class="text-center">
+                {% if tag.skills is defined %}
+                <span class="badge bg-light text-dark">{{ tag.skills | length }}</span>
+                {% else %}
+                <span class="badge bg-light text-dark">-</span>
+                {% endif %}
+              </td>
+              {% if current_user.role in ('admin', 'manager') %}
+              <td class="text-end">
+                <form method="post" action="/tags/{{ tag.id }}/delete"
+                      onsubmit="return confirm('タグ「{{ tag.name }}」を削除しますか？')">
+                  <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-bookmark fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+        <h5>タグがありません</h5>
+        <p class="small">最初のタグを作成しましょう。</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- タグ作成フォーム -->
+  {% if current_user.role in ('admin', 'manager') %}
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-plus-circle me-1"></i>新しいタグを作成</h6>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" action="/tags/new">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">タグ名 <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required autofocus
+                   placeholder="例: フロントエンド, 重要">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">色</label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="color" name="color" class="form-control form-control-color"
+                     value="#6c757d" id="tagColor" style="width:50px;height:38px;padding:2px;">
+              <span class="text-muted small" id="colorPreview">
+                <span id="previewBadge" class="badge" style="background:#6c757d;">プレビュー</span>
+              </span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i>タグを作成
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const colorInput = document.getElementById('tagColor');
+  if (colorInput) {
+    colorInput.addEventListener('input', function() {
+      const badge = document.getElementById('previewBadge');
+      if (badge) badge.style.backgroundColor = this.value;
+    });
+  }
+</script>
+{% endblock %}

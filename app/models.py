@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -134,10 +135,13 @@ class Skill(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
+    is_archived = Column(Boolean, default=False, nullable=False)
+
     category = relationship("Category", back_populates="skills")
     creator = relationship("User", foreign_keys=[created_by])
     user_levels = relationship("UserSkillLevel", back_populates="skill",
                                cascade="all, delete-orphan")
+    tags = relationship("SkillTag", secondary="skill_tag_associations", back_populates="skills")
 
 
 # ─── ユーザーのスキルレベル自己申告 ──────────────────────────────
@@ -248,3 +252,24 @@ class AppSetting(Base):
     key = Column(String(100), primary_key=True)
     value = Column(Text, default="")
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+# ─── スキルタグ ───────────────────────────────────────────────────
+
+skill_tag_associations = Table(
+    "skill_tag_associations",
+    Base.metadata,
+    Column("skill_id", Integer, ForeignKey("skills.id", ondelete="CASCADE"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("skill_tags.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+class SkillTag(Base):
+    __tablename__ = "skill_tags"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False, unique=True)
+    color = Column(String, default="#6c757d")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    skills = relationship("Skill", secondary="skill_tag_associations", back_populates="tags")

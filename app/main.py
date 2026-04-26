@@ -168,6 +168,7 @@ def _startup():
         _migrate_group_skills_table()
         _migrate_group_transfers_table()
         _migrate_group_parent_column()
+        _migrate_tag_archive()
 
         user_count = db.query(models.User).count()
         if not is_setup_complete() and user_count > 0:
@@ -243,6 +244,23 @@ def _migrate_group_parent_column():
     if "parent_id" not in cols:
         with database.engine.begin() as conn:
             conn.execute(text("ALTER TABLE groups ADD COLUMN parent_id INTEGER REFERENCES groups(id)"))
+
+
+def _migrate_tag_archive():
+    """skill_tags・skill_tag_associations テーブル作成と skills.is_archived カラム追加"""
+    from sqlalchemy import text, inspect as sa_inspect
+    insp = sa_inspect(database.engine)
+    table_names = insp.get_table_names()
+
+    if "skill_tags" not in table_names:
+        models.SkillTag.__table__.create(bind=database.engine)
+    if "skill_tag_associations" not in table_names:
+        models.skill_tag_associations.create(bind=database.engine)
+
+    cols = [c["name"] for c in insp.get_columns("skills")]
+    if "is_archived" not in cols:
+        with database.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE skills ADD COLUMN is_archived BOOLEAN DEFAULT 0 NOT NULL"))
 
 
 # ITエンジニア向けスキルカタログのシードデータ
@@ -646,6 +664,58 @@ def dashboard(
     catalog_total = db.query(models.Skill).count()
     categories = db.query(models.Category).order_by(models.Category.name).all()
 
+    # ── 共通分析データ計算 ───────────────────────────────────────
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+
+    # 1. カテゴリ別スキルレベル時系列トレンド（過去6ヶ月）
+    skill_trends: dict = {}
+    try:
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
+        trend_histories = (db.query(models.SkillLevelHistory)
+                           .filter(models.SkillLevelHistory.changed_at >= six_months_ago)
+                           .all())
+        monthly_data: dict = defaultdict(lambda: defaultdict(list))
+        for _h in trend_histories:
+            if _h.skill and _h.skill.category:
+                _cat = _h.skill.category.name
+                _month = _h.changed_at.strftime("%Y-%m")
+                monthly_data[_cat][_month].append(_h.level)
+        for _cat, _months in monthly_data.items():
+            _trend = []
+            for _m in sorted(_months.keys()):
+                _lvls = _months[_m]
+                _trend.append({"month": _m, "avg_level": round(sum(_lvls) / len(_lvls), 2)})
+            skill_trends[_cat] = _trend
+    except Exception:
+        skill_trends = {}
+
+    # 2. バスファクター1スキル一覧（承認済みレベル>=2の人数が1以下のスキル）
+    bus_factor_skills: list = []
+    try:
+        _bf_catalog = db.query(models.Skill).all()
+        for _sk in _bf_catalog:
+            try:
+                if _sk.is_archived:
+                    continue
+            except AttributeError:
+                pass
+            _holders = (db.query(models.UserSkillLevel)
+                        .filter(
+                            models.UserSkillLevel.skill_id == _sk.id,
+                            models.UserSkillLevel.approval_status == "approved",
+                            models.UserSkillLevel.level >= 2,
+                        ).count())
+            if _holders <= 1:
+                bus_factor_skills.append({
+                    "skill_id": _sk.id,
+                    "skill_name": _sk.name,
+                    "category_name": _sk.category.name if _sk.category else "",
+                    "holder_count": _holders,
+                })
+    except Exception:
+        bus_factor_skills = []
+
     if view_mode == "all":
         # 管理者概要モード: Admin=全ユーザー, Manager=担当グループのメンバー
         from collections import defaultdict
@@ -802,6 +872,8 @@ def dashboard(
         # レーダー用: 上位メンバー (見やすさのため最大8名)
         top_members_for_radar = [ms["user"] for ms in member_summary[:8]]
 
+        recommended_skills: list = []
+
         return templates.TemplateResponse(request, "dashboard.html", {
             "current_user": current_user,
             "view_mode": view_mode,
@@ -830,6 +902,9 @@ def dashboard(
             "coverage_data": coverage_data,
             "coverage_summary": coverage_summary,
             "cat_coverage": cat_coverage,
+            "skill_trends": skill_trends,
+            "bus_factor_skills": bus_factor_skills,
+            "recommended_skills": recommended_skills,
         })
 
     elif view_mode == "group" and target_group:
@@ -935,6 +1010,8 @@ def dashboard(
             "not_covered": gap_none,
         }
 
+        recommended_skills: list = []
+
         return templates.TemplateResponse(request, "dashboard.html", {
             "current_user": current_user,
             "view_mode": view_mode,
@@ -958,6 +1035,9 @@ def dashboard(
             "categories": categories,
             "gap_data": gap_data,
             "gap_summary": gap_summary,
+            "skill_trends": skill_trends,
+            "bus_factor_skills": bus_factor_skills,
+            "recommended_skills": recommended_skills,
         })
 
     else:
@@ -996,6 +1076,50 @@ def dashboard(
 
         recent = my_levels[:5]
 
+        # 個人向け次推奨スキル
+        recommended_skills: list = []
+        try:
+            _rec_groups = (db.query(models.Group)
+                           .join(models.GroupMembership)
+                           .filter(models.GroupMembership.user_id == target.id)
+                           .all())
+            _req_ids: set = set()
+            for _g in _rec_groups:
+                for _gs in _g.skills:
+                    _req_ids.add(_gs.id)
+            _user_lv_map = {sl.skill_id: sl.level for sl in
+                            db.query(models.UserSkillLevel)
+                            .filter(models.UserSkillLevel.user_id == target.id).all()}
+            _all_approved = (db.query(models.UserSkillLevel)
+                             .filter(models.UserSkillLevel.approval_status == "approved").all())
+            _team_lvl_map: dict = defaultdict(list)
+            for _sl in _all_approved:
+                _team_lvl_map[_sl.skill_id].append(_sl.level)
+            _team_avg_map = {_sid: round(sum(_lvs) / len(_lvs), 2)
+                             for _sid, _lvs in _team_lvl_map.items() if _lvs}
+            _recs = []
+            for _sk in db.query(models.Skill).all():
+                try:
+                    if _sk.is_archived:
+                        continue
+                except AttributeError:
+                    pass
+                _ulv = _user_lv_map.get(_sk.id, 0)
+                _tavg = _team_avg_map.get(_sk.id, 0.0)
+                _is_req = _sk.id in _req_ids
+                if (_is_req and _ulv == 0) or (_tavg > _ulv):
+                    _recs.append({
+                        "skill_id": _sk.id,
+                        "skill_name": _sk.name,
+                        "user_level": _ulv,
+                        "team_avg": _tavg,
+                        "is_required": _is_req,
+                    })
+            _recs.sort(key=lambda x: (not x["is_required"], -(x["team_avg"] - x["user_level"])))
+            recommended_skills = _recs[:5]
+        except Exception:
+            recommended_skills = []
+
         return templates.TemplateResponse(request, "dashboard.html", {
             "current_user": current_user,
             "view_mode": view_mode,
@@ -1017,7 +1141,91 @@ def dashboard(
             "member_radar": {},
             "member_summary": [],
             "categories": categories,
+            "skill_trends": skill_trends,
+            "bus_factor_skills": bus_factor_skills,
+            "recommended_skills": recommended_skills,
         })
+
+
+# ─── CSVエクスポート ─────────────────────────────────────────────
+@app.get("/export/skills-matrix")
+def export_skills_matrix(
+    request: Request,
+    group_id: int = 0,
+    db: Session = Depends(get_db),
+):
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+    from datetime import datetime
+
+    auth.require_approved(request, db)
+
+    # 全スキルを取得（アーカイブされていないもの）
+    skills = (
+        db.query(models.Skill)
+        .filter(models.Skill.is_archived == False)
+        .order_by(models.Skill.name)
+        .all()
+    )
+
+    # ユーザー取得（承認済み、グループフィルタあれば絞り込み）
+    if group_id:
+        users = (
+            db.query(models.User)
+            .join(models.GroupMembership, models.GroupMembership.user_id == models.User.id)
+            .filter(
+                models.GroupMembership.group_id == group_id,
+                models.User.is_approved == True,
+            )
+            .order_by(models.User.display_name)
+            .all()
+        )
+    else:
+        users = (
+            db.query(models.User)
+            .filter(models.User.is_approved == True)
+            .order_by(models.User.display_name)
+            .all()
+        )
+
+    # UserSkillLevel を user_id → skill_id → level のマップに変換
+    user_ids = [u.id for u in users]
+    skill_ids = [s.id for s in skills]
+    rows = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id.in_(user_ids),
+            models.UserSkillLevel.skill_id.in_(skill_ids),
+        )
+        .all()
+    )
+    level_map: dict[tuple[int, int], int] = {
+        (r.user_id, r.skill_id): r.level for r in rows
+    }
+
+    # BOM付きUTF-8でExcel文字化け防止
+    output = io.StringIO()
+    output.write("\ufeff")
+    writer = csv.writer(output)
+
+    # ヘッダー行
+    writer.writerow(["ユーザー名"] + [s.name for s in skills])
+
+    # データ行
+    for u in users:
+        display = u.display_name or u.username
+        levels = [level_map.get((u.id, s.id), 0) for s in skills]
+        writer.writerow([display] + levels)
+
+    output.seek(0)
+    filename = f"skills-matrix-{datetime.now().strftime('%Y%m%d')}.csv"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8-sig",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ─── プロフィール ────────────────────────────────────────────────
