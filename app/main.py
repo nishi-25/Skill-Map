@@ -27,7 +27,7 @@ os.makedirs("data", exist_ok=True)
 os.makedirs("data/avatars", exist_ok=True)
 Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="スキルマップ")
+app = FastAPI(title="Skill View.")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -47,19 +47,31 @@ class PendingApprovalMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request.state.pending_approval_count = 0
         request.state.pending_user_count = 0
+        request.state.rejected_approval_count = 0
         db = database.SessionLocal()
         try:
             user = auth.get_current_user(request, db)
-            if user and user.role in ("admin", "manager") and user.is_approved:
-                count = (
-                    db.query(models.UserSkillLevel)
-                    .filter(
-                        models.UserSkillLevel.approver_id == user.id,
-                        models.UserSkillLevel.approval_status == "pending",
+            if user and user.is_approved:
+                if user.role in ("admin", "manager"):
+                    count = (
+                        db.query(models.UserSkillLevel)
+                        .filter(
+                            models.UserSkillLevel.approver_id == user.id,
+                            models.UserSkillLevel.approval_status == "pending",
+                        )
+                        .count()
                     )
-                    .count()
-                )
-                request.state.pending_approval_count = count
+                    request.state.pending_approval_count = count
+                else:
+                    # 一般ユーザー：自分の差し戻し件数
+                    request.state.rejected_approval_count = (
+                        db.query(models.UserSkillLevel)
+                        .filter(
+                            models.UserSkillLevel.user_id == user.id,
+                            models.UserSkillLevel.approval_status == "rejected",
+                        )
+                        .count()
+                    )
             if user and user.role == "admin" and user.is_approved:
                 request.state.pending_user_count = (
                     db.query(models.User)

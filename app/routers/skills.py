@@ -998,15 +998,21 @@ def skills_my(
     if group_skill_ids is not None:
         all_catalog = [sk for sk in all_catalog if sk.id in group_skill_ids]
 
-    # 自分のスキルレベル
+    # 自分のスキルレベル（全ステータス：承認状況表示用）
     my_levels = (
         db.query(models.UserSkillLevel)
         .filter(models.UserSkillLevel.user_id == user.id)
         .all()
     )
+    # レベル表示・集計は承認済みのみ
     my_level_map: dict[int, int] = {
-        sl.skill_id: sl.level for sl in my_levels
+        sl.skill_id: sl.level for sl in my_levels if sl.approval_status == "approved"
     }
+    # 申請中のレベル（ドット横に「申請中 〇〇」と表示するため）
+    my_pending_level_map: dict[int, int] = {
+        sl.skill_id: sl.level for sl in my_levels if sl.approval_status == "pending"
+    }
+    # ステータス列・ドット色は全ステータスを参照
     my_approval_map: dict[int, str] = {
         sl.skill_id: sl.approval_status for sl in my_levels
     }
@@ -1100,6 +1106,7 @@ def skills_my(
         "by_tier": by_tier,
         "tier_order": tier_order,
         "my_level_map": my_level_map,
+        "my_pending_level_map": my_pending_level_map,
         "my_approval_map": my_approval_map,
         "my_approver_map": my_approver_map,
         "approvers": approvers,
@@ -1367,9 +1374,50 @@ def my_approvals(request: Request, db: Session = Depends(get_db)):
         .order_by(models.UserSkillLevel.updated_at.desc())
         .all()
     )
+    # 承認者リスト（再申請モーダル用）
+    group_ids = [m.group_id for m in db.query(models.GroupMembership)
+                 .filter(models.GroupMembership.user_id == user.id).all()]
+    if group_ids:
+        from sqlalchemy import select as sa_select
+        co_mgr_ids = set(
+            row[0] for row in db.execute(
+                sa_select(models.group_managers.c.user_id).where(
+                    models.group_managers.c.group_id.in_(group_ids)
+                ).distinct()
+            ).fetchall()
+        )
+        primary_mgr_ids = {
+            g.manager_id
+            for g in db.query(models.Group).filter(models.Group.id.in_(group_ids)).all()
+            if g.manager_id
+        }
+        approver_ids = (co_mgr_ids | primary_mgr_ids) - {user.id}
+        approvers = (
+            db.query(models.User)
+            .filter(models.User.id.in_(approver_ids), models.User.is_approved == True)
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+        ) if approver_ids else (
+            db.query(models.User)
+            .filter(models.User.is_approved == True,
+                    models.User.role.in_(["manager", "admin"]),
+                    models.User.id != user.id)
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+        )
+    else:
+        approvers = (
+            db.query(models.User)
+            .filter(models.User.is_approved == True,
+                    models.User.role.in_(["manager", "admin"]),
+                    models.User.id != user.id)
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+        )
     return templates.TemplateResponse(request, "my_approvals.html", {
         "current_user": user,
         "records": records,
+        "approvers": approvers,
     })
 
 
@@ -1472,6 +1520,26 @@ def api_set_skill_level(
             "approval_status": "pending",
             "approval_status_name": "承認待ち",
         })
+
+
+@router.post("/api/approvals/my/{record_id}/withdraw")
+def withdraw_my_approval(record_id: int, request: Request, db: Session = Depends(get_db)):
+    """自分の承認待ち申請を取り下げる（レコード削除）"""
+    user = auth.require_approved(request, db)
+    rec = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.id == record_id,
+            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.approval_status == "pending",
+        )
+        .first()
+    )
+    if not rec:
+        return JSONResponse({"ok": False, "error": "取り下げ可能な申請が見つかりません"}, status_code=404)
+    db.delete(rec)
+    db.commit()
+    return JSONResponse({"ok": True})
 
 
 @router.get("/api/dashboard/stats")

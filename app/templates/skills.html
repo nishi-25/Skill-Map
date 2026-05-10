@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}スキルマップ - スキルマップ{% endblock %}
+{% block title %}スキルマップ - Skill View.{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -295,6 +295,11 @@
                 <span class="badge bg-{{ APPROVAL_STATUS_COLORS[cur_status] }}" style="font-size:.7rem;">
                   {{ APPROVAL_STATUS[cur_status] }}
                 </span>
+                {% if cur_status == 'pending' and my_pending_level_map.get(sk.id) %}
+                <div style="font-size:.68rem;color:#92400e;margin-top:.2rem;">
+                  申請中: {{ SKILL_LEVELS[my_pending_level_map[sk.id]] }}
+                </div>
+                {% endif %}
                 {% else %}<span class="text-muted small">未申請</span>{% endif %}
               </td>
             </tr>
@@ -363,6 +368,170 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- ═══════ インタラクティブガイド ═══════ -->
+<style>
+@keyframes guideRipple {
+  0%   { box-shadow: 0 0 0 0 rgba(249,115,22,.6), 0 0 0 4px rgba(249,115,22,.3); }
+  70%  { box-shadow: 0 0 0 14px rgba(249,115,22,.0), 0 0 0 14px rgba(249,115,22,.0); }
+  100% { box-shadow: 0 0 0 0 rgba(249,115,22,.0); }
+}
+@keyframes guideBounceDown {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+@keyframes guideSlideIn {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.guide-pulse {
+  border-radius: 10px;
+  animation: guideRipple 1.4s ease-out infinite;
+  position: relative;
+  z-index: 10;
+}
+.guide-highlight-row {
+  background: linear-gradient(90deg,rgba(249,115,22,.07),rgba(251,146,60,.04)) !important;
+  outline: 2px solid rgba(249,115,22,.35);
+  outline-offset: -2px;
+}
+.guide-highlight-modal .modal-content {
+  box-shadow: 0 0 0 4px rgba(249,115,22,.5), 0 20px 60px rgba(0,0,0,.25) !important;
+}
+.guide-highlight-select {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 3px rgba(249,115,22,.25) !important;
+  animation: guideRipple 1.4s ease-out infinite;
+}
+.guide-highlight-btn {
+  animation: guideRipple 1.4s ease-out infinite;
+}
+#skillGuidePanel {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 300px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(249,115,22,.15);
+  z-index: 9100;
+  overflow: hidden;
+  animation: guideSlideIn .35s ease;
+}
+#skillGuidePanel .guide-header {
+  background: linear-gradient(135deg,#f97316,#ea580c);
+  color: #fff;
+  padding: .7rem 1rem .55rem;
+  font-size: .82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+#skillGuidePanel .guide-step-dots {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+#skillGuidePanel .guide-step-dots span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.35);
+  transition: background .2s;
+}
+#skillGuidePanel .guide-step-dots span.active {
+  background: #fff;
+}
+#skillGuidePanel .guide-body {
+  padding: .75rem 1rem .6rem;
+  font-size: .83rem;
+  color: #374151;
+  line-height: 1.6;
+}
+#skillGuidePanel .guide-arrow {
+  text-align: center;
+  font-size: 1.4rem;
+  color: #f97316;
+  animation: guideBounceDown 1s ease-in-out infinite;
+  margin: .1rem 0 .3rem;
+}
+#skillGuidePanel .guide-footer {
+  padding: .5rem .75rem .75rem;
+  display: flex;
+  gap: .4rem;
+  justify-content: flex-end;
+}
+.guide-btn-skip {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: .76rem;
+  color: #94a3b8;
+  padding: .28rem .75rem;
+  cursor: pointer;
+}
+.guide-btn-skip:hover { color:#64748b; border-color:#94a3b8; }
+#guideSuccessCard {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: guideSlideIn .3s ease;
+}
+#guideSuccessCard .guide-success-inner {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+</style>
+
+<!-- ガイドパネル（右下固定） -->
+<div id="skillGuidePanel" style="display:none;">
+  <div class="guide-header">
+    <i class="bi bi-stars" id="guideHeaderIcon"></i>
+    <span id="guideHeaderTitle">ガイド</span>
+    <div class="guide-step-dots">
+      <span id="gdot1"></span><span id="gdot2"></span><span id="gdot3"></span>
+    </div>
+  </div>
+  <div class="guide-body">
+    <div id="guideArrow" class="guide-arrow"></div>
+    <div id="guideBodyText"></div>
+  </div>
+  <div class="guide-footer">
+    <button class="guide-btn-skip" onclick="skipGuide()">スキップ</button>
+  </div>
+</div>
+<!-- 申請完了カード -->
+<div id="guideSuccessCard" style="display:none;">
+  <div class="guide-success-inner">
+    <div id="guideSuccessIcon" style="font-size:3rem;color:#22c55e;margin-bottom:.5rem;">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div id="guideSuccessTitle" style="font-weight:800;font-size:1.1rem;color:#166534;margin-bottom:.4rem;">申請完了！</div>
+    <div id="guideSuccessBody" style="font-size:.85rem;color:#4b5563;margin-bottom:1.25rem;line-height:1.6;">
+      承認待ち状態になりました。<br>
+      承認されると自分のスキルとして登録されます。
+    </div>
+    <div id="guideSuccessActions" style="display:flex;flex-direction:column;gap:.5rem;">
+      <a href="/approvals/my"
+         style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:20px;padding:.55rem 1.2rem;text-decoration:none;font-weight:700;font-size:.88rem;display:block;">
+        <i class="bi bi-send me-1"></i>自分の申請状況を確認
+      </a>
+      <button onclick="closeGuideSuccess()"
+              style="background:none;border:1px solid #e2e8f0;border-radius:20px;padding:.45rem;font-size:.82rem;color:#64748b;cursor:pointer;">
+        続けてスキルを申告する
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   const LEVEL_NAMES = {0:'未経験', 1:'入門', 2:'基礎', 3:'実務可', 4:'エキスパート'};
   const LEVEL_COLORS = {0:'secondary', 1:'info', 2:'primary', 3:'warning', 4:'danger'};
@@ -589,5 +758,186 @@
       });
     });
   }
+
+  /* ════════════════════════════════════════════
+     インタラクティブガイド
+  ════════════════════════════════════════════ */
+  let _guideStep = 0;
+  let _isGuideMode = false;
+
+  function _setGuideDots(step) {
+    [1,2,3].forEach(n => {
+      const el = document.getElementById('gdot' + n);
+      if (el) el.className = n === step ? 'active' : '';
+    });
+  }
+
+  function _clearGuideHighlights() {
+    document.querySelectorAll('.guide-pulse').forEach(el => el.classList.remove('guide-pulse'));
+    document.querySelectorAll('.guide-highlight-row').forEach(el => el.classList.remove('guide-highlight-row'));
+    document.querySelectorAll('.guide-highlight-modal').forEach(el => el.classList.remove('guide-highlight-modal'));
+    document.querySelectorAll('.guide-highlight-select').forEach(el => el.classList.remove('guide-highlight-select'));
+    document.querySelectorAll('.guide-highlight-btn').forEach(el => el.classList.remove('guide-highlight-btn'));
+  }
+
+  function showGuideStep(step) {
+    _guideStep = step;
+    const panel = document.getElementById('skillGuidePanel');
+    if (!panel) return;
+    _clearGuideHighlights();
+    _setGuideDots(step);
+
+    if (step === 1) {
+      // ─ Step 1: 最初のスキル行のドットをハイライト
+      document.getElementById('guideHeaderIcon').className = 'bi bi-hand-index-thumb-fill';
+      document.getElementById('guideHeaderTitle').textContent = 'STEP 1 / 3 — レベルをクリック';
+      document.getElementById('guideArrow').innerHTML = '<i class="bi bi-arrow-up"></i>';
+      document.getElementById('guideBodyText').innerHTML =
+        'まず好きなスキルを選び、<b>● ドット</b>をクリックしてレベルを申告しましょう。<br>' +
+        '<span style="font-size:.76rem;color:#94a3b8;">プルダウンでも同様に選択できます。</span>';
+
+      // 最初の skill-row の level-dots と行をハイライト
+      const firstDots = document.querySelector('.skill-row .level-dots');
+      const firstRow  = document.querySelector('.skill-row');
+      if (firstDots) firstDots.classList.add('guide-pulse');
+      if (firstRow)  firstRow.classList.add('guide-highlight-row');
+
+      // ガイドパネルを画面内に表示
+      panel.style.display = 'block';
+
+      // 最初のスキル行まで滑らかにスクロール
+      if (firstRow) {
+        setTimeout(() => firstRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+      }
+
+    } else if (step === 2) {
+      // ─ Step 2: 承認者モーダルをハイライト
+      document.getElementById('guideHeaderIcon').className = 'bi bi-send-fill';
+      document.getElementById('guideHeaderTitle').textContent = 'STEP 2 / 3 — 承認者を選んで申請';
+      document.getElementById('guideArrow').innerHTML = '';
+      document.getElementById('guideBodyText').innerHTML =
+        '<ol style="padding-left:1.1rem;margin-bottom:.3rem;font-size:.82rem;">' +
+        '<li style="margin-bottom:.3rem;"><b>承認者</b>をプルダウンから選択</li>' +
+        '<li><span style="background:#0d6efd;color:#fff;border-radius:4px;padding:.05em .5em;font-size:.78rem;">申請する</span> をクリック</li>' +
+        '</ol>' +
+        '<span style="font-size:.74rem;color:#94a3b8;">担当 Manager または上司を選んでください。</span>';
+
+      const modal = document.getElementById('approverModal');
+      const selectEl = document.getElementById('modalApprover');
+      const submitBtn = document.getElementById('modalSubmitBtn');
+      if (modal) modal.classList.add('guide-highlight-modal');
+      if (selectEl) selectEl.classList.add('guide-highlight-select');
+      if (submitBtn) submitBtn.classList.add('guide-highlight-btn');
+
+    } else if (step === 3) {
+      // ─ Step 3: 完了カード（ガイドモードは模擬完了メッセージ）
+      panel.style.display = 'none';
+      _clearGuideHighlights();
+      sessionStorage.removeItem('skillGuide');
+      // ガイドモードでの模擬完了 → テキストを差し替え
+      if (_isGuideMode) {
+        const icon = document.getElementById('guideSuccessIcon');
+        const title = document.getElementById('guideSuccessTitle');
+        const body  = document.getElementById('guideSuccessBody');
+        const acts  = document.getElementById('guideSuccessActions');
+        if (icon)  icon.innerHTML  = '<i class="bi bi-mortarboard-fill" style="color:#f97316;"></i>';
+        if (title) { title.textContent = 'ガイド完了！'; title.style.color = '#c2410c'; }
+        if (body)  body.innerHTML  =
+          'これで申請の流れは完了です。<br>' +
+          '<span style="color:#f97316;font-weight:600;">実際には登録されていません。</span><br>' +
+          '本番で申告するときも同じ手順で操作してください。';
+        if (acts)  acts.innerHTML  =
+          '<a href="/skills?view=all" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:20px;padding:.55rem 1.2rem;text-decoration:none;font-weight:700;font-size:.88rem;display:block;">' +
+          '<i class="bi bi-lightning-charge me-1"></i>スキルマップへ戻る</a>' +
+          '<button onclick="closeGuideSuccess()" style="background:none;border:1px solid #e2e8f0;border-radius:20px;padding:.45rem;font-size:.82rem;color:#64748b;cursor:pointer;">閉じる</button>';
+      }
+      const card = document.getElementById('guideSuccessCard');
+      if (card) card.style.display = 'flex';
+    }
+  }
+
+  function skipGuide() {
+    sessionStorage.removeItem('skillGuide');
+    _guideStep = 0;
+    _clearGuideHighlights();
+    const panel = document.getElementById('skillGuidePanel');
+    if (panel) panel.style.display = 'none';
+  }
+
+  function closeGuideSuccess() {
+    const card = document.getElementById('guideSuccessCard');
+    if (card) card.style.display = 'none';
+  }
+
+  // ── 申請成功フラグ（updateSkillUI が呼ばれた = 成功） ──
+  let _guideSubmitSuccess = false;
+  const _origUpdateSkillUI = updateSkillUI;
+  window.updateSkillUI = function(skillId, data) {
+    _origUpdateSkillUI(skillId, data);
+    _guideSubmitSuccess = true;
+  };
+
+  // ── openApprovalModal をラップしてガイド Step 2 を差し込む ──
+  const _origOpenApprovalModal = openApprovalModal;
+  window.openApprovalModal = function(skillId, level) {
+    _origOpenApprovalModal(skillId, level);
+    if (sessionStorage.getItem('skillGuide') && _guideStep === 1) {
+      setTimeout(() => showGuideStep(2), 350);
+    }
+  };
+
+  // ── submitApproval をラップ：ガイドモードはモック送信、通常は実際に送信 ──
+  const _origSubmitApproval = submitApproval;
+  window.submitApproval = async function() {
+    if (_isGuideMode && _guideStep === 2) {
+      // ガイドモード：実際には送信せず UI だけ模擬更新する
+      const approverId = document.getElementById('modalApprover')?.value;
+      if (!approverId) {
+        showToast('承認者を選択してください', 'error');
+        return;
+      }
+      // モーダルを閉じる
+      const modal = bootstrap.Modal.getInstance(document.getElementById('approverModal'));
+      if (modal) modal.hide();
+      // UI を「承認待ち」に模擬更新（実際の DB 登録なし）
+      if (pendingSkillId != null && pendingLevel != null) {
+        const dots = document.querySelectorAll('#dots-' + pendingSkillId + ' .level-dot');
+        dots.forEach(dot => {
+          const dl = parseInt(dot.dataset.level);
+          dot.className = 'level-dot';
+          if (dl <= pendingLevel) dot.classList.add('active', 'lv-' + pendingLevel);
+        });
+        const badge = document.getElementById('badge-' + pendingSkillId);
+        if (badge) {
+          badge.className = 'badge bg-warning badge-level';
+          badge.textContent = LEVEL_NAMES[pendingLevel];
+          badge.style.opacity = '1';
+        }
+        const statusCell = document.getElementById('status-' + pendingSkillId);
+        if (statusCell) {
+          statusCell.innerHTML = '<span class="badge bg-warning text-dark" style="font-size:.7rem;">承認待ち</span>';
+        }
+      }
+      setTimeout(() => showGuideStep(3), 500);
+      return;
+    }
+    // 通常モード
+    _guideSubmitSuccess = false;
+    await _origSubmitApproval();
+    if (_guideSubmitSuccess && _guideStep === 2) {
+      setTimeout(() => showGuideStep(3), 500);
+    }
+  };
+
+  // ── ページロード時にガイドを初期化 ──
+  document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('skillGuide') === '1') {
+      const hasTierContent = document.querySelector('.skill-row');
+      if (hasTierContent) {
+        _isGuideMode = true;
+        showGuideStep(1);
+      }
+    }
+  });
 </script>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}自分の申請状況 - スキルマップ{% endblock %}
+{% block title %}自分の申請状況 - Skill View.{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -36,12 +36,27 @@
     </div>
   </div>
   <div class="col-4">
-    <div class="card text-center py-3">
+    <div class="card text-center py-3" {% if rejected_count %}style="border:2px solid #ef4444;"{% endif %}>
       <div class="fw-bold fs-4 text-danger">{{ rejected_count }}</div>
       <div class="text-muted small">差し戻し</div>
+      {% if rejected_count %}<div style="font-size:.65rem;color:#ef4444;font-weight:600;">要対応</div>{% endif %}
     </div>
   </div>
 </div>
+
+{% if rejected_count %}
+<div class="alert d-flex align-items-center gap-3 mb-3"
+     style="background:#fef2f2;border:1.5px solid #fca5a5;border-left:5px solid #ef4444;border-radius:12px;padding:.85rem 1rem;">
+  <i class="bi bi-exclamation-circle-fill" style="color:#ef4444;font-size:1.3rem;flex-shrink:0;"></i>
+  <div>
+    <div class="fw-bold" style="color:#991b1b;">{{ rejected_count }} 件のスキル申請が差し戻されました</div>
+    <div class="small" style="color:#b91c1c;">コメントを確認して、スキルマップから修正・再申請してください。</div>
+  </div>
+  <a href="/skills" class="btn btn-sm ms-auto" style="background:#ef4444;color:#fff;border-radius:20px;white-space:nowrap;">
+    <i class="bi bi-lightning-charge me-1"></i>再申請する
+  </a>
+</div>
+{% endif %}
 
 <div class="card">
   <div class="card-body p-0">
@@ -57,12 +72,21 @@
             <th data-i18n="lbl.approver">承認者</th>
             <th data-i18n="lbl.comment">コメント</th>
             <th data-i18n="lbl.updated_at">更新日</th>
+            <th class="text-center">操作</th>
           </tr>
         </thead>
         <tbody>
           {% for rec in records %}
-          <tr>
-            <td class="fw-semibold">{{ rec.skill.name }}</td>
+          <tr id="approval-row-{{ rec.id }}"
+              {% if rec.approval_status == 'rejected' %}
+              style="background:linear-gradient(90deg,rgba(254,226,226,.6),rgba(255,255,255,0));border-left:3px solid #ef4444;"
+              {% endif %}>
+            <td class="fw-semibold">
+              {% if rec.approval_status == 'rejected' %}
+              <i class="bi bi-exclamation-circle-fill me-1" style="color:#ef4444;font-size:.8rem;"></i>
+              {% endif %}
+              {{ rec.skill.name }}
+            </td>
             <td>
               {% if rec.skill.category %}
               <span class="badge" style="background:{{ rec.skill.category.color }};font-size:.7rem;">{{ rec.skill.category.name }}</span>
@@ -87,6 +111,21 @@
             <td class="text-muted small">
               {% if rec.approved_at %}{{ rec.approved_at|jst }}{% else %}{{ rec.updated_at|jst }}{% endif %}
             </td>
+            <td class="text-center">
+              {% if rec.approval_status == 'pending' %}
+              <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.75rem;"
+                      onclick="withdrawApproval({{ rec.id }})">
+                <i class="bi bi-x-circle me-1"></i>取り下げ
+              </button>
+              {% elif rec.approval_status == 'rejected' %}
+              <button class="btn btn-sm btn-danger" style="border-radius:20px;font-size:.75rem;"
+                      onclick="openReapplyModal({{ rec.skill_id }}, '{{ rec.skill.name }}', {{ rec.level }})">
+                <i class="bi bi-arrow-repeat me-1"></i>再申請
+              </button>
+              {% else %}
+              <span class="text-muted small">-</span>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -103,4 +142,98 @@
     {% endif %}
   </div>
 </div>
+
+<!-- 再申請モーダル -->
+<div class="modal fade" id="reapplyModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #ef4444;">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-arrow-repeat me-2 text-danger"></i>再申請
+          <span id="reapplySkillName" class="text-muted fw-normal ms-1" style="font-size:.85rem;"></span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">申告レベル</label>
+          <select id="reapplyLevel" class="form-select">
+            {% for lv, lv_name in SKILL_LEVELS.items() %}
+            {% if lv > 0 %}
+            <option value="{{ lv }}">{{ lv_name }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">承認者を選択 <span class="text-danger">*</span></label>
+          <select id="reapplyApprover" class="form-select" required>
+            <option value="">-- 承認者を選択してください --</option>
+            {% for u in approvers %}
+            <option value="{{ u.id }}">{{ u.display_name or u.username }}{% if u.role == 'admin' %} (Admin){% elif u.role == 'manager' %} (Manager){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-danger btn-sm" id="reapplySubmitBtn" onclick="submitReapply()" style="border-radius:20px;">
+          <i class="bi bi-send me-1"></i>再申請する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _reapplySkillId = null;
+
+function openReapplyModal(skillId, skillName, currentLevel) {
+  _reapplySkillId = skillId;
+  document.getElementById('reapplySkillName').textContent = skillName;
+  document.getElementById('reapplyLevel').value = currentLevel || 1;
+  document.getElementById('reapplyApprover').value = '';
+  new bootstrap.Modal(document.getElementById('reapplyModal')).show();
+}
+
+async function submitReapply() {
+  const approverId = document.getElementById('reapplyApprover').value;
+  const level = document.getElementById('reapplyLevel').value;
+  if (!approverId) { showToast('承認者を選択してください', 'error'); return; }
+  const btn = document.getElementById('reapplySubmitBtn');
+  btn.disabled = true;
+  const fd = new FormData();
+  fd.append('level', level);
+  fd.append('approver_id', approverId);
+  try {
+    const res = await fetch('/api/skills/' + _reapplySkillId + '/level', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById('reapplyModal')).hide();
+      showToast('再申請しました（承認待ち）', 'success');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      showToast(data.error || '再申請に失敗しました', 'error');
+      btn.disabled = false;
+    }
+  } catch {
+    showToast('再申請に失敗しました', 'error');
+    btn.disabled = false;
+  }
+}
+
+async function withdrawApproval(recordId) {
+  if (!confirm('この申請を取り下げますか？\nスキルマップで再度申請できます。')) return;
+  const res = await fetch('/api/approvals/my/' + recordId + '/withdraw', { method: 'POST' });
+  const data = await res.json();
+  if (data.ok) {
+    showToast('申請を取り下げました', 'success');
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast(data.error || '取り下げに失敗しました', 'error');
+  }
+}
+</script>
 {% endblock %}

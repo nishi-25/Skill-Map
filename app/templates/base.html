@@ -396,7 +396,7 @@
 <nav class="sidebar" id="sidebar">
   <div class="brand">
     <i class="bi bi-map" style="font-size:1.3rem;color:#fb923c;flex-shrink:0;"></i>
-    <span class="brand-text">スキル<span class="brand-accent" id="brandAccent">マップ</span></span>
+    <span class="brand-text">Skill <span class="brand-accent" id="brandAccent">View.</span></span>
   </div>
 
   <!-- グローバル検索（縮小時は非表示） -->
@@ -425,8 +425,11 @@
     </a>
     <a id="navMyApprovals" href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}" data-label="自分の申請状況">
       <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
+      {% if request.state.rejected_approval_count is defined and request.state.rejected_approval_count > 0 %}
+      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.rejected_approval_count }}</span>
+      {% endif %}
     </a>
-    <a href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="教育リソース">
+    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="教育リソース">
       <i class="bi bi-mortarboard-fill nav-icon"></i><span class="nav-text">教育リソース</span>
     </a>
     <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
@@ -1670,7 +1673,7 @@ window.openNewTicket = function() {
       btn.classList.toggle('active', btn.dataset.langBtn === lang);
     });
     document.documentElement.lang = lang;
-    TOUR_STEPS_USER[0].title = lang === 'en' ? 'Welcome to Skill Map!' : 'スキルマップへようこそ！';
+    TOUR_STEPS_USER[0].title = lang === 'en' ? 'Welcome to Skill View.!' : 'Skill View. へようこそ！';
   }
   // 起動時に適用
   (function() {
@@ -1685,15 +1688,21 @@ window.openNewTicket = function() {
   (function() {
     const key = 'scroll:' + location.pathname + location.search;
 
-    // 復元: 同じURLに戻ったときスクロール位置を復元
-    const saved = sessionStorage.getItem(key);
-    if (saved !== null) {
-      const pos = parseInt(saved, 10);
-      if (pos > 0) {
-        // レイアウト確定後にスクロール
-        requestAnimationFrame(() => window.scrollTo({ top: pos, behavior: 'instant' }));
-      }
+    // ダッシュボードは常に先頭から表示
+    const NO_RESTORE_PATHS = ['/dashboard'];
+    if (NO_RESTORE_PATHS.includes(location.pathname)) {
       sessionStorage.removeItem(key);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else {
+      // 復元: 同じURLに戻ったときスクロール位置を復元
+      const saved = sessionStorage.getItem(key);
+      if (saved !== null) {
+        const pos = parseInt(saved, 10);
+        if (pos > 0) {
+          requestAnimationFrame(() => window.scrollTo({ top: pos, behavior: 'instant' }));
+        }
+        sessionStorage.removeItem(key);
+      }
     }
 
     // 保存: <a> タグクリック時に現在のスクロール位置を記録
@@ -1728,7 +1737,7 @@ window.openNewTicket = function() {
 
   // ── User ロール ──────────────────────────────────────────────
   const TOUR_STEPS_USER = [
-    { el: null, title: 'スキルマップへようこそ！',
+    { el: null, title: 'Skill View. へようこそ！',
       body: 'このシステムで自分のスキルを記録し、チームの成長を一緒に可視化しましょう。\n全 8 ステップで主な機能をご紹介します。', icon: 'bi-map' },
 
     { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
@@ -1893,73 +1902,115 @@ window.openNewTicket = function() {
     const progress = `${idx + 1} / ${TOUR_STEPS.length}`;
 
     if (step.isHowto === 'skills') {
-      // ── スキル登録 How-to カード ──
+      // ── スキル登録 How-to カード（User 向け詳細版）──
       const ov = document.createElement('div');
       ov.id = 'tourOverlay';
       document.body.appendChild(ov);
 
       const isAdmin = TOUR_ROLE !== 'user';
-      const numSt = 'width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem;';
-      const rowSt = 'display:flex;gap:.6rem;align-items:flex-start;padding:.45rem .6rem;background:#f8fafc;border-radius:8px;border-left:3px solid #f97316;';
-      const ttl   = 'font-weight:700;font-size:.83rem;color:#1e293b;margin-bottom:.08rem;';
-      const sub   = 'font-size:.75rem;color:#64748b;line-height:1.45;';
-      const levels = [
-        ['#94a3b8','0 未経験'],['#fbbf24','1 入門'],
-        ['#f97316','2 基礎'],['#f59e0b','3 実務可'],['#ef4444','4 Expert'],
-      ].map(([c,l]) =>
-        `<span style="background:${c};color:#fff;border-radius:4px;padding:.08em .5em;font-size:.66rem;font-weight:700;">${l}</span>`
-      ).join('<span style="color:#94a3b8;font-size:.65rem;padding:0 1px;">→</span>');
+
+      const numSt  = (color) => `width:26px;height:26px;border-radius:50%;background:${color};color:#fff;font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.15rem;`;
+      const rowSt  = (borderColor) => `display:flex;gap:.65rem;align-items:flex-start;padding:.5rem .65rem;background:#f8fafc;border-radius:8px;border-left:3px solid ${borderColor};`;
+      const ttlSt  = 'font-weight:700;font-size:.84rem;color:#1e293b;margin-bottom:.12rem;';
+      const subSt  = 'font-size:.76rem;color:#64748b;line-height:1.5;';
+      const tagSt  = (bg,text='#fff') => `background:${bg};color:${text};border-radius:4px;padding:.07em .45em;font-size:.65rem;font-weight:700;display:inline-block;`;
+
+      const levelBadges = [
+        ['#94a3b8','0','未経験'],['#fbbf24','1','入門'],
+        ['#f97316','2','基礎'],['#ef4444','3','実務可'],['#dc2626','4','エキスパート'],
+      ].map(([c,n,l]) =>
+        `<span style="${tagSt(c)}">${n} ${l}</span>`
+      ).join('<span style="color:#cbd5e1;padding:0 2px;font-size:.6rem;">›</span>');
 
       const card = document.createElement('div');
       card.id = 'tourWelcomeCard';
       card.innerHTML = `
         <!-- ヘッダー（固定） -->
         <div class="tour-card-header" style="text-align:center;">
-          <span style="font-size:1.3rem;"><i class="bi bi-lightning-charge-fill" style="color:#f97316;"></i></span>
-          <div style="font-weight:800;font-size:1.05rem;color:#431407;margin-top:.2rem;">スキルの登録方法</div>
-          <div style="font-size:.74rem;color:#94a3b8;margin-top:.1rem;">以下の手順でスキルを申告できます</div>
+          <span style="font-size:1.4rem;"><i class="bi bi-lightning-charge-fill" style="color:#f97316;"></i></span>
+          <div style="font-weight:800;font-size:1.05rem;color:#431407;margin-top:.25rem;">スキルマップの入力方法</div>
+          <div style="font-size:.73rem;color:#94a3b8;margin-top:.1rem;">自分のスキルレベルを申告する 5 ステップ</div>
         </div>
 
         <!-- ステップ一覧（スクロール可能） -->
         <div class="tour-card-body" style="text-align:left;">
-          <div style="display:flex;flex-direction:column;gap:.35rem;padding-bottom:.5rem;">
+          <div style="display:flex;flex-direction:column;gap:.4rem;padding-bottom:.5rem;">
 
-            <div style="${rowSt}">
-              <div style="${numSt}">1</div>
-              <div>
-                <div style="${ttl}">スキルマップページへ移動</div>
-                <div style="${sub}">サイドバーの「<b>スキルマップ</b>」をクリック<br>→ ティアを選択、または <b>「全スキルを一覧表示」</b></div>
+            <!-- STEP 1 -->
+            <div style="${rowSt('#f97316')}">
+              <div style="${numSt('linear-gradient(135deg,#f97316,#fb923c)')}">1</div>
+              <div style="flex:1;min-width:0;">
+                <div style="${ttlSt}">スキルマップを開く</div>
+                <div style="${subSt}">
+                  左サイドバーの <b>⚡ スキルマップ</b> をクリック<br>
+                  <span style="${tagSt('#fff7ed','#c2410c')}">難易度別カード</span> が表示されます（初級 / 基礎 / 中級 / 上級）
+                </div>
               </div>
             </div>
 
-            <div style="${rowSt}border-left-color:#22c55e;">
-              <div style="${numSt}background:linear-gradient(135deg,#22c55e,#4ade80);">2</div>
-              <div>
-                <div style="${ttl}">レベルを選択</div>
-                <div style="${sub}">各スキルの <b>●ドット</b> またはプルダウンでレベルを選択</div>
-                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:.2rem;margin-top:.25rem;">${levels}</div>
+            <!-- STEP 2 -->
+            <div style="${rowSt('#0ea5e9')}">
+              <div style="${numSt('linear-gradient(135deg,#0ea5e9,#38bdf8)')}">2</div>
+              <div style="flex:1;min-width:0;">
+                <div style="${ttlSt}">スキルを探す</div>
+                <div style="${subSt}">
+                  ティアカードをクリック <i style="font-size:.7rem;">（例：初級）</i> → スキル一覧が開く<br>
+                  または <b>「全スキルを一覧表示」</b> で全ティアを一画面に表示<br>
+                  <span style="color:#94a3b8;font-size:.7rem;"><i class="bi bi-search" style="font-size:.65rem;"></i> 上部の検索欄でスキル名の絞り込みも可</span>
+                </div>
               </div>
             </div>
 
-            <div style="${rowSt}border-left-color:#f59e0b;">
-              <div style="${numSt}background:linear-gradient(135deg,#f59e0b,#fcd34d);">3</div>
-              <div>
-                <div style="${ttl}">申請する</div>
-                ${isAdmin
-                  ? `<div style="${sub}">Admin / Manager は選択後 <b>即時自動承認</b> されます</div>`
-                  : `<div style="${sub}">承認者（上司・マネージャー）を選択 → <b>「申請する」</b> をクリック</div>`
-                }
+            <!-- STEP 3 -->
+            <div style="${rowSt('#22c55e')}">
+              <div style="${numSt('linear-gradient(135deg,#22c55e,#4ade80)')}">3</div>
+              <div style="flex:1;min-width:0;">
+                <div style="${ttlSt}">レベルを選択する</div>
+                <div style="${subSt}">各スキルの <b>● ドット</b> をクリック、またはプルダウンから選択</div>
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.2rem;margin-top:.3rem;">${levelBadges}</div>
+                <div style="font-size:.68rem;color:#94a3b8;margin-top:.25rem;">
+                  ● 未経験: 知識なし　● 入門: 概念理解・指導があれば作業可<br>
+                  ● 基礎: 手順書見ながら一人で作業可　● 実務可: 手順書なしで業務活用・説明可<br>
+                  ● エキスパート: 設計・改善・他者指導ができる
+                </div>
               </div>
             </div>
 
-            <div style="${rowSt}border-left-color:#22c55e;">
-              <div style="${numSt}background:linear-gradient(135deg,#22c55e,#4ade80);">4</div>
-              <div>
-                <div style="${ttl}">承認 → スキル登録完了</div>
-                <div style="${sub}">「<b>自分の申請状況</b>」ページで承認・差し戻しを確認できます</div>
+            <!-- STEP 4 -->
+            <div style="${rowSt('#f59e0b')}">
+              <div style="${numSt('linear-gradient(135deg,#f59e0b,#fcd34d)')}">4</div>
+              <div style="flex:1;min-width:0;">
+                <div style="${ttlSt}">承認者を選んで申請する</div>
+                <div style="${subSt}">
+                  レベル選択後にポップアップが開きます<br>
+                  <b>担当 Manager または上司</b> を選択して <b>「申請する」</b> をクリック<br>
+                  <span style="color:#94a3b8;font-size:.7rem;">※ 承認者はグループの担当 Manager が表示されます</span>
+                </div>
               </div>
             </div>
 
+            <!-- STEP 5 -->
+            <div style="${rowSt('#8b5cf6')}">
+              <div style="${numSt('linear-gradient(135deg,#8b5cf6,#a78bfa)')}">5</div>
+              <div style="flex:1;min-width:0;">
+                <div style="${ttlSt}">承認結果を確認する</div>
+                <div style="${subSt}">
+                  サイドバーの <b>「自分の申請状況」</b> で進捗を確認<br>
+                  <span style="${tagSt('#fef3c7','#92400e')}">承認待ち</span>
+                  <span style="${tagSt('#f0fdf4','#166534')}">承認済み</span>
+                  <span style="${tagSt('#fef2f2','#991b1b')}">差し戻し</span> の3状態があります<br>
+                  <span style="color:#94a3b8;font-size:.7rem;">差し戻しの場合はコメントを確認してレベルを修正し再申請してください</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ヒント -->
+          <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:.45rem .7rem;font-size:.73rem;color:#92400e;margin-top:.1rem;">
+            <b><i class="bi bi-lightbulb-fill me-1"></i>ヒント</b>
+            複数スキルをまとめて申告したい場合は、レベルを選ぶたびに申請できます。<br>
+            承認済みスキルはダッシュボードやスキルマトリクスに反映されます。
           </div>
         </div>
 
@@ -1968,10 +2019,10 @@ window.openNewTicket = function() {
           <div style="display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;align-items:center;">
             <button class="tour-btn tour-btn-skip" onclick="endTour(true)">終了</button>
             ${idx > 0 ? '<button class="tour-btn tour-btn-prev" onclick="tourPrev()"><i class="bi bi-arrow-left"></i> 前へ</button>' : ''}
-            <a href="/skills?view=all" onclick="endTour(true)"
+            <a href="/skills?view=all" onclick="sessionStorage.setItem('skillGuide','1');endTour(true);"
                class="tour-btn"
-               style="background:linear-gradient(135deg,#22c55e,#4ade80);color:#fff;text-decoration:none;padding:.35rem .9rem;">
-              <i class="bi bi-lightning-charge me-1"></i>スキルマップを開く
+               style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;text-decoration:none;padding:.38rem .9rem;">
+              <i class="bi bi-lightning-charge me-1"></i>ガイドつきで始める
             </a>
             <button class="tour-btn tour-btn-next" onclick="tourNext()">次へ <i class="bi bi-arrow-right ms-1"></i></button>
           </div>

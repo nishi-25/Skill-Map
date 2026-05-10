@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}承認依頼 - スキルマップ{% endblock %}
+{% block title %}承認依頼 - Skill View.{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -113,9 +113,16 @@
                 </div>
                 <!-- インライン差し戻しコメント -->
                 <div id="rejectInline-{{ rec.id }}" style="display:none;" class="mt-1">
-                  <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" placeholder="差し戻し理由（任意）" id="rejectComment-{{ rec.id }}" style="border-radius:8px 0 0 8px;">
-                    <button class="btn btn-danger btn-sm" style="border-radius:0 8px 8px 0;" onclick="quickAction({{ rec.id }}, 'reject', document.getElementById('rejectComment-{{ rec.id }}').value)" data-i18n="lbl.send">送信</button>
+                  <textarea class="form-control form-control-sm mb-1"
+                            rows="3"
+                            placeholder="差し戻し理由（任意）"
+                            id="rejectComment-{{ rec.id }}"
+                            style="border-radius:8px;resize:vertical;min-height:64px;font-size:.82rem;"></textarea>
+                  <div class="d-flex justify-content-end">
+                    <button class="btn btn-danger btn-sm" style="border-radius:8px;"
+                            onclick="quickAction({{ rec.id }}, 'reject', document.getElementById('rejectComment-{{ rec.id }}').value)">
+                      <i class="bi bi-send me-1"></i>差し戻し送信
+                    </button>
                   </div>
                 </div>
               </div>
@@ -228,13 +235,8 @@ async function quickAction(recordId, action, comment = '') {
   const res = await fetch('/api/approvals/bulk-action', { method: 'POST', body: formData });
   const data = await res.json();
   if (data.ok) {
-    const row = document.querySelector(`.row-check[value="${recordId}"]`)?.closest('tr');
-    if (row) {
-      row.style.transition = 'opacity .3s';
-      row.style.opacity = '0';
-      setTimeout(() => { row.remove(); updateBadge(); }, 300);
-    }
     showToast(action === 'approve' ? '承認しました' : '差し戻しました', 'success');
+    setTimeout(() => location.reload(), 600);
   } else {
     showToast(data.error || '操作に失敗しました', 'error');
   }
@@ -253,14 +255,8 @@ async function bulkAction(action) {
   const res = await fetch('/api/approvals/bulk-action', { method: 'POST', body: formData });
   const data = await res.json();
   if (data.ok) {
-    ids.forEach(id => {
-      const row = document.querySelector(`.row-check[value="${id}"]`)?.closest('tr');
-      if (row) row.remove();
-    });
-    updateBadge();
-    document.getElementById('selectAll').checked = false;
-    onCheckChange();
     showToast(`${data.processed} 件を${label}しました`, 'success');
+    setTimeout(() => location.reload(), 600);
   } else {
     showToast(data.error || '一括操作に失敗しました', 'error');
   }
