@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>デモ - スキルマップ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700|noto-sans-jp:400,500,700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { background:#f8f9fb; font-family:'Inter','Noto Sans JP',sans-serif; color:#431407; }
+    .demo-banner {
+      background:linear-gradient(135deg,#f97316,#dc2626);
+      color:#fff;
+      padding:.55rem 1rem;
+      text-align:center;
+      font-size:.85rem;
+      font-weight:600;
+      letter-spacing:.02em;
+      position:sticky;top:0;z-index:100;
+    }
+    .demo-topbar {
+      background:#fff;
+      border-bottom:1px solid #e2e8f0;
+      padding:.7rem 1.5rem;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:1rem;flex-wrap:wrap;
+    }
+    .brand { font-size:1.2rem;font-weight:800;color:#431407; }
+    .brand span { background:linear-gradient(135deg,#f97316,#fdba74);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .section { padding:2rem 1.5rem; max-width:1200px; margin:0 auto; }
+    .stat-card {
+      background:#fff;border-radius:14px;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);
+      padding:1.2rem 1.4rem;
+      transition:transform .2s,box-shadow .2s;
+    }
+    .stat-card:hover { transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.1); }
+    .stat-icon { width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem; }
+
+    /* 暖色ヒートマップ */
+    .lv-0 { background:#f1f5f9;color:#94a3b8; }
+    .lv-1 { background:#fef3c7;color:#92400e; }
+    .lv-2 { background:#fbbf24;color:#713f12; }
+    .lv-3 { background:#f97316;color:#fff; }
+    .lv-4 { background:#dc2626;color:#fff; }
+
+    .matrix-table { font-size:.75rem;border-collapse:separate;border-spacing:0;width:100%; }
+    .matrix-table th, .matrix-table td { padding:.3rem .4rem;border:1px solid #e2e8f0; }
+    .matrix-table thead th { background:#fff;font-size:.72rem;text-align:center;white-space:nowrap;border-bottom:2px solid #e2e8f0; }
+    .lv-cell { text-align:center;font-weight:700;font-size:.72rem; }
+    .skill-col { background:#fff;font-size:.74rem;padding:.3rem .6rem;white-space:nowrap; }
+    .matrix-scroll { overflow-x:auto;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);background:#fff; }
+
+    .feature-card {
+      background:#fff;border-radius:16px;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);
+      padding:1.5rem;
+      height:100%;
+      border-top:4px solid transparent;
+    }
+    .cta-section {
+      background:linear-gradient(135deg,#431407,#9a3412);
+      color:#fff;padding:3rem 1.5rem;text-align:center;
+    }
+    @keyframes fadeUp {
+      from { opacity:0;transform:translateY(16px); }
+      to   { opacity:1;transform:translateY(0); }
+    }
+    .fade-up { animation:fadeUp .5s ease both; }
+    .legend-item { display:flex;align-items:center;gap:.3rem;font-size:.78rem; }
+    .leg-swatch { width:18px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.08); }
+  </style>
+</head>
+<body>
+
+<!-- デモバナー -->
+<div class="demo-banner">
+  <i class="bi bi-play-circle me-2"></i>
+  これはデモ表示です。サンプルデータで主な機能をご確認いただけます。
+  <a href="/login" class="btn btn-light btn-sm ms-3" style="border-radius:20px;font-size:.78rem;padding:.2rem .7rem;">ログインはこちら</a>
+</div>
+
+<!-- トップバー -->
+<div class="demo-topbar">
+  <div class="brand"><i class="bi bi-map me-2" style="color:#fb923c;"></i>スキル<span>マップ</span> <span class="badge" style="background:#f97316;font-size:.65rem;vertical-align:middle;border-radius:20px;">DEMO</span></div>
+  <div class="d-flex gap-2">
+    <a href="/login" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">ログイン</a>
+    <a href="/register" class="btn btn-sm" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;">無料で始める</a>
+  </div>
+</div>
+
+<!-- ヒーロー -->
+<div style="background:linear-gradient(135deg,#fff7ed,#fff);padding:2.5rem 1.5rem 1.5rem;text-align:center;">
+  <h1 class="fade-up" style="font-weight:800;font-size:1.8rem;color:#431407;">チームのスキルを<span style="color:#f97316;">見える化</span>する</h1>
+  <p class="fade-up text-muted" style="font-size:.95rem;max-width:520px;margin:.5rem auto 0;">メンバーのスキルレベルを記録・可視化し、組織の成長を支援するスキル管理システムです。</p>
+</div>
+
+<!-- サンプル統計 -->
+<div class="section" style="padding-top:1.5rem;">
+  <div class="row g-3 mb-4">
+    {% set stats = [
+      ('bi-people-fill','linear-gradient(135deg,#fff7ed,#ffedd5)','#f97316', demo.member_count, 'メンバー数'),
+      ('bi-lightning-charge-fill','linear-gradient(135deg,#fff7ed,#ffedd5)','#f97316', demo.skill_count, 'スキル数'),
+      ('bi-bar-chart-fill','linear-gradient(135deg,#fef3c7,#fde68a)','#d97706', demo.avg_level, '平均レベル'),
+      ('bi-trophy-fill','linear-gradient(135deg,#fef2f2,#fee2e2)','#dc2626', demo.expert_count, '習熟者数'),
+    ] %}
+    {% for icon, bg, color, val, label in stats %}
+    <div class="col-6 col-md-3">
+      <div class="stat-card fade-up">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon" style="background:{{ bg }};color:{{ color }};"><i class="bi {{ icon }}"></i></div>
+          <div>
+            <div class="fw-bold fs-4" style="line-height:1;color:{{ color }};">{{ val }}</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ label }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- スキルマトリクス（デモ） -->
+  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <h5 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#f97316;"></i>スキルマトリクス（サンプル）</h5>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <span class="text-muted" style="font-size:.75rem;">理解度:</span>
+      {% for cls, label in [('lv-0','未申告'),('lv-1','学習中'),('lv-2','基礎習得'),('lv-3','実務可'),('lv-4','習熟')] %}
+      <span class="legend-item"><span class="leg-swatch {{ cls }}"></span>{{ label }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="matrix-scroll mb-4">
+    <table class="matrix-table mb-0">
+      <thead>
+        <tr>
+          <th class="skill-col" style="text-align:left;font-weight:700;min-width:130px;">スキル ＼ メンバー</th>
+          {% for u in demo.users %}
+          <th style="min-width:70px;vertical-align:bottom;padding:.4rem .3rem;">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f97316,#dc2626);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;margin-bottom:3px;">{{ u.initial }}</div>
+            <div style="font-size:.68rem;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;">{{ u.name }}</div>
+            <div style="font-size:.62rem;color:#f97316;font-weight:700;">Avg {{ u.avg }}</div>
+            <div style="height:3px;background:#f1f5f9;border-radius:2px;margin-top:2px;overflow:hidden;">
+              <div style="height:100%;background:linear-gradient(90deg,#fbbf24,#dc2626);width:{{ u.rate }}%;border-radius:2px;"></div>
+            </div>
+          </th>
+          {% endfor %}
+          <th style="text-align:center;font-size:.68rem;white-space:nowrap;min-width:45px;">平均</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set prev_cat = namespace(v='') %}
+        {% for sk in demo.skills %}
+        {% if sk.category != prev_cat.v %}
+        {% set prev_cat.v = sk.category %}
+        <tr>
+          <td colspan="{{ demo.users|length + 2 }}" style="background:#fff7ed;font-weight:700;font-size:.7rem;color:#92400e;padding:.2rem .5rem;border-left:3px solid #f97316;">
+            <i class="bi bi-tag-fill me-1" style="color:#f97316;"></i>{{ sk.category }}
+          </td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td class="skill-col">{{ sk.name }}
+            <span class="badge ms-1" style="background:
+              {%- if sk.tier == 'advanced' %}#dc2626
+              {%- elif sk.tier == 'intermediate' %}#f97316
+              {%- elif sk.tier == 'basic' %}#fbbf24;color:#713f12
+              {%- else %}#22c55e
+              {%- endif %};font-size:.58rem;vertical-align:middle;border-radius:4px;">
+              {{ {'beginner':'初','basic':'基','intermediate':'中','advanced':'上'}[sk.tier] }}
+            </span>
+          </td>
+          {% for lv in sk.levels %}
+          {% set lv_labels = {0:'', 1:'学習中', 2:'基礎', 3:'実務可', 4:'習熟'} %}
+          <td class="lv-cell lv-{{ lv }}" title="Lv{{ lv }}: {{ ['未申告','学習中','基礎習得','実務可','習熟'][lv] }}">
+            <div style="font-size:.78rem;font-weight:700;line-height:1;">{{ lv if lv > 0 else '-' }}</div>
+            <div style="font-size:.58rem;opacity:.85;line-height:1;margin-top:1px;">{{ lv_labels[lv] }}</div>
+          </td>
+          {% endfor %}
+          <td class="text-center" style="font-weight:700;font-size:.72rem;background:#fff7ed;">
+            <span style="color:#f97316;">{{ sk.avg }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- チャート -->
+  <div class="row g-3 mb-5">
+    <div class="col-md-6">
+      <div class="card" style="border:none;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill me-2" style="color:#f97316;"></i>レベル分布</h6>
+          <div style="position:relative;height:240px;">
+            <canvas id="demoLevelChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card" style="border:none;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="bi bi-trophy-fill me-2" style="color:#f97316;"></i>メンバー別平均レベル</h6>
+          <div style="position:relative;height:240px;">
+            <canvas id="demoUserChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 機能紹介 -->
+  <h5 class="fw-bold mb-3 text-center"><i class="bi bi-stars me-2" style="color:#f97316;"></i>主な機能</h5>
+  <div class="row g-3 mb-5">
+    {% set features = [
+      ('bi-lightning-charge-fill','#f97316','スキル自己申告','メンバーが自分のスキルレベルを 0〜4 の5段階で申告。承認フローで信頼性を担保します。'),
+      ('bi-grid-3x3-gap','#dc2626','スキルマトリクス','メンバー × スキルのヒートマップで、チームの強み・弱みが一目でわかります。'),
+      ('bi-speedometer2','#f97316','ダッシュボード','成長トレンド・グループ比較・属人化リスクを分析。意思決定をデータで支援します。'),
+      ('bi-people-fill','#22c55e','グループ管理','部署・チームを階層で管理。必須スキル設定でギャップ分析も可能です。'),
+      ('bi-graph-up-arrow','#0ea5e9','成長タイムライン','スキルレベルの変化を時系列で可視化。個人の成長を振り返れます。'),
+      ('bi-check2-square','#8b5cf6','承認ワークフロー','申告内容をマネージャーが承認。一括承認・差し戻しコメント付きで効率的に管理できます。'),
+    ] %}
+    {% for icon, color, title, desc in features %}
+    <div class="col-md-4">
+      <div class="feature-card" style="border-top-color:{{ color }};">
+        <div style="width:40px;height:40px;border-radius:10px;background:{{ color }}1a;display:flex;align-items:center;justify-content:center;margin-bottom:.8rem;">
+          <i class="bi {{ icon }}" style="color:{{ color }};font-size:1.1rem;"></i>
+        </div>
+        <h6 class="fw-bold">{{ title }}</h6>
+        <p class="text-muted small mb-0">{{ desc }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2 class="fw-bold mb-2">今すぐ始めましょう</h2>
+  <p class="text-muted mb-4" style="color:rgba(255,255,255,.7) !important;">無料でアカウントを作成し、チームのスキル管理を始められます。</p>
+  <div class="d-flex gap-3 justify-content-center flex-wrap">
+    <a href="/register" class="btn btn-light fw-bold px-4 py-2" style="border-radius:20px;color:#431407;">
+      <i class="bi bi-person-plus me-1"></i>無料で登録する
+    </a>
+    <a href="/login" class="btn btn-outline-light px-4 py-2" style="border-radius:20px;">
+      <i class="bi bi-box-arrow-in-right me-1"></i>ログイン
+    </a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const WARM = ['#f1f5f9','#fef3c7','#fbbf24','#f97316','#dc2626'];
+  const LABELS = ['未申告','学習中','基礎習得','実務可','習熟'];
+  const dist = {{ demo.level_dist | tojson }};
+
+  // レベル分布ドーナツ
+  new Chart(document.getElementById('demoLevelChart'), {
+    type: 'doughnut',
+    data: {
+      labels: LABELS,
+      datasets: [{ data: dist, backgroundColor: WARM, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '55%',
+      plugins: {
+        legend: { position:'bottom', labels:{ boxWidth:10, padding:10, font:{size:11} } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}件` } }
+      }
+    }
+  });
+
+  // メンバー別横棒
+  const users = {{ demo.users | tojson }};
+  new Chart(document.getElementById('demoUserChart'), {
+    type: 'bar',
+    data: {
+      labels: users.map(u => u.name),
+      datasets: [{
+        label: '平均レベル',
+        data: users.map(u => u.avg),
+        backgroundColor: users.map(u => u.avg >= 3 ? '#dc2626' : u.avg >= 2 ? '#f97316' : '#fbbf24'),
+        borderRadius: 6, barThickness: 22,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      scales: {
+        x: { min:0, max:4, ticks:{stepSize:1}, grid:{color:'rgba(0,0,0,.04)'} },
+        y: { ticks:{font:{size:11}}, grid:{display:false} }
+      },
+      plugins: {
+        legend: { display:false },
+        tooltip: { callbacks: { label: ctx => `平均レベル: ${ctx.parsed.x}` } }
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>

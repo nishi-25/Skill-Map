@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
-    <h1><i class="bi bi-people me-2" style="color:#6366f1;"></i>ユーザー管理</h1>
+    <h1><i class="bi bi-people me-2" style="color:#f97316;"></i>ユーザー管理</h1>
     <p class="text-muted mb-0 small">ユーザーの承認・権限・削除を管理します</p>
   </div>
 </div>
@@ -29,7 +29,7 @@
           <td class="text-muted">{{ u.email or '-' }}</td>
           <td>
             {% if u.role == 'admin' %}
-            <span class="badge" style="background:#6366f1;">Admin</span>
+            <span class="badge" style="background:#f97316;">Admin</span>
             {% elif u.role == 'manager' %}
             <span class="badge" style="background:#0ea5e9;">Manager</span>
             {% else %}

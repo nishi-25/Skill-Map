@@ -5,7 +5,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   .timeline-entry { position: relative; padding-left: 28px; margin-bottom: 1.2rem; }
-  .timeline-entry::before { content: ''; position: absolute; left: 8px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: #6366f1; }
+  .timeline-entry::before { content: ''; position: absolute; left: 8px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: #f97316; }
   .timeline-entry::after { content: ''; position: absolute; left: 12px; top: 18px; width: 2px; bottom: -1.2rem; background: #e2e8f0; }
   .timeline-entry:last-child::after { display: none; }
   .growth-up { color: #22c55e; font-weight: 700; }
@@ -52,7 +52,7 @@
   <div class="col-6 col-md-3">
     <div class="stat-card">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-clock-history"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-clock-history"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;">{{ total_changes }}</div>
           <div class="text-muted" style="font-size:.78rem;">変更履歴数</div>
@@ -97,7 +97,7 @@
         <canvas id="growthChart"></canvas>
         {% else %}
         <div class="text-center text-muted py-5">
-          <i class="bi bi-graph-up-arrow fs-1 d-block mb-2" style="color:#c7d2fe;"></i>
+          <i class="bi bi-graph-up-arrow fs-1 d-block mb-2" style="color:#fed7aa;"></i>
           <p>承認された履歴が蓄積されるとグラフが表示されます</p>
         </div>
         {% endif %}
@@ -180,7 +180,7 @@
     </div>
     {% else %}
     <div class="text-center text-muted py-4">
-      <i class="bi bi-clock-history fs-1 d-block mb-2" style="color:#c7d2fe;"></i>
+      <i class="bi bi-clock-history fs-1 d-block mb-2" style="color:#fed7aa;"></i>
       <p>まだ変更履歴がありません。スキルレベルが承認されると、ここに履歴が表示されます。</p>
     </div>
     {% endif %}
@@ -192,7 +192,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const skillData = {{ skill_timeline | tojson }};
     const colors = [
-      '#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6',
+      '#f97316','#22c55e','#f59e0b','#ef4444','#8b5cf6',
       '#06b6d4','#ec4899','#14b8a6','#f97316','#64748b',
     ];
 

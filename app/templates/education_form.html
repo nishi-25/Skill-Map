@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}教育リソース{{ '編集' if link else '追加' }} - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-1" style="font-size:.85rem;">
+      <li class="breadcrumb-item"><a href="/education">教育リソース</a></li>
+      <li class="breadcrumb-item active">{{ '編集' if link else '新規追加' }}</li>
+    </ol>
+  </nav>
+  <h1><i class="bi bi-mortarboard-fill me-2" style="color:#f97316;"></i>
+    教育リソース{{ '編集' if link else '追加' }}
+  </h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-md-9">
+    <div class="card">
+      <div class="card-body p-4">
+        {% if error %}
+        <div class="alert alert-danger py-2 small" style="border-radius:10px;">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/education/{% if link %}{{ link.id }}/edit{% else %}new{% endif %}">
+
+          <!-- タイトル -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">タイトル <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" required autofocus
+                   placeholder="例: dSPACE公式ドキュメント"
+                   value="{{ link.title if link else '' }}">
+          </div>
+
+          <!-- URL -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">URL <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+              <input type="url" name="url" class="form-control" required
+                     placeholder="https://example.com"
+                     value="{{ link.url if link else '' }}"
+                     oninput="previewFavicon(this.value)">
+            </div>
+            <!-- ファビコンプレビュー -->
+            <div id="faviconPreview" style="display:none;margin-top:.4rem;" class="d-flex align-items-center gap-2 text-muted small">
+              <img id="faviconImg" src="" alt="" style="width:16px;height:16px;">
+              <span id="faviconDomain"></span>
+            </div>
+          </div>
+
+          <!-- 説明 -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">説明</label>
+            <textarea name="description" class="form-control" rows="3"
+                      placeholder="このリソースの内容・特徴・おすすめポイントなど（任意）"
+                      style="resize:vertical;">{{ link.description if link and link.description else '' }}</textarea>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <!-- カテゴリー -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">関連カテゴリー</label>
+              <select name="category_id" class="form-select" id="categorySelect" onchange="filterSkillsByCategory()">
+                <option value="0">未指定</option>
+                {% for c in categories %}
+                <option value="{{ c.id }}"
+                        data-color="{{ c.color }}"
+                        {% if link and link.category_id == c.id %}selected{% endif %}>
+                  {{ c.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- 関連スキル -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">関連スキル</label>
+              <select name="skill_id" class="form-select" id="skillSelect">
+                <option value="0">未指定</option>
+                {% for s in skills %}
+                <option value="{{ s.id }}"
+                        data-category="{{ s.category_id or 0 }}"
+                        {% if link and link.skill_id == s.id %}selected{% endif %}>
+                  {{ s.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill fw-semibold" style="border-radius:20px;">
+              <i class="bi bi-check-lg me-1"></i>{{ '更新する' if link else '追加する' }}
+            </button>
+            <a href="/education" class="btn btn-outline-secondary" style="border-radius:20px;">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// URLからファビコンプレビュー
+function previewFavicon(url) {
+  const preview = document.getElementById('faviconPreview');
+  const img     = document.getElementById('faviconImg');
+  const domain  = document.getElementById('faviconDomain');
+  try {
+    const u = new URL(url);
+    img.src = `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
+    domain.textContent = u.hostname;
+    preview.style.display = 'flex';
+  } catch {
+    preview.style.display = 'none';
+  }
+}
+
+// カテゴリー選択でスキルを絞り込む
+function filterSkillsByCategory() {
+  const catId = parseInt(document.getElementById('categorySelect').value);
+  const sel   = document.getElementById('skillSelect');
+  [...sel.options].forEach(opt => {
+    if (opt.value === '0') return;
+    const optCat = parseInt(opt.dataset.category);
+    opt.hidden = catId !== 0 && optCat !== catId;
+  });
+  // 現在選択中のスキルが非表示になったらリセット
+  const cur = sel.options[sel.selectedIndex];
+  if (cur && cur.hidden) sel.value = '0';
+}
+
+// 初期化
+(function() {
+  const url = document.querySelector('input[name="url"]').value;
+  if (url) previewFavicon(url);
+  filterSkillsByCategory();
+})();
+</script>
+{% endblock %}

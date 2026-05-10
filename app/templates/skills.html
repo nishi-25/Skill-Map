@@ -5,16 +5,20 @@
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
     {% if overview_mode %}
-    <h1><i class="bi bi-lightning-charge me-2" style="color:#6366f1;"></i>スキルマップ</h1>
+    <h1><i class="bi bi-lightning-charge me-2" style="color:#f97316;"></i><span data-i18n="page.skills">スキルマップ</span></h1>
     <p class="text-muted mb-0 small">難易度ティアを選択してスキル申告を行います</p>
     {% else %}
     <h1>
-      <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="text-decoration-none" style="color:#6366f1;">
+      <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="text-decoration-none" style="color:#f97316;">
         <i class="bi bi-arrow-left-circle me-2" style="font-size:1.1rem;"></i>
       </a>
+      {% if view == 'all' %}
+      <span class="fw-bold" style="color:#431407;">全スキル一覧</span>
+      {% else %}
       <span class="badge bg-{{ TIER_COLORS[sel_tier] }}" style="font-size:1rem;padding:.4em .8em;vertical-align:middle;">
         <i class="{{ TIER_ICONS[sel_tier] }} me-1"></i>{{ TIER_NAMES[sel_tier] }}
       </span>
+      {% endif %}
     </h1>
     {% if current_user.role in ('admin', 'manager') %}
     <p class="text-muted mb-0 small">各スキルに対して自分のレベルを申告します（Admin/Managerは自動承認されます）</p>
@@ -35,12 +39,12 @@
       {% endif %}
     </div>
     <div class="fw-semibold" style="font-size:.95rem;">
-      <span data-counter="{{ total_set }}" style="color:#6366f1;">0</span>
+      <span data-counter="{{ total_set }}" style="color:#f97316;">0</span>
       <span class="text-muted">/ {{ total_catalog }}</span>
       <span class="text-muted small ms-1">申告済み</span>
     </div>
     <div class="progress progress-animated mt-1" style="height:6px;width:140px;border-radius:3px;">
-      <div class="progress-bar" style="width:{% if total_catalog %}{{ (total_set / total_catalog * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:3px;"></div>
+      <div class="progress-bar" style="width:{% if total_catalog %}{{ (total_set / total_catalog * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:3px;"></div>
     </div>
   </div>
 </div>
@@ -96,7 +100,7 @@
 <div class="row g-3">
   {% set tier_gradients = {
     "beginner":     "linear-gradient(135deg,#22c55e,#16a34a)",
-    "basic":        "linear-gradient(135deg,#6366f1,#4f46e5)",
+    "basic":        "linear-gradient(135deg,#f97316,#ea580c)",
     "intermediate": "linear-gradient(135deg,#f59e0b,#d97706)",
     "advanced":     "linear-gradient(135deg,#ef4444,#dc2626)"
   } %}
@@ -131,13 +135,17 @@
   {% endfor %}
 </div>
 
-{% if current_user.role in ('admin', 'manager') %}
-<div class="text-center mt-3">
+<!-- 全スキル一覧へのショートカット -->
+<div class="text-center mt-3 d-flex justify-content-center gap-2 flex-wrap">
+  <a href="/skills?view=all{% if sel_group %}&group_id={{ sel_group }}{% endif %}" class="btn btn-sm btn-primary" style="border-radius:20px;font-size:.85rem;padding:.4rem 1.2rem;">
+    <i class="bi bi-table me-1"></i>全スキルを一覧表示
+  </a>
+  {% if current_user.role in ('admin', 'manager') %}
   <a href="/skills/tier-settings" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.8rem;">
     <i class="bi bi-gear me-1"></i>ティア名を設定
   </a>
+  {% endif %}
 </div>
-{% endif %}
 
 {% else %}
 <!-- ═══════ スキル詳細一覧（tierが選択されている場合） ═══════ -->
@@ -168,7 +176,7 @@
       </form>
       <div class="search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="skillSearch" class="form-control form-control-sm" placeholder="スキルを検索..." style="width:200px;">
+        <input type="text" id="skillSearch" class="form-control form-control-sm" placeholder="data-i18n-placeholder="lbl.search" placeholder="スキルを検索..." style="width:200px;">
       </div>
     </div>
   </div>
@@ -201,9 +209,27 @@
           <thead class="table-light">
             <tr>
               <th style="width:22%;">スキル</th>
-              <th style="width:10%;">カテゴリー</th>
+              <th style="width:10%;cursor:pointer;user-select:none;" onclick="sortSkillTable(this,'cat')">
+                カテゴリー <i class="bi bi-arrow-down-up sort-icon" style="font-size:.68rem;color:#94a3b8;"></i>
+              </th>
               <th style="width:20%;" class="hide-mobile">説明</th>
-              <th style="width:24%;" class="text-center">自分のレベル</th>
+              <th style="width:24%;cursor:pointer;user-select:none;text-align:center;" onclick="sortSkillTable(this,'level')">
+                自分のレベル <i class="bi bi-arrow-down-up sort-icon" style="font-size:.68rem;color:#94a3b8;"></i>
+                <span tabindex="0" role="button"
+                      data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-html="true"
+                      data-bs-content="
+                        <table class='table table-sm mb-0' style='font-size:.78rem;min-width:220px;'>
+                          <tr><td><span class='badge bg-secondary'>0</span></td><td><b>未経験</b></td><td>経験・知識がない</td></tr>
+                          <tr><td><span class='badge bg-info'>1</span></td><td><b>入門</b></td><td>概念を理解し、指導があれば作業できる</td></tr>
+                          <tr><td><span class='badge bg-primary'>2</span></td><td><b>基礎</b></td><td>手順を見ながら一人で作業できる</td></tr>
+                          <tr><td><span class='badge bg-warning text-dark'>3</span></td><td><b>実務可</b></td><td>手順書なしで業務に活用・説明できる</td></tr>
+                          <tr><td><span class='badge bg-danger'>4</span></td><td><b>エキスパート</b></td><td>設計・改善・他者指導ができる</td></tr>
+                        </table>"
+                      style="margin-left:4px;color:#94a3b8;font-size:.8rem;cursor:help;"
+                      onclick="event.stopPropagation()">
+                  <i class="bi bi-question-circle"></i>
+                </span>
+              </th>
               {% if current_user.role not in ('admin', 'manager') %}
               <th style="width:12%;" class="text-center">承認者</th>
               {% endif %}
@@ -214,7 +240,9 @@
             {% for sk in tier_skills %}
             {% set cur_level = my_level_map.get(sk.id, 0) %}
             {% set cur_status = my_approval_map.get(sk.id, '') %}
-            <tr class="skill-row" data-skill-name="{{ sk.name }}" data-skill-id="{{ sk.id }}">
+            <tr class="skill-row" data-skill-name="{{ sk.name }}" data-skill-id="{{ sk.id }}"
+                data-cat="{{ sk.category.name | lower if sk.category else '' }}"
+                data-level="{{ cur_level }}">
               <td>
                 <div class="fw-semibold">{{ sk.name }}</div>
               </td>
@@ -283,7 +311,7 @@
 {% if not by_tier %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-inbox fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <i class="bi bi-inbox fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>このティアにはスキルがありません</h5>
     <p class="small">管理者またはマネージャーにスキルカタログの追加を依頼してください。</p>
     <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
@@ -298,7 +326,7 @@
 <div class="modal fade" id="approverModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px;border:none;">
-      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
         <h6 class="modal-title fw-bold"><i class="bi bi-send me-2 text-primary"></i>スキルレベル申請</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -472,6 +500,76 @@
       }
     });
   });
+
+  /* ── カテゴリー・レベル列のソート（3段階: 昇順→降順→元の順） ── */
+  const _skillSortState   = new WeakMap(); // tbody → {key, dir}
+  const _skillOrigOrder   = new WeakMap(); // tbody → [row, ...]
+
+  // ページ読み込み時に各 tbody の元の行順を保存
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.table-skill tbody').forEach(tbody => {
+      _skillOrigOrder.set(tbody, [...tbody.querySelectorAll('.skill-row')]);
+    });
+    // Bootstrap ポップオーバー初期化
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+      new bootstrap.Popover(el, { sanitize: false });
+    });
+  });
+
+  window.sortSkillTable = function(th, key) {
+    const table  = th.closest('table');
+    const tbody  = table.querySelector('tbody');
+    const state  = _skillSortState.get(tbody) || { key: null, dir: null };
+
+    // 3段階トグル: none → asc → desc → none
+    let newDir;
+    if (state.key !== key || state.dir === null) {
+      newDir = 'asc';
+    } else if (state.dir === 'asc') {
+      newDir = 'desc';
+    } else {
+      newDir = null;  // 元の順番に戻す
+    }
+    _skillSortState.set(tbody, { key, dir: newDir });
+
+    // アイコン更新（このテーブル内全てのsort-iconをリセット）
+    table.querySelectorAll('.sort-icon').forEach(icon => {
+      icon.className = 'bi bi-arrow-down-up sort-icon';
+      icon.style.color = '#94a3b8';
+    });
+    if (newDir !== null) {
+      const myIcon = th.querySelector('.sort-icon');
+      if (myIcon) {
+        myIcon.className = `bi bi-arrow-${newDir === 'asc' ? 'up' : 'down'} sort-icon`;
+        myIcon.style.color = '#f97316';
+      }
+    }
+
+    if (newDir === null) {
+      // 元の順番に戻す
+      const orig = _skillOrigOrder.get(tbody) || [];
+      orig.forEach(r => tbody.appendChild(r));
+      return;
+    }
+
+    // ソート実行
+    const rows = [...tbody.querySelectorAll('.skill-row')];
+    rows.sort((a, b) => {
+      if (key === 'cat') {
+        const va = a.dataset.cat || '';
+        const vb = b.dataset.cat || '';
+        const cmp = va.localeCompare(vb, 'ja');
+        return newDir === 'asc' ? cmp : -cmp;
+      }
+      if (key === 'level') {
+        const va = parseInt(a.dataset.level || 0);
+        const vb = parseInt(b.dataset.level || 0);
+        return newDir === 'asc' ? va - vb : vb - va;
+      }
+      return 0;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  };
 
   /* ── Client-side search ── */
   const searchEl = document.getElementById('skillSearch');

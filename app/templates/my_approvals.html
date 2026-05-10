@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-send me-2" style="color:#6366f1;"></i>自分の申請状況</h1>
+    <h1><i class="bi bi-send me-2" style="color:#f97316;"></i data-i18n="page.my_approvals">自分の申請状況</h1>
     <p class="text-muted mb-0 small">自分が申請したスキルレベルの承認状況を確認できます</p>
   </div>
   <div class="d-flex gap-2">
@@ -53,10 +53,10 @@
             <th>スキル</th>
             <th>カテゴリー</th>
             <th class="text-center">申告レベル</th>
-            <th class="text-center">ステータス</th>
-            <th>承認者</th>
-            <th>コメント</th>
-            <th>更新日</th>
+            <th class="text-center" data-i18n="lbl.status">ステータス</th>
+            <th data-i18n="lbl.approver">承認者</th>
+            <th data-i18n="lbl.comment">コメント</th>
+            <th data-i18n="lbl.updated_at">更新日</th>
           </tr>
         </thead>
         <tbody>
@@ -94,7 +94,7 @@
     </div>
     {% else %}
     <div class="text-center py-5 text-muted">
-      <i class="bi bi-inbox fs-1 d-block mb-2" style="color:#c7d2fe;"></i>
+      <i class="bi bi-inbox fs-1 d-block mb-2" style="color:#fed7aa;"></i>
       <p class="mb-0">まだスキルレベルの申請がありません</p>
       <a href="/skills" class="btn btn-primary btn-sm mt-3" style="border-radius:20px;">
         <i class="bi bi-lightning-charge me-1"></i>スキルマップへ

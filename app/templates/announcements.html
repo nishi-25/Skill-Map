@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}お知らせ - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-megaphone-fill me-2" style="color:#f97316;"></i>お知らせ</h1>
+    <p class="text-muted mb-0 small">今後追加予定の機能や改善のお知らせです</p>
+  </div>
+  {% if current_user.role == 'admin' %}
+  <a href="/announcements/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-plus-lg me-1"></i>お知らせを追加
+  </a>
+  {% endif %}
+</div>
+
+{% macro ann_card(a, show_unread_badge=False) %}
+{% set type_icon = {'feature':'bi-rocket-takeoff','improvement':'bi-tools','info':'bi-info-circle-fill','maintenance':'bi-wrench-adjustable'} %}
+<div class="card{% if not a.is_published %} opacity-50{% endif %}"
+     style="border-left:5px solid var(--bs-{{ ANNOUNCEMENT_TYPE_COLORS[a.ann_type] }},#f97316);"
+     {% if show_unread_badge %}data-ann-id="{{ a.id }}"{% endif %}>
+  <div class="card-body">
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+      <div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;
+                  background:var(--bs-{{ ANNOUNCEMENT_TYPE_COLORS[a.ann_type] }}-bg-subtle,#fff7ed);
+                  display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+        <i class="bi {{ type_icon.get(a.ann_type, 'bi-bell') }}"
+           style="color:var(--bs-{{ ANNOUNCEMENT_TYPE_COLORS[a.ann_type] }},#f97316);"></i>
+      </div>
+      <div class="flex-fill min-width-0">
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+          <span class="badge bg-{{ ANNOUNCEMENT_TYPE_COLORS[a.ann_type] }}" style="font-size:.7rem;">
+            {{ ANNOUNCEMENT_TYPES[a.ann_type] }}
+          </span>
+          {% if not a.is_published %}
+          <span class="badge bg-secondary" style="font-size:.68rem;">非公開（下書き）</span>
+          {% endif %}
+          {% if a.scheduled_at %}
+          <span class="badge" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;font-size:.68rem;">
+            <i class="bi bi-calendar3 me-1"></i>{{ a.scheduled_at.strftime('%Y/%m/%d') }} 予定
+          </span>
+          {% endif %}
+          {% if show_unread_badge %}
+          <span class="ann-unread-badge badge bg-danger" style="font-size:.62rem;display:none;">NEW</span>
+          {% endif %}
+        </div>
+        <h6 class="fw-bold mb-1" style="font-size:.98rem;">{{ a.title }}</h6>
+        <p class="text-muted mb-0" style="font-size:.85rem;line-height:1.6;white-space:pre-line;">{{ a.content }}</p>
+        <div class="text-muted mt-2" style="font-size:.72rem;">
+          <i class="bi bi-clock me-1"></i>{{ a.created_at|jst }}
+        </div>
+      </div>
+      {% if current_user.role == 'admin' %}
+      <div class="d-flex gap-1 flex-shrink-0">
+        <a href="/announcements/{{ a.id }}/edit" class="btn btn-xs btn-outline-secondary" style="border-radius:20px;">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <form method="post" action="/announcements/{{ a.id }}/delete"
+              onsubmit="return confirm('「{{ a.title }}」を削除しますか？')">
+          <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% if announcements %}
+
+{% if current_user.role == 'admin' %}
+  {# ══ Admin: サーバー側で時間ベースに分類 ══ #}
+  {% if new_anns %}
+  <h6 class="fw-bold mb-2 mt-1" style="color:#431407;font-size:.82rem;letter-spacing:.04em;">
+    <i class="bi bi-bell-fill me-1" style="color:#f97316;"></i>新着（投稿後1時間以内）
+    <span class="badge bg-danger ms-1" style="font-size:.65rem;">{{ new_anns|length }}</span>
+  </h6>
+  <div class="d-flex flex-column gap-3 mb-4">
+    {% for a in new_anns %}{{ ann_card(a) }}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if past_anns %}
+  <h6 class="fw-bold mb-2" style="color:#64748b;font-size:.82rem;letter-spacing:.04em;">
+    <i class="bi bi-clock-history me-1"></i>過去の投稿
+  </h6>
+  <div class="d-flex flex-column gap-3">
+    {% for a in past_anns %}{{ ann_card(a) }}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not new_anns and not past_anns %}
+  <div class="card">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="bi bi-megaphone fs-1 d-block mb-3" style="color:#fed7aa;"></i>
+      <h5>お知らせはありません</h5>
+      <a href="/announcements/new" class="btn btn-primary btn-sm mt-2" style="border-radius:20px;">
+        <i class="bi bi-plus-lg me-1"></i>お知らせを追加
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+{% else %}
+  {# ══ Manager/User: 全件表示してJSで既読/未読に分類 ══ #}
+  <div id="newAnnsSection" style="display:none;">
+    <h6 class="fw-bold mb-2 mt-1" style="color:#431407;font-size:.82rem;letter-spacing:.04em;">
+      <i class="bi bi-bell-fill me-1" style="color:#f97316;"></i>新着・未読
+      <span id="newAnnCount" class="badge bg-danger ms-1" style="font-size:.65rem;"></span>
+    </h6>
+    <div id="newAnnsList" class="d-flex flex-column gap-3 mb-4"></div>
+  </div>
+
+  <div id="pastAnnsSection">
+    <h6 class="fw-bold mb-2" style="color:#64748b;font-size:.82rem;letter-spacing:.04em;" id="pastAnnsLabel">
+      <i class="bi bi-clock-history me-1"></i>過去のお知らせ
+    </h6>
+    <div id="pastAnnsList" class="d-flex flex-column gap-3"></div>
+  </div>
+
+  <!-- 全件データを hidden で埋め込む -->
+  <div id="allAnnsData" style="display:none;">
+    {% for a in announcements %}
+    {{ ann_card(a, show_unread_badge=True) }}
+    {% endfor %}
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ANN_READ_KEY = 'ann_read_ids';
+    const readIds = (function() {
+      try { return new Set(JSON.parse(localStorage.getItem(ANN_READ_KEY) || '[]')); }
+      catch { return new Set(); }
+    })();
+
+    const allCards = [...document.querySelectorAll('#allAnnsData .card[data-ann-id]')];
+    const newList  = document.getElementById('newAnnsList');
+    const pastList = document.getElementById('pastAnnsList');
+
+    let newCount = 0;
+    allCards.forEach(card => {
+      const id     = parseInt(card.dataset.annId);
+      const isRead = readIds.has(id);
+      const badge  = card.querySelector('.ann-unread-badge');
+      const clone  = card.cloneNode(true);
+
+      if (!isRead) {
+        // 未読 → 新着セクション
+        clone.style.background = '#fff7ed';
+        if (badge) clone.querySelector('.ann-unread-badge').style.display = '';
+        newList.appendChild(clone);
+        newCount++;
+      } else {
+        // 既読 → 過去のお知らせセクション
+        pastList.appendChild(clone);
+      }
+    });
+
+    // 新着件数バッジ
+    const countBadge = document.getElementById('newAnnCount');
+    if (newCount > 0) {
+      document.getElementById('newAnnsSection').style.display = '';
+      if (countBadge) countBadge.textContent = newCount;
+    } else {
+      // 新着0件なら「過去」セクションのラベルを変更
+      const label = document.getElementById('pastAnnsLabel');
+      if (label) label.innerHTML = '<i class="bi bi-megaphone me-1"></i>お知らせ';
+    }
+
+    // 既読にする（この画面を開いたら全て既読）
+    allCards.forEach(card => {
+      const id = parseInt(card.dataset.annId);
+      readIds.add(id);
+    });
+    localStorage.setItem(ANN_READ_KEY, JSON.stringify([...readIds]));
+  });
+  </script>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-megaphone fs-1 d-block mb-3" style="color:#fed7aa;"></i>
+    <h5>お知らせはありません</h5>
+    {% if current_user.role == 'admin' %}
+    <p class="small">今後追加予定の機能や改善内容を投稿しましょう。</p>
+    <a href="/announcements/new" class="btn btn-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-plus-lg me-1"></i>お知らせを追加
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

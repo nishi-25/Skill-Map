@@ -1,0 +1,427 @@
+[
+  {
+    "category": "テスト管理・品質",
+    "color": "#be185d",
+    "skills": [
+      {
+        "name": "ASPICE",
+        "tier": "advanced",
+        "description": "Automotive SPICEプロセスアセスメント・改善施策立案"
+      },
+      {
+        "name": "テストレポート作成",
+        "tier": "basic",
+        "description": "テスト結果集計・品質評価・リリース判定レポート作成"
+      },
+      {
+        "name": "テスト計画策定",
+        "tier": "basic",
+        "description": "テスト方針・スコープ・スケジュール・リソース計画"
+      },
+      {
+        "name": "不具合管理",
+        "tier": "basic",
+        "description": "バグトラッキング・重要度分類・修正確認・クローズ管理"
+      },
+      {
+        "name": "QMSプロセス理解",
+        "tier": "intermediate",
+        "description": "品質マネジメントシステム・プロセス準拠・監査対応"
+      },
+      {
+        "name": "品質指標管理",
+        "tier": "intermediate",
+        "description": "KPI設定・品質メトリクス収集・傾向分析・改善活動"
+      }
+    ]
+  },
+  {
+    "category": "HILS基盤・操作",
+    "color": "#dc2626",
+    "skills": [
+      {
+        "name": "HILS環境整備・保守",
+        "tier": "advanced",
+        "description": "HILSラック整備・定期メンテナンス・信頼性確保"
+      },
+      {
+        "name": "HILSキャリブレーション",
+        "tier": "basic",
+        "description": "センサ・アクチュエータの校正・調整手順"
+      },
+      {
+        "name": "HILS基本操作",
+        "tier": "beginner",
+        "description": "HILSの電源投入・基本操作・ステータス確認"
+      },
+      {
+        "name": "HILS構成理解",
+        "tier": "beginner",
+        "description": "HILSシステム全体構成（HW/SW/モデル）の理解"
+      },
+      {
+        "name": "HILSシステム設計",
+        "tier": "intermediate",
+        "description": "要件からHILS全体構成の設計・機器選定"
+      },
+      {
+        "name": "HILS障害切り分け",
+        "tier": "intermediate",
+        "description": "HW/SW/モデル起因の問題を切り分け・原因特定"
+      }
+    ]
+  },
+  {
+    "category": "ハードウェア・W/H設計",
+    "color": "#d97706",
+    "skills": [
+      {
+        "name": "HILS筐体・構成設計",
+        "tier": "advanced",
+        "description": "HILSシステム全体のHW構成設計・機器選定・仕様策定"
+      },
+      {
+        "name": "ECU接続・結線",
+        "tier": "basic",
+        "description": "ECUコネクタへの配線接続・導通確認・ピンアサイン"
+      },
+      {
+        "name": "W/H設計",
+        "tier": "basic",
+        "description": "HILS用ハーネス設計・仕様書作成・製作指示"
+      },
+      {
+        "name": "W/H基礎知識",
+        "tier": "beginner",
+        "description": "ワイヤハーネスの基本構成・端子・コネクタ種類"
+      },
+      {
+        "name": "回路図・配線図読解",
+        "tier": "beginner",
+        "description": "電気回路図・車両配線図の読み方・記号理解"
+      },
+      {
+        "name": "HILSラック組立・配線",
+        "tier": "intermediate",
+        "description": "dSPACEボード・ECU・電源のラック組み立て・配線"
+      },
+      {
+        "name": "電源設計",
+        "tier": "intermediate",
+        "description": "電源要件定義・回路設計・保護回路・ノイズ対策"
+      }
+    ]
+  },
+  {
+    "category": "モデル開発（Simulink）",
+    "color": "#f97316",
+    "skills": [
+      {
+        "name": "Simulink Design Verifier",
+        "tier": "advanced",
+        "description": "モデルの形式検証・テストケース自動生成"
+      },
+      {
+        "name": "Simulink コード生成",
+        "tier": "advanced",
+        "description": "Embedded Coder / RTW活用・量産品質コード生成"
+      },
+      {
+        "name": "Stateflow",
+        "tier": "basic",
+        "description": "状態遷移・フローチャート設計・イベント処理"
+      },
+      {
+        "name": "プラントモデル開発",
+        "tier": "basic",
+        "description": "車両・アクチュエータ・センサの物理モデル開発"
+      },
+      {
+        "name": "MATLAB 基礎",
+        "tier": "beginner",
+        "description": "MATLAB Script・数値計算・基本データ操作・グラフ描画"
+      },
+      {
+        "name": "Simulink 基礎",
+        "tier": "beginner",
+        "description": "基本ブロック操作・信号接続・シミュレーション実行"
+      },
+      {
+        "name": "S-Function 開発",
+        "tier": "intermediate",
+        "description": "カスタムブロック（C / MATLAB S-Function）開発"
+      },
+      {
+        "name": "モデル結合・I/F設計",
+        "tier": "intermediate",
+        "description": "複数モデルの統合・信号インタフェース設計・検証"
+      }
+    ]
+  },
+  {
+    "category": "dSPACEツール",
+    "color": "#2563eb",
+    "skills": [
+      {
+        "name": "dSPACE VEOS（仮想ECU）",
+        "tier": "advanced",
+        "description": "実機レスSIL環境構築・仮想ECUでのテスト実施"
+      },
+      {
+        "name": "AutomationDesk 基礎",
+        "tier": "basic",
+        "description": "テスト自動化シーケンス作成・実行・結果確認"
+      },
+      {
+        "name": "ConfigurationDesk",
+        "tier": "basic",
+        "description": "I/O・通信設定、ハードウェアコンフィグレーション"
+      },
+      {
+        "name": "ControlDesk 基本操作",
+        "tier": "beginner",
+        "description": "レイアウト作成・変数モニタリング・データ記録"
+      },
+      {
+        "name": "SCALEXIO / DS1007 操作",
+        "tier": "beginner",
+        "description": "dSPACEリアルタイムボードの基本操作・起動"
+      },
+      {
+        "name": "AutomationDesk 応用",
+        "tier": "intermediate",
+        "description": "Python / MATLAB連携・高度な自動化シーケンス構築"
+      },
+      {
+        "name": "ModelDesk",
+        "tier": "intermediate",
+        "description": "車両モデル・ドライバモデルの設定・シナリオ実行"
+      },
+      {
+        "name": "SystemDesk / AUTOSAR設定",
+        "tier": "intermediate",
+        "description": "AUTOSARアーキテクチャ記述・SWC設定・生成"
+      }
+    ]
+  },
+  {
+    "category": "DevOps・自動化",
+    "color": "#059669",
+    "skills": [
+      {
+        "name": "インフラ管理・IaC",
+        "tier": "advanced",
+        "description": "サーバ・ネットワーク管理・Infrastructure as Code"
+      },
+      {
+        "name": "Docker 基礎",
+        "tier": "basic",
+        "description": "Dockerfile・イメージ・コンテナ操作・Docker Compose"
+      },
+      {
+        "name": "GitHub Actions",
+        "tier": "basic",
+        "description": "CI/CDパイプライン構築・自動テスト・通知連携"
+      },
+      {
+        "name": "Git 基礎",
+        "tier": "beginner",
+        "description": "バージョン管理・ブランチ・コミット・マージ"
+      },
+      {
+        "name": "GitHub / GitLab 操作",
+        "tier": "beginner",
+        "description": "PR・Issue・コードレビュー・リモートリポジトリ管理"
+      },
+      {
+        "name": "CI/CDパイプライン構築",
+        "tier": "intermediate",
+        "description": "テスト・ビルド・結果通知の自動化パイプライン設計"
+      },
+      {
+        "name": "HILSテスト自動化",
+        "tier": "intermediate",
+        "description": "AutomationDesk / Python連携によるHILSテスト自動化"
+      },
+      {
+        "name": "社内ツール・アプリ開発",
+        "tier": "intermediate",
+        "description": "業務効率化Web/GUIアプリの企画・設計・開発・運用"
+      }
+    ]
+  },
+  {
+    "category": "ソフト検証・テスト",
+    "color": "#7c3aed",
+    "skills": [
+      {
+        "name": "テスト自動化設計",
+        "tier": "advanced",
+        "description": "テストフレームワーク設計・自動化戦略の立案・実装"
+      },
+      {
+        "name": "テストケース作成",
+        "tier": "basic",
+        "description": "同値分割・境界値・状態遷移・デシジョンテーブル活用"
+      },
+      {
+        "name": "テスト分析・設計",
+        "tier": "basic",
+        "description": "要求仕様からテスト観点を抽出・テスト設計技法の活用"
+      },
+      {
+        "name": "テスト結果解析",
+        "tier": "basic",
+        "description": "波形・ログ解析・NG原因の特定・レポート作成"
+      },
+      {
+        "name": "テスト仕様書読解",
+        "tier": "beginner",
+        "description": "テスト仕様書の内容理解・テスト項目把握"
+      },
+      {
+        "name": "テスト実行・記録",
+        "tier": "beginner",
+        "description": "手順に従ったテスト実行・結果記録・エビデンス取得"
+      },
+      {
+        "name": "CANoe 活用",
+        "tier": "intermediate",
+        "description": "CANoeによる通信ログ取得・シミュレーション・診断"
+      },
+      {
+        "name": "回帰テスト設計",
+        "tier": "intermediate",
+        "description": "変更影響範囲の特定・効率的な回帰テスト設計"
+      },
+      {
+        "name": "網羅率分析・管理",
+        "tier": "intermediate",
+        "description": "C0/C1カバレッジ分析・未検証部位の特定と対策"
+      }
+    ]
+  },
+  {
+    "category": "プロジェクト管理",
+    "color": "#0f766e",
+    "skills": [
+      {
+        "name": "プロセス改善",
+        "tier": "advanced",
+        "description": "課題分析・改善提案・KPIによる効果測定・横展開"
+      },
+      {
+        "name": "スケジュール管理",
+        "tier": "basic",
+        "description": "WBS作成・マイルストーン設定・リスク管理"
+      },
+      {
+        "name": "技術レビュー実施",
+        "tier": "basic",
+        "description": "設計・コード・テスト仕様のレビュー実施・建設的指摘"
+      },
+      {
+        "name": "課題管理ツール活用",
+        "tier": "basic",
+        "description": "Jira / GitHub Issues等のチケット運用・ワークフロー設計"
+      },
+      {
+        "name": "タスク管理・進捗報告",
+        "tier": "beginner",
+        "description": "課題管理・優先度付け・定例での進捗報告"
+      },
+      {
+        "name": "技術ドキュメント作成",
+        "tier": "beginner",
+        "description": "議事録・設計書・手順書・技術メモの作成"
+      },
+      {
+        "name": "チームリード",
+        "tier": "intermediate",
+        "description": "タスク割当・メンバー育成・技術的意思決定・調整"
+      }
+    ]
+  },
+  {
+    "category": "車載・ECU・通信",
+    "color": "#374151",
+    "skills": [
+      {
+        "name": "機能安全（ISO 26262）",
+        "tier": "advanced",
+        "description": "ASIL・安全要求・ハザード分析・V&V・FSM設計"
+      },
+      {
+        "name": "CAN通信",
+        "tier": "basic",
+        "description": "CANプロトコル・DBC・メッセージ・信号定義の理解"
+      },
+      {
+        "name": "LIN通信",
+        "tier": "basic",
+        "description": "LINプロトコル・マスタ/スレーブ・スケジュール表"
+      },
+      {
+        "name": "ECU基礎知識",
+        "tier": "beginner",
+        "description": "ECUの役割・入出力・ソフトウェア構成の基本"
+      },
+      {
+        "name": "車両基礎知識",
+        "tier": "beginner",
+        "description": "車両系統（パワトレ・シャシ・ボデー）の基本的な理解"
+      },
+      {
+        "name": "AUTOSAR知識",
+        "tier": "intermediate",
+        "description": "AUTOSARアーキテクチャ・SWC・RTE・BSWの理解"
+      },
+      {
+        "name": "車載Ethernet",
+        "tier": "intermediate",
+        "description": "100BASE-T1・DoIP・AVB/TSN・車載ネットワーク設計"
+      }
+    ]
+  },
+  {
+    "category": "プログラミング",
+    "color": "#0891b2",
+    "skills": [
+      {
+        "name": "C++ 基礎",
+        "tier": "basic",
+        "description": "クラス・継承・STL・組込みC++"
+      },
+      {
+        "name": "Python 応用",
+        "tier": "basic",
+        "description": "クラス・外部ライブラリ（pandas/numpy等）・データ処理"
+      },
+      {
+        "name": "C言語 基礎",
+        "tier": "beginner",
+        "description": "変数・ポインタ・構造体・組込み向けC言語基礎"
+      },
+      {
+        "name": "Python 基礎",
+        "tier": "beginner",
+        "description": "変数・制御文・関数・ファイル操作・基本ライブラリ"
+      },
+      {
+        "name": "GUI開発（Python）",
+        "tier": "intermediate",
+        "description": "PyQt / Tkinter・デスクトップアプリ設計・開発"
+      },
+      {
+        "name": "Webアプリ開発",
+        "tier": "intermediate",
+        "description": "FastAPI / Flask・REST API設計・フロントエンド連携"
+      },
+      {
+        "name": "データ解析・可視化",
+        "tier": "intermediate",
+        "description": "pandas/matplotlib・測定データ集計・グラフ可視化"
+      }
+    ]
+  }
+]

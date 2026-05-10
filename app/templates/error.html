@@ -12,12 +12,12 @@
 </head>
 <body>
 <div class="text-center p-4">
-  <div style="font-size:5rem;color:#c7d2fe;">
+  <div style="font-size:5rem;color:#fed7aa;">
     {% if code == 404 %}<i class="bi bi-search"></i>
     {% elif code == 403 %}<i class="bi bi-shield-x"></i>
     {% else %}<i class="bi bi-exclamation-triangle"></i>{% endif %}
   </div>
-  <h1 class="display-4 fw-bold" style="color:#1e1b4b;">{{ code }}</h1>
+  <h1 class="display-4 fw-bold" style="color:#431407;">{{ code }}</h1>
   <p class="text-muted mb-4">{{ message }}</p>
   <a href="/dashboard" class="btn btn-primary">
     <i class="bi bi-house me-1"></i>ダッシュボードへ戻る

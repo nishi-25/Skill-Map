@@ -16,6 +16,9 @@ from template_engine import templates
 from routers import skills as skills_router
 from routers import admin as admin_router
 from routers import groups as groups_router
+from routers import tickets as tickets_router
+from routers import education as education_router
+from routers import announcements as announcements_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,6 +35,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(skills_router.router)
 app.include_router(admin_router.router)
 app.include_router(groups_router.router)
+app.include_router(tickets_router.router)
+app.include_router(education_router.router)
+app.include_router(announcements_router.router)
 
 
 # ─── 承認バッジ用ミドルウェア ─────────────────────────────────
@@ -173,9 +179,72 @@ def _startup():
         user_count = db.query(models.User).count()
         if not is_setup_complete() and user_count > 0:
             save_config({"setup_complete": True})
+        _migrate_group_managers_table(db)
+        _migrate_tickets_tables()
+        _migrate_education_table()
+        _migrate_announcements_table()
         _seed_catalog(db)
+        _sync_tier_names(db)
     finally:
         db.close()
+
+
+def _migrate_announcements_table():
+    from sqlalchemy import inspect as sa_inspect
+    insp = sa_inspect(database.engine)
+    if "announcements" not in insp.get_table_names():
+        models.Announcement.__table__.create(bind=database.engine)
+
+
+def _migrate_education_table():
+    from sqlalchemy import inspect as sa_inspect
+    insp = sa_inspect(database.engine)
+    if "educational_links" not in insp.get_table_names():
+        models.EducationalLink.__table__.create(bind=database.engine)
+
+
+def _migrate_tickets_tables():
+    """tickets / ticket_messages テーブルを作成（未存在の場合）"""
+    from sqlalchemy import inspect as sa_inspect
+    insp = sa_inspect(database.engine)
+    names = insp.get_table_names()
+    if "tickets" not in names:
+        models.Ticket.__table__.create(bind=database.engine)
+    if "ticket_messages" not in names:
+        models.TicketMessage.__table__.create(bind=database.engine)
+
+
+def _migrate_group_managers_table(db):
+    """group_managers テーブルを作成し、既存の manager_id を移行する"""
+    from sqlalchemy import inspect as sa_inspect, text
+    insp = sa_inspect(database.engine)
+    if "group_managers" not in insp.get_table_names():
+        models.group_managers.create(bind=database.engine)
+        # 既存グループの manager_id を group_managers に移行
+        groups = db.query(models.Group).filter(models.Group.manager_id.isnot(None)).all()
+        for g in groups:
+            exists = db.execute(
+                text("SELECT 1 FROM group_managers WHERE group_id=:gid AND user_id=:uid"),
+                {"gid": g.id, "uid": g.manager_id}
+            ).first()
+            if not exists:
+                db.execute(
+                    text("INSERT INTO group_managers (group_id, user_id) VALUES (:gid, :uid)"),
+                    {"gid": g.id, "uid": g.manager_id}
+                )
+        db.commit()
+
+
+def _sync_tier_names(db):
+    """DB保存のティア名が旧デフォルト（ビギナー等）なら新デフォルトに更新する"""
+    OLD_NAMES = {"ビギナー", "ベーシック", "アドバンスド", "エキスパート", "初心者向け"}
+    for key, new_name in models.DEFAULT_TIER_NAMES.items():
+        setting = db.query(models.AppSetting).filter(
+            models.AppSetting.key == f"tier_name_{key}"
+        ).first()
+        if setting and setting.value in OLD_NAMES:
+            setting.value = new_name
+    db.commit()
 
 
 def _migrate_approval_columns(db):
@@ -263,72 +332,113 @@ def _migrate_tag_archive():
             conn.execute(text("ALTER TABLE skills ADD COLUMN is_archived BOOLEAN DEFAULT 0 NOT NULL"))
 
 
-# ITエンジニア向けスキルカタログのシードデータ
+# 車両開発・HILS向けスキルカタログのシードデータ
 _SEED_CATEGORIES = [
-    {"name": "バージョン管理",      "color": "#f97316"},
-    {"name": "コンテナ技術",        "color": "#0ea5e9"},
-    {"name": "CI/CD",               "color": "#10b981"},
-    {"name": "プログラミング言語",   "color": "#8b5cf6"},
-    {"name": "クラウド",            "color": "#f59e0b"},
-    {"name": "データベース",        "color": "#ec4899"},
-    {"name": "インフラ・OS",        "color": "#6366f1"},
-    {"name": "セキュリティ",        "color": "#ef4444"},
-    {"name": "フロントエンド",      "color": "#14b8a6"},
-    {"name": "プロジェクト管理",    "color": "#84cc16"},
+    {"name": "HILS基盤・操作",          "color": "#dc2626"},
+    {"name": "dSPACEツール",            "color": "#2563eb"},
+    {"name": "ソフト検証・テスト",      "color": "#7c3aed"},
+    {"name": "モデル開発（Simulink）",  "color": "#f97316"},
+    {"name": "DevOps・自動化",          "color": "#059669"},
+    {"name": "ハードウェア・W/H設計",   "color": "#d97706"},
+    {"name": "プログラミング",          "color": "#0891b2"},
+    {"name": "テスト管理・品質",        "color": "#be185d"},
+    {"name": "車載・ECU・通信",         "color": "#374151"},
+    {"name": "プロジェクト管理",        "color": "#0f766e"},
 ]
 
 _SEED_SKILLS = [
-    # バージョン管理
-    {"name": "Git 基礎",         "cat": "バージョン管理",    "tier": "beginner",     "desc": "add/commit/push/pull・ステージング"},
-    {"name": "GitHub",           "cat": "バージョン管理",    "tier": "beginner",     "desc": "PR・Issue・リモートリポジトリ管理"},
-    {"name": "Git ブランチ戦略", "cat": "バージョン管理",    "tier": "basic",        "desc": "GitFlow・GitHub Flow・コンフリクト解消"},
-    {"name": "GitLab",           "cat": "バージョン管理",    "tier": "basic",        "desc": "GitLab CI/CDパイプライン・マージリクエスト"},
-    # コンテナ技術
-    {"name": "Docker 基礎",      "cat": "コンテナ技術",      "tier": "beginner",     "desc": "Dockerfile・イメージビルド・コンテナ実行"},
-    {"name": "Docker Compose",   "cat": "コンテナ技術",      "tier": "basic",        "desc": "複数コンテナ定義・ネットワーク・ボリューム"},
-    {"name": "Kubernetes 基礎",  "cat": "コンテナ技術",      "tier": "intermediate", "desc": "Pod/Deployment/Service/ConfigMap"},
-    {"name": "Kubernetes 運用",  "cat": "コンテナ技術",      "tier": "advanced",     "desc": "Helm・RBAC・HPA・ネットワークポリシー"},
-    # CI/CD
-    {"name": "GitHub Actions",   "cat": "CI/CD",             "tier": "basic",        "desc": "ワークフロー定義・自動テスト/デプロイ"},
-    {"name": "Jenkins",          "cat": "CI/CD",             "tier": "intermediate", "desc": "パイプライン構築・プラグイン管理"},
-    {"name": "CircleCI",         "cat": "CI/CD",             "tier": "intermediate", "desc": "Orbs活用・パイプライン最適化"},
-    {"name": "ArgoCD",           "cat": "CI/CD",             "tier": "advanced",     "desc": "GitOpsによる継続的デプロイ"},
-    # プログラミング言語
-    {"name": "Python",           "cat": "プログラミング言語", "tier": "beginner",     "desc": "データ型・関数・クラス・ライブラリ活用"},
-    {"name": "JavaScript",       "cat": "プログラミング言語", "tier": "beginner",     "desc": "DOM操作・非同期処理・ES6+構文"},
-    {"name": "TypeScript",       "cat": "プログラミング言語", "tier": "basic",        "desc": "型定義・インターフェース・ジェネリクス"},
-    {"name": "Go",               "cat": "プログラミング言語", "tier": "intermediate", "desc": "goroutine・並行処理・APIサーバー構築"},
-    {"name": "Java",             "cat": "プログラミング言語", "tier": "intermediate", "desc": "OOP・Spring Boot・Maven/Gradle"},
-    {"name": "Rust",             "cat": "プログラミング言語", "tier": "advanced",     "desc": "所有権・メモリ安全・高性能システム"},
-    # クラウド
-    {"name": "AWS 基礎 (EC2/S3/VPC)",       "cat": "クラウド", "tier": "basic",        "desc": "主要サービスの基本操作・IAM設定"},
-    {"name": "AWS 応用 (EKS/Lambda/RDS)",    "cat": "クラウド", "tier": "intermediate", "desc": "サーバーレス・マネージドDB・コンテナ"},
-    {"name": "GCP / Firebase",               "cat": "クラウド", "tier": "intermediate", "desc": "GCEから BigQuery・Firebase活用"},
-    {"name": "Azure",                        "cat": "クラウド", "tier": "intermediate", "desc": "AKS・Azure DevOps・Active Directory"},
-    {"name": "IaC (Terraform)",              "cat": "クラウド", "tier": "advanced",     "desc": "宣言的インフラ管理・モジュール設計"},
-    # データベース
-    {"name": "SQL 基礎",                     "cat": "データベース", "tier": "beginner",     "desc": "SELECT/INSERT/UPDATE/DELETE・JOIN"},
-    {"name": "MySQL / PostgreSQL",           "cat": "データベース", "tier": "basic",        "desc": "インデックス・トランザクション・クエリ最適化"},
-    {"name": "Redis",                        "cat": "データベース", "tier": "intermediate", "desc": "キャッシュ・セッション管理・Pub/Sub"},
-    {"name": "MongoDB",                      "cat": "データベース", "tier": "intermediate", "desc": "ドキュメント指向・集計パイプライン"},
-    # インフラ・OS
-    {"name": "Linux 基礎",                   "cat": "インフラ・OS", "tier": "beginner",     "desc": "ファイル操作・パーミッション・プロセス管理"},
-    {"name": "Linux シェルスクリプト",        "cat": "インフラ・OS", "tier": "basic",        "desc": "自動化スクリプト・cron・ログ管理"},
-    {"name": "Nginx / Apache",               "cat": "インフラ・OS", "tier": "basic",        "desc": "Webサーバー設定・リバースプロキシ・SSL"},
-    {"name": "Ansible",                      "cat": "インフラ・OS", "tier": "intermediate", "desc": "構成管理・プレイブック・Roleの設計"},
-    # セキュリティ
-    {"name": "セキュリティ基礎 (OWASP)",     "cat": "セキュリティ", "tier": "beginner",     "desc": "OWASP Top10・典型的脆弱性の概要"},
-    {"name": "認証・認可設計",               "cat": "セキュリティ", "tier": "intermediate", "desc": "OAuth2/OIDC・JWT・RBAC設計"},
-    {"name": "脆弱性診断",                   "cat": "セキュリティ", "tier": "advanced",     "desc": "ペネトレテスト・診断ツール・修正提案"},
-    # フロントエンド
-    {"name": "HTML / CSS 基礎",              "cat": "フロントエンド", "tier": "beginner",     "desc": "マークアップ・Flexbox/Grid・レスポンシブ"},
-    {"name": "React / Vue.js",               "cat": "フロントエンド", "tier": "basic",        "desc": "コンポーネント設計・状態管理・Hooks"},
-    {"name": "Next.js / Nuxt.js",            "cat": "フロントエンド", "tier": "intermediate", "desc": "SSR/SSG・APIルート・パフォーマンス最適化"},
-    # プロジェクト管理
-    {"name": "アジャイル / スクラム",        "cat": "プロジェクト管理", "tier": "basic",        "desc": "スプリント・バックログ・レトロスペクティブ"},
-    {"name": "Jira / Confluence",            "cat": "プロジェクト管理", "tier": "basic",        "desc": "チケット管理・ドキュメント管理"},
-    {"name": "コードレビュー",               "cat": "プロジェクト管理", "tier": "basic",        "desc": "レビュー観点・建設的フィードバック"},
-    {"name": "技術設計・アーキテクチャ",     "cat": "プロジェクト管理", "tier": "advanced",     "desc": "システム設計・ADR・技術選定の意思決定"},
+    # ── HILS基盤・操作 ──────────────────────────────────────
+    {"name": "HILS基本操作",            "cat": "HILS基盤・操作", "tier": "beginner",     "desc": "HILSの電源投入・基本操作・ステータス確認"},
+    {"name": "HILS構成理解",            "cat": "HILS基盤・操作", "tier": "beginner",     "desc": "HILSシステム全体構成（HW/SW/モデル）の理解"},
+    {"name": "HILSキャリブレーション",  "cat": "HILS基盤・操作", "tier": "basic",        "desc": "センサ・アクチュエータの校正・調整手順"},
+    {"name": "HILS障害切り分け",        "cat": "HILS基盤・操作", "tier": "intermediate", "desc": "HW/SW/モデル起因の問題を切り分け・原因特定"},
+    {"name": "HILSシステム設計",        "cat": "HILS基盤・操作", "tier": "intermediate", "desc": "要件からHILS全体構成の設計・機器選定"},
+    {"name": "HILS環境整備・保守",      "cat": "HILS基盤・操作", "tier": "advanced",     "desc": "HILSラック整備・定期メンテナンス・信頼性確保"},
+
+    # ── dSPACEツール ────────────────────────────────────────
+    {"name": "ControlDesk 基本操作",    "cat": "dSPACEツール", "tier": "beginner",     "desc": "レイアウト作成・変数モニタリング・データ記録"},
+    {"name": "SCALEXIO / DS1007 操作",  "cat": "dSPACEツール", "tier": "beginner",     "desc": "dSPACEリアルタイムボードの基本操作・起動"},
+    {"name": "ConfigurationDesk",       "cat": "dSPACEツール", "tier": "basic",        "desc": "I/O・通信設定、ハードウェアコンフィグレーション"},
+    {"name": "AutomationDesk 基礎",     "cat": "dSPACEツール", "tier": "basic",        "desc": "テスト自動化シーケンス作成・実行・結果確認"},
+    {"name": "ModelDesk",               "cat": "dSPACEツール", "tier": "intermediate", "desc": "車両モデル・ドライバモデルの設定・シナリオ実行"},
+    {"name": "AutomationDesk 応用",     "cat": "dSPACEツール", "tier": "intermediate", "desc": "Python / MATLAB連携・高度な自動化シーケンス構築"},
+    {"name": "SystemDesk / AUTOSAR設定","cat": "dSPACEツール", "tier": "intermediate", "desc": "AUTOSARアーキテクチャ記述・SWC設定・生成"},
+    {"name": "dSPACE VEOS（仮想ECU）",  "cat": "dSPACEツール", "tier": "advanced",     "desc": "実機レスSIL環境構築・仮想ECUでのテスト実施"},
+
+    # ── ソフト検証・テスト ───────────────────────────────────
+    {"name": "テスト仕様書読解",        "cat": "ソフト検証・テスト", "tier": "beginner",     "desc": "テスト仕様書の内容理解・テスト項目把握"},
+    {"name": "テスト実行・記録",        "cat": "ソフト検証・テスト", "tier": "beginner",     "desc": "手順に従ったテスト実行・結果記録・エビデンス取得"},
+    {"name": "テスト分析・設計",        "cat": "ソフト検証・テスト", "tier": "basic",        "desc": "要求仕様からテスト観点を抽出・テスト設計技法の活用"},
+    {"name": "テストケース作成",        "cat": "ソフト検証・テスト", "tier": "basic",        "desc": "同値分割・境界値・状態遷移・デシジョンテーブル活用"},
+    {"name": "テスト結果解析",          "cat": "ソフト検証・テスト", "tier": "basic",        "desc": "波形・ログ解析・NG原因の特定・レポート作成"},
+    {"name": "網羅率分析・管理",        "cat": "ソフト検証・テスト", "tier": "intermediate", "desc": "C0/C1カバレッジ分析・未検証部位の特定と対策"},
+    {"name": "回帰テスト設計",          "cat": "ソフト検証・テスト", "tier": "intermediate", "desc": "変更影響範囲の特定・効率的な回帰テスト設計"},
+    {"name": "CANoe 活用",              "cat": "ソフト検証・テスト", "tier": "intermediate", "desc": "CANoeによる通信ログ取得・シミュレーション・診断"},
+    {"name": "テスト自動化設計",        "cat": "ソフト検証・テスト", "tier": "advanced",     "desc": "テストフレームワーク設計・自動化戦略の立案・実装"},
+
+    # ── モデル開発（Simulink） ───────────────────────────────
+    {"name": "MATLAB 基礎",             "cat": "モデル開発（Simulink）", "tier": "beginner",     "desc": "MATLAB Script・数値計算・基本データ操作・グラフ描画"},
+    {"name": "Simulink 基礎",           "cat": "モデル開発（Simulink）", "tier": "beginner",     "desc": "基本ブロック操作・信号接続・シミュレーション実行"},
+    {"name": "Stateflow",               "cat": "モデル開発（Simulink）", "tier": "basic",        "desc": "状態遷移・フローチャート設計・イベント処理"},
+    {"name": "プラントモデル開発",      "cat": "モデル開発（Simulink）", "tier": "basic",        "desc": "車両・アクチュエータ・センサの物理モデル開発"},
+    {"name": "モデル結合・I/F設計",     "cat": "モデル開発（Simulink）", "tier": "intermediate", "desc": "複数モデルの統合・信号インタフェース設計・検証"},
+    {"name": "S-Function 開発",         "cat": "モデル開発（Simulink）", "tier": "intermediate", "desc": "カスタムブロック（C / MATLAB S-Function）開発"},
+    {"name": "Simulink コード生成",     "cat": "モデル開発（Simulink）", "tier": "advanced",     "desc": "Embedded Coder / RTW活用・量産品質コード生成"},
+    {"name": "Simulink Design Verifier","cat": "モデル開発（Simulink）", "tier": "advanced",     "desc": "モデルの形式検証・テストケース自動生成"},
+
+    # ── DevOps・自動化 ───────────────────────────────────────
+    {"name": "Git 基礎",                "cat": "DevOps・自動化", "tier": "beginner",     "desc": "バージョン管理・ブランチ・コミット・マージ"},
+    {"name": "GitHub / GitLab 操作",    "cat": "DevOps・自動化", "tier": "beginner",     "desc": "PR・Issue・コードレビュー・リモートリポジトリ管理"},
+    {"name": "GitHub Actions",          "cat": "DevOps・自動化", "tier": "basic",        "desc": "CI/CDパイプライン構築・自動テスト・通知連携"},
+    {"name": "Docker 基礎",             "cat": "DevOps・自動化", "tier": "basic",        "desc": "Dockerfile・イメージ・コンテナ操作・Docker Compose"},
+    {"name": "HILSテスト自動化",        "cat": "DevOps・自動化", "tier": "intermediate", "desc": "AutomationDesk / Python連携によるHILSテスト自動化"},
+    {"name": "CI/CDパイプライン構築",   "cat": "DevOps・自動化", "tier": "intermediate", "desc": "テスト・ビルド・結果通知の自動化パイプライン設計"},
+    {"name": "社内ツール・アプリ開発",  "cat": "DevOps・自動化", "tier": "intermediate", "desc": "業務効率化Web/GUIアプリの企画・設計・開発・運用"},
+    {"name": "インフラ管理・IaC",       "cat": "DevOps・自動化", "tier": "advanced",     "desc": "サーバ・ネットワーク管理・Infrastructure as Code"},
+
+    # ── ハードウェア・W/H設計 ────────────────────────────────
+    {"name": "回路図・配線図読解",      "cat": "ハードウェア・W/H設計", "tier": "beginner",     "desc": "電気回路図・車両配線図の読み方・記号理解"},
+    {"name": "W/H基礎知識",             "cat": "ハードウェア・W/H設計", "tier": "beginner",     "desc": "ワイヤハーネスの基本構成・端子・コネクタ種類"},
+    {"name": "ECU接続・結線",           "cat": "ハードウェア・W/H設計", "tier": "basic",        "desc": "ECUコネクタへの配線接続・導通確認・ピンアサイン"},
+    {"name": "W/H設計",                 "cat": "ハードウェア・W/H設計", "tier": "basic",        "desc": "HILS用ハーネス設計・仕様書作成・製作指示"},
+    {"name": "HILSラック組立・配線",    "cat": "ハードウェア・W/H設計", "tier": "intermediate", "desc": "dSPACEボード・ECU・電源のラック組み立て・配線"},
+    {"name": "電源設計",                "cat": "ハードウェア・W/H設計", "tier": "intermediate", "desc": "電源要件定義・回路設計・保護回路・ノイズ対策"},
+    {"name": "HILS筐体・構成設計",      "cat": "ハードウェア・W/H設計", "tier": "advanced",     "desc": "HILSシステム全体のHW構成設計・機器選定・仕様策定"},
+
+    # ── プログラミング ───────────────────────────────────────
+    {"name": "Python 基礎",             "cat": "プログラミング", "tier": "beginner",     "desc": "変数・制御文・関数・ファイル操作・基本ライブラリ"},
+    {"name": "C言語 基礎",              "cat": "プログラミング", "tier": "beginner",     "desc": "変数・ポインタ・構造体・組込み向けC言語基礎"},
+    {"name": "Python 応用",             "cat": "プログラミング", "tier": "basic",        "desc": "クラス・外部ライブラリ（pandas/numpy等）・データ処理"},
+    {"name": "C++ 基礎",                "cat": "プログラミング", "tier": "basic",        "desc": "クラス・継承・STL・組込みC++"},
+    {"name": "GUI開発（Python）",       "cat": "プログラミング", "tier": "intermediate", "desc": "PyQt / Tkinter・デスクトップアプリ設計・開発"},
+    {"name": "データ解析・可視化",      "cat": "プログラミング", "tier": "intermediate", "desc": "pandas/matplotlib・測定データ集計・グラフ可視化"},
+    {"name": "Webアプリ開発",           "cat": "プログラミング", "tier": "intermediate", "desc": "FastAPI / Flask・REST API設計・フロントエンド連携"},
+
+    # ── テスト管理・品質 ─────────────────────────────────────
+    {"name": "テスト計画策定",          "cat": "テスト管理・品質", "tier": "basic",        "desc": "テスト方針・スコープ・スケジュール・リソース計画"},
+    {"name": "不具合管理",              "cat": "テスト管理・品質", "tier": "basic",        "desc": "バグトラッキング・重要度分類・修正確認・クローズ管理"},
+    {"name": "テストレポート作成",      "cat": "テスト管理・品質", "tier": "basic",        "desc": "テスト結果集計・品質評価・リリース判定レポート作成"},
+    {"name": "品質指標管理",            "cat": "テスト管理・品質", "tier": "intermediate", "desc": "KPI設定・品質メトリクス収集・傾向分析・改善活動"},
+    {"name": "QMSプロセス理解",         "cat": "テスト管理・品質", "tier": "intermediate", "desc": "品質マネジメントシステム・プロセス準拠・監査対応"},
+    {"name": "ASPICE",                  "cat": "テスト管理・品質", "tier": "advanced",     "desc": "Automotive SPICEプロセスアセスメント・改善施策立案"},
+
+    # ── 車載・ECU・通信 ──────────────────────────────────────
+    {"name": "車両基礎知識",            "cat": "車載・ECU・通信", "tier": "beginner",     "desc": "車両系統（パワトレ・シャシ・ボデー）の基本的な理解"},
+    {"name": "ECU基礎知識",             "cat": "車載・ECU・通信", "tier": "beginner",     "desc": "ECUの役割・入出力・ソフトウェア構成の基本"},
+    {"name": "CAN通信",                 "cat": "車載・ECU・通信", "tier": "basic",        "desc": "CANプロトコル・DBC・メッセージ・信号定義の理解"},
+    {"name": "LIN通信",                 "cat": "車載・ECU・通信", "tier": "basic",        "desc": "LINプロトコル・マスタ/スレーブ・スケジュール表"},
+    {"name": "車載Ethernet",            "cat": "車載・ECU・通信", "tier": "intermediate", "desc": "100BASE-T1・DoIP・AVB/TSN・車載ネットワーク設計"},
+    {"name": "AUTOSAR知識",             "cat": "車載・ECU・通信", "tier": "intermediate", "desc": "AUTOSARアーキテクチャ・SWC・RTE・BSWの理解"},
+    {"name": "機能安全（ISO 26262）",   "cat": "車載・ECU・通信", "tier": "advanced",     "desc": "ASIL・安全要求・ハザード分析・V&V・FSM設計"},
+
+    # ── プロジェクト管理 ─────────────────────────────────────
+    {"name": "タスク管理・進捗報告",    "cat": "プロジェクト管理", "tier": "beginner",     "desc": "課題管理・優先度付け・定例での進捗報告"},
+    {"name": "技術ドキュメント作成",    "cat": "プロジェクト管理", "tier": "beginner",     "desc": "議事録・設計書・手順書・技術メモの作成"},
+    {"name": "スケジュール管理",        "cat": "プロジェクト管理", "tier": "basic",        "desc": "WBS作成・マイルストーン設定・リスク管理"},
+    {"name": "課題管理ツール活用",      "cat": "プロジェクト管理", "tier": "basic",        "desc": "Jira / GitHub Issues等のチケット運用・ワークフロー設計"},
+    {"name": "技術レビュー実施",        "cat": "プロジェクト管理", "tier": "basic",        "desc": "設計・コード・テスト仕様のレビュー実施・建設的指摘"},
+    {"name": "チームリード",            "cat": "プロジェクト管理", "tier": "intermediate", "desc": "タスク割当・メンバー育成・技術的意思決定・調整"},
+    {"name": "プロセス改善",            "cat": "プロジェクト管理", "tier": "advanced",     "desc": "課題分析・改善提案・KPIによる効果測定・横展開"},
 ]
 
 
@@ -336,7 +446,11 @@ def _seed_catalog(db):
     """カテゴリーとスキルカタログが空の場合のみシードデータを投入する"""
     if db.query(models.Skill).count() > 0:
         return
+    _do_seed(db)
 
+
+def _do_seed(db):
+    """シードデータを投入する（強制実行用）"""
     cat_map: dict[str, int] = {}
     for c in _SEED_CATEGORIES:
         existing = db.query(models.Category).filter(models.Category.name == c["name"]).first()
@@ -465,6 +579,9 @@ def reset_password_post(
     return RedirectResponse("/login?msg=password_reset", status_code=303)
 
 
+PROMO_VIDEO_PATH = os.path.join("data", "promo.mp4")
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_get(request: Request, msg: str = ""):
     if not is_setup_complete():
@@ -473,6 +590,7 @@ def login_get(request: Request, msg: str = ""):
         "error": None,
         "setup_done": msg == "setup_done",
         "password_reset": msg == "password_reset",
+        "promo_video_exists": os.path.isfile(PROMO_VIDEO_PATH),
     })
 
 
@@ -1346,3 +1464,221 @@ def delete_avatar(
         user.avatar_path = None
         db.commit()
     return RedirectResponse("/profile", status_code=303)
+
+
+# ─── カタログ初期化（Admin のみ・完全削除） ─────────────────────────
+@app.post("/admin/reset-catalog")
+def reset_catalog(request: Request, db: Session = Depends(get_db)):
+    """カテゴリ・スキル・申告データを全削除する（デフォルトデータは投入しない）"""
+    user = auth.require_approved(request, db)
+    if user.role != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403)
+
+    from sqlalchemy import text
+    db.query(models.UserSkillLevel).delete(synchronize_session=False)
+    db.query(models.SkillLevelHistory).delete(synchronize_session=False)
+    db.execute(text("DELETE FROM skill_tag_associations"))
+    db.query(models.Skill).delete(synchronize_session=False)
+    db.query(models.Category).delete(synchronize_session=False)
+    db.commit()
+
+    return RedirectResponse("/skills/catalog?reset=1", status_code=303)
+
+
+# ─── プロモーション動画 ───────────────────────────────────────────
+@app.get("/promo-video")
+def serve_promo_video():
+    """プロモーション動画を配信（認証不要）"""
+    if not os.path.isfile(PROMO_VIDEO_PATH):
+        raise HTTPException(status_code=404, detail="プロモーション動画が見つかりません")
+    return FileResponse(PROMO_VIDEO_PATH, media_type="video/mp4")
+
+
+@app.post("/admin/upload-promo-video")
+async def upload_promo_video(
+    request: Request,
+    video: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """管理者がプロモーション動画をアップロード"""
+    user = auth.require_approved(request, db)
+    if user.role != "admin":
+        raise HTTPException(status_code=403)
+
+    # mp4 のみ許可
+    ext = os.path.splitext(video.filename or "")[1].lower()
+    if ext not in (".mp4", ".webm", ".mov"):
+        return templates.TemplateResponse(request, "admin/dashboard.html", {
+            "current_user": user,
+            "promo_error": "対応形式: .mp4 .webm .mov",
+        })
+
+    contents = await video.read()
+    if len(contents) > 500 * 1024 * 1024:  # 500MB 上限
+        return templates.TemplateResponse(request, "admin/dashboard.html", {
+            "current_user": user,
+            "promo_error": "ファイルサイズは500MB以下にしてください",
+        })
+
+    save_path = os.path.join("data", f"promo{ext}")
+    # 既存の旧ファイルを削除
+    for old in ["data/promo.mp4", "data/promo.webm", "data/promo.mov"]:
+        if os.path.isfile(old) and old != save_path:
+            os.remove(old)
+
+    with open(save_path, "wb") as f:
+        f.write(contents)
+
+    # パスを更新（常に promo.mp4 として扱う）
+    if save_path != PROMO_VIDEO_PATH:
+        if os.path.isfile(PROMO_VIDEO_PATH):
+            os.remove(PROMO_VIDEO_PATH)
+        os.rename(save_path, PROMO_VIDEO_PATH)
+
+    return RedirectResponse("/admin?promo_uploaded=1", status_code=303)
+
+
+@app.post("/admin/delete-promo-video")
+def delete_promo_video(request: Request, db: Session = Depends(get_db)):
+    """プロモーション動画を削除"""
+    user = auth.require_approved(request, db)
+    if user.role != "admin":
+        raise HTTPException(status_code=403)
+    if os.path.isfile(PROMO_VIDEO_PATH):
+        os.remove(PROMO_VIDEO_PATH)
+    return RedirectResponse("/admin", status_code=303)
+
+
+# ─── デモページ（認証不要） ──────────────────────────────────────
+@app.get("/demo", response_class=HTMLResponse)
+def demo_page(request: Request):
+    DEMO_USERS = [
+        {"name": "田中 太郎",  "initial": "田", "avg": 3.1, "rate": 88},
+        {"name": "鈴木 花子",  "initial": "鈴", "avg": 2.5, "rate": 75},
+        {"name": "佐藤 次郎",  "initial": "佐", "avg": 1.6, "rate": 50},
+        {"name": "山田 美咲",  "initial": "山", "avg": 3.5, "rate": 100},
+        {"name": "高橋 健一",  "initial": "高", "avg": 1.1, "rate": 38},
+    ]
+    DEMO_SKILLS = [
+        {"name": "Git 基礎",         "category": "バージョン管理", "tier": "beginner",     "levels": [4, 3, 2, 4, 1], "avg": 2.8},
+        {"name": "GitHub",           "category": "バージョン管理", "tier": "beginner",     "levels": [4, 3, 1, 4, 1], "avg": 2.6},
+        {"name": "Docker 基礎",      "category": "コンテナ技術",   "tier": "beginner",     "levels": [3, 2, 1, 4, 0], "avg": 2.0},
+        {"name": "Docker Compose",   "category": "コンテナ技術",   "tier": "basic",        "levels": [3, 3, 0, 4, 0], "avg": 2.0},
+        {"name": "Kubernetes",       "category": "コンテナ技術",   "tier": "intermediate", "levels": [2, 1, 0, 3, 0], "avg": 1.2},
+        {"name": "Python",           "category": "プログラミング", "tier": "beginner",     "levels": [4, 3, 2, 3, 2], "avg": 2.8},
+        {"name": "TypeScript",       "category": "プログラミング", "tier": "basic",        "levels": [3, 2, 1, 3, 1], "avg": 2.0},
+        {"name": "GitHub Actions",   "category": "CI/CD",          "tier": "basic",        "levels": [3, 4, 1, 4, 1], "avg": 2.6},
+        {"name": "AWS 基礎",         "category": "クラウド",       "tier": "basic",        "levels": [2, 3, 1, 4, 0], "avg": 2.0},
+        {"name": "SQL 基礎",         "category": "データベース",   "tier": "beginner",     "levels": [3, 2, 2, 3, 1], "avg": 2.2},
+    ]
+
+    # レベル分布を計算
+    all_levels = [lv for sk in DEMO_SKILLS for lv in sk["levels"]]
+    level_dist = [all_levels.count(i) for i in range(5)]
+
+    expert_count = sum(1 for lv in all_levels if lv == 4)
+    avg_total = round(sum(lv for lv in all_levels if lv > 0) / max(sum(1 for lv in all_levels if lv > 0), 1), 1)
+
+    demo_data = {
+        "member_count": len(DEMO_USERS),
+        "skill_count": len(DEMO_SKILLS),
+        "avg_level": avg_total,
+        "expert_count": expert_count,
+        "users": DEMO_USERS,
+        "skills": DEMO_SKILLS,
+        "level_dist": level_dist,
+    }
+    return templates.TemplateResponse(request, "demo.html", {"demo": demo_data, "request": request})
+
+
+# ─── グローバル検索 API ──────────────────────────────────────────
+from fastapi.responses import JSONResponse as _JSONResponse
+
+@app.get("/api/search")
+def api_search(q: str = "", request: Request = None, db: Session = Depends(get_db)):
+    """スキル名・ユーザー名・グループ名を横断検索"""
+    user = auth.require_approved(request, db)
+    q = q.strip()
+    if not q or len(q) < 1:
+        return _JSONResponse({"results": []})
+
+    results = []
+    q_lower = q.lower()
+
+    skills = db.query(models.Skill).filter(
+        models.Skill.name.ilike(f"%{q}%"),
+        models.Skill.is_archived == False,
+    ).limit(8).all()
+    for s in skills:
+        results.append({"type": "skill", "label": s.name, "url": "/skills/catalog", "icon": "bi-lightning-charge"})
+
+    users = db.query(models.User).filter(
+        models.User.is_approved == True,
+        (models.User.display_name.ilike(f"%{q}%") | models.User.username.ilike(f"%{q}%")),
+    ).limit(5).all()
+    for u in users:
+        results.append({
+            "type": "user",
+            "label": u.display_name or u.username,
+            "url": f"/members/{u.id}/skills",
+            "icon": "bi-person-fill",
+        })
+
+    if user.role in ("admin", "manager"):
+        groups = db.query(models.Group).filter(
+            models.Group.name.ilike(f"%{q}%")
+        ).limit(5).all()
+        for g in groups:
+            results.append({"type": "group", "label": g.name, "url": f"/groups/{g.id}", "icon": "bi-people-fill"})
+
+    return _JSONResponse({"results": results[:15]})
+
+
+# ─── ダッシュボード トレンド API ──────────────────────────────────
+from datetime import datetime, timedelta
+
+@app.get("/api/dashboard/trend")
+def api_dashboard_trend(
+    group_id: int = 0,
+    user_id: int = 0,
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """週次スキル成長トレンドデータ（過去12週）"""
+    user = auth.require_approved(request, db)
+
+    today = datetime.utcnow().date()
+    weeks = 12
+    start_date = today - timedelta(weeks=weeks)
+
+    q = db.query(models.SkillLevelHistory)
+
+    if user_id and user_id != user.id and user.role in ("admin", "manager"):
+        q = q.filter(models.SkillLevelHistory.user_id == user_id)
+    elif group_id and user.role in ("admin", "manager"):
+        grp = db.query(models.Group).filter(models.Group.id == group_id).first()
+        if grp:
+            member_ids = [m.user_id for m in grp.memberships]
+            q = q.filter(models.SkillLevelHistory.user_id.in_(member_ids))
+    else:
+        q = q.filter(models.SkillLevelHistory.user_id == user.id)
+
+    histories = q.filter(
+        models.SkillLevelHistory.changed_at >= start_date
+    ).all()
+
+    labels = []
+    counts = []
+    for i in range(weeks - 1, -1, -1):
+        week_start = today - timedelta(weeks=i + 1)
+        week_end = today - timedelta(weeks=i)
+        label = week_start.strftime("%-m/%-d")
+        count = sum(
+            1 for h in histories
+            if week_start <= h.changed_at.date() < week_end and h.level > h.previous_level
+        )
+        labels.append(label)
+        counts.append(count)
+
+    return _JSONResponse({"labels": labels, "counts": counts})

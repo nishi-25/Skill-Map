@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-check2-square me-2" style="color:#6366f1;"></i>承認依頼</h1>
+    <h1><i class="bi bi-check2-square me-2" style="color:#f97316;"></i><span data-i18n="page.approvals">承認依頼</span></h1>
     <p class="text-muted mb-0 small">あなたに割り当てられたスキルレベルの承認依頼です</p>
   </div>
   <a href="/approvals/my" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
@@ -12,36 +12,75 @@
   </a>
 </div>
 
+<!-- フィルターバー -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <i class="bi bi-funnel-fill text-muted"></i>
+      <input type="text" id="filterUser" class="form-control form-control-sm" placeholder="申請者名で絞込み..." style="max-width:180px;border-radius:20px;" oninput="applyFilters()">
+      <select id="filterCategory" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="applyFilters()">
+        <option value="">全カテゴリー</option>
+        {% set seen_cats = [] %}
+        {% for rec in pending %}
+          {% if rec.skill.category and rec.skill.category.name not in seen_cats %}
+          <option value="{{ rec.skill.category.name }}">{{ rec.skill.category.name }}</option>
+          {% if seen_cats.append(rec.skill.category.name) %}{% endif %}
+          {% endif %}
+        {% endfor %}
+      </select>
+      <span class="text-muted small ms-auto" id="visibleCount">{{ pending|length }} 件</span>
+    </div>
+  </div>
+</div>
+
 <!-- 承認待ち -->
 <div class="card mb-4">
-  <div class="card-header d-flex align-items-center gap-2" style="background:#fff;border-bottom:2px solid #f59e0b;">
+  <div class="card-header d-flex align-items-center gap-2 flex-wrap" style="background:#fff;border-bottom:2px solid #f59e0b;">
     <i class="bi bi-hourglass-split text-warning"></i>
-    <span class="fw-bold">承認待ち</span>
-    <span class="badge bg-warning text-dark ms-1">{{ pending|length }}</span>
+    <span class="fw-bold"><span data-i18n="lbl.pending">承認待ち</span></span>
+    <span class="badge bg-warning text-dark ms-1" id="pendingBadge">{{ pending|length }}</span>
+    {% if pending %}
+    <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+      <label class="form-check form-check-inline mb-0 small">
+        <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this.checked)">
+        <span data-i18n="lbl.select_all">全選択</span>
+      </label>
+      <button class="btn btn-sm btn-success" style="border-radius:20px;" onclick="bulkAction('approve')" id="btnBulkApprove" disabled>
+        <i class="bi bi-check-all me-1"></i>選択を承認
+      </button>
+      <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;" onclick="bulkAction('reject')" id="btnBulkReject" disabled>
+        <i class="bi bi-x-lg me-1"></i>選択を差し戻し
+      </button>
+    </div>
+    {% endif %}
   </div>
   <div class="card-body p-0">
     {% if pending %}
     <div class="table-responsive">
-      <table class="table align-middle mb-0" style="font-size:.88rem;">
+      <table class="table align-middle mb-0" style="font-size:.88rem;" id="pendingTable">
         <thead class="table-light">
           <tr>
+            <th style="width:40px;"></th>
             <th>申請者</th>
             <th>スキル</th>
             <th>カテゴリー</th>
-            <th class="text-center">申告レベル</th>
-            <th>申請日</th>
-            <th class="text-center" style="width:180px;">アクション</th>
+            <th class="text-center" data-i18n="lbl.level">申告レベル</th>
+            <th data-i18n="lbl.date">申請日</th>
+            <th class="text-center" style="width:180px;" data-i18n="lbl.actions">アクション</th>
           </tr>
         </thead>
         <tbody>
           {% for rec in pending %}
-          <tr>
+          <tr class="pending-row" data-user="{{ rec.user.display_name or rec.user.username }}" data-category="{{ rec.skill.category.name if rec.skill.category else '' }}">
+            <td>
+              <input type="checkbox" class="form-check-input row-check" value="{{ rec.id }}" onchange="onCheckChange()">
+            </td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 {% if rec.user.avatar_path %}
                 <img src="{{ rec.user.avatar_path }}" alt="" style="width:30px;height:30px;border-radius:50%;object-fit:cover;">
                 {% else %}
-                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:600;">
+                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:600;">
                   {{ (rec.user.display_name or rec.user.username)[0].upper() }}
                 </div>
                 {% endif %}
@@ -61,15 +100,24 @@
             </td>
             <td class="text-muted small">{{ rec.updated_at|jst }}</td>
             <td>
-              <div class="d-flex gap-1 justify-content-center align-items-center">
-                <button type="button" class="btn btn-sm btn-success" style="border-radius:8px;"
-                        onclick="openApproveModal({{ rec.id }}, '{{ rec.user.display_name or rec.user.username }}', '{{ rec.skill.name }}')">
-                  <i class="bi bi-check-lg me-1"></i>承認
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:8px;"
-                        onclick="openRejectModal({{ rec.id }}, '{{ rec.user.display_name or rec.user.username }}', '{{ rec.skill.name }}')">
-                  <i class="bi bi-x-lg"></i>差し戻し
-                </button>
+              <div class="d-flex flex-column gap-1">
+                <div class="d-flex gap-1 justify-content-center align-items-center">
+                  <button type="button" class="btn btn-sm btn-success" style="border-radius:8px;"
+                          onclick="quickAction({{ rec.id }}, 'approve')">
+                    <i class="bi bi-check-lg me-1"></i>承認
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:8px;"
+                          onclick="toggleInlineReject({{ rec.id }})">
+                    <i class="bi bi-x-lg"></i>差し戻し
+                  </button>
+                </div>
+                <!-- インライン差し戻しコメント -->
+                <div id="rejectInline-{{ rec.id }}" style="display:none;" class="mt-1">
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" placeholder="差し戻し理由（任意）" id="rejectComment-{{ rec.id }}" style="border-radius:8px 0 0 8px;">
+                    <button class="btn btn-danger btn-sm" style="border-radius:0 8px 8px 0;" onclick="quickAction({{ rec.id }}, 'reject', document.getElementById('rejectComment-{{ rec.id }}').value)" data-i18n="lbl.send">送信</button>
+                  </div>
+                </div>
               </div>
             </td>
           </tr>
@@ -79,7 +127,7 @@
     </div>
     {% else %}
     <div class="text-center py-5 text-muted">
-      <i class="bi bi-check-circle fs-1 d-block mb-2" style="color:#c7d2fe;"></i>
+      <i class="bi bi-check-circle fs-1 d-block mb-2" style="color:#fed7aa;"></i>
       <p class="mb-0">承認待ちの依頼はありません</p>
     </div>
     {% endif %}
@@ -88,9 +136,9 @@
 
 <!-- 承認履歴 -->
 <div class="card">
-  <div class="card-header d-flex align-items-center gap-2" style="background:#fff;border-bottom:2px solid #6366f1;">
+  <div class="card-header d-flex align-items-center gap-2" style="background:#fff;border-bottom:2px solid #f97316;">
     <i class="bi bi-clock-history text-primary"></i>
-    <span class="fw-bold">承認履歴</span>
+    <span class="fw-bold" data-i18n="lbl.approval_history">承認履歴</span>
   </div>
   <div class="card-body p-0">
     {% if history %}
@@ -101,9 +149,9 @@
             <th>申請者</th>
             <th>スキル</th>
             <th class="text-center">レベル</th>
-            <th class="text-center">ステータス</th>
-            <th>コメント</th>
-            <th>対応日</th>
+            <th class="text-center" data-i18n="lbl.status">ステータス</th>
+            <th data-i18n="lbl.comment">コメント</th>
+            <th data-i18n="lbl.handled">対応日</th>
           </tr>
         </thead>
         <tbody>
@@ -136,68 +184,92 @@
   </div>
 </div>
 
-<!-- 承認モーダル -->
-<div class="modal fade" id="approveModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content" style="border-radius:16px;">
-      <form id="approveForm" method="post">
-        <div class="modal-header" style="border-bottom:2px solid #22c55e;">
-          <h5 class="modal-title"><i class="bi bi-check-circle text-success me-2"></i>スキルレベルを承認</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-2 text-muted small">対象: <strong id="approveTarget"></strong></p>
-          <label class="form-label fw-semibold small">コメント（任意）</label>
-          <textarea name="comment" id="approveComment" class="form-control" rows="4"
-                    placeholder="承認に関するコメントを入力できます（改行可）"
-                    style="border-radius:10px;resize:vertical;min-height:80px;"></textarea>
-        </div>
-        <div class="modal-footer" style="border-top:none;">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">キャンセル</button>
-          <button type="submit" class="btn btn-success btn-sm" style="border-radius:8px;"><i class="bi bi-check-lg me-1"></i>承認する</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- 差し戻しモーダル -->
-<div class="modal fade" id="rejectModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content" style="border-radius:16px;">
-      <form id="rejectForm" method="post">
-        <div class="modal-header" style="border-bottom:2px solid #ef4444;">
-          <h5 class="modal-title"><i class="bi bi-x-circle text-danger me-2"></i>スキルレベルを差し戻し</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-2 text-muted small">対象: <strong id="rejectTarget"></strong></p>
-          <label class="form-label fw-semibold small">差し戻し理由（任意）</label>
-          <textarea name="comment" id="rejectComment" class="form-control" rows="4"
-                    placeholder="差し戻しの理由を入力できます（改行可）"
-                    style="border-radius:10px;resize:vertical;min-height:80px;"></textarea>
-        </div>
-        <div class="modal-footer" style="border-top:none;">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">キャンセル</button>
-          <button type="submit" class="btn btn-danger btn-sm" style="border-radius:8px;"><i class="bi bi-x-lg me-1"></i>差し戻す</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 <script>
-function openApproveModal(recordId, userName, skillName) {
-  document.getElementById('approveForm').action = '/approvals/' + recordId + '/approve';
-  document.getElementById('approveTarget').textContent = userName + ' / ' + skillName;
-  document.getElementById('approveComment').value = '';
-  new bootstrap.Modal(document.getElementById('approveModal')).show();
+/* ── フィルター ── */
+function applyFilters() {
+  const uq = document.getElementById('filterUser').value.toLowerCase().trim();
+  const cq = document.getElementById('filterCategory').value;
+  const rows = document.querySelectorAll('.pending-row');
+  let visible = 0;
+  rows.forEach(r => {
+    const uMatch = !uq || r.dataset.user.toLowerCase().includes(uq);
+    const cMatch = !cq || r.dataset.category === cq;
+    r.style.display = (uMatch && cMatch) ? '' : 'none';
+    if (uMatch && cMatch) visible++;
+  });
+  document.getElementById('visibleCount').textContent = visible + ' 件';
 }
-function openRejectModal(recordId, userName, skillName) {
-  document.getElementById('rejectForm').action = '/approvals/' + recordId + '/reject';
-  document.getElementById('rejectTarget').textContent = userName + ' / ' + skillName;
-  document.getElementById('rejectComment').value = '';
-  new bootstrap.Modal(document.getElementById('rejectModal')).show();
+
+/* ── チェックボックス ── */
+function toggleSelectAll(on) {
+  document.querySelectorAll('.row-check').forEach(cb => {
+    if (cb.closest('tr').style.display !== 'none') cb.checked = on;
+  });
+  onCheckChange();
+}
+function onCheckChange() {
+  const checked = document.querySelectorAll('.row-check:checked').length;
+  document.getElementById('btnBulkApprove').disabled = checked === 0;
+  document.getElementById('btnBulkReject').disabled = checked === 0;
+}
+
+/* ── インライン差し戻し展開 ── */
+function toggleInlineReject(id) {
+  const el = document.getElementById('rejectInline-' + id);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+/* ── 1件の承認・差し戻し ── */
+async function quickAction(recordId, action, comment = '') {
+  const formData = new FormData();
+  formData.append('action', action);
+  formData.append('record_ids', recordId);
+  if (comment) formData.append('comment', comment);
+  const res = await fetch('/api/approvals/bulk-action', { method: 'POST', body: formData });
+  const data = await res.json();
+  if (data.ok) {
+    const row = document.querySelector(`.row-check[value="${recordId}"]`)?.closest('tr');
+    if (row) {
+      row.style.transition = 'opacity .3s';
+      row.style.opacity = '0';
+      setTimeout(() => { row.remove(); updateBadge(); }, 300);
+    }
+    showToast(action === 'approve' ? '承認しました' : '差し戻しました', 'success');
+  } else {
+    showToast(data.error || '操作に失敗しました', 'error');
+  }
+}
+
+/* ── 一括操作 ── */
+async function bulkAction(action) {
+  const ids = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.value);
+  if (!ids.length) return;
+  const label = action === 'approve' ? '承認' : '差し戻し';
+  if (!confirm(`選択した ${ids.length} 件を${label}しますか？`)) return;
+
+  const formData = new FormData();
+  formData.append('action', action);
+  ids.forEach(id => formData.append('record_ids', id));
+  const res = await fetch('/api/approvals/bulk-action', { method: 'POST', body: formData });
+  const data = await res.json();
+  if (data.ok) {
+    ids.forEach(id => {
+      const row = document.querySelector(`.row-check[value="${id}"]`)?.closest('tr');
+      if (row) row.remove();
+    });
+    updateBadge();
+    document.getElementById('selectAll').checked = false;
+    onCheckChange();
+    showToast(`${data.processed} 件を${label}しました`, 'success');
+  } else {
+    showToast(data.error || '一括操作に失敗しました', 'error');
+  }
+}
+
+function updateBadge() {
+  const remaining = document.querySelectorAll('.pending-row').length;
+  document.getElementById('pendingBadge').textContent = remaining;
+  document.getElementById('visibleCount').textContent = remaining + ' 件';
 }
 </script>
 {% endblock %}

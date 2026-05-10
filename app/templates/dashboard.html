@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-speedometer2 me-2" style="color:#6366f1;"></i>ダッシュボード</h1>
+    <h1><i class="bi bi-speedometer2 me-2" style="color:#f97316;"></i><span data-i18n="page.dashboard">ダッシュボード</span></h1>
     <p class="text-muted mb-0 small">{{ view_label }}</p>
   </div>
   {% if view_mode == 'self' %}
@@ -16,7 +16,7 @@
 
 <!-- ═══ フィルターバー ═══ -->
 {% if all_users or all_groups %}
-<div class="card mb-4" style="border-left:3px solid #6366f1;">
+<div class="card mb-4" style="border-left:3px solid #f97316;">
   <div class="card-body py-2">
     <form method="get" action="/dashboard" class="d-flex flex-wrap gap-2 align-items-center">
       <i class="bi bi-funnel-fill text-muted me-1"></i>
@@ -26,7 +26,7 @@
       <select name="user_id" class="form-select form-select-sm"
               style="max-width:200px;border-radius:20px;font-size:.85rem;"
               onchange="if(this.value){this.form.elements['group_id'].value='0';}this.form.submit();">
-        <option value="0">-- ユーザーで絞り込み --</option>
+        <option value="0"><span data-i18n="lbl.all_users" data-i18n="lbl.filter_user">-- ユーザーで絞り込み --</span></option>
         {% for u in all_users %}
         <option value="{{ u.id }}" {% if sel_user_id == u.id %}selected{% endif %}>
           {{ u.display_name or u.username }}
@@ -40,7 +40,7 @@
       <select name="group_id" class="form-select form-select-sm"
               style="max-width:200px;border-radius:20px;font-size:.85rem;"
               onchange="if(this.value){this.form.elements['user_id'].value='0';}this.form.submit();">
-        <option value="0">-- グループで絞り込み --</option>
+        <option value="0"><span data-i18n="lbl.all_groups" data-i18n="lbl.filter_group">-- グループで絞り込み --</span></option>
         {% for g in all_groups %}
         <option value="{{ g.id }}" {% if sel_group_id == g.id %}selected{% endif %}>
           {{ g.name }} ({{ g.memberships|length }}名)
@@ -79,7 +79,7 @@
 {% if view_mode not in ('self', 'all') %}
 <div class="d-flex align-items-center gap-2 mb-3">
   {% if view_mode == 'user' and target_user %}
-  <span class="badge" style="background:linear-gradient(135deg,#6366f1,#a78bfa);font-size:.85rem;padding:.45rem .9rem;border-radius:20px;">
+  <span class="badge" style="background:linear-gradient(135deg,#f97316,#fdba74);font-size:.85rem;padding:.45rem .9rem;border-radius:20px;">
     <i class="bi bi-person-fill me-1"></i>{{ target_user.display_name or target_user.username }}
   </span>
   {% elif view_mode == 'group' and target_group %}
@@ -97,48 +97,61 @@
 <!-- ═══ ALL モード: 管理者概要 ═══ -->
 {% if view_mode == 'all' %}
 
+<!-- ホバー詳細フローティングパネル -->
+<div id="hoverDetailPanel" style="
+  position:fixed;z-index:9990;display:none;
+  background:var(--card-bg,#fff);border:1px solid var(--card-border,#e2e8f0);border-radius:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.16);padding:1rem 1.1rem;
+  min-width:250px;max-width:320px;pointer-events:none;
+  font-size:.82rem;color:var(--body-color,#1a1a2e);
+"></div>
+
 <!-- サマリーカード -->
 <div class="row g-3 mb-4">
+  <!-- 対象メンバー -->
   <div class="col-6 col-lg-3">
-    <div class="stat-card">
+    <div class="stat-card stat-hoverable" data-detail="members" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-people-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total_members }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">対象メンバー</div>
+          <div class="text-muted" style="font-size:.78rem;">対象メンバー <i class="bi bi-info-circle" style="font-size:.7rem;opacity:.5;"></i></div>
         </div>
       </div>
     </div>
   </div>
+  <!-- 総申告スキル -->
   <div class="col-6 col-lg-3">
-    <div class="stat-card">
+    <div class="stat-card stat-hoverable" data-detail="skills" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">総申告スキル</div>
+          <div class="text-muted" style="font-size:.78rem;">総申告スキル <i class="bi bi-info-circle" style="font-size:.7rem;opacity:.5;"></i></div>
         </div>
       </div>
     </div>
   </div>
+  <!-- 全体平均レベル -->
   <div class="col-6 col-lg-3">
-    <div class="stat-card">
+    <div class="stat-card stat-hoverable" data-detail="level" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f59e0b;"><i class="bi bi-bar-chart-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ avg_level }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">全体平均レベル</div>
+          <div class="text-muted" style="font-size:.78rem;">全体平均レベル <i class="bi bi-info-circle" style="font-size:.7rem;opacity:.5;"></i></div>
         </div>
       </div>
     </div>
   </div>
+  <!-- カタログ総数 -->
   <div class="col-6 col-lg-3">
-    <div class="stat-card">
+    <div class="stat-card stat-hoverable" data-detail="catalog" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-collection-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ catalog_total }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">カタログ総数</div>
+          <div class="text-muted" style="font-size:.78rem;">カタログ総数 <i class="bi bi-info-circle" style="font-size:.7rem;opacity:.5;"></i></div>
         </div>
       </div>
     </div>
@@ -157,27 +170,131 @@
   {% endif %}
 </div>
 
+<!-- ホバー詳細データ（非表示） -->
+<div id="hoverData" style="display:none;">
+  <!-- members -->
+  <div data-key="members">
+    <div style="font-weight:700;color:#f97316;margin-bottom:.5rem;"><i class="bi bi-people-fill me-1"></i>メンバー内訳</div>
+    {% if member_summary %}
+    <div style="display:flex;flex-direction:column;gap:.3rem;">
+      {% for ms in member_summary[:6] %}
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:700;flex-shrink:0;">
+          {{ (ms.user.display_name or ms.user.username)[0].upper() }}
+        </div>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ ms.user.display_name or ms.user.username }}</span>
+        <span style="color:#f97316;font-weight:600;">{{ ms.avg }}<span style="color:#94a3b8;font-weight:400;">/4.0</span></span>
+        <span style="color:#64748b;font-size:.75rem;">{{ ms.total }}件</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if member_summary|length > 6 %}
+    <div style="color:#94a3b8;margin-top:.4rem;font-size:.75rem;">他 {{ member_summary|length - 6 }} 名...</div>
+    {% endif %}
+    {% else %}<div style="color:#94a3b8;">メンバーなし</div>{% endif %}
+  </div>
+
+  <!-- skills -->
+  <div data-key="skills">
+    <div style="font-weight:700;color:#22c55e;margin-bottom:.5rem;"><i class="bi bi-lightning-charge-fill me-1"></i>ティア別内訳</div>
+    {% set tier_colors = {'beginner':'#22c55e','basic':'#f97316','intermediate':'#f59e0b','advanced':'#ef4444'} %}
+    <div style="display:flex;flex-direction:column;gap:.35rem;">
+      {% for tk, tv in SKILL_TIERS.items() %}
+      {% set ts = tier_stats[tk] %}
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <span style="width:70px;color:{{ tier_colors[tk] }};font-weight:600;font-size:.78rem;">{{ tv }}</span>
+        <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;border-radius:4px;background:{{ tier_colors[tk] }};width:{% if ts.total %}{{ [(ts.done / ts.total * 100)|int, 100]|min }}{% else %}0{% endif %}%;"></div>
+        </div>
+        <span style="color:#64748b;font-size:.78rem;white-space:nowrap;">{{ ts.done }}/{{ ts.total }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if top_cats %}
+    <div style="margin-top:.6rem;font-weight:600;color:#475569;font-size:.75rem;">人気カテゴリー TOP 4</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem;">
+      {% for cat_name, cnt in top_cats[:4] %}
+      <span style="background:#f1f5f9;border-radius:20px;padding:.15rem .55rem;font-size:.73rem;color:#475569;">{{ cat_name }} <b>{{ cnt }}</b></span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- level -->
+  <div data-key="level">
+    <div style="font-weight:700;color:#f59e0b;margin-bottom:.5rem;"><i class="bi bi-bar-chart-fill me-1"></i data-i18n="lbl.level_dist">レベル分布</div>
+    {% set level_colors = {1:'#38bdf8',2:'#f97316',3:'#f59e0b',4:'#ef4444'} %}
+    {% set level_names = {1:'入門',2:'基礎',3:'実務可',4:'エキスパート'} %}
+    {% set level_total = level_dist.values()|sum %}
+    <div style="display:flex;flex-direction:column;gap:.35rem;">
+      {% for lv in [4,3,2,1] %}
+      {% set cnt = level_dist[lv] %}
+      {% set pct = (cnt / level_total * 100)|int if level_total else 0 %}
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <span style="width:52px;color:{{ level_colors[lv] }};font-weight:600;font-size:.78rem;">{{ level_names[lv] }}</span>
+        <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;border-radius:4px;background:{{ level_colors[lv] }};width:{{ pct }}%;"></div>
+        </div>
+        <span style="color:#64748b;font-size:.78rem;white-space:nowrap;">{{ cnt }}件 ({{ pct }}%)</span>
+      </div>
+      {% endfor %}
+      {% if level_dist[0] > 0 %}
+      <div style="color:#94a3b8;font-size:.75rem;margin-top:.2rem;">未経験: {{ level_dist[0] }} 件</div>
+      {% endif %}
+    </div>
+    {% if member_summary %}
+    <div style="margin-top:.6rem;font-weight:600;color:#475569;font-size:.75rem;">平均レベル TOP 3</div>
+    {% for ms in member_summary[:3] %}
+    <div style="display:flex;align-items:center;gap:.4rem;margin-top:.25rem;">
+      <span style="font-size:.75rem;color:#64748b;width:14px;">{{ loop.index }}.</span>
+      <span style="flex:1;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ ms.user.display_name or ms.user.username }}</span>
+      <span style="color:#f59e0b;font-weight:700;font-size:.85rem;">{{ ms.avg }}</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- catalog -->
+  <div data-key="catalog">
+    <div style="font-weight:700;color:#a855f7;margin-bottom:.5rem;"><i class="bi bi-collection-fill me-1"></i>カテゴリー別スキル数</div>
+    {% if top_cats %}
+    <div style="display:flex;flex-direction:column;gap:.3rem;">
+      {% set max_cnt = top_cats[0][1] if top_cats else 1 %}
+      {% for cat_name, cnt in top_cats[:8] %}
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <span style="width:100px;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569;">{{ cat_name }}</span>
+        <div style="flex:1;height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#a855f7,#c084fc);width:{{ (cnt / max_cnt * 100)|int }}%;"></div>
+        </div>
+        <span style="color:#64748b;font-size:.78rem;min-width:22px;text-align:right;">{{ cnt }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div style="color:#94a3b8;">データなし</div>{% endif %}
+  </div>
+</div>
+
 <!-- グループ別サマリー -->
 {% if group_summary %}
 <div class="card mb-4">
   <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-people-fill me-2" style="color:#0ea5e9;"></i>グループ別スキル状況</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-people-fill me-2" style="color:#0ea5e9;"></i data-i18n="lbl.group_skills">グループ別スキル状況</h6>
     <div class="row g-3">
       {% for gs in group_summary %}
       <div class="col-sm-6 col-lg-4">
         <a href="/dashboard?group_id={{ gs.group.id }}" class="text-decoration-none">
-          <div class="border rounded-3 p-3 h-100 position-relative" style="border-color:#e2e8f0 !important;transition:all .2s;cursor:pointer;" onmouseenter="this.style.boxShadow='0 4px 12px rgba(99,102,241,.15)';this.style.borderColor='#6366f1 !important'" onmouseleave="this.style.boxShadow='none';this.style.borderColor='#e2e8f0 !important'">
+          <div class="border rounded-3 p-3 h-100 position-relative" style="border-color:#e2e8f0 !important;transition:all .2s;cursor:pointer;" onmouseenter="this.style.boxShadow='0 4px 12px rgba(249,115,22,.15)';this.style.borderColor='#f97316 !important'" onmouseleave="this.style.boxShadow='none';this.style.borderColor='#e2e8f0 !important'">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div>
                 <div class="fw-bold" style="color:#1e293b;">{{ gs.group.name }}</div>
                 <div class="text-muted" style="font-size:.78rem;">{{ gs.member_count }}名</div>
               </div>
-              <span class="badge" style="background:linear-gradient(135deg,#6366f1,#818cf8);font-size:.85rem;padding:.35rem .7rem;">
+              <span class="badge" style="background:linear-gradient(135deg,#f97316,#fb923c);font-size:.85rem;padding:.35rem .7rem;">
                 {{ gs.avg }}
               </span>
             </div>
             <div class="progress mb-1" style="height:6px;border-radius:10px;">
-              <div class="progress-bar" style="width:{{ (gs.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:10px;"></div>
+              <div class="progress-bar" style="width:{{ (gs.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:10px;"></div>
             </div>
             <div class="d-flex justify-content-between" style="font-size:.72rem;">
               <span class="text-muted">申告 {{ gs.total }}件</span>
@@ -195,7 +312,7 @@
 <!-- ティア別進捗 -->
 <div class="card mb-4">
   <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>難易度ティア別 達成状況</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-2 text-primary"></i data-i18n="lbl.tier_progress">難易度ティア別 達成状況</h6>
     <div class="row g-3">
       {% for tk, tv in SKILL_TIERS.items() %}
       {% set ts = tier_stats[tk] %}
@@ -228,7 +345,7 @@
   <div class="col-md-6">
     <div class="card h-100">
       <div class="card-body">
-        <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2" style="color:#0ea5e9;"></i>メンバー別 カテゴリーレーダー</h6>
+        <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2" style="color:#0ea5e9;"></i data-i18n="lbl.category_radar">メンバー別 カテゴリーレーダー</h6>
         <div style="position:relative;max-height:320px;">
           <canvas id="radarChart"></canvas>
         </div>
@@ -248,21 +365,34 @@
   </div>
 </div>
 
+<!-- スキル成長トレンド（週次） -->
+<div class="card mb-4">
+  <div class="card-header bg-white d-flex align-items-center justify-content-between" style="border-bottom:2px solid #22c55e;">
+    <h6 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2" style="color:#22c55e;"></i>スキル成長トレンド <span class="text-muted fw-normal" style="font-size:.78rem;">（週次レベルUP件数 - 過去12週）</span></h6>
+    <span class="badge bg-light text-success small" id="trendStatus">読込中...</span>
+  </div>
+  <div class="card-body">
+    <div style="position:relative;height:200px;">
+      <canvas id="weeklyTrendChart"></canvas>
+    </div>
+  </div>
+</div>
+
 <!-- メンバーランキング -->
 {% if member_summary %}
 <div class="card mb-4">
   <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>メンバーランキング</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i data-i18n="lbl.member_ranking">メンバーランキング</h6>
     <div class="table-responsive">
       <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
         <thead class="table-light">
           <tr>
             <th style="width:50px;">#</th>
             <th>メンバー</th>
-            <th class="text-center">申告スキル数</th>
-            <th class="text-center">平均レベル</th>
-            <th style="min-width:140px;">レベルバー</th>
-            <th class="text-end">詳細</th>
+            <th class="text-center" data-i18n="lbl.skill_count">申告スキル数</th>
+            <th class="text-center" data-i18n="lbl.avg_level">平均レベル</th>
+            <th style="min-width:140px;" data-i18n="lbl.level_bar">レベルバー</th>
+            <th class="text-end" data-i18n="lbl.detail">詳細</th>
           </tr>
         </thead>
         <tbody>
@@ -279,7 +409,7 @@
                 {% if ms.user.avatar_path %}
                 <img src="{{ ms.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
                 {% else %}
-                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
                   {{ (ms.user.display_name or ms.user.username)[0].upper() }}
                 </div>
                 {% endif %}
@@ -293,12 +423,12 @@
               <span class="badge bg-light text-dark" style="font-size:.85rem;">{{ ms.total }}</span>
             </td>
             <td class="text-center">
-              <span class="fw-bold" style="color:#6366f1;font-size:.95rem;">{{ ms.avg }}</span>
+              <span class="fw-bold" style="color:#f97316;font-size:.95rem;">{{ ms.avg }}</span>
               <span class="text-muted" style="font-size:.7rem;"> / 4.0</span>
             </td>
             <td>
               <div class="progress" style="height:8px;border-radius:10px;">
-                <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:10px;"></div>
+                <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:10px;"></div>
               </div>
             </td>
             <td class="text-end">
@@ -395,7 +525,7 @@
     <table class="table table-sm table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th>スキル名</th>
+          <th data-i18n="lbl.skill_name">スキル名</th>
           <th>カテゴリ</th>
           <th class="text-center">習得者数</th>
         </tr>
@@ -444,8 +574,8 @@
     <!-- サマリーカード -->
     <div class="row g-3 mb-3">
       <div class="col-6 col-md-3">
-        <div style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:12px;padding:.8rem 1rem;text-align:center;">
-          <div class="fw-bold fs-5" style="color:#6366f1;">{{ coverage_summary.total_skills }}</div>
+        <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:12px;padding:.8rem 1rem;text-align:center;">
+          <div class="fw-bold fs-5" style="color:#f97316;">{{ coverage_summary.total_skills }}</div>
           <div class="text-muted" style="font-size:.75rem;">全スキル数</div>
         </div>
       </div>
@@ -484,7 +614,7 @@
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCatCoverage" type="button" style="border-radius:12px 12px 0 0;">
-            <i class="bi bi-bar-chart me-1" style="color:#6366f1;"></i>カテゴリー別
+            <i class="bi bi-bar-chart me-1" style="color:#f97316;"></i>カテゴリー別
           </button>
         </li>
       </ul>
@@ -590,12 +720,12 @@
 <!-- 最近の申告・更新 -->
 <div class="card mb-4">
   <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-warning"></i>最近の申告・更新</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-warning"></i data-i18n="lbl.recent_updates">最近の申告・更新</h6>
     {% if recent %}
     <div class="table-responsive">
       <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
         <thead class="table-light">
-          <tr><th>メンバー</th><th>スキル名</th><th>難易度</th><th>カテゴリー</th><th>申告レベル</th><th>更新日</th></tr>
+          <tr><th>メンバー</th><th>スキル名</th><th>難易度</th><th>カテゴリー</th><th>申告レベル</th><th data-i18n="lbl.updated_at">更新日</th></tr>
         </thead>
         <tbody>
           {% for sl in recent %}
@@ -638,15 +768,15 @@
   <div class="col-6 col-md-3">
     <div class="stat-card">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">申告済みスキル</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.declared_skills">申告済みスキル</div>
         </div>
       </div>
       <div class="mt-2">
         <div class="progress progress-animated" style="height:4px;">
-          <div class="progress-bar" style="width:{% if catalog_total %}{{ (total / catalog_total * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+          <div class="progress-bar" style="width:{% if catalog_total %}{{ (total / catalog_total * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
         </div>
         <div class="text-muted mt-1" style="font-size:.7rem;">カタログの {{ (total / catalog_total * 100)|int if catalog_total else 0 }}%</div>
       </div>
@@ -658,7 +788,7 @@
         <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-collection-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ catalog_total }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">カタログ総数</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.catalog_total">カタログ総数</div>
         </div>
       </div>
     </div>
@@ -682,7 +812,7 @@
           <div class="fw-bold" style="font-size:.95rem;line-height:1.3;">
             {% if max_sl %}{{ SKILL_LEVELS[max_sl.level] }}{% else %}-{% endif %}
           </div>
-          <div class="text-muted" style="font-size:.78rem;">最高レベル</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.top_level">最高レベル</div>
         </div>
       </div>
     </div>
@@ -742,7 +872,7 @@
           {% if view_mode == 'group' %}
           <i class="bi bi-diagram-3 me-2" style="color:#0ea5e9;"></i>メンバー別 カテゴリーレーダー
           {% else %}
-          <i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>カテゴリー別スキルレーダー
+          <i class="bi bi-diagram-3 me-2" style="color:#f97316;"></i>カテゴリー別スキルレーダー
           {% endif %}
         </h6>
         <div style="position:relative;max-height:320px;">
@@ -783,7 +913,7 @@
 
         <!-- サマリーバー -->
         <div class="d-flex flex-wrap gap-2 mb-3">
-          <span class="badge" style="background:#6366f1;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
+          <span class="badge" style="background:#f97316;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
             <i class="bi bi-list-check me-1"></i>必須スキル {{ gap_summary.total_required }}件
           </span>
           <span class="badge" style="background:#22c55e;font-size:.82rem;padding:.4rem .8rem;border-radius:20px;">
@@ -842,7 +972,7 @@
                     {% elif ml.level == 1 %}
                     <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#ecfdf5;border:2px solid #86efac;line-height:24px;font-size:.7rem;color:#22c55e;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
                     {% elif ml.level == 2 %}
-                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#eef2ff;border:2px solid #a5b4fc;line-height:24px;font-size:.7rem;color:#6366f1;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
+                    <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#fff7ed;border:2px solid #a5b4fc;line-height:24px;font-size:.7rem;color:#f97316;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
                     {% elif ml.level == 3 %}
                     <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#fffbeb;border:2px solid #fcd34d;line-height:24px;font-size:.7rem;color:#f59e0b;font-weight:700;" title="{{ (ml.user.display_name or ml.user.username) }}: Lv{{ ml.level }}">{{ ml.level }}</span>
                     {% else %}
@@ -915,7 +1045,7 @@
                     {% if ms.user.avatar_path %}
                     <img src="{{ ms.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
                     {% else %}
-                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
                       {{ (ms.user.display_name or ms.user.username)[0].upper() }}
                     </div>
                     {% endif %}
@@ -929,12 +1059,12 @@
                   <span class="badge bg-light text-dark" style="font-size:.85rem;">{{ ms.total }}</span>
                 </td>
                 <td class="text-center">
-                  <span class="fw-bold" style="color:#6366f1;font-size:.95rem;">{{ ms.avg }}</span>
+                  <span class="fw-bold" style="color:#f97316;font-size:.95rem;">{{ ms.avg }}</span>
                   <span class="text-muted" style="font-size:.7rem;"> / 4.0</span>
                 </td>
                 <td>
                   <div class="progress" style="height:8px;border-radius:10px;">
-                    <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:10px;"></div>
+                    <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:10px;"></div>
                   </div>
                 </td>
                 <td class="text-end">
@@ -1097,6 +1227,64 @@
 
 {% block scripts %}
 <script>
+/* ── Stat card hover detail ── */
+(function() {
+  const panel = document.getElementById('hoverDetailPanel');
+  const dataStore = document.getElementById('hoverData');
+  if (!panel || !dataStore) return;
+
+  let hideTimer = null;
+
+  function getContent(key) {
+    const el = dataStore.querySelector(`[data-key="${key}"]`);
+    return el ? el.innerHTML : '';
+  }
+
+  function showPanel(card, key) {
+    clearTimeout(hideTimer);
+    panel.innerHTML = getContent(key);
+    // いったん画面外に表示して高さを計測
+    panel.style.left = '-9999px';
+    panel.style.top = '0';
+    panel.style.display = '';
+
+    requestAnimationFrame(() => {
+      const rect = card.getBoundingClientRect();
+      const panelW = panel.offsetWidth || 280;
+      const panelH = panel.offsetHeight || 240;
+      const margin = 10;
+
+      let left = rect.right + margin;
+      let top = rect.top;
+
+      if (left + panelW > window.innerWidth - margin) {
+        left = rect.left - panelW - margin;
+      }
+      if (top + panelH > window.innerHeight - margin) {
+        top = window.innerHeight - panelH - margin;
+      }
+      top = Math.max(margin, top);
+      left = Math.max(margin, left);
+
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+    });
+  }
+
+  document.querySelectorAll('.stat-hoverable[data-detail]').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      showPanel(this, this.dataset.detail);
+    });
+    card.addEventListener('mousemove', function() {
+      // ウィンドウスクロール等でパネルがずれないよう毎回再配置
+      showPanel(this, this.dataset.detail);
+    });
+    card.addEventListener('mouseleave', function() {
+      hideTimer = setTimeout(() => { panel.style.display = 'none'; }, 80);
+    });
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   const radarCtx = document.getElementById('radarChart');
   const levelCtx = document.getElementById('levelChart');
@@ -1107,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
   {
     const labels = [{% for c in categories %}'{{ c.name }}'{% if not loop.last %},{% endif %}{% endfor %}];
     const colors = [
-      {bg: 'rgba(99,102,241,.15)', border: '#6366f1'},
+      {bg: 'rgba(249,115,22,.15)', border: '#f97316'},
       {bg: 'rgba(14,165,233,.15)', border: '#0ea5e9'},
       {bg: 'rgba(245,158,11,.15)', border: '#f59e0b'},
       {bg: 'rgba(239,68,68,.15)', border: '#ef4444'},
@@ -1164,9 +1352,9 @@ document.addEventListener('DOMContentLoaded', () => {
         label: '申告数',
         data: [{% for name, count in top_cats %}{{ count }}{% if not loop.last %},{% endif %}{% endfor %}],
         backgroundColor: 'rgba(99, 102, 241, .15)',
-        borderColor: '#6366f1',
+        borderColor: '#f97316',
         borderWidth: 2,
-        pointBackgroundColor: '#6366f1',
+        pointBackgroundColor: '#f97316',
         pointBorderColor: '#fff',
         pointBorderWidth: 2,
         pointRadius: 5,
@@ -1194,7 +1382,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Level Distribution Chart ── */
   const levelNames = ['未経験', '入門', '基礎', '実務可', 'エキスパート'];
-  const levelColors = ['#94a3b8', '#06b6d4', '#6366f1', '#f59e0b', '#ef4444'];
+  const levelColors = ['#94a3b8', '#06b6d4', '#f97316', '#f59e0b', '#ef4444'];
   const levelData = [{{ level_dist[0] }}, {{ level_dist[1] }}, {{ level_dist[2] }}, {{ level_dist[3] }}, {{ level_dist[4] }}];
 
   new Chart(levelCtx, {
@@ -1331,6 +1519,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
   {% endif %}
+
+  /* ── Weekly Growth Trend Chart (all/self モード) ── */
+  const weeklyCtx = document.getElementById('weeklyTrendChart');
+  if (weeklyCtx) {
+    const trendStatus = document.getElementById('trendStatus');
+    const params = new URLSearchParams(window.location.search);
+    const gid = params.get('group_id') || '0';
+    const uid = params.get('user_id') || '0';
+    fetch(`/api/dashboard/trend?group_id=${gid}&user_id=${uid}`)
+      .then(r => r.json())
+      .then(data => {
+        if (trendStatus) trendStatus.textContent = data.counts.reduce((a,b)=>a+b,0) + ' 件のレベルUP';
+        new Chart(weeklyCtx, {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'レベルUP件数',
+              data: data.counts,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34,197,94,.12)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#22c55e',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: ctx => ctx.raw + ' 件' } }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+              y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } }
+            }
+          }
+        });
+      })
+      .catch(() => { if (trendStatus) trendStatus.textContent = 'データなし'; });
+  }
 });
 </script>
 {% endblock %}

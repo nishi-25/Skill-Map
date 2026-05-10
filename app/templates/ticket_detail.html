@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.title }} - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1" style="font-size:.82rem;">
+        <li class="breadcrumb-item"><a href="/tickets">問い合わせ・要望</a></li>
+        <li class="breadcrumb-item active">{{ ticket.title[:30] }}{% if ticket.title|length > 30 %}...{% endif %}</li>
+      </ol>
+    </nav>
+    <h1 style="font-size:1.3rem;">
+      <i class="bi {% if ticket.ticket_type == 'request' %}bi-star-fill{% else %}bi-chat-text-fill{% endif %} me-2"
+         style="color:#f97316;"></i>{{ ticket.title }}
+    </h1>
+    <div class="d-flex gap-2 flex-wrap mt-1">
+      <span class="badge" style="background:{% if ticket.ticket_type == 'request' %}#fffbeb;color:#92400e;border:1px solid #fcd34d{% else %}#eef2ff;color:#f97316;border:1px solid #fed7aa{% endif %};font-size:.75rem;">
+        {{ TICKET_TYPES[ticket.ticket_type] }}
+      </span>
+      <span class="badge bg-{{ TICKET_PRIORITY_COLORS[ticket.priority] }}" style="font-size:.75rem;">
+        優先度: {{ TICKET_PRIORITY[ticket.priority] }}
+      </span>
+      <span class="badge bg-{{ TICKET_STATUS_COLORS[ticket.status] }}" id="statusBadge" style="font-size:.75rem;">
+        {{ TICKET_STATUS[ticket.status] }}
+      </span>
+      <span class="text-muted small align-self-center">作成: {{ ticket.created_at|jst }}</span>
+    </div>
+  </div>
+  {% if current_user.role == 'admin' %}
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    <select id="statusSelect" class="form-select form-select-sm" style="max-width:140px;border-radius:20px;"
+            onchange="changeStatus(this.value)">
+      {% for k, v in TICKET_STATUS.items() %}
+      <option value="{{ k }}" {% if ticket.status == k %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+    <span class="text-muted small">ステータス変更</span>
+  </div>
+  {% endif %}
+</div>
+
+<!-- チャット -->
+<div class="card" style="border:none;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+  <div class="card-body p-0">
+    <!-- メッセージ一覧 -->
+    <div id="chatMessages" style="max-height:55vh;overflow-y:auto;padding:1.2rem 1.5rem;">
+      {% for msg in ticket.messages %}
+      {% set is_admin_msg = msg.user.role == 'admin' %}
+      <div class="d-flex gap-3 mb-4 {% if is_admin_msg %}flex-row-reverse{% endif %}">
+        <!-- アバター -->
+        {% if msg.user.avatar_path %}
+        <img src="{{ msg.user.avatar_path }}" alt=""
+             style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;align-self:flex-end;">
+        {% else %}
+        <div style="width:36px;height:36px;border-radius:50%;
+                    background:{% if is_admin_msg %}linear-gradient(135deg,#dc2626,#f97316){% else %}linear-gradient(135deg,#f97316,#fdba74){% endif %};
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:.85rem;color:#fff;font-weight:700;flex-shrink:0;align-self:flex-end;">
+          {{ (msg.user.display_name or msg.user.username)[0].upper() }}
+        </div>
+        {% endif %}
+        <!-- バブル -->
+        <div style="max-width:70%;">
+          <div class="small text-muted mb-1 {% if is_admin_msg %}text-end{% endif %}">
+            <strong>{{ msg.user.display_name or msg.user.username }}</strong>
+            {% if is_admin_msg %}<span class="badge bg-danger ms-1" style="font-size:.6rem;">Admin</span>{% endif %}
+            <span class="ms-2">{{ msg.created_at|jst }}</span>
+          </div>
+          <div style="padding:.75rem 1rem;border-radius:{% if is_admin_msg %}16px 16px 4px 16px{% else %}16px 16px 16px 4px{% endif %};
+                      background:{% if is_admin_msg %}linear-gradient(135deg,#f97316,#ea580c);color:#fff{% else %}#f1f5f9{% endif %};
+                      white-space:pre-wrap;word-break:break-word;line-height:1.6;">{{ msg.message }}</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not ticket.messages %}
+      <div class="text-center text-muted py-4 small">
+        <i class="bi bi-chat-dots me-1"></i>まだメッセージがありません
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- 入力エリア -->
+    {% if ticket.status not in ('resolved', 'closed') %}
+    <div style="border-top:1px solid #f1f5f9;padding:1rem 1.5rem;background:#fafafa;">
+      <div class="d-flex gap-2">
+        <textarea id="replyInput" class="form-control" rows="2"
+                  placeholder="メッセージを入力..."
+                  style="resize:none;border-radius:12px;font-size:.9rem;"
+                  onkeydown="if(event.ctrlKey&&event.key==='Enter')sendReply()"></textarea>
+        <button class="btn btn-primary align-self-end" style="border-radius:12px;padding:.5rem 1rem;"
+                onclick="sendReply()" id="sendBtn">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+      <div class="text-muted mt-1" style="font-size:.72rem;">Ctrl+Enter でも送信できます</div>
+    </div>
+    {% else %}
+    <div class="text-center py-3 text-muted small" style="border-top:1px solid #f1f5f9;">
+      <i class="bi bi-lock me-1"></i>このチケットはクローズされています
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TICKET_ID = {{ ticket.id }};
+
+// 末尾にスクロール
+(function() {
+  const el = document.getElementById('chatMessages');
+  if (el) el.scrollTop = el.scrollHeight;
+})();
+
+async function sendReply() {
+  const input = document.getElementById('replyInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+
+  const fd = new FormData();
+  fd.append('message', msg);
+  const res = await fetch('/api/tickets/' + TICKET_ID + '/message', { method: 'POST', body: fd });
+  const data = await res.json();
+  btn.disabled = false;
+
+  if (data.ok) {
+    input.value = '';
+    // バブルを追加
+    const isAdmin = data.is_admin;
+    const div = document.createElement('div');
+    div.className = 'd-flex gap-3 mb-4' + (isAdmin ? ' flex-row-reverse' : '');
+    const avatar = data.avatar
+      ? `<img src="${data.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;align-self:flex-end;">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:${isAdmin?'linear-gradient(135deg,#dc2626,#f97316)':'linear-gradient(135deg,#f97316,#fdba74)'};display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;font-weight:700;flex-shrink:0;align-self:flex-end;">${data.initial}</div>`;
+    div.innerHTML = avatar + `
+      <div style="max-width:70%;">
+        <div class="small text-muted mb-1 ${isAdmin?'text-end':''}">
+          <strong>${data.user_name}</strong>
+          ${isAdmin?'<span class="badge bg-danger ms-1" style="font-size:.6rem;">Admin</span>':''}
+          <span class="ms-2">${data.created_at}</span>
+        </div>
+        <div style="padding:.75rem 1rem;border-radius:${isAdmin?'16px 16px 4px 16px':'16px 16px 16px 4px'};
+                    background:${isAdmin?'linear-gradient(135deg,#f97316,#ea580c);color:#fff':'#f1f5f9'};
+                    white-space:pre-wrap;word-break:break-word;line-height:1.6;">${msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      </div>`;
+    const chat = document.getElementById('chatMessages');
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  } else {
+    showToast(data.error || '送信に失敗しました', 'error');
+  }
+}
+
+async function changeStatus(status) {
+  const fd = new FormData();
+  fd.append('status', status);
+  const res = await fetch('/api/tickets/' + TICKET_ID + '/status', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.ok) {
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'badge bg-' + data.status_color;
+    badge.textContent = data.status_label;
+    showToast('ステータスを「' + data.status_label + '」に変更しました', 'success');
+  } else {
+    showToast(data.error || '変更に失敗しました', 'error');
+  }
+}
+
+/* ── 自動更新ポーリング（5秒ごと） ─────────────────────────── */
+let _detailLastMsgId = 0;
+
+// 初期の最終メッセージID を設定
+document.addEventListener('DOMContentLoaded', () => {
+  const msgs = document.querySelectorAll('#chatMessages > div');
+  // メッセージIDはDOMに直接ないため、初回はポーリングで差分検知するだけ
+  _detailLastMsgId = 0;
+  setTimeout(_startDetailPoll, 2000); // 2秒後から開始
+});
+
+function _startDetailPoll() {
+  _pollDetail();
+  setInterval(_pollDetail, 5000);
+}
+
+async function _pollDetail() {
+  try {
+    const res  = await fetch('/api/tickets/' + TICKET_ID + '/detail');
+    const data = await res.json();
+    if (!data.ok) return;
+
+    // 新着メッセージを追記
+    const newMsgs = _detailLastMsgId === 0
+      ? []   // 初回は現在表示中のものと重複するので追加しない
+      : data.messages.filter(m => m.id > _detailLastMsgId);
+
+    if (_detailLastMsgId === 0 && data.messages.length > 0) {
+      _detailLastMsgId = data.messages[data.messages.length - 1].id;
+    }
+
+    if (newMsgs.length > 0) {
+      const chat = document.getElementById('chatMessages');
+      newMsgs.forEach(m => {
+        const isAdmin = m.is_admin;
+        const div = document.createElement('div');
+        div.className = 'd-flex gap-3 mb-4' + (isAdmin ? ' flex-row-reverse' : '');
+        const avatarHtml = m.avatar
+          ? `<img src="${m.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;align-self:flex-end;">`
+          : `<div style="width:36px;height:36px;border-radius:50%;background:${isAdmin?'linear-gradient(135deg,#dc2626,#f97316)':'linear-gradient(135deg,#f97316,#fdba74)'};display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;font-weight:700;flex-shrink:0;align-self:flex-end;">${m.initial}</div>`;
+        div.innerHTML = avatarHtml + `
+          <div style="max-width:70%;">
+            <div class="small text-muted mb-1 ${isAdmin?'text-end':''}">
+              <strong>${m.user_name}</strong>
+              ${isAdmin?'<span class="badge bg-danger ms-1" style="font-size:.6rem;">Admin</span>':''}
+              <span class="ms-2">${m.created_at}</span>
+            </div>
+            <div style="padding:.75rem 1rem;border-radius:${isAdmin?'16px 16px 4px 16px':'16px 16px 16px 4px'};
+                        background:${isAdmin?'linear-gradient(135deg,#f97316,#ea580c);color:#fff':'#f1f5f9'};
+                        white-space:pre-wrap;word-break:break-word;line-height:1.6;">${m.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          </div>`;
+        chat.appendChild(div);
+      });
+      chat.scrollTop = chat.scrollHeight;
+      _detailLastMsgId = data.messages[data.messages.length - 1].id;
+
+      // 新着通知
+      if (!document.hasFocus()) {
+        document.title = '💬 新着メッセージ - ' + document.title.replace(/^💬 新着メッセージ - /, '');
+      }
+    }
+
+    // ステータス変化を反映
+    const badge = document.getElementById('statusBadge');
+    if (badge) {
+      badge.className = 'badge bg-' + data.status_color;
+      badge.textContent = data.status;
+    }
+    // ステータスセレクトも同期（Admin）
+    const sel = document.getElementById('statusSelect');
+    if (sel && sel.value !== data.status_key) sel.value = data.status_key;
+
+    // クローズ時は入力欄を非表示
+    const inputArea = document.querySelector('.card-body > div[style*="border-top"]');
+    if (!data.can_reply && inputArea) inputArea.style.display = 'none';
+
+  } catch {}
+}
+
+// フォーカス回復時にタイトルをリセット
+window.addEventListener('focus', () => {
+  document.title = document.title.replace(/^💬 新着メッセージ - /, '');
+});
+</script>
+{% endblock %}

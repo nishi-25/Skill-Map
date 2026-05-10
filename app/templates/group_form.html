@@ -13,14 +13,14 @@
   }
   .cat-section .form-check { font-size: .82rem; margin-bottom: .15rem; padding-left: 1.6rem; }
   .cat-section .form-check-input { margin-top: .22rem; }
-  .select-count { font-size: .72rem; color: #6366f1; font-weight: 600; }
+  .select-count { font-size: .72rem; color: #f97316; font-weight: 600; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
   <h1>
-    <i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>
+    <i class="bi bi-people-fill me-2" style="color:#f97316;"></i>
     グループ{{ '編集' if group else '作成' }}
   </h1>
 </div>
@@ -44,24 +44,224 @@
             <textarea name="description" class="form-control" rows="2"
                       placeholder="このグループの説明">{{ group.description if group else '' }}</textarea>
           </div>
-          {% if current_user.role == 'admin' %}
-          <div class="mb-4">
-            <label class="form-label fw-semibold">担当Manager</label>
-            <select name="manager_id" class="form-select">
-              <option value="0">なし</option>
+          <div class="mb-4" id="mgrSection">
+            <label class="form-label fw-semibold">
+              担当Manager
+              <span class="text-muted fw-normal" style="font-size:.78rem;">（複数選択可）</span>
+            </label>
+            {% if managers %}
+
+            <!-- 全Managerデータを JS に渡す -->
+            <script>
+            const _ALL_MANAGERS = [
               {% for m in managers %}
-              <option value="{{ m.id }}"
-                {% if group and group.manager_id == m.id %}selected{% endif %}>
-                {{ m.display_name or m.username }}
-                ({{ m.role }})
-              </option>
+              { id: {{ m.id }},
+                name: {{ (m.display_name or m.username) | tojson }},
+                username: {{ m.username | tojson }},
+                role: {{ m.role | tojson }} }{% if not loop.last %},{% endif %}
               {% endfor %}
-            </select>
+            ];
+            const _INIT_SELECTED = new Set([{{ selected_manager_ids | join(',') }}]);
+            </script>
+
+            <!-- 検索ボックス（候補ドロップダウン付き） -->
+            <div style="position:relative;margin-bottom:.75rem;">
+              <i class="bi bi-search" style="position:absolute;left:.65rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.82rem;pointer-events:none;z-index:1;"></i>
+              <input type="text" id="mgrSearchInput"
+                     class="form-control form-control-sm"
+                     placeholder="名前で検索して追加..."
+                     style="padding-left:2rem;border-radius:20px 20px 0 0;border-bottom-color:transparent;"
+                     autocomplete="off"
+                     oninput="mgrSearch(this.value)"
+                     onfocus="mgrSearch(this.value)"
+                     onblur="setTimeout(()=>document.getElementById('mgrDropdown').style.display='none',200)">
+              <!-- 検索候補ドロップダウン -->
+              <div id="mgrDropdown"
+                   style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
+                          background:#fff;border:1px solid #e2e8f0;border-top:none;
+                          border-radius:0 0 12px 12px;max-height:200px;overflow-y:auto;
+                          box-shadow:0 6px 16px rgba(0,0,0,.1);">
+              </div>
+            </div>
+
+            <!-- 追加済みManager一覧 -->
+            <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+              <div style="padding:.4rem .75rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;
+                          display:flex;align-items:center;justify-content:space-between;">
+                <span class="fw-semibold" style="font-size:.8rem;color:#64748b;">
+                  <i class="bi bi-people-fill me-1" style="color:#f97316;"></i>
+                  追加済み <span id="mgrCount" style="color:#f97316;">0</span> 名
+                </span>
+                <div class="d-flex gap-1">
+                  <!-- 複数解除モード切替 -->
+                  <button type="button" id="btnBulkRemove"
+                          onclick="toggleBulkRemove()"
+                          class="btn btn-xs btn-outline-secondary" style="border-radius:20px;font-size:.72rem;">
+                    <i class="bi bi-check2-square me-1"></i>複数解除
+                  </button>
+                  <!-- 一括削除（複数解除モード時のみ表示） -->
+                  <button type="button" id="btnBulkDelete"
+                          onclick="bulkDeleteManagers()"
+                          class="btn btn-xs btn-outline-danger" style="border-radius:20px;font-size:.72rem;display:none;">
+                    <i class="bi bi-trash me-1"></i>選択を削除
+                  </button>
+                </div>
+              </div>
+              <div id="mgrSelectedList" style="min-height:40px;max-height:220px;overflow-y:auto;">
+                <div class="text-center text-muted py-3 small" id="mgrEmptyMsg">
+                  <i class="bi bi-person-plus me-1"></i>上の検索欄からManagerを追加してください
+                </div>
+              </div>
+            </div>
+
+            <div class="form-text mt-1">Managerが自分でグループを作成した場合は自動的に自身が含まれます</div>
+
+            <!-- フォーム送信用 hidden input （JS が管理） -->
+            <div id="mgrHiddenInputs"></div>
+
+            <script>
+            (function() {
+              let _selected = new Map(); // id -> {id, name, role}
+              let _bulkMode = false;
+
+              /* ── 初期化 ── */
+              _ALL_MANAGERS.forEach(m => {
+                if (_INIT_SELECTED.has(m.id)) _selected.set(m.id, m);
+              });
+              _render();
+
+              /* ── 検索ドロップダウン ── */
+              window.mgrSearch = function(q) {
+                const dropdown = document.getElementById('mgrDropdown');
+                const lower    = q.toLowerCase().trim();
+                const cands = _ALL_MANAGERS.filter(m =>
+                  !_selected.has(m.id) &&
+                  (m.name.toLowerCase().includes(lower) || m.username.toLowerCase().includes(lower))
+                );
+                if (!lower && cands.length === 0) { dropdown.style.display = 'none'; return; }
+                if (cands.length === 0) {
+                  dropdown.innerHTML = '<div class="text-muted text-center py-2 small">該当なし</div>';
+                } else {
+                  dropdown.innerHTML = cands.map(m => `
+                    <div onmousedown="addManager(${m.id})"
+                         style="padding:.5rem .9rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;
+                                border-bottom:1px solid #f8fafc;transition:background .1s;"
+                         onmouseover="this.style.background='#fff7ed'"
+                         onmouseout="this.style.background=''">
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:.85rem;font-weight:500;">${m.name}</div>
+                        <div style="font-size:.7rem;color:#94a3b8;">@${m.username}</div>
+                      </div>
+                      <span class="badge ${m.role==='admin'?'bg-danger':'bg-primary'}" style="font-size:.6rem;">${m.role}</span>
+                      <i class="bi bi-plus-circle text-success" style="font-size:.9rem;"></i>
+                    </div>`).join('');
+                }
+                dropdown.style.display = '';
+              };
+
+              /* ── 追加 ── */
+              window.addManager = function(id) {
+                const m = _ALL_MANAGERS.find(x => x.id === id);
+                if (!m || _selected.has(id)) return;
+                _selected.set(id, m);
+                document.getElementById('mgrSearchInput').value = '';
+                document.getElementById('mgrDropdown').style.display = 'none';
+                _render();
+              };
+
+              /* ── 1件削除 ── */
+              window.removeManager = function(id) {
+                _selected.delete(id);
+                _render();
+              };
+
+              /* ── 複数解除モード ── */
+              window.toggleBulkRemove = function() {
+                _bulkMode = !_bulkMode;
+                const btn   = document.getElementById('btnBulkRemove');
+                const btnDel= document.getElementById('btnBulkDelete');
+                btn.innerHTML   = _bulkMode
+                  ? '<i class="bi bi-x-lg me-1"></i>キャンセル'
+                  : '<i class="bi bi-check2-square me-1"></i>複数解除';
+                btn.className   = _bulkMode
+                  ? 'btn btn-xs btn-secondary' : 'btn btn-xs btn-outline-secondary';
+                btn.style.borderRadius = '20px';
+                btn.style.fontSize = '.72rem';
+                btnDel.style.display = _bulkMode ? '' : 'none';
+                _render();
+              };
+
+              /* ── 一括削除 ── */
+              window.bulkDeleteManagers = function() {
+                document.querySelectorAll('.mgr-bulk-cb:checked').forEach(cb => {
+                  _selected.delete(parseInt(cb.value));
+                });
+                _bulkMode = false;
+                document.getElementById('btnBulkRemove').innerHTML = '<i class="bi bi-check2-square me-1"></i>複数解除';
+                document.getElementById('btnBulkRemove').className = 'btn btn-xs btn-outline-secondary';
+                document.getElementById('btnBulkRemove').style.borderRadius = '20px';
+                document.getElementById('btnBulkRemove').style.fontSize = '.72rem';
+                document.getElementById('btnBulkDelete').style.display = 'none';
+                _render();
+              };
+
+              /* ── 描画 ── */
+              function _render() {
+                const list    = document.getElementById('mgrSelectedList');
+                const empty   = document.getElementById('mgrEmptyMsg');
+                const inputs  = document.getElementById('mgrHiddenInputs');
+                const counter = document.getElementById('mgrCount');
+
+                counter.textContent = _selected.size;
+                inputs.innerHTML = '';
+                _selected.forEach(m => {
+                  const inp = document.createElement('input');
+                  inp.type = 'hidden'; inp.name = 'manager_ids'; inp.value = m.id;
+                  inputs.appendChild(inp);
+                });
+
+                if (_selected.size === 0) {
+                  list.innerHTML = '';
+                  list.appendChild(empty);
+                  empty.style.display = '';
+                  return;
+                }
+                empty.style.display = 'none';
+
+                list.innerHTML = [..._selected.values()].map(m => `
+                  <div style="padding:.5rem .75rem;border-bottom:1px solid #f8fafc;display:flex;align-items:center;gap:.6rem;background:#fff;">
+                    ${_bulkMode ? `<input type="checkbox" class="form-check-input mgr-bulk-cb flex-shrink-0"
+                                        value="${m.id}" style="width:16px;height:16px;">` : ''}
+                    <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;
+                                background:linear-gradient(135deg,${m.role==='admin'?'#dc2626,#f87171':'#f97316,#fdba74'});
+                                display:flex;align-items:center;justify-content:center;
+                                font-size:.75rem;color:#fff;font-weight:700;">
+                      ${m.name[0].toUpperCase()}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:.86rem;font-weight:600;">${m.name}</div>
+                      <div style="font-size:.7rem;color:#94a3b8;">@${m.username}</div>
+                    </div>
+                    <span class="badge ${m.role==='admin'?'bg-danger':'bg-primary'}" style="font-size:.62rem;flex-shrink:0;">${m.role}</span>
+                    ${!_bulkMode ? `<button type="button" onclick="removeManager(${m.id})"
+                              style="background:none;border:none;color:#94a3b8;font-size:.9rem;
+                                     cursor:pointer;padding:2px 4px;border-radius:4px;flex-shrink:0;"
+                              onmouseover="this.style.color='#ef4444'"
+                              onmouseout="this.style.color='#94a3b8'">
+                              <i class="bi bi-x-lg"></i>
+                            </button>` : ''}
+                  </div>`).join('');
+              }
+            })();
+            </script>
+
+            {% else %}
+            <div class="text-muted small">Manager権限のユーザーがいません</div>
+            {% endif %}
           </div>
-          {% endif %}
           <div class="mb-4">
             <label class="form-label fw-semibold">
-              <i class="bi bi-diagram-3 me-1" style="color:#6366f1;"></i>親グループ
+              <i class="bi bi-diagram-3 me-1" style="color:#f97316;"></i>親グループ
             </label>
             <select name="parent_id" class="form-select" id="parentSelect" onchange="onParentChange()">
               <option value="0">なし（ルートグループ）</option>

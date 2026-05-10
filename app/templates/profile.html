@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="page-header">
-  <h1><i class="bi bi-person-circle me-2" style="color:#6366f1;"></i>プロフィール</h1>
+  <h1><i class="bi bi-person-circle me-2" style="color:#f97316;"></i><span data-i18n="page.profile">プロフィール</span></h1>
 </div>
 
 <div class="row justify-content-center">
@@ -19,13 +19,13 @@
         <div class="position-relative d-inline-block mb-3">
           {% if current_user.avatar_path %}
           <img src="{{ current_user.avatar_path }}" alt="avatar"
-               style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #e0e7ff;">
+               style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #ffedd5;">
           {% else %}
-          <div class="mx-auto" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;font-weight:700;">
+          <div class="mx-auto" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;font-weight:700;">
             {{ (current_user.display_name or current_user.username)[0].upper() }}
           </div>
           {% endif %}
-          <label for="avatarInput" class="position-absolute" style="bottom:0;right:-4px;width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;font-size:.75rem;" title="写真を変更">
+          <label for="avatarInput" class="position-absolute" style="bottom:0;right:-4px;width:28px;height:28px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;font-size:.75rem;" title="写真を変更">
             <i class="bi bi-camera-fill"></i>
           </label>
         </div>
@@ -46,7 +46,7 @@
         <div class="text-muted small">@{{ current_user.username }}</div>
         <div class="mt-1">
           {% if current_user.role == 'admin' %}
-          <span class="badge" style="background:#6366f1;">Admin</span>
+          <span class="badge" style="background:#f97316;">Admin</span>
           {% else %}
           <span class="badge bg-secondary">User</span>
           {% endif %}
@@ -57,12 +57,12 @@
     <!-- 所属グループ -->
     {% if my_groups %}
     <div class="card mb-3">
-      <div class="card-header fw-bold"><i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>所属グループ</div>
+      <div class="card-header fw-bold"><i class="bi bi-people-fill me-2" style="color:#f97316;"></i><span data-i18n="lbl.my_groups">所属グループ</span></div>
       <div class="card-body p-3">
         <div class="d-flex flex-wrap gap-2">
           {% for g in my_groups %}
           <div class="d-flex align-items-center gap-2 px-3 py-2" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
-            <i class="bi bi-people-fill" style="color:#6366f1;"></i>
+            <i class="bi bi-people-fill" style="color:#f97316;"></i>
             <div>
               <div class="fw-semibold" style="font-size:.88rem;">{{ g.name }}</div>
               {% if g.manager %}
@@ -76,8 +76,56 @@
     </div>
     {% endif %}
 
+    <!-- 表示設定 -->
+    <div class="card mb-3">
+      <div class="card-header fw-bold" style="border-bottom:2px solid #f97316;">
+        <i class="bi bi-palette me-2" style="color:#f97316;"></i>表示設定
+      </div>
+      <div class="card-body p-4">
+
+        <!-- カラーテーマ -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold small" data-i18n="lbl.color_theme">カラーテーマ</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" data-theme-btn="warm" onclick="setColorTheme('warm')"
+                    class="btn btn-sm d-flex align-items-center gap-2"
+                    style="border-radius:20px;border:2px solid #f97316;padding:.4rem 1rem;">
+              <span style="width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);display:inline-block;"></span>
+              <span>Warm（オレンジ）</span>
+            </button>
+            <button type="button" data-theme-btn="cool" onclick="setColorTheme('cool')"
+                    class="btn btn-sm d-flex align-items-center gap-2"
+                    style="border-radius:20px;border:2px solid #6366f1;padding:.4rem 1rem;">
+              <span style="width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);display:inline-block;"></span>
+              <span>Cool（インディゴ）</span>
+            </button>
+          </div>
+          <div class="text-muted mt-2" style="font-size:.75rem;">サイドバーやボタンの配色が切り替わります</div>
+        </div>
+
+        <!-- 言語 -->
+        <div>
+          <label class="form-label fw-semibold small" data-i18n="lbl.language">言語 / Language</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" data-lang-btn="ja" onclick="applyLanguage('ja')"
+                    class="btn btn-sm d-flex align-items-center gap-2"
+                    style="border-radius:20px;border:2px solid #e2e8f0;padding:.4rem 1rem;">
+              <span>🇯🇵</span><span>日本語</span>
+            </button>
+            <button type="button" data-lang-btn="en" onclick="applyLanguage('en')"
+                    class="btn btn-sm d-flex align-items-center gap-2"
+                    style="border-radius:20px;border:2px solid #e2e8f0;padding:.4rem 1rem;">
+              <span>🇺🇸</span><span>English</span>
+            </button>
+          </div>
+          <div class="text-muted mt-2" style="font-size:.75rem;">ナビゲーションメニューの表示言語が切り替わります</div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="card">
-      <div class="card-header fw-bold"><i class="bi bi-pencil me-2"></i>情報を編集</div>
+      <div class="card-header fw-bold"><i class="bi bi-pencil me-2"></i><span data-i18n="lbl.edit_profile">情報を編集</span></div>
       <div class="card-body p-4">
         {% if error %}
         <div class="alert alert-danger py-2 small">{{ error }}</div>
@@ -85,23 +133,23 @@
 
         <form method="post" action="/profile">
           <div class="mb-3">
-            <label class="form-label fw-semibold">表示名</label>
+            <label class="form-label fw-semibold" data-i18n="lbl.display_name">表示名</label>
             <input type="text" name="display_name" class="form-control"
                    value="{{ current_user.display_name or '' }}">
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">メールアドレス</label>
+            <label class="form-label fw-semibold" data-i18n="lbl.email">メールアドレス</label>
             <input type="email" name="email" class="form-control"
                    value="{{ current_user.email or '' }}">
           </div>
           <hr class="my-3">
           <p class="small text-muted mb-2">パスワードを変更する場合のみ入力してください。</p>
           <div class="mb-3">
-            <label class="form-label fw-semibold">現在のパスワード</label>
+            <label class="form-label fw-semibold" data-i18n="lbl.current_pw">現在のパスワード</label>
             <input type="password" name="current_password" class="form-control" placeholder="••••••••">
           </div>
           <div class="mb-4">
-            <label class="form-label fw-semibold">新しいパスワード</label>
+            <label class="form-label fw-semibold" data-i18n="lbl.new_pw">新しいパスワード</label>
             <input type="password" name="new_password" class="form-control" placeholder="6文字以上">
           </div>
           <button type="submit" class="btn btn-primary w-100 fw-semibold">
@@ -112,4 +160,32 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const currentTheme = localStorage.getItem('colorTheme') || 'warm';
+  const currentLang  = localStorage.getItem('appLang') || 'ja';
+
+  function markActive(sel, activeVal) {
+    document.querySelectorAll(sel).forEach(btn => {
+      const on = btn.dataset[sel.includes('theme') ? 'themeBtn' : 'langBtn'] === activeVal;
+      btn.style.fontWeight  = on ? '700' : '400';
+      btn.style.boxShadow   = on ? '0 0 0 3px rgba(249,115,22,.3)' : 'none';
+      btn.style.opacity     = on ? '1' : '.6';
+      btn.style.borderColor = on ? 'var(--primary,#f97316)' : '#e2e8f0';
+    });
+  }
+  markActive('[data-theme-btn]', currentTheme);
+  markActive('[data-lang-btn]',  currentLang);
+
+  document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+    btn.addEventListener('click', () => markActive('[data-theme-btn]', btn.dataset.themeBtn));
+  });
+  document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+    btn.addEventListener('click', () => markActive('[data-lang-btn]', btn.dataset.langBtn));
+  });
+});
+</script>
 {% endblock %}

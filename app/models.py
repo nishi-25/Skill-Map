@@ -36,7 +36,7 @@ LEVEL_COLORS = {
 
 # ── スキルカタログの難易度ティア ────────────────────────────────
 SKILL_TIERS = {
-    "beginner":     "初心者向け",
+    "beginner":     "初級",
     "basic":        "基礎",
     "intermediate": "中級",
     "advanced":     "上級",
@@ -51,10 +51,10 @@ TIER_COLORS = {
 
 # ── ティア表示名（カスタマイズ可、DB優先） ──────────────────────
 DEFAULT_TIER_NAMES = {
-    "beginner":     "ビギナー",
-    "basic":        "ベーシック",
-    "intermediate": "アドバンスド",
-    "advanced":     "エキスパート",
+    "beginner":     "初級",
+    "basic":        "基礎",
+    "intermediate": "中級",
+    "advanced":     "上級",
 }
 
 TIER_ICONS = {
@@ -65,10 +65,10 @@ TIER_ICONS = {
 }
 
 TIER_DESCRIPTIONS = {
-    "beginner":     "基本的な知識を身につけるスキル",
-    "basic":        "業務に必要な基礎スキル",
-    "intermediate": "より高度な実践スキル",
-    "advanced":     "専門性の高い上級スキル",
+    "beginner":     "基本的な操作・知識を習得するスキル",
+    "basic":        "業務で実際に活用できる実践スキル",
+    "intermediate": "チームをリードできる応用・設計スキル",
+    "advanced":     "専門家レベルの高度・体系的なスキル",
 }
 
 
@@ -195,6 +195,16 @@ group_skills = Table(
     UniqueConstraint("group_id", "skill_id", name="uq_group_skill"),
 )
 
+# グループ × Manager 中間テーブル（複数Manager対応）
+group_managers = Table(
+    "group_managers",
+    Base.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("group_id", Integer, ForeignKey("groups.id"), nullable=False),
+    Column("user_id", Integer, ForeignKey("users.id"), nullable=False),
+    UniqueConstraint("group_id", "user_id", name="uq_group_manager"),
+)
+
 
 class Group(Base):
     __tablename__ = "groups"
@@ -208,6 +218,8 @@ class Group(Base):
 
     manager = relationship("User", back_populates="managed_groups",
                            foreign_keys=[manager_id])
+    managers = relationship("User", secondary=group_managers,
+                            backref="co_managed_groups")
     parent = relationship("Group", remote_side="Group.id",
                           backref="children", foreign_keys=[parent_id])
     memberships = relationship("GroupMembership", back_populates="group",
@@ -242,6 +254,111 @@ class GroupTransfer(Base):
     from_group = relationship("Group", foreign_keys=[from_group_id])
     to_group = relationship("Group", foreign_keys=[to_group_id])
     operator = relationship("User", foreign_keys=[transferred_by])
+
+
+# ─── お知らせ（今後の追加機能） ───────────────────────────────────
+
+ANNOUNCEMENT_TYPES = {
+    "feature":     "🚀 新機能",
+    "improvement": "🔧 改善",
+    "info":        "📋 お知らせ",
+    "maintenance": "⚠️ メンテナンス",
+}
+ANNOUNCEMENT_TYPE_COLORS = {
+    "feature":     "primary",
+    "improvement": "success",
+    "info":        "info",
+    "maintenance": "warning",
+}
+
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    title        = Column(String(200), nullable=False)
+    content      = Column(Text, nullable=False)
+    ann_type     = Column(String(20), default="feature")   # feature/improvement/info/maintenance
+    scheduled_at = Column(DateTime, nullable=True)          # 予定日（任意）
+    is_published = Column(Boolean, default=True)            # 公開/非公開
+    created_by   = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at   = Column(DateTime, server_default=func.now())
+    updated_at   = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+# ─── 教育リソース ────────────────────────────────────────────────
+
+class EducationalLink(Base):
+    __tablename__ = "educational_links"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    title       = Column(String(200), nullable=False)
+    url         = Column(String(1000), nullable=False)
+    description = Column(Text, nullable=True)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    skill_id    = Column(Integer, ForeignKey("skills.id"), nullable=True)
+    created_by  = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at  = Column(DateTime, server_default=func.now())
+    updated_at  = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    category = relationship("Category", foreign_keys=[category_id])
+    skill    = relationship("Skill",    foreign_keys=[skill_id])
+    creator  = relationship("User",     foreign_keys=[created_by])
+
+
+# ─── 問い合わせ・要望チケット ─────────────────────────────────────
+
+TICKET_TYPES = {"inquiry": "問い合わせ", "request": "要望"}
+TICKET_STATUS = {
+    "open":        "未対応",
+    "in_progress": "対応中",
+    "resolved":    "解決済み",
+    "closed":      "クローズ",
+}
+TICKET_STATUS_COLORS = {
+    "open":        "warning",
+    "in_progress": "primary",
+    "resolved":    "success",
+    "closed":      "secondary",
+}
+TICKET_PRIORITY = {"low": "低", "medium": "中", "high": "高"}
+TICKET_PRIORITY_COLORS = {"low": "success", "medium": "warning", "high": "danger"}
+
+
+class Ticket(Base):
+    __tablename__ = "tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    ticket_type = Column(String(20), default="inquiry")   # inquiry / request
+    status = Column(String(20), default="open")           # open / in_progress / resolved / closed
+    priority = Column(String(10), default="medium")       # low / medium / high
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    # 未読フラグ
+    unread_admin = Column(Boolean, default=True)   # ユーザーからの新着
+    unread_user  = Column(Boolean, default=False)  # Adminからの返信あり
+
+    creator  = relationship("User", foreign_keys=[created_by], backref="created_tickets")
+    messages = relationship("TicketMessage", back_populates="ticket",
+                            cascade="all, delete-orphan",
+                            order_by="TicketMessage.created_at")
+
+
+class TicketMessage(Base):
+    __tablename__ = "ticket_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
+    user_id   = Column(Integer, ForeignKey("users.id"),   nullable=False)
+    message   = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    ticket = relationship("Ticket", back_populates="messages")
+    user   = relationship("User", foreign_keys=[user_id])
 
 
 # ─── アプリ設定 (Key-Value) ──────────────────────────────────────

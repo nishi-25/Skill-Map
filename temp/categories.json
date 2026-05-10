@@ -1,0 +1,52 @@
+[
+  {
+    "name": "DevOps・自動化",
+    "color": "#059669",
+    "description": ""
+  },
+  {
+    "name": "HILS基盤・操作",
+    "color": "#dc2626",
+    "description": ""
+  },
+  {
+    "name": "dSPACEツール",
+    "color": "#2563eb",
+    "description": ""
+  },
+  {
+    "name": "ソフト検証・テスト",
+    "color": "#7c3aed",
+    "description": ""
+  },
+  {
+    "name": "テスト管理・品質",
+    "color": "#be185d",
+    "description": ""
+  },
+  {
+    "name": "ハードウェア・W/H設計",
+    "color": "#d97706",
+    "description": ""
+  },
+  {
+    "name": "プログラミング",
+    "color": "#0891b2",
+    "description": ""
+  },
+  {
+    "name": "プロジェクト管理",
+    "color": "#0f766e",
+    "description": ""
+  },
+  {
+    "name": "モデル開発（Simulink）",
+    "color": "#f97316",
+    "description": ""
+  },
+  {
+    "name": "車載・ECU・通信",
+    "color": "#374151",
+    "description": ""
+  }
+]

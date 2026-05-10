@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}教育リソース - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-mortarboard-fill me-2" style="color:#f97316;"></i>教育リソース</h1>
+    <p class="text-muted mb-0 small">スキルアップに役立つ学習サイト・教材へのリンク集です</p>
+  </div>
+  {% if current_user.role in ('admin','manager') %}
+  <a href="/education/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-plus-lg me-1"></i>リンクを追加
+  </a>
+  {% endif %}
+</div>
+
+<!-- スコープバナー（Userのみ） -->
+{% if is_scoped %}
+  {% if no_group %}
+  <div class="alert mb-3 d-flex align-items-center gap-3"
+       style="background:#fffbeb;border:1.5px solid #fcd34d;border-left:5px solid #f59e0b;border-radius:12px;padding:.75rem 1rem;">
+    <i class="bi bi-person-x-fill" style="color:#d97706;font-size:1.3rem;flex-shrink:0;"></i>
+    <div>
+      <div class="fw-semibold" style="color:#92400e;">グループに所属していません</div>
+      <div class="text-muted small">担当 Manager または Admin に連絡して、グループへの追加を依頼してください。</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert mb-3 d-flex align-items-center gap-2"
+       style="background:#f0fdf4;border:1.5px solid #86efac;border-left:5px solid #22c55e;border-radius:12px;padding:.6rem 1rem;font-size:.85rem;">
+    <i class="bi bi-people-fill" style="color:#16a34a;flex-shrink:0;"></i>
+    <span style="color:#166534;">
+      参加グループのカテゴリー・スキルに関連するリソースのみ表示しています。
+      {% if categories %}カテゴリー {{ categories|length }} 件・スキル {{ skills|length }} 件が対象です。{% endif %}
+    </span>
+  </div>
+  {% endif %}
+{% endif %}
+
+<!-- フィルター -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" action="/education" class="d-flex flex-wrap gap-2 align-items-center">
+      <div style="position:relative;flex:1;min-width:180px;">
+        <i class="bi bi-search" style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;font-size:.82rem;"></i>
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+               placeholder="キーワードで検索..." style="padding-left:2rem;border-radius:20px;">
+      </div>
+      <select name="category_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
+        <option value="0">全カテゴリー</option>
+        {% for c in categories %}
+        <option value="{{ c.id }}" {% if sel_category == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="skill_id" class="form-select form-select-sm" style="max-width:200px;border-radius:20px;" onchange="this.form.submit()">
+        <option value="0">全スキル</option>
+        {% for s in skills %}
+        <option value="{{ s.id }}" {% if sel_skill == s.id %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+      {% if q or sel_category or sel_skill %}
+      <a href="/education" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
+      {% endif %}
+      <button type="submit" class="btn btn-sm btn-primary" style="border-radius:20px;">検索</button>
+      <span class="text-muted small ms-auto">{{ links|length }} 件</span>
+    </form>
+  </div>
+</div>
+
+{% if links %}
+{# カテゴリーごとにグループ化して表示 #}
+{% set ns = namespace(prev_cat='') %}
+{% for link in links %}
+  {% set cat_name = link.category.name if link.category else 'その他' %}
+  {% if cat_name != ns.prev_cat %}
+    {% if not loop.first %}</div>{% endif %}
+    {% set ns.prev_cat = cat_name %}
+    <h6 class="fw-bold mt-3 mb-2" style="color:#64748b;font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ link.category.color if link.category else '#94a3b8' }};margin-right:6px;"></span>
+      {{ cat_name }}
+    </h6>
+    <div class="row g-2">
+  {% endif %}
+
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100" style="transition:transform .18s,box-shadow .18s;"
+         onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'"
+         onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div class="card-body pb-2">
+        <div class="d-flex align-items-start gap-2 mb-2">
+          <!-- サイトファビコン -->
+          <div style="width:36px;height:36px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+            <img src="https://www.google.com/s2/favicons?domain={{ link.url }}&sz=32"
+                 alt="" style="width:20px;height:20px;"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <i class="bi bi-link-45deg" style="color:#94a3b8;font-size:1rem;display:none;"></i>
+          </div>
+          <div class="flex-fill min-width-0">
+            <div class="fw-bold" style="font-size:.92rem;line-height:1.3;word-break:break-word;">{{ link.title }}</div>
+            <div class="text-muted" style="font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ link.url | replace('https://','') | replace('http://','') | truncate(40, true, '…') }}
+            </div>
+          </div>
+        </div>
+        {% if link.description %}
+        <p class="text-muted small mb-2" style="font-size:.78rem;line-height:1.5;">{{ link.description }}</p>
+        {% endif %}
+        <div class="d-flex flex-wrap gap-1 mb-1">
+          {% if link.category %}
+          <span class="badge" style="background:{{ link.category.color }};font-size:.65rem;">{{ link.category.name }}</span>
+          {% endif %}
+          {% if link.skill %}
+          <span class="badge bg-light text-dark border" style="font-size:.65rem;">{{ link.skill.name }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0 pb-2 d-flex gap-1 flex-wrap">
+        <a href="{{ link.url }}" target="_blank" rel="noopener"
+           class="btn btn-sm btn-primary flex-fill" style="border-radius:20px;font-size:.82rem;">
+          <i class="bi bi-box-arrow-up-right me-1"></i>サイトを開く
+        </a>
+        {% if current_user.role in ('admin','manager') %}
+        <a href="/education/{{ link.id }}/edit" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;" title="編集">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <form method="post" action="/education/{{ link.id }}/delete"
+              onsubmit="return confirm('「{{ link.title }}」を削除しますか？')">
+          <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;" title="削除">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if loop.last %}</div>{% endif %}
+{% endfor %}
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-mortarboard fs-1 d-block mb-3" style="color:#fed7aa;"></i>
+    {% if q or sel_category or sel_skill %}
+    <h5>該当するリソースが見つかりません</h5>
+    <p class="small">検索条件を変えてお試しください。</p>
+    <a href="/education" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">条件をクリア</a>
+    {% else %}
+    <h5>教育リソースがまだ登録されていません</h5>
+    {% if current_user.role in ('admin','manager') %}
+    <p class="small">スキルアップに役立つサイト・教材のリンクを追加しましょう。</p>
+    <a href="/education/new" class="btn btn-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-plus-lg me-1"></i>リンクを追加する
+    </a>
+    {% else %}
+    <p class="small">管理者またはマネージャーがリソースを登録するとここに表示されます。</p>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

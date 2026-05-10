@@ -10,7 +10,7 @@
         <li class="breadcrumb-item active">{{ group.name }}</li>
       </ol>
     </nav>
-    <h1><i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>{{ group.name }}</h1>
+    <h1><i class="bi bi-diagram-3 me-2" style="color:#f97316;"></i>{{ group.name }}</h1>
     {% if group.description %}<p class="text-muted mb-0 small">{{ group.description }}</p>{% endif %}
     {% if group.parent %}
     <div class="mt-1">
@@ -29,7 +29,7 @@
   <div class="col-auto">
     <div class="stat-card px-4 py-3">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-people-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ members | length }}">0</div>
           <div class="text-muted" style="font-size:.78rem;">メンバー数</div>
@@ -55,7 +55,7 @@
 {% if members and cat_names|length > 2 %}
 <div class="card mb-4">
   <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>メンバースキル比較（カテゴリー別平均）</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2" style="color:#f97316;"></i>メンバースキル比較（カテゴリー別平均）</h6>
     <div style="position:relative;max-height:380px;max-width:600px;margin:0 auto;">
       <canvas id="groupRadarChart"></canvas>
     </div>
@@ -91,7 +91,7 @@
         {% if member.avatar_path %}
         <img src="{{ member.avatar_path }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
         {% else %}
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;font-weight:700;flex-shrink:0;">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;font-weight:700;flex-shrink:0;">
           {{ (member.display_name or member.username)[0].upper() }}
         </div>
         {% endif %}
@@ -102,7 +102,7 @@
         {% if member_skills %}
         {% set avg = (member_skills | map(attribute='level') | sum / member_skills|length) | round(1) %}
         <div class="ms-auto text-end">
-          <div class="fw-bold" style="font-size:.85rem;color:#6366f1;">Avg {{ avg }}</div>
+          <div class="fw-bold" style="font-size:.85rem;color:#f97316;">Avg {{ avg }}</div>
         </div>
         {% endif %}
       </div>
@@ -145,29 +145,151 @@
 {% else %}
 <div class="card mb-3">
   <div class="card-body text-center py-4 text-muted">
-    <i class="bi bi-person-plus fs-3 d-block mb-2" style="color:#c7d2fe;"></i>
+    <i class="bi bi-person-plus fs-3 d-block mb-2" style="color:#fed7aa;"></i>
     まだメンバーがいません。下のフォームからメンバーを追加してください。
   </div>
 </div>
 {% endif %}
 
-<!-- メンバー追加 -->
+<!-- メンバー追加ボタン -->
 {% if addable %}
-<div class="card">
-  <div class="card-header fw-bold"><i class="bi bi-person-plus me-2"></i>メンバーを追加</div>
-  <div class="card-body">
-    <form method="post" action="/groups/{{ group.id }}/members/add" class="d-flex gap-2 align-items-center flex-wrap">
-      <select name="user_id" class="form-select form-select-sm" style="max-width:260px;border-radius:20px;">
-        {% for u in addable %}
-        <option value="{{ u.id }}">{{ u.display_name or u.username }}</option>
-        {% endfor %}
-      </select>
-      <button class="btn btn-sm btn-primary" style="border-radius:20px;padding:.4rem 1rem;">
-        <i class="bi bi-plus-lg me-1"></i>追加
-      </button>
-    </form>
+<div class="d-flex justify-content-end mb-2">
+  <button type="button" class="btn btn-primary" style="border-radius:20px;padding:.5rem 1.4rem;"
+          data-bs-toggle="modal" data-bs-target="#addMemberModal">
+    <i class="bi bi-person-plus-fill me-2"></i>メンバーを追加
+  </button>
+</div>
+
+<!-- メンバー一括追加モーダル -->
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:480px;">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-person-plus-fill me-2" style="color:#f97316;"></i>
+          メンバーを追加 — {{ group.name }}
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-0">
+        <!-- 検索バー -->
+        <div class="p-3 border-bottom">
+          <div style="position:relative;">
+            <i class="bi bi-search" style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"></i>
+            <input type="text" id="memberSearchInput" placeholder="名前で絞り込み..."
+                   class="form-control form-control-sm"
+                   style="padding-left:2.2rem;border-radius:20px;"
+                   oninput="filterMembers(this.value)">
+          </div>
+        </div>
+
+        <!-- 全選択バー -->
+        <div class="px-3 py-2 border-bottom d-flex align-items-center gap-2" style="background:#f8fafc;">
+          <label class="form-check mb-0 d-flex align-items-center gap-2 small fw-semibold" style="cursor:pointer;">
+            <input type="checkbox" class="form-check-input" id="selectAllMembers" onchange="toggleAllMembers(this.checked)">
+            <span>全員選択</span>
+          </label>
+          <span class="text-muted small ms-auto" id="selectedMemberCount">0 名選択中</span>
+        </div>
+
+        <!-- メンバー一覧（チェックボックス） -->
+        <form method="post" action="/groups/{{ group.id }}/members/bulk-add" id="bulkAddForm">
+          <div id="memberList" style="max-height:340px;overflow-y:auto;">
+            {% for u in addable %}
+            <label class="member-item d-flex align-items-center gap-3 px-4 py-2"
+                   data-name="{{ (u.display_name or u.username) | lower }}"
+                   style="cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background .15s;"
+                   onmouseover="this.style.background='#fff7ed'"
+                   onmouseout="this.style.background=''">
+              <input type="checkbox" name="user_ids" value="{{ u.id }}"
+                     class="form-check-input member-check flex-shrink-0"
+                     onchange="updateSelectedCount()" style="width:18px;height:18px;">
+              {% if u.avatar_path %}
+              <img src="{{ u.avatar_path }}" alt=""
+                   style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+              {% else %}
+              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;font-weight:700;flex-shrink:0;">
+                {{ (u.display_name or u.username)[0].upper() }}
+              </div>
+              {% endif %}
+              <div>
+                <div class="fw-semibold" style="font-size:.9rem;">{{ u.display_name or u.username }}</div>
+                <div class="text-muted" style="font-size:.75rem;">
+                  @{{ u.username }}
+                  <span class="badge ms-1
+                    {%- if u.role == 'admin' %} bg-danger
+                    {%- elif u.role == 'manager' %} bg-primary
+                    {%- else %} bg-secondary
+                    {%- endif %}" style="font-size:.6rem;">{{ u.role }}</span>
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+            <div id="noMemberResult" style="display:none;" class="text-center text-muted py-4 small">
+              <i class="bi bi-search me-1"></i>該当するユーザーが見つかりません
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer" style="border-top:1px solid #f1f5f9;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"
+                style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="addMemberBtn"
+                style="border-radius:20px;padding:.4rem 1.2rem;" onclick="submitBulkAdd()" disabled>
+          <i class="bi bi-person-plus-fill me-1"></i>
+          <span id="addBtnLabel">追加する</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<script>
+function filterMembers(q) {
+  const items = document.querySelectorAll('.member-item');
+  const lower = q.toLowerCase().trim();
+  let visible = 0;
+  items.forEach(item => {
+    const match = !lower || item.dataset.name.includes(lower);
+    item.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('noMemberResult').style.display = visible === 0 ? '' : 'none';
+  // 全選択チェックボックスを同期
+  syncSelectAll();
+}
+
+function toggleAllMembers(checked) {
+  document.querySelectorAll('.member-item:not([style*="display: none"]) .member-check').forEach(cb => {
+    cb.checked = checked;
+  });
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const n = document.querySelectorAll('.member-check:checked').length;
+  document.getElementById('selectedMemberCount').textContent = n + ' 名選択中';
+  document.getElementById('addMemberBtn').disabled = n === 0;
+  document.getElementById('addBtnLabel').textContent = n > 0 ? n + ' 名を追加する' : '追加する';
+  syncSelectAll();
+}
+
+function syncSelectAll() {
+  const all  = document.querySelectorAll('.member-item:not([style*="display: none"]) .member-check');
+  const chk  = document.querySelectorAll('.member-item:not([style*="display: none"]) .member-check:checked');
+  const sa   = document.getElementById('selectAllMembers');
+  sa.indeterminate = chk.length > 0 && chk.length < all.length;
+  sa.checked = all.length > 0 && chk.length === all.length;
+}
+
+function submitBulkAdd() {
+  const checked = document.querySelectorAll('.member-check:checked');
+  if (checked.length === 0) return;
+  document.getElementById('bulkAddForm').submit();
+}
+</script>
 {% endif %}
 
 <!-- メンバー削除 -->
@@ -296,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ctx = document.getElementById('groupRadarChart');
   const labels = [{% for cn in cat_names %}'{{ cn }}'{% if not loop.last %},{% endif %}{% endfor %}];
   const colors = [
-    {bg: 'rgba(99,102,241,.15)', border: '#6366f1'},
+    {bg: 'rgba(249,115,22,.15)', border: '#f97316'},
     {bg: 'rgba(14,165,233,.15)', border: '#0ea5e9'},
     {bg: 'rgba(245,158,11,.15)', border: '#f59e0b'},
     {bg: 'rgba(239,68,68,.15)', border: '#ef4444'},

@@ -52,7 +52,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-grid-3x3-gap me-2" style="color:#6366f1;"></i>スキルマトリクス</h1>
+    <h1><i class="bi bi-grid-3x3-gap me-2" style="color:#f97316;"></i><span data-i18n="page.matrix">スキルマトリクス</span></h1>
     <p class="text-muted mb-0 small">社員のスキル状態をヒートマップで一覧表示し、得意・不得意を一目で把握</p>
   </div>
 </div>
@@ -79,12 +79,12 @@
       {% endif %}
 
       <div class="ms-auto matrix-legend">
-        <span class="text-muted fw-semibold">濃淡:</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#f1f5f9;"></span>0</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#c7d2fe;"></span>1</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#818cf8;"></span>2</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#4f46e5;"></span>3</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#312e81;"></span>4</span>
+        <span class="text-muted fw-semibold me-1">理解度:</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#f1f5f9;border:1px solid #e2e8f0;"></span><span class="text-muted">未申告</span></span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#fef3c7;"></span>学習中</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#fbbf24;"></span>基礎習得</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#f97316;"></span>実務可</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#dc2626;"></span><span style="color:#dc2626;font-weight:700;">習熟</span></span>
       </div>
     </form>
   </div>
@@ -95,10 +95,10 @@
   <div class="col-6 col-md-3">
     <div class="stat-card">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-people-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;">{{ users|length }}</div>
-          <div class="text-muted" style="font-size:.78rem;">対象社員</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.member_count">対象社員</div>
         </div>
       </div>
     </div>
@@ -109,7 +109,7 @@
         <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;">{{ skills|length }}</div>
-          <div class="text-muted" style="font-size:.78rem;">対象スキル</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.skill_count2">対象スキル</div>
         </div>
       </div>
     </div>
@@ -122,7 +122,7 @@
           {% set total_cells = users|length * skills|length %}
           {% set filled = level_map|length %}
           <div class="fw-bold fs-4" style="line-height:1;">{% if total_cells %}{{ (filled / total_cells * 100)|round(0)|int }}%{% else %}0%{% endif %}</div>
-          <div class="text-muted" style="font-size:.78rem;">入力率</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.fill_rate">入力率</div>
         </div>
       </div>
     </div>
@@ -134,7 +134,7 @@
         <div>
           {% set expert_count = level_map.values()|select('equalto', 4)|list|length %}
           <div class="fw-bold fs-4" style="line-height:1;">{{ expert_count }}</div>
-          <div class="text-muted" style="font-size:.78rem;">エキスパート数</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.expert_count">エキスパート数</div>
         </div>
       </div>
     </div>
@@ -169,7 +169,7 @@
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
           <i class="bi bi-graph-up-arrow" style="color:#22c55e;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;">成長トレンド（月別）</span>
+          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.growth_trend">成長トレンド（月別）</span>
           <span class="text-muted ms-auto" style="font-size:.7rem;">チーム全体の月別変更平均レベル</span>
         </div>
         <div class="card-body">
@@ -179,7 +179,7 @@
           </div>
           {% else %}
           <div class="text-center text-muted py-4">
-            <i class="bi bi-graph-up-arrow fs-2 d-block mb-2" style="color:#c7d2fe;"></i>
+            <i class="bi bi-graph-up-arrow fs-2 d-block mb-2" style="color:#fed7aa;"></i>
             <p class="small mb-0">承認された履歴が蓄積されるとグラフが表示されます</p>
           </div>
           {% endif %}
@@ -191,8 +191,8 @@
     <div class="col-lg-4">
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
-          <i class="bi bi-pie-chart-fill" style="color:#6366f1;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;">レベル分布</span>
+          <i class="bi bi-pie-chart-fill" style="color:#f97316;"></i>
+          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.level_dist">レベル分布</span>
         </div>
         <div class="card-body">
           <div class="chart-canvas-wrap" style="height:250px;">
@@ -207,7 +207,7 @@
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
           <i class="bi bi-diagram-3-fill" style="color:#8b5cf6;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;">カテゴリー別スキルレベル</span>
+          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.cat_radar">カテゴリー別スキルレベル</span>
           <select id="radarUserSelect" class="form-select form-select-sm ms-auto" style="max-width:180px;border-radius:20px;font-size:.78rem;">
             <option value="__team__">チーム平均</option>
             {% for u in users %}
@@ -234,7 +234,7 @@
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
           <i class="bi bi-trophy-fill" style="color:#f59e0b;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;">ユーザー別平均スキルレベル</span>
+          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.user_ranking">ユーザー別平均スキルレベル</span>
         </div>
         <div class="card-body">
           {% if user_avg_ranking %}
@@ -259,7 +259,7 @@
     {# ════ ヘッダー: ユーザー名が列 ════ #}
     <thead>
       <tr>
-        <th class="skill-col" style="border-bottom:2px solid #6366f1;vertical-align:bottom;">
+        <th class="skill-col" style="border-bottom:2px solid #f97316;vertical-align:bottom;">
           <span style="font-size:.72rem;color:#64748b;">スキル ＼ 社員</span>
         </th>
         {% for u in users %}
@@ -267,39 +267,39 @@
         <th class="user-header">
           {% if u.avatar_path %}
           <img src="{{ u.avatar_path }}" alt="" class="user-avatar" style="object-fit:cover;border:2px solid
-            {%- if st.rate >= 75 %} #312e81
-            {%- elif st.rate >= 50 %} #4f46e5
-            {%- elif st.rate >= 25 %} #6366f1
-            {%- else %} #c7d2fe
+            {%- if st.rate >= 75 %} #dc2626
+            {%- elif st.rate >= 50 %} #f97316
+            {%- elif st.rate >= 25 %} #fbbf24
+            {%- else %} #fde68a
             {%- endif %};">
           {% else %}
           <div class="user-avatar" style="background:linear-gradient(135deg,
-            {%- if st.rate >= 75 %}#312e81,#4f46e5
-            {%- elif st.rate >= 50 %}#4f46e5,#6366f1
-            {%- elif st.rate >= 25 %}#6366f1,#818cf8
-            {%- else %}#a5b4fc,#c7d2fe
+            {%- if st.rate >= 75 %}#dc2626,#ef4444
+            {%- elif st.rate >= 50 %}#f97316,#fb923c
+            {%- elif st.rate >= 25 %}#fbbf24,#fcd34d
+            {%- else %}#fde68a,#fef3c7
             {%- endif %});">
-            {{ (u.display_name or u.username)[0].upper() }}
+            <span style="color:{% if st.rate >= 25 %}#fff{% else %}#92400e{% endif %};">{{ (u.display_name or u.username)[0].upper() }}</span>
           </div>
           {% endif %}
           <span class="user-name" title="{{ u.display_name or u.username }}">{{ u.display_name or u.username }}</span>
           <span class="user-avg" style="color:
-            {%- if st.avg >= 3 %}#312e81
-            {%- elif st.avg >= 2 %}#4f46e5
-            {%- elif st.avg >= 1 %}#6366f1
+            {%- if st.avg >= 3 %}#dc2626
+            {%- elif st.avg >= 2 %}#f97316
+            {%- elif st.avg >= 1 %}#fbbf24
             {%- else %}#94a3b8
             {%- endif %};">Avg {{ st.avg }}</span>
           <span class="user-rate" style="color:
-            {%- if st.rate >= 75 %}#16a34a
-            {%- elif st.rate >= 50 %}#2563eb
-            {%- elif st.rate >= 25 %}#6366f1
+            {%- if st.rate >= 75 %}#dc2626
+            {%- elif st.rate >= 50 %}#f97316
+            {%- elif st.rate >= 25 %}#fbbf24
             {%- else %}#94a3b8
             {%- endif %};">{{ st.rate }}% 習得</span>
           <div class="rate-bar"><div class="rate-fill" style="width:{{ st.rate }}%;background:
-            {%- if st.rate >= 75 %}#22c55e
-            {%- elif st.rate >= 50 %}#3b82f6
-            {%- elif st.rate >= 25 %}#818cf8
-            {%- else %}#c7d2fe
+            {%- if st.rate >= 75 %}#dc2626
+            {%- elif st.rate >= 50 %}#f97316
+            {%- elif st.rate >= 25 %}#fbbf24
+            {%- else %}#fde68a
             {%- endif %};"></div></div>
         </th>
         {% endfor %}
@@ -317,8 +317,8 @@
       {% if cat_name != prev_cat.name %}
       {% set prev_cat.name = cat_name %}
       <tr>
-        <td class="skill-col" colspan="{{ users|length + 2 }}" style="background:#f1f5f9;font-weight:700;font-size:.72rem;color:#475569;padding:.25rem .5rem;border-left:3px solid #6366f1;">
-          <i class="bi bi-tag-fill me-1" style="color:#6366f1;"></i>{{ cat_name }}
+        <td class="skill-col" colspan="{{ users|length + 2 }}" style="background:#f1f5f9;font-weight:700;font-size:.72rem;color:#475569;padding:.25rem .5rem;border-left:3px solid #f97316;">
+          <i class="bi bi-tag-fill me-1" style="color:#f97316;"></i>{{ cat_name }}
         </td>
       </tr>
       {% endif %}
@@ -327,15 +327,19 @@
         <td class="skill-col" title="{{ sk.name }}" style="font-size:.76rem;">
           {{ sk.name }}
         </td>
+        {% set lv_labels = {0:'-', 1:'学習中', 2:'基礎', 3:'実務可', 4:'習熟'} %}
         {% for u in users %}
         {% set lv = level_map.get((u.id, sk.id), 0) %}
         <td class="lv-cell" style="background:
-          {%- if lv == 4 %}#312e81;color:#e0e7ff
-          {%- elif lv == 3 %}#4f46e5;color:#e0e7ff
-          {%- elif lv == 2 %}#818cf8;color:#fff
-          {%- elif lv == 1 %}#c7d2fe;color:#312e81
+          {%- if lv == 4 %}#dc2626;color:#fff
+          {%- elif lv == 3 %}#f97316;color:#fff
+          {%- elif lv == 2 %}#fbbf24;color:#713f12
+          {%- elif lv == 1 %}#fef3c7;color:#92400e
           {%- else %}#f8fafc;color:#cbd5e1
-          {%- endif %};" title="{{ SKILL_LEVELS[lv] }}">{{ lv }}</td>
+          {%- endif %};" title="Lv{{ lv }}: {{ SKILL_LEVELS[lv] }}">
+          <div style="font-size:.8rem;font-weight:700;line-height:1;">{{ lv if lv > 0 else '-' }}</div>
+          <div style="font-size:.6rem;font-weight:500;line-height:1;margin-top:1px;opacity:.85;">{{ lv_labels[lv] if lv > 0 else '' }}</div>
+        </td>
         {% endfor %}
         {# スキル平均 #}
         {% set ns_sk = namespace(sum=0, count=0) %}
@@ -345,22 +349,26 @@
         {% endfor %}
         <td class="text-center" style="font-weight:700;font-size:.72rem;background:#f8fafc;">
           {% if ns_sk.count > 0 %}
-          <span style="color:#4f46e5;">{{ (ns_sk.sum / ns_sk.count)|round(1) }}</span>
+          <span style="color:#ea580c;">{{ (ns_sk.sum / ns_sk.count)|round(1) }}</span>
           {% else %}<span class="text-muted">-</span>{% endif %}
         </td>
       </tr>
       {% endfor %}
 
       {# ════ ユーザー平均行（フッター） ════ #}
-      <tr class="avg-row" style="border-top:2px solid #6366f1;background:#f1f5f9;">
-        <td class="skill-col" style="font-size:.74rem;color:#475569;"><i class="bi bi-calculator me-1"></i>ユーザー平均</td>
+      <tr class="avg-row" style="border-top:2px solid #f97316;background:#fff7ed;">
+        <td class="skill-col" style="font-size:.74rem;color:#92400e;"><i class="bi bi-calculator me-1"></i data-i18n="lbl.user_avg">ユーザー平均</td>
         {% for u in users %}
         {% set st = user_stats[u.id] %}
         <td class="text-center" style="background:
-          {%- if st.avg >= 3 %}#e0e7ff
-          {%- elif st.avg >= 2 %}#eef2ff
+          {%- if st.avg >= 3 %}#fed7aa
+          {%- elif st.avg >= 2 %}#fef3c7
           {%- else %}#f8fafc
-          {%- endif %};color:#4f46e5;">{{ st.avg }}</td>
+          {%- endif %};color:
+          {%- if st.avg >= 3 %}#c2410c
+          {%- elif st.avg >= 2 %}#92400e
+          {%- else %}#94a3b8
+          {%- endif %};">{{ st.avg }}</td>
         {% endfor %}
         <td></td>
       </tr>
@@ -371,7 +379,7 @@
 {% else %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-grid-3x3-gap fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <i class="bi bi-grid-3x3-gap fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>表示するデータがありません</h5>
     <p class="small">ユーザーやスキルカタログが登録されると、ここにマトリクスが表示されます。</p>
   </div>
@@ -382,9 +390,9 @@
 {% if users and skills %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const CHART_COLORS = ['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#f97316','#64748b'];
-  const LEVEL_COLORS_MAP = {'0':'#e2e8f0','1':'#c7d2fe','2':'#818cf8','3':'#4f46e5','4':'#312e81'};
-  const LEVEL_LABELS = ['Lv.0 未評価','Lv.1 初級','Lv.2 中級','Lv.3 上級','Lv.4 エキスパート'];
+  const CHART_COLORS = ['#f97316','#dc2626','#fbbf24','#22c55e','#f97316','#06b6d4','#ec4899','#8b5cf6','#14b8a6','#64748b'];
+  const LEVEL_COLORS_MAP = {'0':'#f1f5f9','1':'#fef3c7','2':'#fbbf24','3':'#f97316','4':'#dc2626'};
+  const LEVEL_LABELS = ['Lv.0 未申告','Lv.1 学習中','Lv.2 基礎習得','Lv.3 実務可','Lv.4 習熟'];
 
   // ── 1) 成長トレンド折れ線 ──
   {% if growth_trend %}
@@ -399,12 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
           {
             label: '平均レベル',
             data: data.map(d => d.avg),
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99,102,241,0.1)',
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249,115,22,0.1)',
             borderWidth: 2.5,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointBackgroundColor: '#6366f1',
+            pointBackgroundColor: '#f97316',
             tension: 0.35,
             fill: true,
             yAxisID: 'y',
@@ -520,11 +528,11 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [{
           label: 'チーム平均',
           data: teamAvg(),
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,0.15)',
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249,115,22,0.15)',
           borderWidth: 2,
           pointRadius: 4,
-          pointBackgroundColor: '#6366f1',
+          pointBackgroundColor: '#f97316',
         }]
       },
       options: {
@@ -557,11 +565,11 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets = [{
           label: 'チーム平均',
           data: teamAvg(),
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,0.15)',
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249,115,22,0.15)',
           borderWidth: 2,
           pointRadius: 4,
-          pointBackgroundColor: '#6366f1',
+          pointBackgroundColor: '#f97316',
         }];
       } else {
         const userData = catNames.map(cat => (catUserAvg[cat] || {})[val] || 0);
@@ -579,12 +587,12 @@ document.addEventListener('DOMContentLoaded', function() {
           {
             label: 'チーム平均',
             data: teamData,
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99,102,241,0.08)',
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249,115,22,0.08)',
             borderWidth: 1.5,
             borderDash: [4, 3],
             pointRadius: 3,
-            pointBackgroundColor: '#6366f1',
+            pointBackgroundColor: '#f97316',
           }
         ];
       }
@@ -607,10 +615,10 @@ document.addEventListener('DOMContentLoaded', function() {
           label: '平均レベル',
           data: ranking.map(r => r.avg),
           backgroundColor: ranking.map((r, i) => {
-            if (r.avg >= 3) return '#312e81';
-            if (r.avg >= 2) return '#4f46e5';
-            if (r.avg >= 1) return '#818cf8';
-            return '#c7d2fe';
+            if (r.avg >= 3) return '#dc2626';
+            if (r.avg >= 2) return '#f97316';
+            if (r.avg >= 1) return '#fbbf24';
+            return '#fef3c7';
           }),
           borderRadius: 4,
           barThickness: 22,

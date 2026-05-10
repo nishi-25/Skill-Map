@@ -14,14 +14,40 @@
     :root {
       --sidebar-width: 230px;
       --sidebar-collapsed-width: 62px;
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --sidebar-bg: #0f0e2a;
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --sidebar-bg: #1a0900;
       --sidebar-line: rgba(255,255,255,.07);
       --transition: .22s cubic-bezier(.4,0,.2,1);
       --card-radius: 14px;
+      --body-bg: #f1f3f9;
+      --body-color: #1a1a2e;
+      --card-bg: #fff;
+      --card-border: #e2e8f0;
+      --input-bg: #fff;
+      --muted: #64748b;
     }
-    body { background: #f1f3f9; color: #1a1a2e; font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+    [data-theme="dark"] {
+      --body-bg: #0d0d1a;
+      --body-color: #e2e8f0;
+      --card-bg: #1a1a2e;
+      --card-border: #2d2d4e;
+      --input-bg: #252540;
+      --muted: #94a3b8;
+      --sidebar-bg: #07071a;
+    }
+    body { background: var(--body-bg); color: var(--body-color); font-family: 'Inter', 'Noto Sans JP', sans-serif; transition: background .3s, color .3s; }
+    [data-theme="dark"] .card { background: var(--card-bg) !important; border-color: var(--card-border) !important; }
+    [data-theme="dark"] .card-header { background: var(--card-bg) !important; border-color: var(--card-border) !important; }
+    [data-theme="dark"] .table { color: var(--body-color); }
+    [data-theme="dark"] .table-light, [data-theme="dark"] thead.table-light th { background: #252540 !important; color: #fed7aa; }
+    [data-theme="dark"] .form-control, [data-theme="dark"] .form-select { background: var(--input-bg); color: var(--body-color); border-color: var(--card-border); }
+    [data-theme="dark"] .form-control:focus, [data-theme="dark"] .form-select:focus { background: var(--input-bg); color: var(--body-color); }
+    [data-theme="dark"] .stat-card { background: var(--card-bg); }
+    [data-theme="dark"] .text-muted { color: var(--muted) !important; }
+    [data-theme="dark"] .bg-light { background: #252540 !important; }
+    [data-theme="dark"] .border { border-color: var(--card-border) !important; }
+    [data-theme="dark"] .page-header h1 { color: #fed7aa; }
 
     /* ── Sidebar ── */
     .sidebar {
@@ -35,7 +61,7 @@
     }
     .sidebar::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, #6366f1, #a78bfa, #38bdf8);
+      background: linear-gradient(90deg, #f97316, #fbbf24, #fb923c);
     }
     .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
     .brand {
@@ -47,7 +73,7 @@
     }
     .brand .brand-text { transition: opacity var(--transition); }
     .sidebar.collapsed .brand-text { opacity: 0; width: 0; overflow: hidden; pointer-events: none; }
-    .brand .brand-accent { background: linear-gradient(135deg, #818cf8, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .brand .brand-accent { color: #fb923c; font-weight: 800; }
     .nav-items { flex: 1; overflow-y: auto; overflow-x: hidden; padding: .5rem 0; }
     .nav-items::-webkit-scrollbar { width: 4px; }
     .nav-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
@@ -68,11 +94,27 @@
       white-space: nowrap; overflow: hidden;
     }
     .nav-link-item:hover { background: rgba(255,255,255,.07); color: #fff; transform: translateX(3px); }
-    .nav-link-item.active { background: rgba(99,102,241,.25); color: #a5b4fc; }
+    .nav-link-item.active { background: rgba(249,115,22,.25); color: #fdba74; }
     .nav-link-item .nav-icon { font-size: 1.05rem; min-width: 20px; text-align: center; transition: transform .2s; }
     .nav-link-item:hover .nav-icon { transform: scale(1.15); }
     .nav-link-item .nav-text { transition: opacity var(--transition); }
     .sidebar.collapsed .nav-text { opacity: 0; width: 0; overflow: hidden; pointer-events: none; }
+
+    /* ─ 縮小時: 検索バー・お知らせベルを非表示 ─ */
+    .sidebar.collapsed #sidebarSearchArea { display: none !important; }
+    .sidebar.collapsed #annBubble         { display: none !important; }
+
+    /* ─ 縮小時ツールチップ（Bootstrap Tooltip で実装） ─ */
+    .sidebar-nav-tooltip .tooltip-inner {
+      background: #1c0d00;
+      color: #ffedd5;
+      font-size: .82rem;
+      padding: .3rem .7rem;
+      border: 1px solid rgba(249,115,22,.35);
+    }
+    .sidebar-nav-tooltip .tooltip-arrow::before {
+      border-right-color: #1c0d00;
+    }
     .sidebar-footer {
       border-top: 1px solid var(--sidebar-line);
       padding: .8rem 1rem;
@@ -84,7 +126,7 @@
     }
     .user-avatar {
       width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, #6366f1, #a78bfa);
+      background: linear-gradient(135deg, #f97316, #fdba74);
       display: flex; align-items: center; justify-content: center;
       font-size: .8rem; font-weight: 600; color: #fff;
       flex-shrink: 0;
@@ -107,6 +149,8 @@
       margin-left: var(--sidebar-width);
       transition: margin-left var(--transition);
       min-height: 100vh; padding: 1.5rem 2rem;
+      /* チャットバブル（56px）＋余白がボタンと重ならないようにする */
+      padding-bottom: calc(1.5rem + 72px);
     }
     .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed-width); }
 
@@ -122,12 +166,12 @@
     .stat-card::after {
       content: '';
       position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--primary-light, #818cf8));
+      background: linear-gradient(90deg, var(--primary), var(--primary-light, #fb923c));
       opacity: 0;
       transition: opacity .2s;
     }
     .stat-card:hover::after { opacity: 1; }
-    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(99,102,241,.15); }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(249,115,22,.15); }
     .stat-icon {
       width: 48px; height: 48px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
@@ -139,7 +183,7 @@
 
     /* ── Page header ── */
     .page-header { margin-bottom: 1.5rem; }
-    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #1e1b4b; margin: 0; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #431407; margin: 0; }
 
     /* ── Mobile overlay ── */
     .sidebar-overlay {
@@ -158,7 +202,7 @@
       border: none; border-radius: 10px;
       width: 40px; height: 40px;
       font-size: 1.2rem;
-      box-shadow: 0 2px 10px rgba(99,102,241,.3);
+      box-shadow: 0 2px 10px rgba(249,115,22,.3);
     }
 
     @media (max-width: 768px) {
@@ -166,6 +210,173 @@
       .sidebar.mobile-open { transform: translateX(0); }
       .main-content { margin-left: 0 !important; padding: 1rem; padding-top: 3.5rem; }
       .mobile-burger { display: flex; align-items: center; justify-content: center; }
+    }
+
+    /* ── ガイドツアー ── */
+    #tourSpotlight {
+      position: fixed;
+      z-index: 10001;
+      pointer-events: none;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.65);
+      transition: top .35s cubic-bezier(.4,0,.2,1),
+                  left .35s cubic-bezier(.4,0,.2,1),
+                  width .35s cubic-bezier(.4,0,.2,1),
+                  height .35s cubic-bezier(.4,0,.2,1);
+    }
+    /* ターゲット要素に重ねるハイライトレイヤー（sidebar stacking context を超えるため body 直下に配置） */
+    #tourHighlight {
+      position: fixed;
+      z-index: 10003;
+      pointer-events: none;
+      border-radius: 10px;
+      border: 2.5px solid #fb923c;
+      background: rgba(249,115,22,.18);
+      box-shadow: 0 0 0 4px rgba(129,140,248,.22), 0 0 28px rgba(249,115,22,.65);
+      animation: tourPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes bubblePulse {
+      0%, 100% { transform: scale(1);    box-shadow: 0 4px 20px rgba(220,38,38,.6); }
+      50%       { transform: scale(1.08); box-shadow: 0 6px 28px rgba(220,38,38,.9); }
+    }
+    @keyframes tourPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 4px rgba(129,140,248,.22), 0 0 28px rgba(249,115,22,.65);
+        border-color: #fb923c;
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(129,140,248,.08), 0 0 40px rgba(249,115,22,.9);
+        border-color: #fed7aa;
+      }
+    }
+    #tourTooltip {
+      position: fixed;
+      z-index: 10002;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.22);
+      padding: 1.4rem 1.6rem 1.2rem;
+      min-width: 290px;
+      max-width: 360px;
+      font-family: 'Inter','Noto Sans JP',sans-serif;
+      animation: tourFadeIn .25s ease both;
+    }
+    [data-theme="dark"] #tourTooltip {
+      background: #1a1a2e;
+      color: #e2e8f0;
+      box-shadow: 0 16px 48px rgba(0,0,0,.5);
+    }
+    @keyframes tourFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .tour-arrow {
+      position: absolute;
+      width: 12px; height: 12px;
+      background: #fff;
+      transform: rotate(45deg);
+    }
+    [data-theme="dark"] .tour-arrow { background: #1a1a2e; }
+    .tour-badge {
+      display:inline-block;
+      background: linear-gradient(135deg,#f97316,#fb923c);
+      color:#fff;
+      font-size:.68rem;
+      font-weight:700;
+      border-radius:20px;
+      padding:.15em .6em;
+      margin-bottom:.5rem;
+      letter-spacing:.04em;
+    }
+    .tour-title {
+      font-size:1.05rem;
+      font-weight:700;
+      color:#431407;
+      margin-bottom:.4rem;
+      line-height:1.3;
+    }
+    [data-theme="dark"] .tour-title { color:#fed7aa; }
+    .tour-body {
+      font-size:.85rem;
+      color:#475569;
+      line-height:1.6;
+    }
+    [data-theme="dark"] .tour-body { color:#94a3b8; }
+    .tour-footer {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:1rem;
+      gap:.5rem;
+    }
+    .tour-progress {
+      font-size:.75rem;
+      color:#94a3b8;
+    }
+    .tour-btn {
+      border:none;
+      border-radius:20px;
+      padding:.38rem 1rem;
+      font-size:.82rem;
+      font-weight:600;
+      cursor:pointer;
+      transition:all .15s;
+    }
+    .tour-btn-skip {
+      background:transparent;
+      color:#94a3b8;
+      padding:.38rem .6rem;
+    }
+    .tour-btn-skip:hover { color:#ef4444; }
+    .tour-btn-prev {
+      background:#f1f5f9;
+      color:#475569;
+    }
+    .tour-btn-prev:hover { background:#e2e8f0; }
+    .tour-btn-next {
+      background:linear-gradient(135deg,#f97316,#fb923c);
+      color:#fff;
+    }
+    .tour-btn-next:hover { opacity:.9; transform:scale(1.04); }
+    .tour-btn-done {
+      background:linear-gradient(135deg,#22c55e,#4ade80);
+      color:#fff;
+    }
+    #tourWelcomeCard {
+      /* inset:0 + margin:auto で中央配置 → transform 不要でアニメーション競合を回避 */
+      position: fixed;
+      inset: 0;
+      margin: auto;
+      z-index: 10002;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.28);
+      padding: 0;
+      width: min(500px, 92vw);
+      height: fit-content;
+      max-height: min(88vh, 700px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      text-align: center;
+      animation: tourCardIn .25s ease both;
+    }
+    @keyframes tourCardIn {
+      from { opacity: 0; scale: .97; }
+      to   { opacity: 1; scale: 1; }
+    }
+    .tour-card-header { padding: 1.1rem 1.6rem .5rem; flex-shrink: 0; }
+    .tour-card-body   { flex: 1; min-height: 0; overflow-y: auto; padding: 0 1.6rem; }
+    .tour-card-body::-webkit-scrollbar { width: 4px; }
+    .tour-card-body::-webkit-scrollbar-thumb { background: rgba(249,115,22,.25); border-radius: 2px; }
+    .tour-card-footer { padding: .65rem 1.6rem .85rem; flex-shrink: 0; border-top: 1px solid #f1f5f9; }
+    [data-theme="dark"] #tourWelcomeCard { background: #1a1a2e; color: #e2e8f0; }
+    [data-theme="dark"] .tour-card-footer { border-top-color: #2d2d4e; }
+    #tourOverlay {
+      position:fixed;
+      inset:0;
+      z-index:10000;
+      background:rgba(0,0,0,.58);
     }
   </style>
   {% block head %}{% endblock %}
@@ -184,33 +395,49 @@
 <!-- Sidebar -->
 <nav class="sidebar" id="sidebar">
   <div class="brand">
-    <i class="bi bi-map" style="font-size:1.3rem;color:#818cf8;flex-shrink:0;"></i>
-    <span class="brand-text">スキル<span class="brand-accent">マップ</span></span>
+    <i class="bi bi-map" style="font-size:1.3rem;color:#fb923c;flex-shrink:0;"></i>
+    <span class="brand-text">スキル<span class="brand-accent" id="brandAccent">マップ</span></span>
+  </div>
+
+  <!-- グローバル検索（縮小時は非表示） -->
+  <div id="sidebarSearchArea" style="padding:.6rem .8rem;border-bottom:1px solid var(--sidebar-line);">
+    <div style="position:relative;">
+      <i class="bi bi-search" style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.8rem;pointer-events:none;"></i>
+      <input type="text" id="globalSearch" placeholder="検索..."
+             style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:.35rem .8rem .35rem 2rem;color:#fff;font-size:.82rem;outline:none;"
+             autocomplete="off"
+             onfocus="this.style.background='rgba(255,255,255,.12)'"
+             onblur="if(!document.getElementById('searchResults').matches(':hover'))closeSearch()"
+             oninput="doSearch(this.value)">
+      <div id="searchResults" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:#431407;border:1px solid rgba(255,255,255,.1);border-radius:12px;z-index:200;display:none;max-height:280px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+      </div>
+    </div>
   </div>
 
   <div class="nav-items">
-    <div class="nav-label">メインメニュー</div>
-    <a href="/dashboard" class="nav-link-item {% if request.url.path == '/dashboard' %}active{% endif %}">
-      <i class="bi bi-speedometer2 nav-icon"></i><span class="nav-text">ダッシュボード</span>
+    <div class="nav-label" data-i18n="section.main">メインメニュー</div>
+    <a id="navDashboard" href="/dashboard" class="nav-link-item {% if request.url.path == '/dashboard' %}active{% endif %}" data-label="ダッシュボード">
+      <i class="bi bi-speedometer2 nav-icon"></i><span class="nav-text" data-i18n="nav.dashboard">ダッシュボード</span>
     </a>
     {% if not current_user or current_user.role == 'user' %}
-    <a href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}">
-      <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text">スキルマップ</span>
+    <a id="navSkills" href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}" data-label="スキルマップ">
+      <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text" data-i18n="nav.skills">スキルマップ</span>
     </a>
-    <a href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}">
-      <i class="bi bi-send nav-icon"></i><span class="nav-text">自分の申請状況</span>
+    <a id="navMyApprovals" href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}" data-label="自分の申請状況">
+      <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
     </a>
-    {% endif %}
-    {% if not current_user or current_user.role == 'user' %}
-    <a href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}">
-      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text">成長タイムライン</span>
+    <a href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="教育リソース">
+      <i class="bi bi-mortarboard-fill nav-icon"></i><span class="nav-text">教育リソース</span>
+    </a>
+    <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
+      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
     </a>
     {% endif %}
 
     {% if current_user and current_user.role in ('admin', 'manager') %}
-    <div class="nav-label">承認</div>
-    <a href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}">
-      <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">承認依頼</span>
+    <div class="nav-label" data-i18n="section.approval">承認</div>
+    <a id="navApprovals" href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}" data-label="承認依頼">
+      <i class="bi bi-check2-square nav-icon"></i><span class="nav-text" data-i18n="nav.approvals">承認依頼</span>
       {% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %}
       <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_approval_count }}</span>
       {% endif %}
@@ -218,51 +445,82 @@
     {% endif %}
 
     {% if current_user and current_user.role in ('admin', 'manager') %}
-    <div class="nav-label">分析</div>
-    <a href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}">
-      <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text">スキルマトリクス</span>
+    <!-- Manager/Admin の自分のスキル管理 -->
+    <a href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}" data-label="スキルマップ">
+      <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text" data-i18n="nav.skills">スキルマップ</span>
     </a>
-    <div class="nav-label">カタログ管理</div>
-    <a href="/skills/catalog" class="nav-link-item {% if '/skills/catalog' in request.url.path %}active{% endif %}">
-      <i class="bi bi-collection nav-icon"></i><span class="nav-text">スキルカタログ</span>
+    <a href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}" data-label="自分の申請状況">
+      <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
     </a>
-    <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}">
-      <i class="bi bi-tags nav-icon"></i><span class="nav-text">カテゴリー</span>
+    <a href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
+      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
     </a>
-    <a href="/tags" class="nav-link-item {% if request.url.path == '/tags' %}active{% endif %}">
-      <i class="bi bi-bookmark-fill nav-icon"></i><span class="nav-text">タグ管理</span>
+    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="教育リソース">
+      <i class="bi bi-mortarboard-fill nav-icon"></i><span class="nav-text">教育リソース</span>
     </a>
-    <div class="nav-label">グループ</div>
-    <a href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}">
-      <i class="bi bi-people-fill nav-icon"></i><span class="nav-text">グループ管理</span>
+    {% endif %}
+
+    {% if current_user and current_user.role in ('admin', 'manager') %}
+    <div class="nav-label" data-i18n="section.analytics">分析</div>
+    <a id="navMatrix" href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}" data-label="スキルマトリクス">
+      <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
+    </a>
+    <div class="nav-label" data-i18n="section.catalog">カタログ管理</div>
+    <a id="navCatalog" href="/skills/catalog" class="nav-link-item {% if '/skills/catalog' in request.url.path %}active{% endif %}" data-label="スキルカタログ">
+      <i class="bi bi-collection nav-icon"></i><span class="nav-text" data-i18n="nav.catalog">スキルカタログ</span>
+    </a>
+    <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}" data-label="カテゴリー">
+      <i class="bi bi-tags nav-icon"></i><span class="nav-text" data-i18n="nav.categories">カテゴリー</span>
+    </a>
+    <a href="/tags" class="nav-link-item {% if request.url.path == '/tags' %}active{% endif %}" data-label="タグ管理">
+      <i class="bi bi-bookmark-fill nav-icon"></i><span class="nav-text" data-i18n="nav.tags">タグ管理</span>
+    </a>
+    <div class="nav-label" data-i18n="section.groups">グループ</div>
+    <a id="navGroups" href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}" data-label="グループ管理">
+      <i class="bi bi-people-fill nav-icon"></i><span class="nav-text" data-i18n="nav.groups">グループ管理</span>
     </a>
     {% endif %}
 
     {% if current_user and current_user.role == 'admin' %}
-    <div class="nav-label">管理</div>
-    <a href="/admin" class="nav-link-item {% if request.url.path == '/admin' %}active{% endif %}">
-      <i class="bi bi-shield-check nav-icon"></i><span class="nav-text">管理パネル</span>
+    <div class="nav-label" data-i18n="section.admin">管理</div>
+    <a id="navAdmin" href="/admin" class="nav-link-item {% if request.url.path == '/admin' %}active{% endif %}" data-label="管理パネル">
+      <i class="bi bi-shield-check nav-icon"></i><span class="nav-text" data-i18n="nav.admin">管理パネル</span>
     </a>
-    <a href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}">
-      <i class="bi bi-people nav-icon"></i><span class="nav-text">ユーザー管理</span>
+    <a id="navUsers" href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}" data-label="ユーザー管理">
+      <i class="bi bi-people nav-icon"></i><span class="nav-text" data-i18n="nav.users">ユーザー管理</span>
       {% if request.state.pending_user_count is defined and request.state.pending_user_count > 0 %}
       <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_user_count }}</span>
       {% endif %}
     </a>
-    <a href="/admin/settings/mail" class="nav-link-item {% if '/admin/settings' in request.url.path %}active{% endif %}">
-      <i class="bi bi-envelope-at nav-icon"></i><span class="nav-text">メール設定</span>
+    <a id="navMail" href="/admin/settings/mail" class="nav-link-item {% if '/admin/settings' in request.url.path %}active{% endif %}" data-label="メール設定">
+      <i class="bi bi-envelope-at nav-icon"></i><span class="nav-text" data-i18n="nav.mail">メール設定</span>
     </a>
     {% endif %}
 
-    <div class="nav-label">ヘルプ</div>
-    <a href="/manual" class="nav-link-item {% if request.url.path == '/manual' %}active{% endif %}">
-      <i class="bi bi-book nav-icon"></i><span class="nav-text">利用マニュアル</span>
+    <div class="nav-label" data-i18n="section.help">ヘルプ</div>
+    <a href="/announcements" id="navAnnouncements" class="nav-link-item {% if '/announcements' in request.url.path %}active{% endif %}" data-label="お知らせ">
+      <i class="bi bi-megaphone-fill nav-icon"></i>
+      <span class="nav-text">お知らせ</span>
+      <span id="annBadge" class="badge rounded-pill ms-auto" style="background:#f97316;color:#fff;font-size:.65rem;display:none;">NEW</span>
+    </a>
+    <a href="/tickets" id="navTickets" class="nav-link-item {% if '/tickets' in request.url.path %}active{% endif %}" data-label="問い合わせ・要望">
+      <i class="bi bi-chat-dots-fill nav-icon"></i>
+      <span class="nav-text">問い合わせ・要望</span>
+      <span id="sidebarTicketBadge" class="badge rounded-pill ms-auto" style="background:#ef4444;color:#fff;font-size:.65rem;display:none;">0</span>
+    </a>
+    <a href="/manual" class="nav-link-item {% if request.url.path == '/manual' %}active{% endif %}" data-label="利用マニュアル">
+      <i class="bi bi-book nav-icon"></i><span class="nav-text" data-i18n="nav.manual">利用マニュアル</span>
+    </a>
+    <a id="navQuickStart" href="javascript:void(0)" class="nav-link-item" onclick="startTour(0)" style="color:rgba(129,140,248,.9);">
+      <i class="bi bi-play-circle-fill nav-icon" style="color:#fb923c;"></i>
+      <span class="nav-text" data-i18n="nav.quickstart">クイックスタート</span>
+      <span class="badge rounded-pill ms-auto" style="background:rgba(249,115,22,.3);color:#fdba74;font-size:.6rem;">NEW</span>
     </a>
 
   </div>
 
   {% if current_user %}
-  <div class="sidebar-footer">
+  <div class="sidebar-footer" id="sidebarUserArea">
     <div class="user-info" style="display:flex;align-items:center;gap:10px;">
       <a href="/profile" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;min-width:0;">
         {% if current_user.avatar_path %}
@@ -271,10 +529,10 @@
         <div class="user-avatar">{{ (current_user.display_name or current_user.username)[0].upper() }}</div>
         {% endif %}
         <div class="user-details" style="min-width:0;">
-          <div style="font-weight:600;color:#e0e7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.display_name or current_user.username }}</div>
+          <div style="font-weight:600;color:#ffedd5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.display_name or current_user.username }}</div>
           <div style="font-size:.75rem;color:rgba(255,255,255,.4);">
             {% if current_user.role == 'admin' %}
-              <span class="badge" style="background:#6366f1;font-size:.65rem;">Admin</span>
+              <span class="badge" style="background:#f97316;font-size:.65rem;">Admin</span>
             {% elif current_user.role == 'manager' %}
               <span class="badge" style="background:#0ea5e9;font-size:.65rem;">Manager</span>
             {% else %}
@@ -283,12 +541,46 @@
           </div>
         </div>
       </a>
+      <!-- お知らせベル（ユーザーアイコン右） -->
+      <button id="annBubble" onclick="toggleAnnPanel()"
+              title="お知らせ"
+              style="flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.45);
+                     font-size:1.05rem;padding:4px 6px;border-radius:6px;
+                     transition:all .2s;display:flex;align-items:center;position:relative;cursor:pointer;"
+              onmouseover="this.style.color='#f97316'"
+              onmouseout="if(!_annPanelOpen)this.style.color='rgba(255,255,255,.45)'">
+        <i class="bi bi-megaphone-fill" id="annBubbleIcon"></i>
+        <span id="annBubbleBadge"
+              style="position:absolute;top:-2px;right:-2px;
+                     background:#f97316;color:#fff;border-radius:50%;min-width:14px;height:14px;
+                     font-size:.55rem;font-weight:700;display:none;align-items:center;
+                     justify-content:center;padding:0 2px;border:1.5px solid var(--sidebar-bg,#1a0900);">
+        </span>
+      </button>
       <a href="/logout" title="ログアウト" class="logout-icon" style="flex-shrink:0;color:rgba(255,255,255,.45);font-size:1.15rem;padding:4px;border-radius:6px;transition:all .2s;display:flex;align-items:center;">
         <i class="bi bi-box-arrow-right"></i>
       </a>
     </div>
   </div>
   {% endif %}
+
+  <!-- ダークモードトグル -->
+  <div class="dark-toggle-row" style="padding:.4rem .8rem;border-top:1px solid var(--sidebar-line);
+              display:flex;justify-content:flex-end;align-items:center;gap:.5rem;overflow:hidden;">
+    <i class="bi bi-sun-fill dark-toggle-icon" style="color:rgba(255,255,255,.4);font-size:.8rem;flex-shrink:0;"></i>
+    <label style="margin:0;cursor:pointer;position:relative;display:inline-block;width:2.2em;height:1.1em;flex-shrink:0;">
+      <input type="checkbox" id="darkModeToggle" title="ダークモード"
+             style="opacity:0;width:0;height:0;position:absolute;">
+      <span style="position:absolute;inset:0;background:#555;border-radius:1.1em;transition:background .25s;"></span>
+      <span id="darkModeKnob" style="position:absolute;top:.1em;left:.1em;width:.9em;height:.9em;
+            background:#fff;border-radius:50%;transition:transform .25s;"></span>
+    </label>
+    <i class="bi bi-moon-fill dark-toggle-icon" style="color:rgba(255,255,255,.4);font-size:.8rem;flex-shrink:0;"></i>
+  </div>
+  <style>
+    .sidebar.collapsed .dark-toggle-icon { display:none; }
+    .sidebar.collapsed .dark-toggle-row  { justify-content:center; padding:.4rem .4rem; }
+  </style>
 
   <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
     <i class="bi bi-chevron-double-left" id="collapseIcon"></i>
@@ -303,6 +595,34 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   /* ── Sidebar toggle ── */
+  /* ─ サイドバーツールチップ（Bootstrap Tooltip） ─ */
+  let _navTTs = [];
+  function _syncNavTooltips() {
+    const sb = document.getElementById('sidebar');
+    const collapsed = sb && sb.classList.contains('collapsed');
+    _navTTs.forEach(t => { try { t.dispose(); } catch {} });
+    _navTTs = [];
+    if (collapsed) {
+      document.querySelectorAll('.nav-link-item[data-label]').forEach(el => {
+        // title 属性を data-label から設定
+        el.setAttribute('title', el.dataset.label);
+        const tt = new bootstrap.Tooltip(el, {
+          placement: 'right',
+          trigger: 'hover focus',
+          customClass: 'sidebar-nav-tooltip',
+          container: 'body',
+          boundary: 'clippingParents',
+        });
+        _navTTs.push(tt);
+      });
+    } else {
+      // 展開時はツールチップ不要なので title を削除
+      document.querySelectorAll('.nav-link-item[data-label]').forEach(el => {
+        el.removeAttribute('title');
+      });
+    }
+  }
+
   function toggleSidebar() {
     const sb = document.getElementById('sidebar');
     const icon = document.getElementById('collapseIcon');
@@ -310,12 +630,14 @@
     icon.className = sb.classList.contains('collapsed')
       ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
     localStorage.setItem('sb_collapsed', sb.classList.contains('collapsed'));
+    setTimeout(_syncNavTooltips, 250); // アニメーション後に初期化
   }
   (function() {
     if (localStorage.getItem('sb_collapsed') === 'true') {
       document.getElementById('sidebar').classList.add('collapsed');
       document.getElementById('collapseIcon').className = 'bi bi-chevron-double-right';
     }
+    document.addEventListener('DOMContentLoaded', _syncNavTooltips);
   })();
 
   /* ── Mobile sidebar ── */
@@ -371,5 +693,1504 @@
   });
 </script>
 {% block scripts %}{% endblock %}
+
+<!-- ════════════════════════════════════════════════════
+     チャットウィジェット（問い合わせ・要望）
+     ════════════════════════════════════════════════════ -->
+{% if current_user %}
+<!-- お知らせパネル（サイドバー左下から展開） -->
+<div id="annPanel"
+     style="position:fixed;bottom:6rem;left:var(--sidebar-width,230px);z-index:9000;
+            width:340px;max-height:420px;margin-left:.5rem;
+            background:#fff;border-radius:16px;
+            box-shadow:0 8px 32px rgba(0,0,0,.22);
+            display:none;flex-direction:column;overflow:hidden;
+            transition:left .22s cubic-bezier(.4,0,.2,1);">
+  <div style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;
+              padding:.7rem 1rem;display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+    <i class="bi bi-megaphone-fill" style="font-size:1rem;"></i>
+    <span class="fw-bold" style="flex:1;font-size:.92rem;">お知らせ</span>
+    <a href="/announcements" style="color:rgba(255,255,255,.8);font-size:.75rem;text-decoration:none;"
+       onclick="closeAnnPanel()">すべて見る →</a>
+    <button onclick="closeAnnPanel()" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.1rem;line-height:1;cursor:pointer;padding:0;">×</button>
+  </div>
+  <div id="annList" style="flex:1;overflow-y:auto;">
+    <div class="text-center text-muted py-4 small" id="annLoading">
+      <span class="spinner-border spinner-border-sm me-1"></span>読込中...
+    </div>
+  </div>
+</div>
+
+<script>
+let _annPanelOpen = false;
+const _ANN_READ_KEY = 'ann_read_ids';
+
+function _getReadIds()    { try { return new Set(JSON.parse(localStorage.getItem(_ANN_READ_KEY) || '[]')); } catch { return new Set(); } }
+function _markRead(id)    { const s = _getReadIds(); s.add(id); localStorage.setItem(_ANN_READ_KEY, JSON.stringify([...s])); }
+function _markAllRead(ids){ const s = _getReadIds(); ids.forEach(id => s.add(id)); localStorage.setItem(_ANN_READ_KEY, JSON.stringify([...s])); }
+
+function _annPanelLeft() {
+  // サイドバーの現在幅を動的に取得してパネル位置を合わせる
+  const sb = document.getElementById('sidebar');
+  const w  = sb ? sb.offsetWidth : 230;
+  return w + 8;
+}
+
+function toggleAnnPanel() {
+  _annPanelOpen = !_annPanelOpen;
+  const panel = document.getElementById('annPanel');
+  panel.style.left    = _annPanelLeft() + 'px';
+  panel.style.display = _annPanelOpen ? 'flex' : 'none';
+  const btn = document.getElementById('annBubble');
+  if (btn) { btn.style.color = _annPanelOpen ? '#f97316' : 'rgba(255,255,255,.45)'; }
+  if (_annPanelOpen) _loadAnnouncements();
+}
+function closeAnnPanel() {
+  _annPanelOpen = false;
+  document.getElementById('annPanel').style.display = 'none';
+  const btn = document.getElementById('annBubble');
+  if (btn) btn.style.color = 'rgba(255,255,255,.45)';
+}
+
+async function _loadAnnouncements() {
+  const list = document.getElementById('annList');
+  try {
+    const res  = await fetch('/api/announcements/latest');
+    const data = await res.json();
+    const readIds = _getReadIds();
+    if (!data.announcements || data.announcements.length === 0) {
+      list.innerHTML = '<div class="text-center text-muted py-4 small"><i class="bi bi-megaphone me-1"></i>お知らせはありません</div>';
+      return;
+    }
+    // 全てを既読にする
+    const allIds = data.announcements.map(a => a.id);
+    _markAllRead(allIds);
+    _updateAnnBadge([]);
+
+    const typeIcons = {feature:'bi-rocket-takeoff',improvement:'bi-tools',info:'bi-info-circle-fill',maintenance:'bi-wrench-adjustable'};
+    list.innerHTML = data.announcements.map(a => {
+      const isNew = !readIds.has(a.id);
+      return `<a href="/announcements" onclick="closeAnnPanel()"
+               style="display:block;padding:.7rem 1rem;border-bottom:1px solid #f8fafc;
+                      text-decoration:none;color:inherit;transition:background .12s;
+                      ${isNew?'background:#fff7ed;':''}"
+               onmouseover="this.style.background='#fff7ed'"
+               onmouseout="this.style.background='${isNew?'#fff7ed':''}'">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
+          <i class="bi ${typeIcons[a.type_key]||'bi-bell'}" style="color:var(--bs-${a.type_color},#f97316);flex-shrink:0;"></i>
+          <span class="badge bg-${a.type_color}" style="font-size:.6rem;">${a.type}</span>
+          ${isNew?'<span class="badge bg-danger ms-auto" style="font-size:.58rem;">NEW</span>':''}
+          ${a.scheduled_at?`<span style="font-size:.65rem;color:#94a3b8;margin-left:auto;">📅 ${a.scheduled_at}</span>`:''}
+        </div>
+        <div style="font-weight:600;font-size:.85rem;margin-bottom:.15rem;">${a.title}</div>
+        <div style="font-size:.75rem;color:#64748b;line-height:1.4;">${a.snippet}</div>
+        <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem;">${a.created_at}</div>
+      </a>`;
+    }).join('');
+  } catch {
+    list.innerHTML = '<div class="text-center text-muted py-3 small">読み込みに失敗しました</div>';
+  }
+}
+
+function _updateAnnBadge(unreadIds) {
+  const hasNew   = unreadIds.length > 0;
+  const bubble   = document.getElementById('annBubble');
+  const bubbleBadge = document.getElementById('annBubbleBadge');
+  const navLink  = document.getElementById('navAnnouncements');
+  const navBadge = document.getElementById('annBadge');
+
+  /* ─ ベルボタン ─ */
+  if (bubble) {
+    bubble.style.background  = hasNew ? '#dc2626' : '#fff';
+    bubble.style.borderColor = hasNew ? '#dc2626' : '#e2e8f0';
+    bubble.style.color       = hasNew ? '#fff' : '#94a3b8';
+    bubble.style.animation   = hasNew ? 'bubblePulse 1.8s ease-in-out infinite' : 'none';
+    bubble.style.boxShadow   = hasNew
+      ? '0 4px 20px rgba(220,38,38,.5)'
+      : '0 2px 12px rgba(0,0,0,.12)';
+    // ホバー効果を一時退避（未読時は赤固定）
+    bubble.onmouseover = hasNew ? null : function() {
+      this.style.borderColor = '#f97316'; this.style.color = '#f97316';
+    };
+    bubble.onmouseout = hasNew ? null : function() {
+      if (!_annPanelOpen) { this.style.borderColor = '#e2e8f0'; this.style.color = '#94a3b8'; }
+    };
+  }
+  if (bubbleBadge) { bubbleBadge.style.display = hasNew ? 'flex' : 'none'; }
+
+  /* ─ サイドバーナビ ─ */
+  if (navLink) {
+    navLink.style.background = hasNew ? 'rgba(220,38,38,.18)' : '';
+    navLink.style.color      = hasNew ? '#fca5a5' : '';
+  }
+  if (navBadge) { navBadge.style.display = hasNew ? '' : 'none'; }
+}
+
+async function _checkAnnBadge() {
+  try {
+    const res  = await fetch('/api/announcements/latest');
+    const data = await res.json();
+    if (!data.announcements) return;
+    const readIds   = _getReadIds();
+    const unreadIds = data.announcements.filter(a => !readIds.has(a.id)).map(a => a.id);
+    _updateAnnBadge(unreadIds);
+  } catch {}
+}
+_checkAnnBadge();
+setInterval(_checkAnnBadge, 120000); // 2分ごとに再チェック
+</script>
+
+<!-- バブルボタン -->
+<button id="chatBubble" onclick="toggleChatPanel()"
+        style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9001;
+               width:56px;height:56px;border-radius:50%;
+               background:linear-gradient(135deg,#f97316,#ea580c);
+               border:none;color:#fff;font-size:1.3rem;
+               box-shadow:0 4px 20px rgba(249,115,22,.5);cursor:pointer;
+               transition:transform .2s,box-shadow .2s;display:flex;align-items:center;justify-content:center;"
+        onmouseover="this.style.transform='scale(1.12)'"
+        onmouseout="this.style.transform=''">
+  <i class="bi bi-chat-dots-fill" id="bubbleIcon"></i>
+</button>
+<span id="bubbleBadge"
+      style="position:fixed;bottom:2.85rem;right:1.15rem;z-index:9002;
+             background:#ef4444;color:#fff;border-radius:50%;min-width:18px;height:18px;
+             font-size:.62rem;font-weight:700;display:none;align-items:center;justify-content:center;
+             padding:0 3px;border:2px solid #fff;pointer-events:none;"></span>
+
+<!-- チャットパネル -->
+<div id="chatPanel"
+     style="position:fixed;bottom:5.5rem;right:1.5rem;z-index:9000;
+            width:360px;height:500px;max-height:calc(100vh - 120px);
+            background:#fff;border-radius:18px;
+            box-shadow:0 12px 40px rgba(0,0,0,.22);
+            display:none;flex-direction:column;overflow:hidden;
+            transition:opacity .2s,transform .2s;">
+
+  <!-- ヘッダー -->
+  <div style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;
+              padding:.75rem 1rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0;">
+    <i class="bi bi-chat-dots-fill" style="font-size:1.1rem;"></i>
+    <span class="fw-bold" style="flex:1;">問い合わせ・サポート</span>
+    <button onclick="toggleChatPanel()" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.2rem;line-height:1;cursor:pointer;padding:0;">×</button>
+  </div>
+
+  <!-- ─── 会話一覧ビュー ─── -->
+  <div id="chatViewList" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+    <div style="padding:.6rem .8rem;border-bottom:1px solid #f1f5f9;display:flex;gap:.5rem;">
+      <button onclick="showChatNew()"
+              class="btn btn-primary btn-sm flex-fill fw-semibold" style="border-radius:20px;">
+        <i class="bi bi-plus-circle me-1"></i>新しい問い合わせ
+      </button>
+    </div>
+    <div id="chatConvList" style="flex:1;overflow-y:auto;">
+      <div class="text-center text-muted py-4 small" id="chatListLoading">
+        <span class="spinner-border spinner-border-sm me-1"></span>読込中...
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 新規作成ビュー ─── -->
+  <div id="chatViewNew" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div style="padding:.6rem .8rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+      <button onclick="showChatList()" style="background:none;border:none;color:#f97316;cursor:pointer;font-size:1rem;padding:0;">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <span class="fw-semibold small">新しい問い合わせ・要望</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:.8rem;">
+      <div class="d-flex gap-2 mb-2">
+        <select id="newTicketType" class="form-select form-select-sm" style="border-radius:20px;">
+          <option value="inquiry">💬 問い合わせ</option>
+          <option value="request">⭐ 要望</option>
+        </select>
+        <select id="newTicketPriority" class="form-select form-select-sm" style="border-radius:20px;max-width:105px;">
+          <option value="low">低</option>
+          <option value="medium" selected>中</option>
+          <option value="high">高 🔴</option>
+        </select>
+      </div>
+      <input type="text" id="newTicketTitle" class="form-control form-control-sm mb-2"
+             placeholder="タイトル（例: HILSのログ取得方法）" style="border-radius:10px;">
+      <textarea id="newTicketMessage" class="form-control form-control-sm" rows="5"
+                placeholder="詳細を入力してください..." style="border-radius:10px;resize:none;"></textarea>
+      <div id="newTicketErr" style="display:none;" class="mt-1"></div>
+    </div>
+    <div style="padding:.6rem .8rem;border-top:1px solid #f1f5f9;flex-shrink:0;">
+      <button onclick="submitNewTicket()" class="btn btn-primary w-100 fw-semibold" style="border-radius:20px;">
+        <i class="bi bi-send me-1"></i>送信する
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── チャットビュー ─── -->
+  <div id="chatViewChat" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div style="padding:.5rem .8rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+      <button onclick="showChatList()" style="background:none;border:none;color:#f97316;cursor:pointer;font-size:1rem;padding:0;">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <div class="flex-fill min-width-0">
+        <div id="chatTitle" class="fw-semibold small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        <div id="chatStatus" class="text-muted" style="font-size:.7rem;"></div>
+      </div>
+    </div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:.8rem;display:flex;flex-direction:column;gap:.8rem;">
+    </div>
+    <div id="chatInputArea" style="padding:.6rem .8rem;border-top:1px solid #f1f5f9;display:flex;gap:.4rem;flex-shrink:0;">
+      <textarea id="chatInput" class="form-control form-control-sm" rows="2"
+                placeholder="メッセージを入力... (Ctrl+Enter で送信)"
+                style="border-radius:12px;resize:none;flex:1;"
+                onkeydown="if(event.ctrlKey&&event.key==='Enter')sendChatMsg()"></textarea>
+      <button onclick="sendChatMsg()" class="btn btn-primary align-self-end"
+              style="border-radius:12px;padding:.4rem .7rem;" id="chatSendBtn">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
+    <div id="chatClosedMsg" style="display:none;padding:.5rem;text-align:center;font-size:.75rem;color:#94a3b8;flex-shrink:0;">
+      <i class="bi bi-lock me-1"></i>このチケットはクローズされています
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ チャットウィジェット ════════════════════════════════ */
+let _chatPanelOpen = false;
+let _currentTicketId = null;
+let _chatPollTimer   = null;  // チャットビュー用ポーリング
+let _listPollTimer   = null;  // 一覧ビュー用ポーリング
+let _lastMsgId       = 0;     // 最後に表示したメッセージID
+
+/* ─ ポーリング制御 ─ */
+function _stopPolling() {
+  clearInterval(_chatPollTimer); _chatPollTimer = null;
+  clearInterval(_listPollTimer); _listPollTimer = null;
+}
+function _startChatPolling(tid) {
+  clearInterval(_chatPollTimer);
+  _chatPollTimer = setInterval(() => _pollChat(tid), 4000);
+}
+function _startListPolling() {
+  clearInterval(_listPollTimer);
+  _listPollTimer = setInterval(() => {
+    if (_chatPanelOpen && document.getElementById('chatViewList').style.display !== 'none') {
+      _silentLoadChatList();
+    }
+  }, 8000);
+}
+
+/* ─ チャットポーリング（新着メッセージ・ステータス変化を検知） ─ */
+async function _pollChat(tid) {
+  if (!_chatPanelOpen || _currentTicketId !== tid) { clearInterval(_chatPollTimer); return; }
+  try {
+    const res  = await fetch(`/api/tickets/${tid}/detail`);
+    const data = await res.json();
+    if (!data.ok) return;
+
+    // 新着メッセージを追記
+    const newMsgs = data.messages.filter(m => m.id > _lastMsgId);
+    if (newMsgs.length > 0) {
+      const msgArea = document.getElementById('chatMessages');
+      // 空状態テキストを消す
+      const empty = msgArea.querySelector('.text-muted.text-center');
+      if (empty) empty.remove();
+      newMsgs.forEach(m => {
+        const d = document.createElement('div');
+        d.innerHTML = _buildMsgBubble(m);
+        msgArea.appendChild(d.firstChild);
+      });
+      msgArea.scrollTop = msgArea.scrollHeight;
+      _lastMsgId = data.messages[data.messages.length - 1].id;
+      _fetchUnreadCount();
+      _silentLoadChatList();  // 一覧のプレビューも更新
+    }
+
+    // ステータス変化を反映
+    const statusEl = document.getElementById('chatStatus');
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="badge bg-${data.status_color}" style="font-size:.62rem;">${data.status}</span>`;
+    }
+    // 入力エリアの表示切り替え（クローズ等）
+    const inputArea = document.getElementById('chatInputArea');
+    const closedMsg = document.getElementById('chatClosedMsg');
+    if (inputArea) inputArea.style.display = data.can_reply ? 'flex' : 'none';
+    if (closedMsg) closedMsg.style.display  = data.can_reply ? 'none' : '';
+  } catch {}
+}
+
+/* ─ 一覧のサイレント更新（スピナーなし） ─ */
+async function _silentLoadChatList() {
+  try {
+    const res  = await fetch('/api/tickets/my-list');
+    const data = await res.json();
+    if (!data.tickets) return;
+    const list = document.getElementById('chatConvList');
+    if (!list) return;
+    // 現在のスクロール位置を保存
+    const scrollTop = list.scrollTop;
+    list.innerHTML = data.tickets.map(t => `
+      <div onclick="showChatFor(${t.id})"
+           style="padding:.7rem 1rem;border-bottom:1px solid #f8fafc;cursor:pointer;
+                  transition:background .12s;${t.unread?'background:#fff7ed;':''}"
+           onmouseover="this.style.background='#fff7ed'"
+           onmouseout="this.style.background='${t.unread?'#fff7ed':''}'"
+           class="d-flex gap-2 align-items-start">
+        <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.85rem;
+                    background:${t.type_key==='request'?'#fffbeb':'#eef2ff'};
+                    color:${t.type_key==='request'?'#d97706':'#f97316'};">
+          <i class="bi bi-${t.type_key==='request'?'star-fill':'chat-text-fill'}"></i>
+        </div>
+        <div class="flex-fill min-width-0">
+          <div style="font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${t.title}${t.unread?'<span class="badge bg-danger ms-1" style="font-size:.58rem;">未読</span>':''}
+          </div>
+          <div style="font-size:.72rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.last_message || t.type}</div>
+        </div>
+        <div style="flex-shrink:0;text-align:right;">
+          <span class="badge bg-${t.status_color}" style="font-size:.6rem;">${t.status}</span><br>
+          <span style="font-size:.65rem;color:#94a3b8;">${t.updated_at}</span>
+        </div>
+      </div>
+    `).join('');
+    list.scrollTop = scrollTop;
+  } catch {}
+}
+
+function toggleChatPanel() {
+  _chatPanelOpen = !_chatPanelOpen;
+  const panel = document.getElementById('chatPanel');
+  panel.style.display = _chatPanelOpen ? 'flex' : 'none';
+  document.getElementById('bubbleIcon').className =
+    _chatPanelOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill';
+  if (_chatPanelOpen) {
+    showChatList();
+  } else {
+    _stopPolling();
+  }
+}
+
+/* ─ ビュー切替 ─ */
+function _showView(name) {
+  ['chatViewList','chatViewNew','chatViewChat'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = el.id === name ? 'flex' : 'none';
+  });
+}
+function showChatList() {
+  clearInterval(_chatPollTimer);
+  _currentTicketId = null;
+  _lastMsgId       = 0;
+  _showView('chatViewList');
+  loadChatList();
+  _startListPolling();
+}
+function showChatNew()  { clearInterval(_chatPollTimer); _showView('chatViewNew'); }
+function showChatFor(tid) {
+  clearInterval(_listPollTimer);
+  _currentTicketId = tid;
+  _lastMsgId       = 0;
+  _showView('chatViewChat');
+  loadChatMessages(tid);  // 内部で _startChatPolling を呼ぶ
+}
+
+/* ─ 会話一覧（初回：スピナー表示 → サイレント更新に委譲） ─ */
+async function loadChatList() {
+  const list = document.getElementById('chatConvList');
+  list.innerHTML = '<div class="text-center text-muted py-4 small"><span class="spinner-border spinner-border-sm me-1"></span>読込中...</div>';
+  const res  = await fetch('/api/tickets/my-list');
+  const data = await res.json();
+  if (!data.tickets || data.tickets.length === 0) {
+    list.innerHTML = `<div class="text-center text-muted py-5 small">
+      <i class="bi bi-chat-dots fs-3 d-block mb-2" style="color:#fed7aa;"></i>
+      まだ問い合わせがありません<br>
+      <button onclick="showChatNew()" class="btn btn-sm btn-primary mt-2" style="border-radius:20px;">
+        <i class="bi bi-plus me-1"></i>新規作成
+      </button></div>`;
+    return;
+  }
+  // _silentLoadChatList と同じ描画ロジックを使う
+  await _silentLoadChatList();
+}
+
+/* ─ チャットメッセージ ─ */
+async function loadChatMessages(tid) {
+  const msgArea = document.getElementById('chatMessages');
+  msgArea.innerHTML = '<div class="text-center text-muted py-4 small"><span class="spinner-border spinner-border-sm"></span></div>';
+
+  const res  = await fetch(`/api/tickets/${tid}/detail`);
+  const data = await res.json();
+  if (!data.ok) { msgArea.innerHTML = '<div class="text-muted text-center py-4 small">読み込みに失敗しました</div>'; return; }
+
+  document.getElementById('chatTitle').textContent = data.title;
+  document.getElementById('chatStatus').innerHTML = `<span class="badge bg-${data.status_color}" style="font-size:.62rem;">${data.status}</span>`;
+
+  const inputArea  = document.getElementById('chatInputArea');
+  const closedMsg  = document.getElementById('chatClosedMsg');
+  inputArea.style.display = data.can_reply ? 'flex' : 'none';
+  closedMsg.style.display  = data.can_reply ? 'none' : '';
+
+  if (!data.messages.length) {
+    msgArea.innerHTML = '<div class="text-muted text-center py-4 small">まだメッセージがありません</div>';
+    _lastMsgId = 0;
+  } else {
+    msgArea.innerHTML = data.messages.map(m => _buildMsgBubble(m)).join('');
+    msgArea.scrollTop = msgArea.scrollHeight;
+    _lastMsgId = data.messages[data.messages.length - 1].id;
+  }
+  // ポーリング開始（4秒ごとに新着チェック）
+  _startChatPolling(tid);
+}
+
+function _buildMsgBubble(m) {
+  const isMe = !m.is_admin;
+  const avatarHtml = m.avatar
+    ? `<img src="${m.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+    : `<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:#fff;font-weight:700;background:${m.is_admin?'linear-gradient(135deg,#dc2626,#f97316)':'linear-gradient(135deg,#f97316,#fdba74)'};">${m.initial}</div>`;
+  const bubbleBg = m.is_admin
+    ? 'linear-gradient(135deg,#f97316,#ea580c);color:#fff'
+    : '#f1f5f9;color:#1e293b';
+  const radius = isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px';
+  return `<div style="display:flex;gap:.5rem;align-items:flex-end;${m.is_admin?'':'flex-direction:row-reverse;'}">
+    ${avatarHtml}
+    <div style="max-width:78%;">
+      <div style="font-size:.68rem;color:#94a3b8;margin-bottom:2px;${m.is_admin?'':'text-align:right;'}">${m.user_name} ${m.created_at}</div>
+      <div style="padding:.55rem .8rem;border-radius:${radius};background:${bubbleBg};
+                  white-space:pre-wrap;word-break:break-word;line-height:1.55;font-size:.88rem;">${m.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    </div>
+  </div>`;
+}
+
+async function sendChatMsg() {
+  if (!_currentTicketId) return;
+  const input = document.getElementById('chatInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+
+  const fd = new FormData();
+  fd.append('message', msg);
+  const res  = await fetch(`/api/tickets/${_currentTicketId}/message`, { method: 'POST', body: fd });
+  const data = await res.json();
+  btn.disabled = false;
+
+  if (data.ok) {
+    input.value = '';
+    const msgArea = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.innerHTML = _buildMsgBubble({
+      user_name: data.user_name, initial: data.initial,
+      avatar: data.avatar, is_admin: data.is_admin,
+      message: msg, created_at: data.created_at,
+    });
+    msgArea.appendChild(div.firstChild);
+    msgArea.scrollTop = msgArea.scrollHeight;
+    loadChatList();  // 一覧も更新
+  } else {
+    showToast(data.error || '送信に失敗しました', 'error');
+  }
+}
+
+/* ─ 新規チケット送信 ─ */
+async function submitNewTicket() {
+  const title   = document.getElementById('newTicketTitle').value.trim();
+  const message = document.getElementById('newTicketMessage').value.trim();
+  const errEl   = document.getElementById('newTicketErr');
+  if (!title || !message) {
+    errEl.style.display = '';
+    errEl.innerHTML = '<div class="alert alert-warning py-1 small mb-0" style="border-radius:8px;">タイトルとメッセージを入力してください</div>';
+    return;
+  }
+  const fd = new FormData();
+  fd.append('title', title);
+  fd.append('ticket_type', document.getElementById('newTicketType').value);
+  fd.append('priority', document.getElementById('newTicketPriority').value);
+  fd.append('message', message);
+
+  const res  = await fetch('/api/tickets', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.ok) {
+    document.getElementById('newTicketTitle').value = '';
+    document.getElementById('newTicketMessage').value = '';
+    errEl.style.display = 'none';
+    showToast('送信しました！', 'success');
+    showChatFor(data.ticket_id);  // 作成したチケットのチャット画面へ
+  } else {
+    errEl.style.display = '';
+    errEl.innerHTML = `<div class="alert alert-danger py-1 small mb-0" style="border-radius:8px;">${data.error}</div>`;
+  }
+}
+
+/* ─ 未読バッジポーリング ─ */
+async function _fetchUnreadCount() {
+  try {
+    const res  = await fetch('/api/tickets/unread-count');
+    const data = await res.json();
+    const bubble  = document.getElementById('chatBubble');
+    const badge   = document.getElementById('bubbleBadge');
+    const navLink = document.getElementById('navTickets');
+    const sidebar = document.getElementById('sidebarTicketBadge');
+    const hasAlert = data.count > 0;
+
+    /* ─ チャットバブル ─ */
+    if (bubble) {
+      bubble.style.background = hasAlert
+        ? 'linear-gradient(135deg,#dc2626,#b91c1c)'   // 赤
+        : 'linear-gradient(135deg,#f97316,#ea580c)';   // 通常オレンジ
+      bubble.style.animation  = hasAlert ? 'bubblePulse 1.8s ease-in-out infinite' : 'none';
+      bubble.style.boxShadow  = hasAlert
+        ? '0 4px 20px rgba(220,38,38,.6)'
+        : '0 4px 20px rgba(249,115,22,.5)';
+    }
+    if (badge) {
+      badge.style.display = hasAlert ? 'flex' : 'none';
+      if (hasAlert) badge.textContent = data.count;
+    }
+
+    /* ─ サイドバーナビ ─ */
+    if (navLink) {
+      navLink.style.background = hasAlert
+        ? 'rgba(239,68,68,.18)'      // 赤背景
+        : '';
+      navLink.style.color = hasAlert ? '#fca5a5' : '';
+    }
+    if (sidebar) {
+      sidebar.style.display = hasAlert ? '' : 'none';
+      if (hasAlert) sidebar.textContent = data.count;
+    }
+  } catch {}
+}
+_fetchUnreadCount();
+setInterval(_fetchUnreadCount, 60000);
+
+/* tickets.html の「新規作成」ボタン用 */
+window.openNewTicket = function() {
+  if (!_chatPanelOpen) toggleChatPanel();
+  showChatNew();
+};
+</script>
+{% endif %}
+
+<script>
+  /* ══════════════════════════════════════════════════════
+     カラーテーマ切り替え
+     CSS クラスルール → 動的 <style> 注入で確実に上書き
+     インラインスタイル → _swapStyles で全属性書き換え
+     ══════════════════════════════════════════════════════ */
+  const THEME_KEY = 'colorTheme';
+  const LANG_KEY  = 'appLang';
+
+  /* ─ Cool テーマ用 CSS を動的注入（最後に追加されるので最優先） ─ */
+  const COOL_CSS = `
+    :root,[data-color-theme="cool"]{
+      --primary:#6366f1;--primary-dark:#4f46e5;--primary-light:#818cf8;
+      --accent:#38bdf8;--sidebar-bg:#0f0e2a;
+    }
+    .sidebar{background:#0f0e2a!important;}
+    .sidebar::before{background:linear-gradient(90deg,#6366f1,#a78bfa,#38bdf8)!important;}
+    .brand .brand-accent{color:#818cf8!important;}
+    .nav-link-item.active{background:rgba(99,102,241,.25)!important;color:#a5b4fc!important;}
+    .user-avatar{background:linear-gradient(135deg,#6366f1,#a78bfa)!important;}
+    .mobile-burger{background:#6366f1!important;box-shadow:0 2px 10px rgba(99,102,241,.3)!important;}
+    .stat-card:hover{box-shadow:0 8px 30px rgba(99,102,241,.15)!important;}
+    .btn-primary,.btn-primary:focus{background:linear-gradient(135deg,#6366f1,#4f46e5)!important;border-color:#4f46e5!important;}
+    .btn-primary:hover{background:linear-gradient(135deg,#4f46e5,#4338ca)!important;}
+    .btn-outline-primary{color:#6366f1!important;border-color:#6366f1!important;}
+    .btn-outline-primary:hover{background:#6366f1!important;color:#fff!important;}
+    .bg-primary{background-color:#6366f1!important;}
+    .text-primary{color:#6366f1!important;}
+    .border-primary{border-color:#6366f1!important;}
+    .badge.bg-primary{background-color:#6366f1!important;}
+    .form-control:focus,.form-select:focus{border-color:#6366f1!important;box-shadow:0 0 0 .2rem rgba(99,102,241,.2)!important;}
+    .nav-pills .nav-link.active{background-color:#6366f1!important;}
+    #navQuickStart{color:rgba(165,180,252,.9)!important;}
+    #tourWelcomeCard{background:#fff;}
+    [data-theme="dark"] .sidebar{background:#07071a!important;}
+  `;
+
+  function _applyCoolCSS() {
+    if (document.getElementById('__cool_theme__')) return;
+    const s = document.createElement('style');
+    s.id = '__cool_theme__';
+    s.textContent = COOL_CSS;
+    document.head.appendChild(s);
+  }
+  function _removeCoolCSS() {
+    const s = document.getElementById('__cool_theme__');
+    if (s) s.remove();
+  }
+
+  /* ─ インラインスタイルの色置換マップ ─ */
+  const WARM_TO_COOL = [
+    ['linear-gradient(135deg,#f97316,#fdba74)', 'linear-gradient(135deg,#6366f1,#a78bfa)'],
+    ['linear-gradient(135deg,#f97316,#ea580c)', 'linear-gradient(135deg,#6366f1,#4f46e5)'],
+    ['linear-gradient(135deg,#f97316,#fb923c)', 'linear-gradient(135deg,#6366f1,#818cf8)'],
+    ['linear-gradient(90deg,#f97316,#fbbf24,#fb923c)', 'linear-gradient(90deg,#6366f1,#a78bfa,#38bdf8)'],
+    ['linear-gradient(90deg,#f97316,#fb923c)', 'linear-gradient(90deg,#6366f1,#818cf8)'],
+    ['rgba(249,115,22,', 'rgba(99,102,241,'],
+    ['rgba(249,115,22.', 'rgba(99,102,241.'],
+    ['#f97316', '#6366f1'], ['#ea580c', '#4f46e5'],
+    ['#fb923c', '#818cf8'], ['#fdba74', '#a78bfa'],
+    ['#fed7aa', '#c7d2fe'], ['#ffedd5', '#e0e7ff'],
+    ['#fff7ed', '#eef2ff'], ['#431407', '#1e1b4b'],
+    ['#9a3412', '#312e81'], ['#1a0900', '#0f0e2a'],
+    ['249,115,22', '99,102,241'],
+  ];
+  const COOL_TO_WARM = WARM_TO_COOL.map(([a, b]) => [b, a]);
+
+  function _swapStyles(map) {
+    document.querySelectorAll('[style]').forEach(el => {
+      let s = el.getAttribute('style');
+      let changed = false;
+      for (const [from, to] of map) {
+        if (s.includes(from)) { s = s.split(from).join(to); changed = true; }
+      }
+      if (changed) el.setAttribute('style', s);
+    });
+  }
+
+  /* ─ brand-accent の色をインラインで確実に設定（color のみ） ─ */
+  function _fixBrandAccent(theme) {
+    const el = document.getElementById('brandAccent');
+    if (!el) return;
+    el.style.color = theme === 'cool' ? '#818cf8' : '#fb923c';
+  }
+
+  function setColorTheme(theme) {
+    localStorage.setItem(THEME_KEY, theme);
+    if (theme === 'cool') {
+      _applyCoolCSS();
+      _swapStyles(WARM_TO_COOL);
+    } else {
+      _removeCoolCSS();
+      _swapStyles(COOL_TO_WARM);
+    }
+    _fixBrandAccent(theme);
+    // ボタン状態更新（プロフィール画面）
+    document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+      const on = btn.dataset.themeBtn === theme;
+      btn.style.fontWeight  = on ? '700' : '400';
+      btn.style.boxShadow   = on ? '0 0 0 3px rgba(0,0,0,.12)' : 'none';
+      btn.style.opacity     = on ? '1' : '.6';
+      btn.style.borderColor = on ? (theme === 'cool' ? '#6366f1' : '#f97316') : '#e2e8f0';
+    });
+  }
+
+  // ページ読み込み時に適用
+  (function() {
+    const saved = localStorage.getItem(THEME_KEY) || 'warm';
+    if (saved === 'cool') {
+      _applyCoolCSS();  // head に即時注入
+      document.addEventListener('DOMContentLoaded', () => {
+        _swapStyles(WARM_TO_COOL);
+        _fixBrandAccent('cool');
+      });
+    }
+  })();
+
+  /* ══════════════════════════════════════════════════════
+     言語切り替え（i18n）
+     ══════════════════════════════════════════════════════ */
+  const I18N = {
+    ja: {
+      /* ─ ナビゲーション ─ */
+      'section.main':     'メインメニュー',
+      'section.approval': '承認',
+      'section.analytics':'分析',
+      'section.catalog':  'カタログ管理',
+      'section.groups':   'グループ',
+      'section.admin':    '管理',
+      'section.help':     'ヘルプ',
+      'nav.dashboard':    'ダッシュボード',
+      'nav.skills':       'スキルマップ',
+      'nav.my_approvals': '自分の申請状況',
+      'nav.timeline':     '成長タイムライン',
+      'nav.approvals':    '承認依頼',
+      'nav.matrix':       'スキルマトリクス',
+      'nav.catalog':      'スキルカタログ',
+      'nav.categories':   'カテゴリー',
+      'nav.tags':         'タグ管理',
+      'nav.groups':       'グループ管理',
+      'nav.admin':        '管理パネル',
+      'nav.users':        'ユーザー管理',
+      'nav.mail':         'メール設定',
+      'nav.manual':       '利用マニュアル',
+      'nav.quickstart':   'クイックスタート',
+      /* ─ ページタイトル ─ */
+      'page.dashboard':   'ダッシュボード',
+      'page.skills':      'スキルマップ',
+      'page.approvals':   '承認依頼',
+      'page.my_approvals':'自分の申請状況',
+      'page.matrix':      'スキルマトリクス',
+      'page.groups':      'グループ管理',
+      'page.catalog':     'スキルカタログ',
+      'page.profile':     'プロフィール',
+      'page.timeline':    '成長タイムライン',
+      /* ─ 共通ラベル ─ */
+      'lbl.save':         '保存する',
+      'lbl.cancel':       'キャンセル',
+      'lbl.add':          '追加',
+      'lbl.edit':         '編集',
+      'lbl.delete':       '削除',
+      'lbl.search':       'スキルを検索...',
+      'lbl.filter':       '絞り込み',
+      'lbl.export_csv':   'CSV エクスポート',
+      'lbl.all_groups':   'すべてのグループ',
+      'lbl.all_users':    'すべてのユーザー',
+      'lbl.skill_count':  '対象スキル',
+      'lbl.member_count': '対象メンバー',
+      'lbl.avg_level':    '全体平均レベル',
+      'lbl.catalog_total':'カタログ総数',
+      'lbl.approve':      '承認',
+      'lbl.reject':       '差し戻し',
+      'lbl.pending':      '承認待ち',
+      'lbl.approved':     '承認済み',
+      'lbl.not_applied':  '未申請',
+      'lbl.login':        'ログイン',
+      'lbl.logout':       'ログアウト',
+      'lbl.register':     '新規登録',
+      'lbl.level':        'レベル',
+      'lbl.skill':        'スキル',
+      'lbl.category':     'カテゴリー',
+      'lbl.tier':         'ティア',
+      'lbl.member':       'メンバー',
+      'lbl.group':        'グループ',
+      'lbl.display_settings': '表示設定',
+      'lbl.color_theme':  'カラーテーマ',
+      'lbl.language':     '言語 / Language',
+      /* ─ ダッシュボード追加 ─ */
+      'lbl.skill_total':  '総申告スキル',
+      'lbl.declared_skills': '申告済みスキル',
+      'lbl.top_level':    '最高レベル',
+      'lbl.member_ranking': 'メンバーランキング',
+      'lbl.group_skills': 'グループ別スキル状況',
+      'lbl.tier_progress':'難易度ティア別 達成状況',
+      'lbl.category_radar':'メンバー別 カテゴリーレーダー',
+      'lbl.level_dist':   'レベル分布',
+      'lbl.recent_updates':'最近の申告・更新',
+      'lbl.skill_count2': '対象スキル',
+      'lbl.fill_rate':    '入力率',
+      'lbl.expert_count': 'エキスパート数',
+      'lbl.user_avg':     'ユーザー平均',
+      'lbl.skill_avg':    'スキル平均',
+      'lbl.show_analytics':'分析チャートを表示',
+      'lbl.growth_trend': '成長トレンド（月別）',
+      'lbl.cat_radar':    'カテゴリー別スキルレベル',
+      'lbl.user_ranking': 'ユーザー別平均スキルレベル',
+      'lbl.filter_user':  '-- ユーザーで絞り込み --',
+      'lbl.filter_group': '-- グループで絞り込み --',
+      'lbl.update_skills':'スキルマップを更新',
+      'lbl.back_overview':'概要に戻る',
+      /* ─ 承認 ─ */
+      'lbl.approval_history':'承認履歴',
+      'lbl.select_all':   '全選択',
+      'lbl.approve_selected':'選択を承認',
+      'lbl.reject_selected':'選択を差し戻し',
+      'lbl.applicant':    '申請者',
+      'lbl.date':         '申請日',
+      'lbl.actions':      'アクション',
+      'lbl.status':       'ステータス',
+      'lbl.comment':      'コメント',
+      'lbl.handled':      '対応日',
+      'lbl.approver':     '承認者',
+      'lbl.send':         '送信',
+      'lbl.end':          '終了',
+      /* ─ スキル ─ */
+      'lbl.view_all_skills': '全スキルを一覧表示',
+      'lbl.tier_settings':'ティア名を設定',
+      'lbl.view_detail':  '詳細を見る',
+      'lbl.my_approvals': '自分の申請状況',
+      'lbl.approvals':    '承認依頼',
+      'lbl.search_skills':'スキルを検索...',
+      /* ─ グループ ─ */
+      'lbl.create_group': 'グループ作成',
+      'lbl.card_view':    'カード',
+      'lbl.tree_view':    'ツリー',
+      'lbl.member_mgmt':  'メンバー管理',
+      /* ─ カタログ ─ */
+      'lbl.csv_import':   'インポート',
+      'lbl.add_skill':    'スキルを追加',
+      'lbl.total_skills': 'スキル総数',
+      'lbl.skill_name':   'スキル名',
+      'lbl.declared_count':'申告数',
+      'lbl.level_bar':    'レベルバー',
+      'lbl.updated_at':   '更新日',
+      'lbl.detail':       '詳細',
+      'lbl.skill_count':  '対象スキル',
+      /* ─ プロフィール ─ */
+      'lbl.my_groups':    '所属グループ',
+      'lbl.edit_profile': '情報を編集',
+      'lbl.display_name': '表示名',
+      'lbl.email':        'メールアドレス',
+      'lbl.current_pw':   '現在のパスワード',
+      'lbl.new_pw':       '新しいパスワード',
+    },
+    en: {
+      /* ─ Navigation ─ */
+      'section.main':     'Main Menu',
+      'section.approval': 'Approvals',
+      'section.analytics':'Analytics',
+      'section.catalog':  'Catalog',
+      'section.groups':   'Groups',
+      'section.admin':    'Admin',
+      'section.help':     'Help',
+      'nav.dashboard':    'Dashboard',
+      'nav.skills':       'Skill Map',
+      'nav.my_approvals': 'My Approvals',
+      'nav.timeline':     'Growth Timeline',
+      'nav.approvals':    'Approvals',
+      'nav.matrix':       'Skill Matrix',
+      'nav.catalog':      'Skill Catalog',
+      'nav.categories':   'Categories',
+      'nav.tags':         'Tags',
+      'nav.groups':       'Groups',
+      'nav.admin':        'Admin Panel',
+      'nav.users':        'User Management',
+      'nav.mail':         'Mail Settings',
+      'nav.manual':       'User Manual',
+      'nav.quickstart':   'Quick Start',
+      /* ─ Page titles ─ */
+      'page.dashboard':   'Dashboard',
+      'page.skills':      'Skill Map',
+      'page.approvals':   'Approvals',
+      'page.my_approvals':'My Approvals',
+      'page.matrix':      'Skill Matrix',
+      'page.groups':      'Group Management',
+      'page.catalog':     'Skill Catalog',
+      'page.profile':     'Profile',
+      'page.timeline':    'Growth Timeline',
+      /* ─ Common labels ─ */
+      'lbl.save':         'Save',
+      'lbl.cancel':       'Cancel',
+      'lbl.add':          'Add',
+      'lbl.edit':         'Edit',
+      'lbl.delete':       'Delete',
+      'lbl.search':       'Search skills...',
+      'lbl.filter':       'Filter',
+      'lbl.export_csv':   'Export CSV',
+      'lbl.all_groups':   'All Groups',
+      'lbl.all_users':    'All Users',
+      'lbl.skill_count':  'Skills',
+      'lbl.member_count': 'Members',
+      'lbl.avg_level':    'Avg. Level',
+      'lbl.catalog_total':'Catalog Total',
+      'lbl.approve':      'Approve',
+      'lbl.reject':       'Reject',
+      'lbl.pending':      'Pending',
+      'lbl.approved':     'Approved',
+      'lbl.not_applied':  'Not Applied',
+      'lbl.login':        'Login',
+      'lbl.logout':       'Logout',
+      'lbl.register':     'Register',
+      'lbl.level':        'Level',
+      'lbl.skill':        'Skill',
+      'lbl.category':     'Category',
+      'lbl.tier':         'Tier',
+      'lbl.member':       'Member',
+      'lbl.group':        'Group',
+      'lbl.display_settings': 'Display Settings',
+      'lbl.color_theme':  'Color Theme',
+      'lbl.language':     'Language',
+      /* ─ Dashboard ─ */
+      'lbl.skill_total':  'Total Skills',
+      'lbl.declared_skills': 'Declared Skills',
+      'lbl.top_level':    'Top Level',
+      'lbl.member_ranking': 'Member Ranking',
+      'lbl.group_skills': 'Skills by Group',
+      'lbl.tier_progress':'Tier Progress',
+      'lbl.category_radar':'Category Radar',
+      'lbl.level_dist':   'Level Distribution',
+      'lbl.recent_updates':'Recent Updates',
+      'lbl.skill_count2': 'Skills',
+      'lbl.fill_rate':    'Fill Rate',
+      'lbl.expert_count': 'Experts',
+      'lbl.user_avg':     'User Avg',
+      'lbl.skill_avg':    'Skill Avg',
+      'lbl.show_analytics':'Show Analytics',
+      'lbl.growth_trend': 'Growth Trend (Monthly)',
+      'lbl.cat_radar':    'Category Skill Levels',
+      'lbl.user_ranking': 'User Avg Level',
+      'lbl.filter_user':  '-- Filter by User --',
+      'lbl.filter_group': '-- Filter by Group --',
+      'lbl.update_skills':'Update Skill Map',
+      'lbl.back_overview':'Back to Overview',
+      /* ─ Approvals ─ */
+      'lbl.approval_history':'Approval History',
+      'lbl.select_all':   'Select All',
+      'lbl.approve_selected':'Approve Selected',
+      'lbl.reject_selected':'Reject Selected',
+      'lbl.applicant':    'Applicant',
+      'lbl.date':         'Date',
+      'lbl.actions':      'Actions',
+      'lbl.status':       'Status',
+      'lbl.comment':      'Comment',
+      'lbl.handled':      'Handled',
+      'lbl.approver':     'Approver',
+      'lbl.send':         'Send',
+      'lbl.end':          'Close',
+      /* ─ Skills ─ */
+      'lbl.view_all_skills': 'View All Skills',
+      'lbl.tier_settings':'Tier Settings',
+      'lbl.view_detail':  'View Details',
+      'lbl.my_approvals': 'My Approvals',
+      'lbl.approvals':    'Approvals',
+      'lbl.search_skills':'Search skills...',
+      /* ─ Groups ─ */
+      'lbl.create_group': 'Create Group',
+      'lbl.card_view':    'Cards',
+      'lbl.tree_view':    'Tree',
+      'lbl.member_mgmt':  'Manage Members',
+      /* ─ Catalog ─ */
+      'lbl.csv_import':   'Import CSV',
+      'lbl.add_skill':    'Add Skill',
+      'lbl.total_skills': 'Total Skills',
+      'lbl.skill_name':   'Skill Name',
+      'lbl.declared_count':'Count',
+      'lbl.level_bar':    'Level Bar',
+      'lbl.updated_at':   'Updated',
+      'lbl.detail':       'Detail',
+      /* ─ Profile ─ */
+      'lbl.my_groups':    'My Groups',
+      'lbl.edit_profile': 'Edit Profile',
+      'lbl.display_name': 'Display Name',
+      'lbl.email':        'Email',
+      'lbl.current_pw':   'Current Password',
+      'lbl.new_pw':       'New Password',
+    }
+  };
+  function applyLanguage(lang) {
+    localStorage.setItem(LANG_KEY, lang);
+    const dict = I18N[lang] || I18N.ja;
+    // data-i18n 属性を持つ全要素を翻訳
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (dict[key] !== undefined) el.textContent = dict[key];
+    });
+    // lang ボタン状態更新
+    document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.langBtn === lang);
+    });
+    document.documentElement.lang = lang;
+    TOUR_STEPS_USER[0].title = lang === 'en' ? 'Welcome to Skill Map!' : 'スキルマップへようこそ！';
+  }
+  // 起動時に適用
+  (function() {
+    const saved = localStorage.getItem(LANG_KEY) || 'ja';
+    if (saved !== 'ja') {
+      document.addEventListener('DOMContentLoaded', () => applyLanguage(saved));
+    }
+    document.documentElement.lang = saved;
+  })();
+
+  /* ── Scroll position save/restore ── */
+  (function() {
+    const key = 'scroll:' + location.pathname + location.search;
+
+    // 復元: 同じURLに戻ったときスクロール位置を復元
+    const saved = sessionStorage.getItem(key);
+    if (saved !== null) {
+      const pos = parseInt(saved, 10);
+      if (pos > 0) {
+        // レイアウト確定後にスクロール
+        requestAnimationFrame(() => window.scrollTo({ top: pos, behavior: 'instant' }));
+      }
+      sessionStorage.removeItem(key);
+    }
+
+    // 保存: <a> タグクリック時に現在のスクロール位置を記録
+    document.addEventListener('click', function(e) {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      // 外部リンク・アンカーリンク・JS無効リンクはスキップ
+      if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('javascript')) return;
+      if (window.scrollY > 80) {
+        sessionStorage.setItem(key, window.scrollY);
+      }
+    }, true);
+
+    // フォームsubmit時（フィルター等）も保存
+    document.addEventListener('submit', function(e) {
+      if (window.scrollY > 80) {
+        // フォームaction先のURLを取得して保存
+        const form = e.target;
+        const action = form.getAttribute('action') || location.pathname;
+        const params = new URLSearchParams(new FormData(form)).toString();
+        const destKey = 'scroll:' + action + (params ? '?' + params : '');
+        sessionStorage.setItem(destKey, window.scrollY);
+      }
+    }, true);
+  })();
+
+  /* ── Guided Tour ── */
+  const TOUR_ROLE = '{{ current_user.role if current_user else "user" }}';
+
+  /* ══ ロール別クイックスタートツアー ═══════════════════════════ */
+
+  // ── User ロール ──────────────────────────────────────────────
+  const TOUR_STEPS_USER = [
+    { el: null, title: 'スキルマップへようこそ！',
+      body: 'このシステムで自分のスキルを記録し、チームの成長を一緒に可視化しましょう。\n全 8 ステップで主な機能をご紹介します。', icon: 'bi-map' },
+
+    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
+      title: '① ダッシュボード',
+      body: '自分のスキル申告状況・平均レベル・成長グラフを確認できます。\nグループや全メンバーの状況も一覧で見られます。' },
+
+    { el: '#navSkills', pos: 'right', icon: 'bi-lightning-charge',
+      title: '② スキルマップ（自己申告）',
+      body: '難易度ティア（初級〜上級）ごとのカードをクリックしてスキル一覧へ。\n「全スキルを一覧表示」で全ティアを一画面で確認できます。' },
+
+    { el: null, isHowto: 'skills', title: 'スキルの登録方法', icon: 'bi-lightning-charge-fill' },
+
+    { el: '#navMyApprovals', pos: 'right', icon: 'bi-send',
+      title: '③ 自分の申請状況',
+      body: '申告したスキルはManagerまたはAdminが承認・差し戻しします。\nここで進捗を確認してください。差し戻された場合はコメントを確認しましょう。' },
+
+    { el: '#navTimeline', pos: 'right', icon: 'bi-graph-up-arrow',
+      title: '④ 成長タイムライン',
+      body: '承認されたスキルの変化を時系列グラフで振り返ることができます。\n自分の成長を定期的に確認しましょう。' },
+
+    { el: '#navEducation', pos: 'right', icon: 'bi-mortarboard-fill',
+      title: '⑤ 教育リソース',
+      body: 'カテゴリー・スキルに紐づいた学習サイトや教材が一覧表示されます。\n「サイトを開く」ボタンで外部リソースにアクセスできます。' },
+
+    { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
+      title: '⑥ 問い合わせ・要望',
+      body: '操作方法がわからない場合や機能の要望は、右下のチャットアイコンまたはここから送信できます。\nAdminが返信すると通知が届きます。' },
+
+    { el: '#globalSearch', pos: 'bottom', icon: 'bi-search',
+      title: '⑦ グローバル検索',
+      body: 'スキル名・メンバー名・グループ名をリアルタイムで横断検索できます。\nキーボードショートカットとしても便利です。' },
+
+    { el: '#sidebarUserArea', pos: 'top', icon: 'bi-person-circle',
+      title: '⑧ プロフィール・表示設定',
+      body: 'アバター・表示名・パスワードの変更はプロフィールページで行えます。\nカラーテーマ（Warm/Cool）や言語（日本語/English）も切り替えられます。' },
+
+    { el: '#navQuickStart', pos: 'right', icon: 'bi-play-circle-fill',
+      title: 'ツアー完了！',
+      body: '「クイックスタート」はいつでもここから再実行できます。\nマニュアルも左のナビゲーターにあります。困ったときはお気軽にご活用ください！' },
+  ];
+
+  // ── Manager ロール ───────────────────────────────────────────
+  const TOUR_STEPS_MANAGER = [
+    { el: null, title: 'Manager権限へようこそ！',
+      body: 'チームのスキル承認・グループ管理・スキルカタログ管理を担当します。\n全 9 ステップで主な操作をご案内します。', icon: 'bi-people-fill' },
+
+    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
+      title: '① ダッシュボード',
+      body: '担当グループのスキル状況・ギャップ分析・成長トレンドを確認できます。\nフィルターでグループ別に絞り込んで分析しましょう。' },
+
+    { el: '#navApprovals', pos: 'right', icon: 'bi-check2-square',
+      title: '② 承認依頼',
+      body: 'メンバーから申告されたスキルを承認・差し戻しします。\nチェックボックスで複数件を一括処理できます。コメントで理由を伝えましょう。' },
+
+    { el: '#navMatrix', pos: 'right', icon: 'bi-grid-3x3-gap',
+      title: '③ スキルマトリクス',
+      body: 'メンバー × スキルのヒートマップ（暖色 = 理解度高）でカバレッジを把握できます。\n「分析チャートを表示」で詳細なグラフも確認できます。' },
+
+    { el: '#navCatalog', pos: 'right', icon: 'bi-collection',
+      title: '④ スキルカタログ管理',
+      body: 'Managerが担当グループに割り当てたスキルのみ表示されます。\nCSV・Excel・Markdown・JSON のインポートで一括登録も可能です。' },
+
+    { el: '#navGroups', pos: 'right', icon: 'bi-people-fill',
+      title: '⑤ グループ管理',
+      body: 'グループの作成・メンバー追加・必須スキル設定を行います。\nManagerを複数名設定でき、階層構造（親子グループ）にも対応しています。' },
+
+    { el: '#navEducation', pos: 'right', icon: 'bi-mortarboard-fill',
+      title: '⑥ 教育リソース管理',
+      body: 'カテゴリー・スキルに紐づく学習サイトのリンクを追加・編集できます。\nメンバーが自己学習に活用できるよう充実させましょう。' },
+
+    { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
+      title: '⑦ 問い合わせ・要望',
+      body: 'メンバーからの問い合わせや要望が届きます（Adminが主担当）。\n要望は優先度付きで管理されます。' },
+
+    { el: '#globalSearch', pos: 'bottom', icon: 'bi-search',
+      title: '⑧ グローバル検索',
+      body: 'スキル・メンバー・グループを横断して素早く検索できます。' },
+
+    { el: '#navQuickStart', pos: 'right', icon: 'bi-play-circle-fill',
+      title: 'ツアー完了！',
+      body: 'クイックスタートはいつでも再実行できます。\n詳細はナビゲーターの「利用マニュアル」もご参照ください。' },
+  ];
+
+  // ── Admin ロール ─────────────────────────────────────────────
+  const TOUR_STEPS_ADMIN = [
+    { el: null, title: 'Admin権限へようこそ！',
+      body: 'ユーザー管理・全データ閲覧・システム設定など最上位権限を持ちます。\n全 11 ステップで主な操作をご案内します。', icon: 'bi-shield-check' },
+
+    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
+      title: '① ダッシュボード',
+      body: '組織全体のスキル状況・グループ比較・属人化リスク・成長トレンドを一覧できます。\nグループ・ユーザーで絞り込んで分析しましょう。' },
+
+    { el: '#navApprovals', pos: 'right', icon: 'bi-check2-square',
+      title: '② 承認依頼',
+      body: '全メンバーのスキル申告を承認・差し戻しします。\nフィルター・一括承認で効率的に処理できます。承認するとメンバーのスキルが登録されます。' },
+
+    { el: '#navMatrix', pos: 'right', icon: 'bi-grid-3x3-gap',
+      title: '③ スキルマトリクス',
+      body: 'メンバー × スキルのヒートマップ（暖色 = 理解度高）で組織全体のカバレッジを把握。\n分析チャート（成長トレンド・レーダー・ランキング）も確認できます。' },
+
+    { el: '#navCatalog', pos: 'right', icon: 'bi-collection',
+      title: '④ スキルカタログ管理',
+      body: '全スキルを管理します。CSV/Excel/Markdown/JSON でのインポート、ティア・カテゴリーの変更、アーカイブが可能です。\n「カタログを初期化」でデフォルトに戻せます。' },
+
+    { el: '#navGroups', pos: 'right', icon: 'bi-people-fill',
+      title: '⑤ グループ管理',
+      body: 'グループ作成・メンバー追加・複数Manager設定・必須スキル割り当てを行います。\nツリービューで階層構造を確認できます。' },
+
+    { el: '#navEducation', pos: 'right', icon: 'bi-mortarboard-fill',
+      title: '⑥ 教育リソース管理',
+      body: '学習リソースのリンクを追加・編集・削除できます。\nカテゴリーとスキルに紐づけてメンバーが見つけやすくしましょう。' },
+
+    { el: '#navAdmin', pos: 'right', icon: 'bi-shield-check',
+      title: '⑦ 管理パネル',
+      body: 'システム全体の状況確認ができます。新規登録ユーザーの承認もここから行えます。' },
+
+    { el: '#navUsers', pos: 'right', icon: 'bi-people',
+      title: '⑧ ユーザー管理',
+      body: 'ユーザーの承認・ロール変更（user/manager/admin）・パスワードリセット・アカウント削除を行います。\n新規登録ユーザーは承認するまでログインできません。' },
+
+    { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
+      title: '⑨ 問い合わせ・要望対応',
+      body: '未対応・対応中のチケットがある間は赤く表示されます。\nステータスを「解決済み」か「クローズ」にするとアラートが解除されます。' },
+
+    { el: '#navMail', pos: 'right', icon: 'bi-envelope-at',
+      title: '⑩ メール設定',
+      body: 'SMTPサーバーの設定を行います。設定するとスキル承認通知・パスワードリセットメールが送信されます。\n「テスト送信」で動作確認できます。' },
+
+    { el: '#navQuickStart', pos: 'right', icon: 'bi-play-circle-fill',
+      title: 'ツアー完了！',
+      body: 'クイックスタートはいつでも再実行できます。\n「利用マニュアル」に全機能の詳細説明があります。' },
+  ];
+
+  const TOUR_STEPS = TOUR_ROLE === 'user'
+    ? TOUR_STEPS_USER
+    : TOUR_ROLE === 'manager'
+      ? TOUR_STEPS_MANAGER
+      : TOUR_STEPS_ADMIN;
+
+  let tourStep = 0;
+  let tourActive = false;
+
+  function startTour(step = 0) {
+    // 既存のツアー要素をクリーンアップ
+    endTour(false);
+    tourStep = step;
+    tourActive = true;
+
+    showTourStep(tourStep);
+  }
+
+  function showTourStep(idx) {
+    // 既存ステップ要素を削除
+    ['tourSpotlight', 'tourHighlight', 'tourTooltip', 'tourWelcomeCard', 'tourOverlay'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+
+    if (idx >= TOUR_STEPS.length) { endTour(true); return; }
+    const step = TOUR_STEPS[idx];
+    const isLast = idx === TOUR_STEPS.length - 1;
+    const progress = `${idx + 1} / ${TOUR_STEPS.length}`;
+
+    if (step.isHowto === 'skills') {
+      // ── スキル登録 How-to カード ──
+      const ov = document.createElement('div');
+      ov.id = 'tourOverlay';
+      document.body.appendChild(ov);
+
+      const isAdmin = TOUR_ROLE !== 'user';
+      const numSt = 'width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem;';
+      const rowSt = 'display:flex;gap:.6rem;align-items:flex-start;padding:.45rem .6rem;background:#f8fafc;border-radius:8px;border-left:3px solid #f97316;';
+      const ttl   = 'font-weight:700;font-size:.83rem;color:#1e293b;margin-bottom:.08rem;';
+      const sub   = 'font-size:.75rem;color:#64748b;line-height:1.45;';
+      const levels = [
+        ['#94a3b8','0 未経験'],['#fbbf24','1 入門'],
+        ['#f97316','2 基礎'],['#f59e0b','3 実務可'],['#ef4444','4 Expert'],
+      ].map(([c,l]) =>
+        `<span style="background:${c};color:#fff;border-radius:4px;padding:.08em .5em;font-size:.66rem;font-weight:700;">${l}</span>`
+      ).join('<span style="color:#94a3b8;font-size:.65rem;padding:0 1px;">→</span>');
+
+      const card = document.createElement('div');
+      card.id = 'tourWelcomeCard';
+      card.innerHTML = `
+        <!-- ヘッダー（固定） -->
+        <div class="tour-card-header" style="text-align:center;">
+          <span style="font-size:1.3rem;"><i class="bi bi-lightning-charge-fill" style="color:#f97316;"></i></span>
+          <div style="font-weight:800;font-size:1.05rem;color:#431407;margin-top:.2rem;">スキルの登録方法</div>
+          <div style="font-size:.74rem;color:#94a3b8;margin-top:.1rem;">以下の手順でスキルを申告できます</div>
+        </div>
+
+        <!-- ステップ一覧（スクロール可能） -->
+        <div class="tour-card-body" style="text-align:left;">
+          <div style="display:flex;flex-direction:column;gap:.35rem;padding-bottom:.5rem;">
+
+            <div style="${rowSt}">
+              <div style="${numSt}">1</div>
+              <div>
+                <div style="${ttl}">スキルマップページへ移動</div>
+                <div style="${sub}">サイドバーの「<b>スキルマップ</b>」をクリック<br>→ ティアを選択、または <b>「全スキルを一覧表示」</b></div>
+              </div>
+            </div>
+
+            <div style="${rowSt}border-left-color:#22c55e;">
+              <div style="${numSt}background:linear-gradient(135deg,#22c55e,#4ade80);">2</div>
+              <div>
+                <div style="${ttl}">レベルを選択</div>
+                <div style="${sub}">各スキルの <b>●ドット</b> またはプルダウンでレベルを選択</div>
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:.2rem;margin-top:.25rem;">${levels}</div>
+              </div>
+            </div>
+
+            <div style="${rowSt}border-left-color:#f59e0b;">
+              <div style="${numSt}background:linear-gradient(135deg,#f59e0b,#fcd34d);">3</div>
+              <div>
+                <div style="${ttl}">申請する</div>
+                ${isAdmin
+                  ? `<div style="${sub}">Admin / Manager は選択後 <b>即時自動承認</b> されます</div>`
+                  : `<div style="${sub}">承認者（上司・マネージャー）を選択 → <b>「申請する」</b> をクリック</div>`
+                }
+              </div>
+            </div>
+
+            <div style="${rowSt}border-left-color:#22c55e;">
+              <div style="${numSt}background:linear-gradient(135deg,#22c55e,#4ade80);">4</div>
+              <div>
+                <div style="${ttl}">承認 → スキル登録完了</div>
+                <div style="${sub}">「<b>自分の申請状況</b>」ページで承認・差し戻しを確認できます</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ボタン（常に下部に固定） -->
+        <div class="tour-card-footer">
+          <div style="display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;align-items:center;">
+            <button class="tour-btn tour-btn-skip" onclick="endTour(true)">終了</button>
+            ${idx > 0 ? '<button class="tour-btn tour-btn-prev" onclick="tourPrev()"><i class="bi bi-arrow-left"></i> 前へ</button>' : ''}
+            <a href="/skills?view=all" onclick="endTour(true)"
+               class="tour-btn"
+               style="background:linear-gradient(135deg,#22c55e,#4ade80);color:#fff;text-decoration:none;padding:.35rem .9rem;">
+              <i class="bi bi-lightning-charge me-1"></i>スキルマップを開く
+            </a>
+            <button class="tour-btn tour-btn-next" onclick="tourNext()">次へ <i class="bi bi-arrow-right ms-1"></i></button>
+          </div>
+          <div style="text-align:center;font-size:.7rem;color:#94a3b8;margin-top:.4rem;">${progress}</div>
+        </div>
+      `;
+      document.body.appendChild(card);
+
+    } else if (step.el === null) {
+      // ウェルカムカード（中央オーバーレイ）
+      const ov = document.createElement('div');
+      ov.id = 'tourOverlay';
+      document.body.appendChild(ov);
+
+      const card = document.createElement('div');
+      card.id = 'tourWelcomeCard';
+      card.innerHTML = `
+        <div class="tour-card-header" style="text-align:center;">
+          <div style="font-size:2.2rem;"><i class="bi ${step.icon}" style="color:#f97316;"></i></div>
+          <div style="font-weight:800;font-size:1.2rem;color:#431407;margin-top:.3rem;">${step.title}</div>
+          <div style="font-size:.88rem;color:#64748b;line-height:1.6;white-space:pre-line;margin-top:.5rem;">${step.body}</div>
+        </div>
+        <div class="tour-card-footer">
+          <div style="display:flex;justify-content:center;gap:.6rem;flex-wrap:wrap;">
+            <button class="tour-btn tour-btn-skip" onclick="endTour(true)">スキップ</button>
+            <button class="tour-btn tour-btn-next" onclick="tourNext()" style="padding:.5rem 1.8rem;font-size:.9rem;">
+              ツアーを開始 <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+          <div style="font-size:.72rem;color:#94a3b8;margin-top:.5rem;text-align:center;">${progress}</div>
+        </div>
+      `;
+      document.body.appendChild(card);
+    } else {
+      const target = document.querySelector(step.el);
+      if (!target) { tourNext(); return; }
+
+      // オーバーレイ
+      const ov = document.createElement('div');
+      ov.id = 'tourOverlay';
+      document.body.appendChild(ov);
+
+      // スポットライト（暗幕の切り抜き）
+      const rect = target.getBoundingClientRect();
+      const pad = 8;
+      const spot = document.createElement('div');
+      spot.id = 'tourSpotlight';
+      spot.style.cssText = `
+        top:${rect.top - pad}px;left:${rect.left - pad}px;
+        width:${rect.width + pad * 2}px;height:${rect.height + pad * 2}px;
+      `;
+      document.body.appendChild(spot);
+
+      // ハイライトレイヤー（body 直下に配置してグロー効果を付与）
+      const hl = document.createElement('div');
+      hl.id = 'tourHighlight';
+      hl.style.cssText = `
+        top:${rect.top - pad}px;left:${rect.left - pad}px;
+        width:${rect.width + pad * 2}px;height:${rect.height + pad * 2}px;
+      `;
+      document.body.appendChild(hl);
+
+      // ツールチップ
+      const tip = document.createElement('div');
+      tip.id = 'tourTooltip';
+      tip.innerHTML = `
+        <span class="tour-badge"><i class="bi ${step.icon} me-1"></i>${idx + 1}/${TOUR_STEPS.length}</span>
+        <div class="tour-title">${step.title}</div>
+        <div class="tour-body" style="white-space:pre-line;">${step.body}</div>
+        <div class="tour-footer">
+          <button class="tour-btn tour-btn-skip" onclick="endTour(true)">終了</button>
+          <div style="display:flex;gap:.4rem;">
+            ${idx > 0 ? '<button class="tour-btn tour-btn-prev" onclick="tourPrev()"><i class="bi bi-arrow-left"></i></button>' : ''}
+            <button class="tour-btn ${isLast ? 'tour-btn-done' : 'tour-btn-next'}" onclick="${isLast ? 'endTour(true)' : 'tourNext()'}">
+              ${isLast ? '<i class="bi bi-check-lg me-1"></i>完了' : '次へ <i class="bi bi-arrow-right ms-1"></i>'}
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(tip);
+
+      // ツールチップ位置計算
+      positionTooltip(tip, rect, step.pos || 'right');
+    }
+  }
+
+  function positionTooltip(tip, targetRect, preferredPos) {
+    requestAnimationFrame(() => {
+      const tw = tip.offsetWidth || 300;
+      const th = tip.offsetHeight || 200;
+      const margin = 16;
+      const pad = 6;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const positions = {
+        right:  { left: targetRect.right + pad + margin, top: targetRect.top + targetRect.height / 2 - th / 2 },
+        left:   { left: targetRect.left - pad - margin - tw, top: targetRect.top + targetRect.height / 2 - th / 2 },
+        bottom: { left: targetRect.left + targetRect.width / 2 - tw / 2, top: targetRect.bottom + pad + margin },
+        top:    { left: targetRect.left + targetRect.width / 2 - tw / 2, top: targetRect.top - pad - margin - th },
+      };
+
+      // 優先位置を試み、画面内に収まらなければ別の位置へ
+      const order = [preferredPos, 'right', 'bottom', 'left', 'top'];
+      let chosen = positions[preferredPos];
+      for (const pos of order) {
+        const p = positions[pos];
+        if (p.left >= margin && p.left + tw <= vw - margin &&
+            p.top >= margin && p.top + th <= vh - margin) {
+          chosen = p;
+          break;
+        }
+      }
+      // 最終クランプ
+      chosen.left = Math.max(margin, Math.min(chosen.left, vw - tw - margin));
+      chosen.top  = Math.max(margin, Math.min(chosen.top,  vh - th - margin));
+
+      tip.style.left = chosen.left + 'px';
+      tip.style.top  = chosen.top + 'px';
+    });
+  }
+
+  function tourNext() { tourStep++; showTourStep(tourStep); }
+  function tourPrev() { if (tourStep > 0) { tourStep--; showTourStep(tourStep); } }
+
+  function endTour(save) {
+    ['tourSpotlight', 'tourHighlight', 'tourTooltip', 'tourWelcomeCard', 'tourOverlay'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+    tourActive = false;
+    if (save) localStorage.setItem('skillmap_quickstart_done', '1');
+
+    // クイックスタートボタンの NEW バッジを消す
+    const badge = document.querySelector('#navQuickStart .badge');
+    if (badge) badge.style.display = 'none';
+  }
+
+  // Esc キーでツアー終了
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && tourActive) endTour(true);
+  });
+
+  // 初回ログイン判定（ページ読み込み後 1.2 秒待ってから自動起動）
+  document.addEventListener('DOMContentLoaded', () => {
+    {% if current_user %}
+    if (!localStorage.getItem('skillmap_quickstart_done')) {
+      setTimeout(() => startTour(0), 1200);
+    } else {
+      // ツアー完了済み → NEW バッジを非表示
+      const badge = document.querySelector('#navQuickStart .badge');
+      if (badge) badge.style.display = 'none';
+    }
+    {% endif %}
+  });
+
+  /* ── Dark mode（カスタムトグル） ── */
+  (function() {
+    const toggle = document.getElementById('darkModeToggle');
+    const knob   = document.getElementById('darkModeKnob');
+    const track  = knob ? knob.previousElementSibling : null;
+
+    function applyDark(on) {
+      if (on) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      if (toggle) toggle.checked = on;
+      if (knob)  knob.style.transform  = on ? 'translateX(1.1em)' : 'translateX(0)';
+      if (track) track.style.background = on ? '#f97316' : '#555';
+    }
+
+    const saved = localStorage.getItem('darkMode') === 'true';
+    applyDark(saved);
+
+    // クリック（ラベルのどこを押しても動作）
+    const label = toggle ? toggle.closest('label') : null;
+    if (label) {
+      label.addEventListener('click', () => {
+        const next = !toggle.checked;
+        localStorage.setItem('darkMode', next);
+        applyDark(next);
+      });
+    }
+  })();
+
+  /* ── Global search ── */
+  let _searchTimer = null;
+  function doSearch(q) {
+    const box = document.getElementById('searchResults');
+    if (!q || q.length < 1) { box.style.display = 'none'; return; }
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => {
+      fetch('/api/search?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(data => {
+          if (!data.results || data.results.length === 0) {
+            box.innerHTML = '<div style="padding:.8rem 1rem;color:rgba(255,255,255,.5);font-size:.82rem;">見つかりませんでした</div>';
+          } else {
+            const typeLabels = { skill: 'スキル', user: 'メンバー', group: 'グループ' };
+            box.innerHTML = data.results.map(r =>
+              `<a href="${r.url}" style="display:flex;align-items:center;gap:.6rem;padding:.6rem 1rem;color:rgba(255,255,255,.85);text-decoration:none;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.05);"
+                  onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='none'">
+                <i class="bi ${r.icon}" style="color:#fb923c;width:16px;text-align:center;flex-shrink:0;"></i>
+                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.label}</span>
+                <span style="font-size:.7rem;color:rgba(255,255,255,.3);">${typeLabels[r.type] || r.type}</span>
+              </a>`
+            ).join('');
+          }
+          box.style.display = '';
+        })
+        .catch(() => { box.style.display = 'none'; });
+    }, 200);
+  }
+  function closeSearch() {
+    setTimeout(() => { document.getElementById('searchResults').style.display = 'none'; }, 150);
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+</script>
 </body>
 </html>

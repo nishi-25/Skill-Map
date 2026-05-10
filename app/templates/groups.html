@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>グループ管理</h1>
+    <h1><i class="bi bi-people-fill me-2" style="color:#f97316;"></i><span data-i18n="page.groups">グループ管理</span></h1>
     <p class="text-muted mb-0 small">グループを管理し、メンバーのスキルマップを参照します</p>
   </div>
   <a href="/groups/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
@@ -13,6 +13,22 @@
 </div>
 
 {% if groups %}
+<!-- ビュー切り替えタブ -->
+<ul class="nav nav-pills mb-3 gap-1" id="groupViewTab">
+  <li class="nav-item">
+    <button class="nav-link active" id="tabCard" onclick="switchView('card')" style="border-radius:20px;font-size:.85rem;">
+      <i class="bi bi-grid me-1"></i>カード
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" id="tabTree" onclick="switchView('tree')" style="border-radius:20px;font-size:.85rem;">
+      <i class="bi bi-diagram-3 me-1"></i>ツリー
+    </button>
+  </li>
+</ul>
+
+<!-- カードビュー -->
+<div id="viewCard">
 <div class="row g-3">
   {% for g in groups %}
   <div class="col-md-6 col-lg-4">
@@ -20,7 +36,7 @@
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between mb-2">
           <h6 class="fw-bold mb-0">{{ g.name }}</h6>
-          <span class="badge" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;font-size:.78rem;">
+          <span class="badge" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;font-size:.78rem;">
             <i class="bi bi-people-fill me-1"></i>{{ g.memberships | length }} 名
           </span>
         </div>
@@ -43,17 +59,18 @@
           {% endfor %}
         </div>
         {% endif %}
-        <div class="d-flex align-items-center gap-2" style="font-size:.78rem;">
-          {% if g.manager and g.manager.avatar_path %}
-          <img src="{{ g.manager.avatar_path }}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+        <!-- Manager一覧（複数対応） -->
+        <div class="d-flex flex-wrap gap-1 align-items-center" style="font-size:.75rem;">
+          {% set all_mgrs = g.managers if g.managers else ([g.manager] if g.manager else []) %}
+          {% if all_mgrs %}
+            {% for m in all_mgrs %}
+            <span class="badge" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:20px;font-size:.7rem;font-weight:500;">
+              <i class="bi bi-person-fill me-1"></i>{{ m.display_name or m.username }}
+            </span>
+            {% endfor %}
           {% else %}
-          <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:700;">
-            {% if g.manager %}{{ (g.manager.display_name or g.manager.username)[0].upper() }}{% else %}?{% endif %}
-          </div>
+            <span class="text-muted">Manager未設定</span>
           {% endif %}
-          <span class="text-muted">
-            {% if g.manager %}{{ g.manager.display_name or g.manager.username }}{% else %}-{% endif %}
-          </span>
         </div>
       </div>
       <div class="card-footer bg-transparent border-0 pt-0 pb-2 d-flex gap-2 flex-wrap">
@@ -77,14 +94,88 @@
   </div>
   {% endfor %}
 </div>
+</div>
+
+<!-- ツリービュー -->
+<div id="viewTree" style="display:none;">
+  <div class="card">
+    <div class="card-body">
+      <div class="tree-container">
+        {% set root_groups = groups | selectattr('parent_id', 'none') | list %}
+        {% if not root_groups %}
+          {% set root_groups = groups %}
+        {% endif %}
+
+        {% macro render_group_node(g, depth) %}
+        <div class="tree-node" style="margin-left:{{ depth * 28 }}px;">
+          <div class="d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-1"
+               style="background:{% if depth == 0 %}#fff7ed{% else %}#f8fafc{% endif %};border-left:3px solid {% if depth == 0 %}#f97316{% elif depth == 1 %}#0ea5e9{% else %}#22c55e{% endif %};">
+            {% if depth > 0 %}
+            <i class="bi bi-arrow-return-right text-muted" style="font-size:.85rem;flex-shrink:0;"></i>
+            {% else %}
+            <i class="bi bi-people-fill" style="color:#f97316;flex-shrink:0;"></i>
+            {% endif %}
+            <div class="flex-fill min-width-0">
+              <span class="fw-semibold">{{ g.name }}</span>
+              {% if g.description %}
+              <span class="text-muted small ms-2">{{ g.description[:40] }}{% if g.description|length > 40 %}...{% endif %}</span>
+              {% endif %}
+            </div>
+            <span class="badge" style="background:#ffedd5;color:#4338ca;font-size:.72rem;white-space:nowrap;">
+              <i class="bi bi-people me-1"></i>{{ g.memberships|length }}名
+            </span>
+            {% if g.manager %}
+            <span class="text-muted small d-none d-md-inline" style="white-space:nowrap;">
+              {{ g.manager.display_name or g.manager.username }}
+            </span>
+            {% endif %}
+            <div class="d-flex gap-1 ms-1">
+              <a href="/groups/{{ g.id }}" class="btn btn-xs btn-primary" style="border-radius:12px;white-space:nowrap;">
+                <i class="bi bi-people-fill"></i>
+              </a>
+              <a href="/groups/{{ g.id }}/edit" class="btn btn-xs btn-outline-secondary" style="border-radius:12px;">
+                <i class="bi bi-pencil"></i>
+              </a>
+            </div>
+          </div>
+          {% if g.children %}
+          {% for child in g.children %}
+          {{ render_group_node(child, depth + 1) }}
+          {% endfor %}
+          {% endif %}
+        </div>
+        {% endmacro %}
+
+        {% for g in root_groups %}
+        {{ render_group_node(g, 0) }}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
 {% else %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-people fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <i class="bi bi-people fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>グループがありません</h5>
     <p class="small">グループを作成してメンバーのスキルを管理しましょう。</p>
     <a href="/groups/new" class="btn btn-primary btn-sm" style="border-radius:20px;">グループを作成</a>
   </div>
 </div>
 {% endif %}
+
+<script>
+function switchView(mode) {
+  document.getElementById('viewCard').style.display = mode === 'card' ? '' : 'none';
+  document.getElementById('viewTree').style.display = mode === 'tree' ? '' : 'none';
+  document.getElementById('tabCard').classList.toggle('active', mode === 'card');
+  document.getElementById('tabTree').classList.toggle('active', mode === 'tree');
+  localStorage.setItem('groupView', mode);
+}
+(function() {
+  const saved = localStorage.getItem('groupView');
+  if (saved) switchView(saved);
+})();
+</script>
 {% endblock %}

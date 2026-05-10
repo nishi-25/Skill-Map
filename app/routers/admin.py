@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -7,6 +8,8 @@ import auth
 import mail
 from database import get_db
 from template_engine import templates
+
+PROMO_VIDEO_PATH = os.path.join("data", "promo.mp4")
 
 router = APIRouter(prefix="/admin")
 
@@ -24,6 +27,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         "user_count": user_count, "pending_count": pending_count,
         "skill_count": skill_count, "cat_count": cat_count,
         "users": users,
+        "promo_video_exists": os.path.isfile(PROMO_VIDEO_PATH),
     })
 
 

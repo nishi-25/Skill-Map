@@ -4,13 +4,32 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-collection me-2" style="color:#6366f1;"></i>スキルカタログ管理</h1>
+    <h1><i class="bi bi-collection me-2" style="color:#f97316;"></i><span data-i18n="page.catalog">スキルカタログ</span></h1>
     <p class="text-muted mb-0 small">ユーザーが申告できるスキルの一覧を管理します</p>
   </div>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 flex-wrap">
     <a href="/skills/tier-settings" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
       <i class="bi bi-sliders me-1"></i>ティア名設定
     </a>
+    <!-- エクスポートボタン（カスタムポップアップ） -->
+    <div style="position:relative;">
+      <button class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;"
+              onclick="toggleSkillExport(this)" type="button">
+        <i class="bi bi-download me-1"></i>エクスポート
+      </button>
+    </div>
+    <div id="skillExportPopup"
+         style="display:none;position:fixed;z-index:9999;
+                background:#fff;border:1px solid #e2e8f0;border-radius:12px;
+                box-shadow:0 6px 20px rgba(0,0,0,.15);padding:.3rem 0;min-width:148px;">
+      <a href="/skills/catalog/export/csv"      class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a>
+      <a href="/skills/catalog/export/excel"    class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a>
+      <a href="/skills/catalog/export/json"     class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-json me-2 text-warning"></i>JSON</a>
+      <a href="/skills/catalog/export/markdown" class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-markdown me-2 text-primary"></i>Markdown</a>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;" data-bs-toggle="modal" data-bs-target="#importModal">
+      <i class="bi bi-upload me-1"></i>インポート
+    </button>
     <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
       <i class="bi bi-plus-lg me-1"></i>スキルを追加
     </a>
@@ -18,14 +37,21 @@
 </div>
 
 <!-- Stats -->
+{% if false and request.query_params.get('reset') %}
+<div class="alert alert-success py-2 small mb-3" style="border-radius:10px;">
+  <i class="bi bi-check-circle-fill me-1"></i>
+  カテゴリ・スキル・申告データをすべて削除しました。CSVインポートなどでカタログを再構築してください。
+</div>
+{% endif %}
+
 <div class="row g-3 mb-3">
   <div class="col-auto">
     <div class="stat-card px-4 py-3">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-collection-fill"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-collection-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ skills|length }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;">スキル総数</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.total_skills">スキル総数</div>
         </div>
       </div>
     </div>
@@ -43,7 +69,7 @@
                placeholder="スキル名・説明で検索..." oninput="filterSkills()" style="padding-left:2rem;">
       </div>
     </div>
-    <!-- クライアントサイドフィルター -->
+    <!-- クライアントサイドフィルター + ソート -->
     <div class="d-flex flex-wrap gap-2 align-items-center">
       <select id="filterCategory" class="form-select form-select-sm w-auto" onchange="filterSkills()">
         <option value="">全カテゴリ</option>
@@ -70,33 +96,71 @@
         {% endfor %}
       </select>
       {% endif %}
+
       <span class="text-muted small ms-auto" id="visibleCount">{{ skills | length }} 件</span>
     </div>
   </div>
 </div>
 
-<!-- 一括操作フォーム -->
+<!-- ソート条件チップス -->
+<div id="sortChipsArea" style="display:none;" class="mb-2">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <span class="text-muted small"><i class="bi bi-sort-alpha-down me-1"></i>ソート条件:</span>
+    <div id="sortChips" class="d-flex flex-wrap gap-1"></div>
+    <button type="button" class="btn btn-xs btn-outline-secondary" style="border-radius:20px;" onclick="addSortKey()">
+      <i class="bi bi-plus me-1"></i>条件を追加
+    </button>
+    <button type="button" class="btn btn-xs btn-outline-danger ms-1" style="border-radius:20px;" onclick="clearAllSorts()">
+      <i class="bi bi-x-lg me-1"></i>クリア
+    </button>
+  </div>
+</div>
+
+<!-- 一括操作バー（スティッキー） -->
 <form id="bulkActionForm" method="post" action="/skills/bulk-action">
-  <div class="d-flex gap-2 align-items-center mb-2" id="bulkActionBar" style="display:none!important;">
-    <span id="selectedCount" class="text-muted small">0件選択中</span>
-    <select name="action" class="form-select form-select-sm w-auto" id="bulkActionSelect" onchange="toggleBulkOptions()">
-      <option value="">操作を選択...</option>
-      <option value="archive">アーカイブ</option>
-      <option value="unarchive">アーカイブ解除</option>
-      <option value="change_category">カテゴリ変更</option>
-      <option value="change_tier">ティア変更</option>
-    </select>
-    <select name="category_id" class="form-select form-select-sm w-auto" id="bulkCategorySelect" style="display:none;">
-      {% for cat in categories %}
-      <option value="{{ cat.id }}">{{ cat.name }}</option>
-      {% endfor %}
-    </select>
-    <select name="tier" class="form-select form-select-sm w-auto" id="bulkTierSelect" style="display:none;">
-      {% for tk, tv in SKILL_TIERS.items() %}
-      <option value="{{ tk }}">{{ tv }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn btn-sm btn-primary">実行</button>
+  <div id="bulkActionBar" style="display:none;"
+       class="card mb-2 border-warning">
+    <div class="card-body py-2 d-flex gap-2 align-items-center flex-wrap"
+         style="background:#fffbeb;">
+      <i class="bi bi-check2-square text-warning"></i>
+      <span id="selectedCount" class="fw-semibold small text-warning">0件選択中</span>
+      <span class="text-muted small">
+        <i class="bi bi-info-circle me-1"></i>
+        チェックしたスキルをまとめて操作できます
+      </span>
+      <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+        <select name="action" class="form-select form-select-sm" id="bulkActionSelect"
+                onchange="toggleBulkOptions()" style="max-width:160px;border-radius:20px;"
+                required>
+          <option value="">操作を選択...</option>
+          <option value="archive">📦 アーカイブ</option>
+          <option value="unarchive">📂 アーカイブ解除</option>
+          <option value="change_category">🏷️ カテゴリ変更</option>
+          <option value="change_tier">📊 難易度変更</option>
+          <option value="delete">🗑️ 削除</option>
+        </select>
+        <select name="category_id" class="form-select form-select-sm" id="bulkCategorySelect"
+                style="display:none;max-width:160px;border-radius:20px;">
+          {% for cat in categories %}
+          <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+        <select name="tier" class="form-select form-select-sm" id="bulkTierSelect"
+                style="display:none;max-width:140px;border-radius:20px;">
+          {% for tk, tv in SKILL_TIERS.items() %}
+          <option value="{{ tk }}">{{ tv }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn btn-warning btn-sm fw-semibold"
+                style="border-radius:20px;" onclick="submitBulkAction()">
+          <i class="bi bi-lightning-charge me-1"></i>実行
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm"
+                style="border-radius:20px;" onclick="clearCheckboxes()">
+          選択解除
+        </button>
+      </div>
+    </div>
   </div>
 </form>
 
@@ -107,22 +171,35 @@
       <thead class="table-light">
         <tr>
           <th style="width:2%;"><input type="checkbox" id="selectAll" class="form-check-input" onclick="toggleAll(this)"></th>
-          <th style="width:24%;">スキル名</th>
-          <th style="width:15%;">カテゴリー</th>
-          <th style="width:12%;">難易度</th>
+          <th style="width:24%;cursor:pointer;" onclick="sortByHeader('name')" class="sort-th" data-sort="name">
+            スキル名 <i class="bi bi-arrow-down-up text-muted" id="sort-icon-name" style="font-size:.7rem;"></i>
+          </th>
+          <th style="width:15%;cursor:pointer;" onclick="sortByHeader('cat')" class="sort-th" data-sort="cat">
+            カテゴリー <i class="bi bi-arrow-down-up text-muted" id="sort-icon-cat" style="font-size:.7rem;"></i>
+          </th>
+          <th style="width:12%;cursor:pointer;" onclick="sortByHeader('tier')" class="sort-th" data-sort="tier" data-i18n="lbl.tier">
+            難易度 <i class="bi bi-arrow-down-up text-muted" id="sort-icon-tier" style="font-size:.7rem;"></i>
+          </th>
           <th style="width:28%;" class="hide-mobile">説明</th>
-          <th style="width:8%;" class="text-center">申告数</th>
-          <th class="text-end">操作</th>
+          <th style="width:8%;cursor:pointer;" onclick="sortByHeader('count')" class="sort-th text-center" data-sort="count" data-i18n="lbl.declared_count">
+            申告数 <i class="bi bi-arrow-down-up text-muted" id="sort-icon-count" style="font-size:.7rem;"></i>
+          </th>
+          <th class="text-end" data-i18n="lbl.actions">操作</th>
         </tr>
       </thead>
       <tbody>
+        {% set TIER_ORDER = {'beginner':0,'basic':1,'intermediate':2,'advanced':3} %}
         {% for s in skills %}
+        {% set declared_count = s.user_levels | selectattr('level', 'gt', 0) | list | length %}
         <tr class="skill-row"
             data-skill="{{ s.id }}"
             data-name="{{ s.name | lower }}"
             data-desc="{{ (s.description | lower) if s.description else '' }}"
             data-category-id="{{ s.category_id or '' }}"
+            data-cat="{{ s.category.name | lower if s.category else '' }}"
             data-tier="{{ s.tier }}"
+            data-tier-order="{{ TIER_ORDER.get(s.tier, 0) }}"
+            data-count="{{ declared_count }}"
             data-archived="{{ 'true' if s.is_archived is defined and s.is_archived else 'false' }}"
             data-tag-ids="{% if s.tags is defined %}{% for t in s.tags %}{{ t.id }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
             {% if s.is_archived is defined and s.is_archived %}class="opacity-50"{% endif %}>
@@ -160,12 +237,12 @@
           </td>
           <td class="text-end">
             <div class="d-flex gap-1 justify-content-end">
-              <a href="/skills/catalog/{{ s.id }}/edit" class="btn btn-xs btn-outline-primary" style="border-radius:20px;">
+              <a href="/skills/catalog/{{ s.id }}/edit" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集">
                 <i class="bi bi-pencil"></i>
               </a>
               <form method="post" action="/skills/catalog/{{ s.id }}/delete"
                     onsubmit="return confirm('「{{ s.name }}」を削除しますか？ユーザーの申告データも削除されます。')">
-                <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;">
+                <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;" title="削除">
                   <i class="bi bi-trash"></i>
                 </button>
               </form>
@@ -180,10 +257,10 @@
 {% else %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-collection fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <i class="bi bi-collection fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>スキルがありません</h5>
     <p class="small">最初のスキルをカタログに追加しましょう。</p>
-    <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;">スキルを追加</a>
+    <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;" data-i18n="lbl.add_skill">スキルを追加</a>
   </div>
 </div>
 {% endif %}
@@ -239,10 +316,343 @@
     updateBulkBar();
   }
 
+  /* ══ 一括操作 ══════════════════════════════════════════════ */
+  /* ─ エクスポートポップアップ（body移動で stacking context 回避） ─ */
+  document.addEventListener('DOMContentLoaded', function() {
+    const p = document.getElementById('skillExportPopup');
+    if (p && p.parentNode !== document.body) document.body.appendChild(p);
+  });
+  function toggleSkillExport(btn) {
+    const popup = document.getElementById('skillExportPopup');
+    if (!popup) return;
+    if (popup.style.display === 'block') { popup.style.display = 'none'; return; }
+    const rect = btn.getBoundingClientRect();
+    popup.style.display = 'block';
+    const pw = popup.offsetWidth || 150;
+    popup.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+    popup.style.left = Math.max(8, rect.right - pw + window.scrollX) + 'px';
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#skillExportPopup') && !e.target.closest('[onclick*="toggleSkillExport"]')) {
+      const p = document.getElementById('skillExportPopup');
+      if (p) p.style.display = 'none';
+    }
+  });
+
   function toggleBulkOptions() {
     const action = document.getElementById('bulkActionSelect').value;
     document.getElementById('bulkCategorySelect').style.display = action === 'change_category' ? '' : 'none';
-    document.getElementById('bulkTierSelect').style.display = action === 'change_tier' ? '' : 'none';
+    document.getElementById('bulkTierSelect').style.display      = action === 'change_tier'     ? '' : 'none';
   }
+
+  function updateBulkBar() {
+    const checked = document.querySelectorAll('.skill-checkbox:checked').length;
+    const countEl = document.getElementById('selectedCount');
+    const bar     = document.getElementById('bulkActionBar');
+    if (countEl) countEl.textContent = checked + ' 件選択中';
+    bar.style.display = checked > 0 ? '' : 'none';
+  }
+
+  function clearCheckboxes() {
+    document.querySelectorAll('.skill-checkbox:checked').forEach(cb => cb.checked = false);
+    const master = document.getElementById('selectAll');
+    if (master) master.checked = false;
+    updateBulkBar();
+  }
+
+  function submitBulkAction() {
+    const action = document.getElementById('bulkActionSelect').value;
+    if (!action) { showToast('操作を選択してください', 'error'); return; }
+    const checked = document.querySelectorAll('.skill-checkbox:checked').length;
+    if (checked === 0) { showToast('スキルを選択してください', 'error'); return; }
+    const label = document.getElementById('bulkActionSelect').selectedOptions[0].text.trim();
+    const msg = action === 'delete'
+      ? `${checked} 件のスキルを削除しますか？\nスキルの申告データも削除されます。この操作は取り消せません。`
+      : `${checked} 件のスキルに「${label}」を実行しますか？`;
+    if (!confirm(msg)) return;
+    document.getElementById('bulkActionForm').submit();
+  }
+
+  /* ══ 複数ソート機能 ══════════════════════════════════════════ */
+  // sortKeys: [{key, dir}, ...] 優先順位順
+  let _sortKeys = [];
+
+  const _SORT_LABELS = {
+    name:  'スキル名', cat: 'カテゴリー', tier: '難易度', count: '申告数'
+  };
+
+  function _getVal(row, key) {
+    switch (key) {
+      case 'name':  return row.dataset.name || '';
+      case 'cat':   return row.dataset.cat  || '';
+      case 'tier':  return parseInt(row.dataset.tierOrder  || 0);
+      case 'count': return parseInt(row.dataset.count      || 0);
+      default:      return '';
+    }
+  }
+
+  /* ヘッダークリック: 既存条件にトグル追加 */
+  function sortByHeader(key) {
+    const existing = _sortKeys.find(s => s.key === key);
+    if (existing) {
+      // 同じキーなら方向反転
+      existing.dir = existing.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      _sortKeys.push({ key, dir: 'asc' });
+    }
+    _applySort();
+    _renderSortChips();
+  }
+
+  /* 「条件を追加」ダイアログ */
+  function addSortKey() {
+    const options = [
+      ['name-asc','スキル名 A→Z'], ['name-desc','スキル名 Z→A'],
+      ['cat-asc','カテゴリー 昇順'], ['cat-desc','カテゴリー 降順'],
+      ['tier-asc','難易度 易→難'], ['tier-desc','難易度 難→易'],
+      ['count-desc','申告数 多→少'], ['count-asc','申告数 少→多'],
+    ];
+    const available = options.filter(([v]) => {
+      const [k] = v.split('-');
+      return !_sortKeys.find(s => s.key === k);
+    });
+    if (available.length === 0) { showToast('すべての条件が追加済みです', 'error'); return; }
+
+    // シンプルなプロンプト的モーダル（カスタム）
+    const val = prompt(
+      'ソート条件を選択 (番号を入力):\n' +
+      available.map(([v,l], i) => `${i+1}. ${l}`).join('\n'),
+      '1'
+    );
+    if (!val) return;
+    const idx = parseInt(val) - 1;
+    if (idx < 0 || idx >= available.length) return;
+    const [kd] = available[idx];
+    const [k, d] = kd.split('-');
+    _sortKeys.push({ key: k, dir: d });
+    _applySort();
+    _renderSortChips();
+  }
+
+  function removeSortKey(key) {
+    _sortKeys = _sortKeys.filter(s => s.key !== key);
+    _applySort();
+    _renderSortChips();
+  }
+
+  function clearAllSorts() {
+    _sortKeys = [];
+    _applySort();
+    _renderSortChips();
+  }
+
+  function _renderSortChips() {
+    const area  = document.getElementById('sortChipsArea');
+    const chips = document.getElementById('sortChips');
+    if (_sortKeys.length === 0) {
+      area.style.display = 'none';
+      // ヘッダーアイコンを全リセット
+      document.querySelectorAll('.sort-th').forEach(th => {
+        const icon = document.getElementById('sort-icon-' + th.dataset.sort);
+        if (icon) icon.className = 'bi bi-arrow-down-up text-muted';
+      });
+      return;
+    }
+    area.style.display = '';
+    chips.innerHTML = _sortKeys.map((s, i) => {
+      const arrow = s.dir === 'asc' ? '↑' : '↓';
+      const label = _SORT_LABELS[s.key] || s.key;
+      const priority = i === 0 ? '第1' : i === 1 ? '第2' : '第3';
+      return `<span class="badge d-flex align-items-center gap-1"
+                    style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:20px;padding:.3em .7em;font-size:.78rem;">
+        <span style="font-size:.65rem;opacity:.7;">${priority}</span>
+        <span>${label} ${arrow}</span>
+        <button type="button" onclick="removeSortKey('${s.key}')"
+                style="background:none;border:none;color:#92400e;padding:0 0 0 2px;font-size:.8rem;line-height:1;cursor:pointer;">×</button>
+      </span>`;
+    }).join('');
+
+    // ヘッダーアイコン更新
+    document.querySelectorAll('.sort-th').forEach(th => {
+      const k    = th.dataset.sort;
+      const icon = document.getElementById('sort-icon-' + k);
+      if (!icon) return;
+      const s = _sortKeys.find(x => x.key === k);
+      if (s) {
+        icon.className = s.dir === 'asc'
+          ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
+        icon.style.color = '#f97316';
+      } else {
+        icon.className  = 'bi bi-arrow-down-up text-muted';
+        icon.style.color = '';
+      }
+    });
+  }
+
+  function _applySort() {
+    if (_sortKeys.length === 0) return;
+    const tbody = document.querySelector('tbody');
+    const rows  = [...tbody.querySelectorAll('tr[data-skill]')];
+    rows.sort((a, b) => {
+      for (const s of _sortKeys) {
+        const va = _getVal(a, s.key);
+        const vb = _getVal(b, s.key);
+        let cmp;
+        if (typeof va === 'number') {
+          cmp = va - vb;
+        } else {
+          cmp = va.localeCompare(vb, 'ja');
+        }
+        if (cmp !== 0) return s.dir === 'asc' ? cmp : -cmp;
+      }
+      return 0;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+    filterSkills();
+  }
+</script>
+
+<!-- インポートモーダル（CSV / Excel / Markdown / JSON 対応） -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-upload me-2" style="color:#f97316;"></i>カタログ一括インポート
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- 形式タブ -->
+        <ul class="nav nav-pills mb-3 gap-1" id="importFormatTab">
+          {% for fmt, label, icon in [('csv','CSV','bi-filetype-csv'),('excel','Excel','bi-file-earmark-excel'),('markdown','Markdown','bi-markdown'),('json','JSON','bi-filetype-json')] %}
+          <li class="nav-item">
+            <button class="nav-link {% if loop.first %}active{% endif %} btn btn-sm"
+                    style="border-radius:20px;font-size:.82rem;"
+                    onclick="switchFormat('{{ fmt }}')" id="tab-{{ fmt }}">
+              <i class="bi {{ icon }} me-1"></i>{{ label }}
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <!-- 形式別説明 -->
+        <div id="desc-csv" class="fmt-desc">
+          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
+            <b>ヘッダー（1行目）:</b> <code>category_name, category_color, skill_name, tier, description</code><br>
+            <b>tier の値:</b> <code>beginner / basic / intermediate / advanced</code><br>
+            カテゴリが未登録の場合は自動作成されます。UTF-8 または Shift-JIS に対応。
+          </div>
+        </div>
+        <div id="desc-excel" class="fmt-desc" style="display:none;">
+          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
+            <b>シート名:</b> <code>スキル</code>（または最初のシート）<br>
+            <b>列:</b> <code>category_name, category_color, skill_name, tier, description</code><br>
+            テンプレートをダウンロードして編集するのが最も簡単です。
+          </div>
+        </div>
+        <div id="desc-markdown" class="fmt-desc" style="display:none;">
+          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;font-family:monospace;">
+            <b>## カテゴリ名 #カラー(16進)</b><br>
+            <b>### tier名</b> （beginner / basic / intermediate / advanced）<br>
+            <b>- スキル名: 説明文</b>
+          </div>
+        </div>
+        <div id="desc-json" class="fmt-desc" style="display:none;">
+          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
+            <code>[{"category":"カテゴリ名","color":"#色","skills":[{"name":"スキル名","tier":"basic","description":"説明"}]}]</code>
+          </div>
+        </div>
+
+        <!-- テンプレートダウンロード -->
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <span class="text-muted small align-self-center">テンプレート:</span>
+          <a href="/skills/catalog/template/csv"      class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+          <a href="/skills/catalog/template/excel"    class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+          <a href="/skills/catalog/template/markdown" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-markdown me-1"></i>Markdown</a>
+          <a href="/skills/catalog/template/json"     class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-json me-1"></i>JSON</a>
+        </div>
+
+        <!-- ファイル選択 -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">ファイルを選択</label>
+          <input type="file" class="form-control" id="importFile"
+                 accept=".csv,.xlsx,.xls,.md,.markdown,.json"
+                 style="border-radius:10px;">
+          <div class="form-text">対応形式: .csv .xlsx .md .json</div>
+        </div>
+
+        <div id="importResult" style="display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" id="importBtn" onclick="doImport()" style="border-radius:20px;">
+          <i class="bi bi-upload me-1"></i>インポート実行
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchFormat(fmt) {
+  document.querySelectorAll('.fmt-desc').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('[id^="tab-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('desc-' + fmt).style.display = '';
+  document.getElementById('tab-' + fmt).classList.add('active');
+  // ファイル入力の accept を切り替え
+  const accepts = {csv:'.csv', excel:'.xlsx,.xls', markdown:'.md,.markdown', json:'.json'};
+  document.getElementById('importFile').accept = accepts[fmt] || '*';
+}
+
+async function doImport() {
+  const file = document.getElementById('importFile').files[0];
+  if (!file) { showToast('ファイルを選択してください', 'error'); return; }
+
+  const btn = document.getElementById('importBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  let data;
+  try {
+    const res = await fetch('/skills/catalog/import', { method: 'POST', body: fd });
+    data = await res.json();
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
+    const resultEl = document.getElementById('importResult');
+    resultEl.style.display = '';
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
+      <i class="bi bi-x-circle me-1"></i>インポートに失敗しました（サーバーエラー）</div>`;
+    return;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
+
+  const resultEl = document.getElementById('importResult');
+  resultEl.style.display = '';
+  if (data.ok) {
+    const skipped = data.skipped ? `（${data.skipped}件スキップ）` : '';
+    let html = `<div class="alert alert-success py-2 small" style="border-radius:10px;">
+      <i class="bi bi-check-circle me-1"></i>
+      <strong>${data.added} 件</strong>のスキルを追加しました ${skipped}
+    </div>`;
+    if (data.errors && data.errors.length > 0) {
+      html += `<div class="alert alert-warning py-2 small" style="border-radius:10px;max-height:140px;overflow-y:auto;">
+        <b><i class="bi bi-exclamation-triangle me-1"></i>${data.errors.length}件の警告</b><br>
+        ${data.errors.map(e => `<div>${e}</div>`).join('')}
+      </div>`;
+    }
+    resultEl.innerHTML = html;
+    if (data.added > 0) setTimeout(() => location.reload(), 2000);
+  } else {
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
+      <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}
+    </div>`;
+  }
+}
 </script>
 {% endblock %}

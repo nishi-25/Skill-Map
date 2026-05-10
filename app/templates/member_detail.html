@@ -9,7 +9,7 @@
     </a>
     <div>
       <h1 class="mb-0" style="font-size:1.5rem;">
-        <i class="bi bi-person-lines-fill me-2" style="color:#6366f1;"></i>メンバースキル詳細
+        <i class="bi bi-person-lines-fill me-2" style="color:#f97316;"></i>メンバースキル詳細
       </h1>
     </div>
   </div>
@@ -24,13 +24,13 @@
 </div>
 
 <!-- ═══ ユーザー情報カード ═══ -->
-<div class="card mb-4" style="border-left:4px solid #6366f1;">
+<div class="card mb-4" style="border-left:4px solid #f97316;">
   <div class="card-body">
     <div class="d-flex align-items-center gap-3 flex-wrap">
       {% if target.avatar_path %}
       <img src="{{ target.avatar_path }}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;">
       {% else %}
-      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;font-weight:700;">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;font-weight:700;">
         {{ (target.display_name or target.username)[0].upper() }}
       </div>
       {% endif %}
@@ -63,7 +63,7 @@
   <div class="col-6 col-lg-3">
     <div class="stat-card">
       <div class="d-flex align-items-center gap-3">
-        <div class="stat-icon" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#6366f1;"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;">{{ total }}</div>
           <div class="text-muted" style="font-size:.78rem;">取得スキル</div>
@@ -71,7 +71,7 @@
       </div>
       <div class="mt-2">
         <div class="progress" style="height:4px;">
-          <div class="progress-bar" style="width:{% if catalog_total %}{{ (total / catalog_total * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+          <div class="progress-bar" style="width:{% if catalog_total %}{{ (total / catalog_total * 100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
         </div>
         <div class="text-muted mt-1" style="font-size:.7rem;">カタログの {{ (total / catalog_total * 100)|int if catalog_total else 0 }}%</div>
       </div>
@@ -162,7 +162,7 @@
 <div class="card mb-4">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#6366f1;"></i>カテゴリー別スキル一覧</h6>
+      <h6 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#f97316;"></i>カテゴリー別スキル一覧</h6>
       <input type="text" id="skillSearch" class="form-control form-control-sm" placeholder="スキルを検索..."
              oninput="filterDetailSkills()" style="max-width:220px;border-radius:20px;font-size:.85rem;">
     </div>
@@ -177,7 +177,7 @@
     {% for cat_name, skills in cat_skills.items() %}
     <div class="cat-section mb-3" data-cat="{{ cat_name }}">
       <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="badge" style="background:{{ skills[0].skill.category.color if skills[0].skill.category else '#6366f1' }};font-size:.78rem;">{{ cat_name }}</span>
+        <span class="badge" style="background:{{ skills[0].skill.category.color if skills[0].skill.category else '#f97316' }};font-size:.78rem;">{{ cat_name }}</span>
         <span class="text-muted" style="font-size:.75rem;">{{ skills|length }}件</span>
       </div>
       <div class="table-responsive">
@@ -365,8 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
         labels: ['未経験', '入門', '基礎', '実務可', 'エキスパート'],
         datasets: [{
           data: [{{ level_dist[0] }}, {{ level_dist[1] }}, {{ level_dist[2] }}, {{ level_dist[3] }}, {{ level_dist[4] }}],
-          backgroundColor: ['#94a3b822', '#06b6d422', '#6366f122', '#f59e0b22', '#ef444422'],
-          borderColor: ['#94a3b8', '#06b6d4', '#6366f1', '#f59e0b', '#ef4444'],
+          backgroundColor: ['#94a3b822', '#06b6d422', '#f9731622', '#f59e0b22', '#ef444422'],
+          borderColor: ['#94a3b8', '#06b6d4', '#f97316', '#f59e0b', '#ef4444'],
           borderWidth: 2,
           borderRadius: 4,
         }]

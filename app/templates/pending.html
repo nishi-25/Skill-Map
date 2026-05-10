@@ -10,14 +10,14 @@
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|noto-sans-jp:400,500,700&display=swap" rel="stylesheet">
   <style>
     body {
-      background: linear-gradient(135deg, #0f0e2a 0%, #1e1b4b 50%, #312e81 100%);
+      background: linear-gradient(135deg, #1a0900 0%, #431407 50%, #9a3412 100%);
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
       font-family: 'Inter', 'Noto Sans JP', sans-serif;
       overflow: hidden;
     }
     body::before {
       content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background-image: radial-gradient(circle at 20% 50%, rgba(99,102,241,.15) 0%, transparent 50%),
+      background-image: radial-gradient(circle at 20% 50%, rgba(249,115,22,.15) 0%, transparent 50%),
                         radial-gradient(circle at 80% 20%, rgba(56,189,248,.1) 0%, transparent 50%);
       pointer-events: none;
       animation: bgPulse 8s ease-in-out infinite alternate;
@@ -59,7 +59,7 @@
     .step-current { background: linear-gradient(135deg,#fef3c7,#fde68a); color: #f59e0b; }
     .step-next { background: #f1f5f9; color: #94a3b8; }
     .mail-hint {
-      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      background: linear-gradient(135deg, #fff7ed, #ffedd5);
       border-radius: 12px; padding: 1rem 1.2rem;
       margin-top: 1rem;
     }
@@ -72,7 +72,7 @@
   </style>
 </head>
 <body>
-<div class="float-orb" style="width:180px;height:180px;background:rgba(99,102,241,.08);top:15%;left:8%;animation-delay:0s;"></div>
+<div class="float-orb" style="width:180px;height:180px;background:rgba(249,115,22,.08);top:15%;left:8%;animation-delay:0s;"></div>
 <div class="float-orb" style="width:120px;height:120px;background:rgba(245,158,11,.06);bottom:20%;right:12%;animation-delay:3s;"></div>
 
 <div class="card-box">
@@ -80,11 +80,11 @@
     <i class="bi bi-hourglass-split"></i>
   </div>
 
-  <h3 class="mt-3 fw-bold" style="color:#1e1b4b;">登録が完了しました</h3>
+  <h3 class="mt-3 fw-bold" style="color:#431407;">登録が完了しました</h3>
 
   <p class="text-muted mt-2" style="font-size:.92rem;">
     {% if current_user %}
-    <strong style="color:#1e1b4b;">{{ current_user.display_name or current_user.username }}</strong> さん、<br>
+    <strong style="color:#431407;">{{ current_user.display_name or current_user.username }}</strong> さん、<br>
     {% endif %}
     ご登録ありがとうございます！
   </p>
@@ -93,7 +93,7 @@
   <div class="step-list">
     <div class="step-item">
       <div class="step-num step-done"><i class="bi bi-check"></i></div>
-      <div><strong style="color:#1e1b4b;">アカウント登録</strong><br><span class="text-muted" style="font-size:.8rem;">登録情報を送信しました</span></div>
+      <div><strong style="color:#431407;">アカウント登録</strong><br><span class="text-muted" style="font-size:.8rem;">登録情報を送信しました</span></div>
     </div>
     <div class="step-item">
       <div class="step-num step-current"><i class="bi bi-clock"></i></div>
@@ -108,9 +108,9 @@
   <!-- メール通知ヒント -->
   <div class="mail-hint">
     <div class="d-flex align-items-start gap-2">
-      <i class="bi bi-envelope-check" style="font-size:1.3rem;color:#6366f1;flex-shrink:0;margin-top:2px;"></i>
+      <i class="bi bi-envelope-check" style="font-size:1.3rem;color:#f97316;flex-shrink:0;margin-top:2px;"></i>
       <div style="font-size:.85rem;color:#475569;text-align:left;">
-        承認が完了しましたら、ご登録のメールアドレスに<strong style="color:#1e1b4b;">通知メール</strong>をお送りします。<br>
+        承認が完了しましたら、ご登録のメールアドレスに<strong style="color:#431407;">通知メール</strong>をお送りします。<br>
         メールが届きましたらログインしてください。
       </div>
     </div>

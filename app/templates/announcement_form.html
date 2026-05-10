@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}お知らせ{{ '編集' if ann else '追加' }} - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-1" style="font-size:.85rem;">
+    <li class="breadcrumb-item"><a href="/announcements">お知らせ</a></li>
+    <li class="breadcrumb-item active">{{ '編集' if ann else '新規追加' }}</li>
+  </ol></nav>
+  <h1><i class="bi bi-megaphone-fill me-2" style="color:#f97316;"></i>お知らせ{{ '編集' if ann else '追加' }}</h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-md-9">
+    <div class="card">
+      <div class="card-body p-4">
+        {% if error %}<div class="alert alert-danger py-2 small">{{ error }}</div>{% endif %}
+
+        <form method="post" action="/announcements/{% if ann %}{{ ann.id }}/edit{% else %}new{% endif %}">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">種別</label>
+            <div class="d-flex gap-2 flex-wrap">
+              {% for k, v in ANNOUNCEMENT_TYPES.items() %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ann_type" id="type_{{ k }}" value="{{ k }}"
+                       {% if (ann and ann.ann_type == k) or (not ann and k == 'feature') %}checked{% endif %}>
+                <label class="form-check-label" for="type_{{ k }}">
+                  <span class="badge bg-{{ ANNOUNCEMENT_TYPE_COLORS[k] }}">{{ v }}</span>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">タイトル <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" required autofocus
+                   placeholder="例: スキルの一括インポート機能を追加予定"
+                   value="{{ ann.title if ann else '' }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">内容 <span class="text-danger">*</span></label>
+            <textarea name="content" class="form-control" rows="6" required
+                      placeholder="追加予定の機能や改善内容の詳細を入力してください。"
+                      style="resize:vertical;">{{ ann.content if ann else '' }}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">予定日 <span class="text-muted fw-normal">(任意)</span></label>
+            <input type="date" name="scheduled_at" class="form-control"
+                   value="{{ ann.scheduled_at.strftime('%Y-%m-%d') if ann and ann.scheduled_at else '' }}">
+            <div class="form-text">リリース予定日がある場合に入力してください</div>
+          </div>
+
+          <div class="mb-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_published" id="isPublished" value="true"
+                     {% if (ann and ann.is_published) or not ann %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="isPublished">公開する</label>
+            </div>
+            <div class="form-text">オフにすると下書き保存（自分のみ確認可能）</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill fw-semibold" style="border-radius:20px;">
+              <i class="bi bi-check-lg me-1"></i>{{ '更新する' if ann else '投稿する' }}
+            </button>
+            <a href="/announcements" class="btn btn-outline-secondary" style="border-radius:20px;">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

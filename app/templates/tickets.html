@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}問い合わせ・要望 - スキルマップ{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-chat-dots me-2" style="color:#f97316;"></i>
+      {% if current_user.role == 'admin' %}問い合わせ・要望 管理{% else %}自分の問い合わせ・要望{% endif %}
+    </h1>
+    <p class="text-muted mb-0 small">
+      {% if current_user.role == 'admin' %}ユーザーからの問い合わせや要望を管理します{% else %}管理者への問い合わせ・要望一覧{% endif %}
+    </p>
+  </div>
+  <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;"
+          onclick="openNewTicket()">
+    <i class="bi bi-plus-lg me-1"></i>新規作成
+  </button>
+</div>
+
+<!-- フィルター -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <i class="bi bi-funnel-fill text-muted"></i>
+      <a href="/tickets" class="btn btn-sm {% if not sel_status and not sel_type %}btn-primary{% else %}btn-outline-secondary{% endif %}" style="border-radius:20px;">全て</a>
+      {% for k, v in TICKET_TYPES.items() %}
+      <a href="/tickets?ticket_type={{ k }}" class="btn btn-sm {% if sel_type == k %}btn-primary{% else %}btn-outline-secondary{% endif %}" style="border-radius:20px;">{{ v }}</a>
+      {% endfor %}
+      <span class="text-muted" style="margin:0 4px;">|</span>
+      {% for k, v in TICKET_STATUS.items() %}
+      <a href="/tickets?status={{ k }}{% if sel_type %}&ticket_type={{ sel_type }}{% endif %}"
+         class="btn btn-sm {% if sel_status == k %}btn-{{ TICKET_STATUS_COLORS[k] }}{% else %}btn-outline-secondary{% endif %}" style="border-radius:20px;font-size:.78rem;">
+        {{ v }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% if tickets %}
+<!-- 要望リスト（Adminのみ: 要望タブ時に優先度表示） -->
+{% if current_user.role == 'admin' and (not sel_type or sel_type == 'request') %}
+{% set request_tickets = tickets | selectattr('ticket_type','equalto','request') | list %}
+{% if request_tickets and not sel_type %}
+<div class="card mb-3" style="border-left:4px solid #f59e0b;">
+  <div class="card-header" style="background:#fffbeb;">
+    <h6 class="fw-bold mb-0"><i class="bi bi-star-fill me-2" style="color:#f59e0b;"></i>要望リスト（{{ request_tickets|length }} 件）</h6>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover align-middle mb-0" style="font-size:.85rem;">
+      <thead class="table-light">
+        <tr><th>タイトル</th><th class="text-center">優先度</th><th class="text-center">ステータス</th><th>作成者</th><th>最終更新</th></tr>
+      </thead>
+      <tbody>
+        {% for t in request_tickets | sort(attribute='priority', reverse=True) %}
+        <tr style="cursor:pointer;" onclick="location.href='/tickets/{{ t.id }}'">
+          <td class="fw-semibold">
+            {{ t.title }}
+            {% if t.unread_admin %}<span class="badge bg-danger ms-1" style="font-size:.6rem;">NEW</span>{% endif %}
+          </td>
+          <td class="text-center">
+            <span class="badge bg-{{ TICKET_PRIORITY_COLORS[t.priority] }}" style="font-size:.72rem;">
+              {{ TICKET_PRIORITY[t.priority] }}
+            </span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-{{ TICKET_STATUS_COLORS[t.status] }}" style="font-size:.72rem;">
+              {{ TICKET_STATUS[t.status] }}
+            </span>
+          </td>
+          <td class="text-muted small">{{ t.creator.display_name or t.creator.username }}</td>
+          <td class="text-muted small">{{ t.updated_at|jst }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ══ 要対応バナー ══════════════════════════════════════════════ -->
+{% if current_user.role == 'admin' %}
+  {% set need_action = tickets | selectattr('status','in',['open','in_progress']) | list %}
+  {% if need_action %}
+  <div class="alert mb-3 d-flex align-items-center gap-3"
+       style="background:#fef2f2;border:1.5px solid #fca5a5;border-left:5px solid #dc2626;border-radius:12px;padding:.75rem 1rem;">
+    <div style="width:36px;height:36px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="bi bi-exclamation-lg text-white" style="font-size:1.1rem;"></i>
+    </div>
+    <div class="flex-fill">
+      <div class="fw-bold" style="color:#dc2626;font-size:.95rem;">
+        対応が必要なチケットが <strong>{{ need_action|length }} 件</strong> あります
+      </div>
+      <div class="text-muted small">
+        未対応 {{ need_action | selectattr('status','equalto','open') | list | length }} 件 ／
+        対応中 {{ need_action | selectattr('status','equalto','in_progress') | list | length }} 件
+        ― 下の赤枠のチケットを確認してください
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% else %}
+  {% set unread_tickets = tickets | selectattr('unread_user') | list %}
+  {% if unread_tickets %}
+  <div class="alert mb-3 d-flex align-items-center gap-3"
+       style="background:#fef2f2;border:1.5px solid #fca5a5;border-left:5px solid #dc2626;border-radius:12px;padding:.75rem 1rem;">
+    <div style="width:36px;height:36px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="bi bi-bell-fill text-white" style="font-size:1rem;"></i>
+    </div>
+    <div class="flex-fill">
+      <div class="fw-bold" style="color:#dc2626;font-size:.95rem;">
+        管理者から返信が届いています（<strong>{{ unread_tickets|length }} 件</strong>）
+      </div>
+      <div class="text-muted small">下の赤枠のチケットをクリックして確認してください</div>
+    </div>
+  </div>
+  {% endif %}
+{% endif %}
+
+<!-- チケット一覧 -->
+<div class="row g-3">
+  {% for t in tickets %}
+  {# 要対応判定 #}
+  {% if current_user.role == 'admin' %}
+    {% set needs_attention = t.status in ('open', 'in_progress') %}
+    {% set is_urgent = t.status == 'open' %}
+  {% else %}
+    {% set needs_attention = t.unread_user %}
+    {% set is_urgent = t.unread_user %}
+  {% endif %}
+
+  <div class="col-12">
+    <a href="/tickets/{{ t.id }}" class="text-decoration-none">
+      <div class="card"
+           style="transition:transform .15s,box-shadow .15s;
+                  {% if is_urgent %}
+                  border-left:5px solid #dc2626;background:#fffafa;
+                  box-shadow:0 2px 12px rgba(220,38,38,.15);
+                  {% elif needs_attention %}
+                  border-left:5px solid #f97316;background:#fffbf7;
+                  box-shadow:0 2px 12px rgba(249,115,22,.12);
+                  {% endif %}"
+           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'"
+           onmouseout="this.style.transform='';this.style.boxShadow='{% if is_urgent %}0 2px 12px rgba(220,38,38,.15){% elif needs_attention %}0 2px 12px rgba(249,115,22,.12){% endif %}'">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-start gap-3 flex-wrap">
+            <!-- アイコン（要対応時は色変更） -->
+            <div style="width:40px;height:40px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+                        {% if is_urgent %}background:#fef2f2;color:#dc2626;
+                        {% elif needs_attention %}background:#fff7ed;color:#f97316;
+                        {% elif t.ticket_type == 'request' %}background:#fffbeb;color:#d97706;
+                        {% else %}background:#eef2ff;color:#f97316;{% endif %}">
+              <i class="bi {% if t.ticket_type == 'request' %}bi-star-fill{% else %}bi-chat-text-fill{% endif %}"></i>
+            </div>
+            <div class="flex-fill min-width-0">
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <span class="fw-bold" style="font-size:.95rem;">{{ t.title }}</span>
+                {# 要対応バッジ #}
+                {% if is_urgent %}
+                  {% if current_user.role == 'admin' %}
+                  <span class="badge bg-danger" style="font-size:.62rem;animation:pulse 1.5s infinite;">要対応</span>
+                  {% else %}
+                  <span class="badge bg-danger" style="font-size:.62rem;animation:pulse 1.5s infinite;">未読</span>
+                  {% endif %}
+                {% elif needs_attention and current_user.role == 'admin' %}
+                <span class="badge bg-warning text-dark" style="font-size:.62rem;">対応中</span>
+                {% endif %}
+                <span class="badge" style="background:{% if t.ticket_type == 'request' %}#fffbeb;color:#92400e;border:1px solid #fcd34d{% else %}#eef2ff;color:#f97316;border:1px solid #fed7aa{% endif %};font-size:.7rem;">
+                  {{ TICKET_TYPES[t.ticket_type] }}
+                </span>
+                {% if t.ticket_type == 'request' %}
+                <span class="badge bg-{{ TICKET_PRIORITY_COLORS[t.priority] }}" style="font-size:.7rem;">{{ TICKET_PRIORITY[t.priority] }}</span>
+                {% endif %}
+                <span class="badge bg-{{ TICKET_STATUS_COLORS[t.status] }}" style="font-size:.7rem;">{{ TICKET_STATUS[t.status] }}</span>
+              </div>
+              <div class="d-flex gap-3 text-muted" style="font-size:.75rem;">
+                {% if current_user.role == 'admin' %}
+                <span><i class="bi bi-person me-1"></i>{{ t.creator.display_name or t.creator.username }}</span>
+                {% endif %}
+                <span><i class="bi bi-chat me-1"></i>{{ t.messages|length }} 件</span>
+                <span><i class="bi bi-clock me-1"></i>{{ t.updated_at|jst }}</span>
+              </div>
+            </div>
+            <i class="bi bi-chevron-right text-muted align-self-center"></i>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-chat-dots fs-1 d-block mb-3" style="color:#fed7aa;"></i>
+    <h5>チケットがありません</h5>
+    <p class="small">「新規作成」から問い合わせや要望を送ることができます。</p>
+    <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;" onclick="openNewTicket()">
+      <i class="bi bi-plus-lg me-1"></i>新規作成
+    </button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// openNewTicket は base.html で window.openNewTicket として定義済み
+// tickets.html の「新規作成」ボタンが押されたときにチャットパネルを開いて新規作成ビューへ
+document.addEventListener('DOMContentLoaded', function() {
+  // ページ上部「新規作成」ボタンのイベントは onclick="openNewTicket()" で呼ばれる
+});
+</script>
+{% endblock %}

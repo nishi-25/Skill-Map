@@ -9,404 +9,675 @@
   <link rel="preconnect" href="https://fonts.bunny.net">
   <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700|noto-sans-jp:400,500,700&display=swap" rel="stylesheet">
   <style>
-    :root { --primary: #6366f1; }
-    body { background: #f1f3f9; font-family: 'Inter', 'Noto Sans JP', sans-serif; color: #1a1a2e; }
+    :root { --primary: #f97316; }
+    body { background: #f8f9fb; font-family: 'Inter', 'Noto Sans JP', sans-serif; color: #1a1a2e; }
     .manual-header {
-      background: linear-gradient(135deg, #0f0e2a 0%, #1e1b4b 50%, #312e81 100%);
+      background: linear-gradient(135deg, #1a0900 0%, #431407 60%, #9a3412 100%);
       color: #fff; padding: 2.5rem 0 2rem; margin-bottom: 2rem;
     }
-    .manual-header h1 { font-size: 1.8rem; font-weight: 700; }
+    .manual-header h1 { font-size: 1.8rem; font-weight: 800; }
     .manual-nav { position: sticky; top: 1rem; }
+    .manual-nav .nav-section { font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; padding: .6rem .8rem .2rem; }
     .manual-nav a {
-      display: block; padding: .45rem .8rem; margin-bottom: .2rem;
-      color: #4b5563; text-decoration: none; font-size: .85rem;
+      display: block; padding: .38rem .8rem; margin-bottom: .1rem;
+      color: #4b5563; text-decoration: none; font-size: .83rem;
       border-left: 3px solid transparent; border-radius: 0 6px 6px 0;
       transition: all .15s;
     }
-    .manual-nav a:hover, .manual-nav a.active { color: var(--primary); border-left-color: var(--primary); background: rgba(99,102,241,.06); }
-    .manual-section { scroll-margin-top: 1rem; }
-    .manual-section h2 { font-size: 1.25rem; font-weight: 700; color: #1e1b4b; padding-bottom: .5rem; border-bottom: 2px solid #e5e7eb; margin-bottom: 1rem; }
-    .manual-section h3 { font-size: 1.05rem; font-weight: 600; color: #374151; margin-top: 1.2rem; margin-bottom: .5rem; }
-    .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: .8rem; font-weight: 700; margin-right: .4rem; flex-shrink: 0; }
-    .step-item { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .6rem; }
-    .tip-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: .8rem 1rem; border-radius: 0 8px 8px 0; font-size: .88rem; margin: .8rem 0; }
-    .warn-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: .8rem 1rem; border-radius: 0 8px 8px 0; font-size: .88rem; margin: .8rem 0; }
-    .card { border: none; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-    .back-btn { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 50; }
-    .search-box { position: relative; max-width: 400px; }
-    .search-box input { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); color: #fff; border-radius: 12px; padding: .5rem 1rem .5rem 2.4rem; font-size: .88rem; width: 100%; transition: all .2s; }
-    .search-box input::placeholder { color: rgba(255,255,255,.45); }
-    .search-box input:focus { outline: none; background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); box-shadow: 0 0 0 3px rgba(99,102,241,.2); }
-    .search-box .search-icon { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.45); font-size: .9rem; }
-    .search-box .search-clear { position: absolute; right: .6rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,.45); cursor: pointer; display: none; font-size: .9rem; padding: 2px; }
-    .search-box .search-clear:hover { color: #fff; }
-    .search-result-count { font-size: .78rem; color: rgba(255,255,255,.5); margin-top: .3rem; }
-    .manual-section.search-hidden { display: none; }
-    .manual-section mark { background: #fde68a; color: #1a1a2e; padding: .05em .2em; border-radius: 3px; }
+    .manual-nav a:hover, .manual-nav a.active { color: var(--primary); border-left-color: var(--primary); background: rgba(249,115,22,.07); }
+    .manual-section { scroll-margin-top: 1.5rem; }
+    .manual-section h2 { font-size: 1.2rem; font-weight: 800; color: #431407; padding-bottom: .5rem; border-bottom: 3px solid #f97316; margin-bottom: 1.2rem; display: flex; align-items: center; gap: .5rem; }
+    .manual-section h3 { font-size: 1rem; font-weight: 700; color: #374151; margin-top: 1.4rem; margin-bottom: .5rem; display: flex; align-items: center; gap: .4rem; }
+    .manual-section h4 { font-size: .9rem; font-weight: 600; color: #6b7280; margin-top: 1rem; margin-bottom: .4rem; }
+    .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff; font-size: .72rem; font-weight: 700; margin-right: .3rem; flex-shrink: 0; }
+    .step-item { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .55rem; font-size: .88rem; }
+    .tip-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: .7rem 1rem; border-radius: 0 8px 8px 0; font-size: .85rem; margin: .7rem 0; }
+    .warn-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: .7rem 1rem; border-radius: 0 8px 8px 0; font-size: .85rem; margin: .7rem 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid #22c55e; padding: .7rem 1rem; border-radius: 0 8px 8px 0; font-size: .85rem; margin: .7rem 0; }
+    .role-badge { display: inline-block; padding: .15em .55em; border-radius: 20px; font-size: .7rem; font-weight: 700; vertical-align: middle; }
+    .role-user    { background: #e0f2fe; color: #0369a1; }
+    .role-manager { background: #dcfce7; color: #166534; }
+    .role-admin   { background: #fee2e2; color: #991b1b; }
+    .card { border: none; border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .feature-table { font-size: .85rem; }
+    .feature-table th { background: #fff7ed; font-weight: 700; }
+    .check { color: #22c55e; } .cross { color: #ef4444; }
     @media (max-width: 991px) { .manual-nav-col { display: none; } }
+    .manual-section.search-hidden { display: none; }
+    mark.search-hl { background: #fde68a; color: #1c0d00; border-radius: 3px; padding: .05em .15em; }
+    #manualNoResult { display:none; text-align:center; color:#94a3b8; padding:3rem 0; }
   </style>
 </head>
 <body>
-<!-- Header -->
+
+<!-- ヘッダー -->
 <div class="manual-header">
   <div class="container">
     <div class="d-flex align-items-center gap-3 mb-2">
-      <i class="bi bi-map" style="font-size:2rem;color:#818cf8;"></i>
+      <i class="bi bi-map" style="font-size:2rem;color:#fb923c;"></i>
       <div>
         <h1 class="mb-0">スキルマップ 利用マニュアル</h1>
-        <p class="mb-0 mt-1" style="color:rgba(255,255,255,.6);font-size:.9rem;">一般ユーザー向けの操作ガイド</p>
+        <p class="mb-0 mt-1" style="color:rgba(255,255,255,.6);font-size:.9rem;">全機能リファレンス（2026年版）</p>
       </div>
     </div>
-    <div class="d-flex gap-2 mt-3">
-      {% if current_user %}
-      <a href="/dashboard" class="btn btn-sm btn-outline-light" style="border-radius:20px;"><i class="bi bi-arrow-left me-1"></i>ダッシュボードに戻る</a>
-      {% else %}
-      <a href="/login" class="btn btn-sm btn-outline-light" style="border-radius:20px;"><i class="bi bi-box-arrow-in-right me-1"></i>ログイン</a>
-      {% endif %}
-      <a href="/manual/admin" class="btn btn-sm btn-outline-warning" style="border-radius:20px;"><i class="bi bi-shield-lock me-1"></i>管理者マニュアル</a>
+    <div class="d-flex gap-2 mt-3 flex-wrap align-items-center">
+      <span class="role-badge role-user">User</span>
+      <span class="role-badge role-manager">Manager</span>
+      <span class="role-badge role-admin">Admin</span>
+      <span style="color:rgba(255,255,255,.5);font-size:.8rem;">— 対象ロールを各機能に表示しています</span>
     </div>
-    <div class="search-box mt-3">
-      <i class="bi bi-search search-icon"></i>
-      <input type="text" id="manualSearch" placeholder="マニュアル内を検索..." autocomplete="off">
-      <button class="search-clear" id="searchClear" onclick="clearSearch()"><i class="bi bi-x-lg"></i></button>
+    <!-- 検索バー -->
+    <div class="mt-3" style="max-width:480px;position:relative;">
+      <i class="bi bi-search" style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.5);pointer-events:none;"></i>
+      <input type="text" id="manualSearch" placeholder="マニュアル内を検索..."
+             autocomplete="off"
+             style="width:100%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+                    border-radius:12px;padding:.55rem 1rem .55rem 2.4rem;color:#fff;font-size:.9rem;
+                    outline:none;transition:all .2s;"
+             onfocus="this.style.background='rgba(255,255,255,.18)';this.style.borderColor='rgba(255,255,255,.45)'"
+             onblur="this.style.background='rgba(255,255,255,.12)';this.style.borderColor='rgba(255,255,255,.25)'"
+             oninput="manualSearch(this.value)">
+      <button id="manualSearchClear" onclick="clearManualSearch()"
+              style="display:none;position:absolute;right:.6rem;top:50%;transform:translateY(-50%);
+                     background:none;border:none;color:rgba(255,255,255,.5);font-size:.9rem;cursor:pointer;
+                     padding:2px 6px;border-radius:6px;"
+              onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
-    <div class="search-result-count" id="searchResultCount"></div>
+    <div id="manualSearchInfo" style="display:none;color:rgba(255,255,255,.55);font-size:.78rem;margin-top:.4rem;"></div>
   </div>
 </div>
 
 <div class="container pb-5">
-  <div class="row">
-    <!-- Side nav -->
+  <div class="row g-4">
+
+    <!-- 左サイドナビ -->
     <div class="col-lg-3 manual-nav-col">
-      <div class="manual-nav card p-3">
-        <div class="fw-bold mb-2" style="font-size:.8rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">目次</div>
-        <a href="#sec-overview">アプリの概要</a>
-        <a href="#sec-register">アカウント登録</a>
-        <a href="#sec-login">ログイン</a>
-        <a href="#sec-dashboard">ダッシュボード</a>
-        <a href="#sec-skills">スキル申告</a>
-        <a href="#sec-approval">承認フロー</a>
-        <a href="#sec-timeline">成長タイムライン</a>
-        <a href="#sec-profile">プロフィール</a>
-        <a href="#sec-password">パスワード変更</a>
-        <a href="#sec-faq">よくある質問</a>
-      </div>
+      <nav class="manual-nav card p-2">
+        <div class="nav-section">はじめに</div>
+        <a href="#overview">システム概要</a>
+        <a href="#roles">ロール・権限一覧</a>
+        <a href="#login">ログイン・初期設定</a>
+        <div class="nav-section">全ユーザー共通</div>
+        <a href="#dashboard">ダッシュボード</a>
+        <a href="#profile">プロフィール・表示設定</a>
+        <a href="#search">グローバル検索</a>
+        <a href="#tickets">問い合わせ・要望</a>
+        <div class="nav-section">User 機能</div>
+        <a href="#skillmap">スキルマップ（自己申告）</a>
+        <a href="#my-approvals">自分の申請状況</a>
+        <a href="#timeline">成長タイムライン</a>
+        <a href="#education">教育リソース</a>
+        <div class="nav-section">Manager 以上</div>
+        <a href="#approvals">承認依頼</a>
+        <a href="#matrix">スキルマトリクス</a>
+        <a href="#catalog">スキルカタログ管理</a>
+        <a href="#categories">カテゴリー管理</a>
+        <a href="#groups">グループ管理</a>
+        <a href="#education-mgmt">教育リソース管理</a>
+        <div class="nav-section">Admin 専用</div>
+        <a href="#admin-panel">管理パネル</a>
+        <a href="#users">ユーザー管理</a>
+        <a href="#mail">メール設定</a>
+        <a href="#catalog-init">カタログ初期化</a>
+        <div class="nav-section">その他</div>
+        <a href="#quickstart">クイックスタート</a>
+        <a href="#faq">よくある質問</a>
+      </nav>
     </div>
 
-    <!-- Main content -->
+    <!-- メインコンテンツ -->
     <div class="col-lg-9">
 
-      <!-- アプリの概要 -->
-      <section id="sec-overview" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-info-circle me-2" style="color:var(--primary);"></i>アプリの概要</h2>
-        <p>スキルマップは、チーム全体のスキル状況を可視化・管理するためのWebアプリケーションです。</p>
+      <!-- ══ はじめに ══ -->
+      <section class="manual-section mb-4 card p-4" id="overview">
+        <h2><i class="bi bi-map text-primary"></i>システム概要</h2>
+        <p>「スキルマップ」は、チームメンバーのスキルレベルを記録・可視化・管理するWebアプリケーションです。メンバーが自分のスキルを申告し、上長が承認することでチーム全体のスキルマップが形成されます。</p>
         <div class="row g-3 mt-1">
-          <div class="col-sm-6">
-            <div class="d-flex gap-2 align-items-start">
-              <i class="bi bi-lightning-charge text-primary fs-5"></i>
-              <div><strong>スキル申告</strong><br><span class="text-muted" style="font-size:.85rem;">自分のスキルレベルを登録・更新</span></div>
+          {% for icon, color, title, desc in [
+            ('bi-lightning-charge-fill','#f97316','スキル自己申告','0〜4の5段階でスキルレベルを申告'),
+            ('bi-check2-square','#22c55e','承認ワークフロー','Manager/AdminがレビューしてOK/NG'),
+            ('bi-grid-3x3-gap','#dc2626','スキルマトリクス','メンバー×スキルのヒートマップで可視化'),
+            ('bi-people-fill','#6366f1','グループ管理','部署・チームごとのギャップ分析'),
+            ('bi-mortarboard-fill','#d97706','教育リソース','スキルに紐づく学習教材のリンク集'),
+            ('bi-chat-dots-fill','#0ea5e9','問い合わせ','チャット形式のサポート機能'),
+          ] %}
+          <div class="col-sm-6 col-md-4">
+            <div class="d-flex gap-2 align-items-start p-2 rounded" style="background:#f8fafc;">
+              <i class="bi {{ icon }}" style="color:{{ color }};font-size:1.2rem;flex-shrink:0;margin-top:2px;"></i>
+              <div>
+                <div class="fw-semibold" style="font-size:.85rem;">{{ title }}</div>
+                <div class="text-muted" style="font-size:.75rem;">{{ desc }}</div>
+              </div>
             </div>
           </div>
-          <div class="col-sm-6">
-            <div class="d-flex gap-2 align-items-start">
-              <i class="bi bi-check2-square text-success fs-5"></i>
-              <div><strong>承認フロー</strong><br><span class="text-muted" style="font-size:.85rem;">管理者の承認で正式に反映</span></div>
-            </div>
-          </div>
-          <div class="col-sm-6">
-            <div class="d-flex gap-2 align-items-start">
-              <i class="bi bi-graph-up text-info fs-5"></i>
-              <div><strong>成長可視化</strong><br><span class="text-muted" style="font-size:.85rem;">タイムラインで成長を確認</span></div>
-            </div>
-          </div>
-          <div class="col-sm-6">
-            <div class="d-flex gap-2 align-items-start">
-              <i class="bi bi-people text-warning fs-5"></i>
-              <div><strong>グループ管理</strong><br><span class="text-muted" style="font-size:.85rem;">チーム単位でスキルを把握</span></div>
-            </div>
-          </div>
+          {% endfor %}
         </div>
-        <h3>ユーザーロール</h3>
-        <table class="table table-sm" style="font-size:.88rem;">
-          <thead class="table-light"><tr><th>ロール</th><th>説明</th></tr></thead>
-          <tbody>
-            <tr><td><span class="badge" style="background:#6366f1;">Admin</span></td><td>全体管理。ユーザー管理、カテゴリ・スキル定義、全メンバーの承認を行えます。</td></tr>
-            <tr><td><span class="badge" style="background:#0ea5e9;">Manager</span></td><td>グループ管理。担当グループのメンバーのスキル承認やマトリクスを確認できます。</td></tr>
-            <tr><td><span class="badge bg-secondary">User</span></td><td>一般ユーザー。自分のスキルを申告し、成長状況を確認できます。</td></tr>
-          </tbody>
-        </table>
       </section>
 
-      <!-- アカウント登録 -->
-      <section id="sec-register" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-person-plus me-2" style="color:var(--primary);"></i>アカウント登録</h2>
-        <div class="step-item"><span class="step-badge">1</span><span>ログインページの「<strong>新規登録</strong>」ボタンをクリックします。</span></div>
-        <div class="step-item"><span class="step-badge">2</span><span>ユーザー名、表示名、メールアドレス、パスワードを入力します。</span></div>
-        <div class="step-item"><span class="step-badge">3</span><span>「登録」を押すと、管理者の承認待ちとなります。</span></div>
-        <div class="step-item"><span class="step-badge">4</span><span>管理者が承認すると、ログインしてアプリを利用できるようになります。</span></div>
-        <div class="tip-box"><i class="bi bi-lightbulb me-1"></i><strong>ヒント:</strong> メールアドレスを登録しておくと、パスワードを忘れた際にリセットメールを受け取ることができます。</div>
+      <!-- ロール一覧 -->
+      <section class="manual-section mb-4 card p-4" id="roles">
+        <h2><i class="bi bi-person-badge text-primary"></i>ロール・権限一覧</h2>
+        <table class="table feature-table">
+          <thead><tr><th>機能</th><th class="text-center">User</th><th class="text-center">Manager</th><th class="text-center">Admin</th></tr></thead>
+          <tbody>
+            {% for row in [
+              ('ダッシュボード閲覧','✓','✓','✓'),
+              ('スキル自己申告','✓','✓','✓'),
+              ('自分の申請状況','✓','✓','✓'),
+              ('成長タイムライン','✓','✓','✓'),
+              ('教育リソース閲覧','✓','✓','✓'),
+              ('問い合わせ送信','✓','✓','✓'),
+              ('承認依頼（申告承認）','✗','✓（担当グループ）','✓（全員）'),
+              ('スキルマトリクス','✗','✓','✓'),
+              ('スキルカタログ管理','✗','✓（担当グループ）','✓（全）'),
+              ('カテゴリー・タグ管理','✗','✓','✓'),
+              ('グループ管理','✗','✓（担当）','✓（全）'),
+              ('教育リソース追加・編集','✗','✓','✓'),
+              ('問い合わせ対応','✗','✗','✓'),
+              ('ユーザー管理・承認','✗','✗','✓'),
+              ('メール設定','✗','✗','✓'),
+              ('カタログ初期化','✗','✗','✓'),
+            ] %}
+            <tr>
+              <td>{{ row[0] }}</td>
+              <td class="text-center">{% if row[1]=='✓' %}<i class="bi bi-check-circle-fill check"></i>{% elif row[1]=='✗' %}<i class="bi bi-x-circle cross"></i>{% else %}<span class="text-muted small">{{ row[1] }}</span>{% endif %}</td>
+              <td class="text-center">{% if row[2]=='✓' %}<i class="bi bi-check-circle-fill check"></i>{% elif row[2]=='✗' %}<i class="bi bi-x-circle cross"></i>{% else %}<span class="text-muted small">{{ row[2] }}</span>{% endif %}</td>
+              <td class="text-center">{% if row[3]=='✓' %}<i class="bi bi-check-circle-fill check"></i>{% elif row[3]=='✗' %}<i class="bi bi-x-circle cross"></i>{% else %}<span class="text-muted small">{{ row[3] }}</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </section>
 
       <!-- ログイン -->
-      <section id="sec-login" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-box-arrow-in-right me-2" style="color:var(--primary);"></i>ログイン</h2>
-        <div class="step-item"><span class="step-badge">1</span><span>ユーザー名とパスワードを入力します。</span></div>
-        <div class="step-item"><span class="step-badge">2</span><span>「ログイン」ボタンをクリックします。</span></div>
-        <div class="step-item"><span class="step-badge">3</span><span>ログインに成功すると、ダッシュボードに遷移します。</span></div>
-        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i><strong>注意:</strong> アカウントが承認されていない場合は、承認待ち画面が表示されます。管理者に承認を依頼してください。</div>
+      <section class="manual-section mb-4 card p-4" id="login">
+        <h2><i class="bi bi-box-arrow-in-right text-primary"></i>ログイン・初期設定</h2>
+        <h3><i class="bi bi-person-plus"></i>新規登録</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>ログイン画面の「新規登録」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>ユーザー名・メールアドレス・パスワードを入力して送信</span></div>
+        <div class="step-item"><span class="step-badge">3</span><span>管理者（Admin）が承認するまでログインできません。承認後にメール通知が届きます（メール設定が有効な場合）</span></div>
+        <div class="tip-box"><i class="bi bi-info-circle me-1"></i>ログイン画面の「デモを確認する」ボタンでログインなしにサンプルデータを閲覧できます。</div>
+
+        <h3><i class="bi bi-key"></i>パスワードを忘れた場合</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>ログイン画面の「ユーザー名・パスワードをお忘れの方」をクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>登録済みメールアドレスを入力するとリセット用リンクが届きます</span></div>
       </section>
 
       <!-- ダッシュボード -->
-      <section id="sec-dashboard" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-speedometer2 me-2" style="color:var(--primary);"></i>ダッシュボード</h2>
-        <p>ログイン後最初に表示される画面です。自分のスキル状況を一覧で確認できます。</p>
-        <h3>表示される情報</h3>
-        <ul style="font-size:.9rem;">
-          <li><strong>スキルサマリー:</strong> 申告済みスキル数、平均レベル、最高レベルスキルなど</li>
-          <li><strong>ティア別進捗:</strong> 各難易度ティアごとの達成状況</li>
-          <li><strong>カテゴリー別レーダーチャート:</strong> カテゴリーごとのスキルバランス</li>
-          <li><strong>レベル分布:</strong> 各レベルのスキル数</li>
-          <li><strong>最近の更新:</strong> 直近のスキル変更履歴</li>
+      <section class="manual-section mb-4 card p-4" id="dashboard">
+        <h2><i class="bi bi-speedometer2 text-primary"></i>ダッシュボード
+          <span class="role-badge role-user">User</span>
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>スキル状況の概要を確認する画面です。ロールによって表示内容が変わります。</p>
+        <h3><i class="bi bi-funnel"></i>フィルター</h3>
+        <p>上部のドロップダウンでユーザーまたはグループを選択して絞り込めます。URLにパラメータとして保存されるためブックマークも可能です。</p>
+        <h3><i class="bi bi-bar-chart"></i>表示内容（全体モード）</h3>
+        <ul style="font-size:.88rem;">
+          <li><strong>統計カード</strong>（対象メンバー・総申告スキル・平均レベル・カタログ総数）— カーソルを乗せると詳細が表示されます</li>
+          <li><strong>グループ別サマリー</strong> — 各グループの平均レベルとクリックでグループビューへ</li>
+          <li><strong>ティア別進捗</strong> — 難易度（初級〜上級）ごとの達成率をリングで表示</li>
+          <li><strong>スキル成長トレンド</strong> — 過去12週のレベルUP件数（週次）をグラフ表示</li>
+          <li><strong>メンバーランキング</strong> — 平均レベル順のランキング表</li>
+          <li><strong>成長速度ランキング</strong> — 直近30日でレベルアップが多いメンバー</li>
         </ul>
-      </section>
-
-      <!-- スキル申告 -->
-      <section id="sec-skills" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-lightning-charge me-2" style="color:var(--primary);"></i>スキル申告</h2>
-        <p>サイドバーの「スキルマップ」からスキルの申告・変更を行います。</p>
-        <h3>スキルを申告する</h3>
-        <div class="step-item"><span class="step-badge">1</span><span>「スキルマップ」ページでカテゴリーごとにスキル一覧が表示されます。</span></div>
-        <div class="step-item"><span class="step-badge">2</span><span>スキルの「レベル変更」ボタンをクリックします。</span></div>
-        <div class="step-item"><span class="step-badge">3</span><span>レベル（0〜4）を選択し、コメントを入力して送信します。</span></div>
-        <div class="step-item"><span class="step-badge">4</span><span>承認者による承認後にレベルが正式に反映されます。</span></div>
-        <h3>レベルの意味</h3>
-        <table class="table table-sm" style="font-size:.88rem;">
-          <thead class="table-light"><tr><th>レベル</th><th>説明</th></tr></thead>
-          <tbody>
-            <tr><td><span class="badge bg-secondary">0</span></td><td>未経験 / 未着手</td></tr>
-            <tr><td><span class="badge" style="background:#22c55e;">1</span></td><td>学習中 / 基本を理解</td></tr>
-            <tr><td><span class="badge" style="background:#3b82f6;">2</span></td><td>実務で使用できる</td></tr>
-            <tr><td><span class="badge" style="background:#a855f7;">3</span></td><td>高度な活用が可能</td></tr>
-            <tr><td><span class="badge" style="background:#f59e0b;">4</span></td><td>エキスパート / 指導可能</td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      <!-- 承認フロー -->
-      <section id="sec-approval" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-check2-square me-2" style="color:var(--primary);"></i>承認フロー</h2>
-        <p>スキルの申告はすべて承認プロセスを経て反映されます。</p>
-        <h3>フローの流れ</h3>
-        <div class="d-flex align-items-center gap-2 flex-wrap mb-3" style="font-size:.88rem;">
-          <span class="badge bg-primary px-3 py-2">ユーザーが申告</span>
-          <i class="bi bi-arrow-right text-muted"></i>
-          <span class="badge bg-warning text-dark px-3 py-2">承認待ち</span>
-          <i class="bi bi-arrow-right text-muted"></i>
-          <span class="badge bg-success px-3 py-2">承認 → レベル反映</span>
-        </div>
-        <div class="tip-box"><i class="bi bi-lightbulb me-1"></i><strong>ヒント:</strong> 「自分の申請状況」から、現在の申請一覧と承認状況を確認できます。</div>
-        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>承認者がコメント付きで却下した場合は、内容を修正して再度申告してください。</div>
-      </section>
-
-      <!-- 成長タイムライン -->
-      <section id="sec-timeline" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-graph-up-arrow me-2" style="color:var(--primary);"></i>成長タイムライン</h2>
-        <p>サイドバーの「成長タイムライン」から、スキルの変化を時系列で確認できます。</p>
-        <ul style="font-size:.9rem;">
-          <li>レベルの推移をグラフで可視化</li>
-          <li>いつ・どのスキルが・どのレベルに変わったかを一覧表示</li>
-          <li>カテゴリーやスキル名でフィルタリング可能</li>
-        </ul>
+        <div class="tip-box"><i class="bi bi-info-circle me-1"></i>CSVエクスポートボタンでスキルマトリクスをダウンロードできます。</div>
       </section>
 
       <!-- プロフィール -->
-      <section id="sec-profile" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-person-circle me-2" style="color:var(--primary);"></i>プロフィール</h2>
-        <p>サイドバー下部のユーザー名をクリックすると、プロフィール画面に遷移します。</p>
-        <h3>編集できる項目</h3>
-        <ul style="font-size:.9rem;">
-          <li><strong>表示名:</strong> アプリ内で表示される名前</li>
-          <li><strong>メールアドレス:</strong> パスワードリセットに使用</li>
-          <li><strong>アバター:</strong> プロフィール画像をアップロード</li>
+      <section class="manual-section mb-4 card p-4" id="profile">
+        <h2><i class="bi bi-person-circle text-primary"></i>プロフィール・表示設定
+          <span class="role-badge role-user">User</span>
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>サイドバーの名前エリアをクリックしてプロフィールページへ移動します。</p>
+        <h3><i class="bi bi-camera"></i>アバター設定</h3>
+        <p>プロフィール画像の右下カメラアイコンをクリックしてJPG・PNG・GIFなど（最大2MB）をアップロードできます。</p>
+        <h3><i class="bi bi-palette"></i>表示設定</h3>
+        <ul style="font-size:.88rem;">
+          <li><strong>カラーテーマ</strong> — Warm（オレンジ）/ Cool（インディゴ）を切り替えられます。設定はブラウザに保存されます。</li>
+          <li><strong>言語</strong> — 日本語 / English を切り替えられます。ナビゲーションメニューやUIラベルが翻訳されます。</li>
+        </ul>
+        <div class="tip-box"><i class="bi bi-moon-fill me-1"></i>サイドバー下部のトグルスイッチでダークモードの切り替えもできます。</div>
+      </section>
+
+      <!-- グローバル検索 -->
+      <section class="manual-section mb-4 card p-4" id="search">
+        <h2><i class="bi bi-search text-primary"></i>グローバル検索
+          <span class="role-badge role-user">User</span>
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>サイドバー上部の検索バーに文字を入力するとスキル名・メンバー名・グループ名を横断してリアルタイム検索できます。入力から0.2秒後に候補が表示されます。Escキーで候補を閉じます。</p>
+      </section>
+
+      <!-- 問い合わせ -->
+      <section class="manual-section mb-4 card p-4" id="tickets">
+        <h2><i class="bi bi-chat-dots-fill text-primary"></i>問い合わせ・要望
+          <span class="role-badge role-user">User</span>
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <h3><i class="bi bi-plus-circle"></i>新規作成（User/Manager）</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>画面右下のオレンジ色チャットアイコンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>「新しい問い合わせ」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">3</span><span>種別（問い合わせ/要望）・優先度・タイトル・詳細を入力して「送信する」</span></div>
+        <div class="step-item"><span class="step-badge">4</span><span>Adminが返信すると赤いバッジで通知されます</span></div>
+        <h3><i class="bi bi-reply"></i>Adminの対応</h3>
+        <p>サイドバーの「問い合わせ・要望」ページで全チケットを管理できます。未対応・対応中のチケットは赤く強調表示されます。ステータスを「解決済み」か「クローズ」にするとアラートが消えます。</p>
+        <div class="tip-box"><i class="bi bi-arrow-repeat me-1"></i>チャット画面は5秒ごとに自動更新されます。ブラウザのリロードは不要です。</div>
+        <h3><i class="bi bi-star-fill"></i>要望の管理</h3>
+        <p>種別を「要望」にすると、管理ページ上部の「要望リスト」に優先度順でピン留め表示されます。忘れずに対応できます。</p>
+      </section>
+
+      <!-- スキルマップ -->
+      <section class="manual-section mb-4 card p-4" id="skillmap">
+        <h2><i class="bi bi-lightning-charge-fill text-primary"></i>スキルマップ（自己申告）
+          <span class="role-badge role-user">User</span>
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <h3><i class="bi bi-list-check"></i>スキルの申告手順</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>サイドバーの「スキルマップ」をクリック — 難易度ティア（初級・基礎・中級・上級）のカードが表示されます</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>ティアカードをクリックしてスキル一覧を開く。または「全スキルを一覧表示」で全ティアを一画面に表示</span></div>
+        <div class="step-item"><span class="step-badge">3</span><span>各スキルの●ドットをクリック、またはプルダウンでレベルを選択</span></div>
+        <div class="step-item"><span class="step-badge">4</span><span>【一般Userの場合】承認者（Manager/Admin）を選択して「申請する」をクリック</span></div>
+        <div class="step-item"><span class="step-badge">5</span><span>【Admin/Managerの場合】選択後に即時自動承認されます</span></div>
+        <h4>レベル定義</h4>
+        <table class="table table-sm feature-table">
+          <tr><td><span class="badge bg-secondary">0</span></td><td>未経験</td><td>該当スキルの経験なし</td></tr>
+          <tr><td><span class="badge bg-info">1</span></td><td>入門</td><td>概念・基礎知識を学習中</td></tr>
+          <tr><td><span class="badge bg-primary">2</span></td><td>基礎</td><td>基本的な操作・作業ができる</td></tr>
+          <tr><td><span class="badge bg-warning text-dark">3</span></td><td>実務可</td><td>一人で業務に活用できる</td></tr>
+          <tr><td><span class="badge bg-danger">4</span></td><td>エキスパート</td><td>他者への指導・高度な設計ができる</td></tr>
+        </table>
+        <div class="tip-box"><i class="bi bi-filter me-1"></i>カテゴリー・グループでスキルを絞り込めます。スキル名で検索も可能です。</div>
+      </section>
+
+      <!-- 自分の申請状況 -->
+      <section class="manual-section mb-4 card p-4" id="my-approvals">
+        <h2><i class="bi bi-send text-primary"></i>自分の申請状況
+          <span class="role-badge role-user">User</span>
+        </h2>
+        <p>申告したスキルの承認状況を一覧で確認できます。</p>
+        <ul style="font-size:.88rem;">
+          <li><strong>承認待ち</strong> — 承認者のレビュー待ち</li>
+          <li><strong>承認済み</strong> — スキルが正式に登録されました</li>
+          <li><strong>差し戻し</strong> — 承認者からコメントがついています。内容を確認して再申請しましょう</li>
+        </ul>
+        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>差し戻された場合は承認者のコメントを確認し、必要に応じてレベルを修正して再申請してください。</div>
+      </section>
+
+      <!-- 成長タイムライン -->
+      <section class="manual-section mb-4 card p-4" id="timeline">
+        <h2><i class="bi bi-graph-up-arrow text-primary"></i>成長タイムライン
+          <span class="role-badge role-user">User</span>
+        </h2>
+        <p>承認されたスキルの変化を時系列グラフで確認できます。いつどのスキルがレベルアップしたかを振り返ることができます。定期的に確認して自分の成長を実感しましょう。</p>
+      </section>
+
+      <!-- 教育リソース（閲覧） -->
+      <section class="manual-section mb-4 card p-4" id="education">
+        <h2><i class="bi bi-mortarboard-fill text-primary"></i>教育リソース
+          <span class="role-badge role-user">User</span>
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>Manager/Adminが登録した学習サイト・教材へのリンク集です。カテゴリー別にグループ化されています。</p>
+        <ul style="font-size:.88rem;">
+          <li>キーワード検索・カテゴリーフィルター・スキルフィルターで絞り込めます</li>
+          <li>「サイトを開く」ボタンで新しいタブに外部リンクが開きます</li>
+          <li>各カードにカテゴリーバッジと関連スキルが表示されます</li>
         </ul>
       </section>
 
-      <!-- パスワード変更 -->
-      <section id="sec-password" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-key me-2" style="color:var(--primary);"></i>パスワード変更</h2>
-        <h3>ログイン後に変更する場合</h3>
-        <div class="step-item"><span class="step-badge">1</span><span>プロフィールページの「パスワード変更」セクションを開きます。</span></div>
-        <div class="step-item"><span class="step-badge">2</span><span>現在のパスワードと新しいパスワードを入力します。</span></div>
-        <div class="step-item"><span class="step-badge">3</span><span>「変更」を押して完了です。</span></div>
-        <h3>パスワードを忘れた場合</h3>
-        <div class="step-item"><span class="step-badge">1</span><span>ログインページの「ユーザー名・パスワードをお忘れの方」をクリックします。</span></div>
-        <div class="step-item"><span class="step-badge">2</span><span>登録したメールアドレスを入力してリセットメールを送信します。</span></div>
-        <div class="step-item"><span class="step-badge">3</span><span>届いたメールのリンクからパスワードを再設定します。</span></div>
-        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>メールアドレスが登録されていない場合は、管理者に連絡してパスワードリセットを依頼してください。</div>
+      <!-- 承認依頼 -->
+      <section class="manual-section mb-4 card p-4" id="approvals">
+        <h2><i class="bi bi-check2-square text-primary"></i>承認依頼
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <h3><i class="bi bi-person-check"></i>個別承認・差し戻し</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>「承認」ボタンをクリック — 任意でコメントを入力して承認</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>「差し戻し」ボタンをクリック → 理由をインライン入力 → 「送信」で差し戻し</span></div>
+        <h3><i class="bi bi-check-all"></i>一括承認・差し戻し</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>各行の左端チェックボックスで複数選択（ヘッダーの「全選択」で一括選択）</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>「選択を承認」または「選択を差し戻し」ボタンをクリック</span></div>
+        <h3><i class="bi bi-funnel"></i>フィルター</h3>
+        <p>申請者名で絞り込み・カテゴリーでの絞り込みが可能です。件数バッジで未処理数を確認できます。</p>
       </section>
 
-      <!-- よくある質問 -->
-      <section id="sec-faq" class="manual-section card p-4 mb-4">
-        <h2><i class="bi bi-question-circle me-2" style="color:var(--primary);"></i>よくある質問</h2>
-        <div class="accordion" id="faqAccordion">
-          <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                ログインできません
-              </button>
-            </h2>
-            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body" style="font-size:.88rem;">
-                <ul class="mb-0">
-                  <li>アカウントが管理者によって承認されているか確認してください。</li>
-                  <li>ユーザー名とパスワードが正しいか確認してください。</li>
-                  <li>パスワードを忘れた場合は「パスワードをお忘れの方」からリセットしてください。</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                スキルを申告したのに反映されません
-              </button>
-            </h2>
-            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body" style="font-size:.88rem;">
-                スキルの申告は管理者またはマネージャーの承認後に反映されます。「自分の申請状況」ページで現在のステータスを確認してください。
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                自分のグループが分かりません
-              </button>
-            </h2>
-            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body" style="font-size:.88rem;">
-                プロフィールページで所属グループを確認できます。グループへの所属は管理者またはマネージャーが設定します。
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                レベルの基準が分かりません
-              </button>
-            </h2>
-            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body" style="font-size:.88rem;">
-                レベル0（未経験）〜レベル4（エキスパート）の5段階で申告します。詳しくは上記「スキル申告」セクションのレベル表を参照してください。
-              </div>
-            </div>
-          </div>
+      <!-- スキルマトリクス -->
+      <section class="manual-section mb-4 card p-4" id="matrix">
+        <h2><i class="bi bi-grid-3x3-gap text-primary"></i>スキルマトリクス
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>メンバー × スキルのヒートマップです。暖色（黄→橙→赤）ほど理解度が高いことを示します。</p>
+        <h4>理解度の色定義</h4>
+        <div class="d-flex gap-2 flex-wrap mb-2">
+          {% for bg, text, label in [('#f1f5f9','#94a3b8','未申告'),('#fef3c7','#92400e','学習中'),('#fbbf24','#713f12','基礎習得'),('#f97316','#fff','実務可'),('#dc2626','#fff','習熟')] %}
+          <span style="background:{{ bg }};color:{{ text }};padding:.2em .6em;border-radius:6px;font-size:.75rem;font-weight:600;">{{ label }}</span>
+          {% endfor %}
         </div>
+        <h3><i class="bi bi-bar-chart-line"></i>分析チャート</h3>
+        <p>「分析チャートを表示」ボタンをクリックすると以下のグラフが表示されます。</p>
+        <ul style="font-size:.88rem;">
+          <li><strong>成長トレンド（月別）</strong> — 月ごとの平均レベル変化</li>
+          <li><strong>レベル分布</strong> — ドーナツグラフ</li>
+          <li><strong>カテゴリー別レーダー</strong> — ユーザー切替可能</li>
+          <li><strong>ユーザー別平均レベル</strong> — 横棒グラフ</li>
+        </ul>
+        <h3><i class="bi bi-sort-alpha-down"></i>ソート機能</h3>
+        <p>テーブルヘッダーをクリックすると昇降順ソートができます。複数条件ソートも対応しています。カテゴリー昇順→難易度昇順のように優先順位をつけて並べ替えられます。</p>
       </section>
+
+      <!-- スキルカタログ管理 -->
+      <section class="manual-section mb-4 card p-4" id="catalog">
+        <h2><i class="bi bi-collection text-primary"></i>スキルカタログ管理
+          <span class="role-badge role-manager">Manager（担当グループのみ）</span>
+          <span class="role-badge role-admin">Admin（全体）</span>
+        </h2>
+        <h3><i class="bi bi-plus-circle"></i>スキルの追加</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>「スキルを追加」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>スキル名・カテゴリー・難易度ティア・説明を入力して保存</span></div>
+        <h3><i class="bi bi-upload"></i>一括インポート（CSV/Excel/Markdown/JSON）</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>「CSVインポート」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>形式タブ（CSV/Excel/Markdown/JSON）を選択</span></div>
+        <div class="step-item"><span class="step-badge">3</span><span>「テンプレート」ボタンでサンプルファイルをダウンロード</span></div>
+        <div class="step-item"><span class="step-badge">4</span><span>テンプレートを編集してアップロード → 「インポート実行」</span></div>
+        <h3><i class="bi bi-funnel"></i>絞り込み・ソート</h3>
+        <p>キーワード・カテゴリー・ティア・アーカイブ状態でフィルタリングできます。テーブルヘッダークリックで複数条件ソートが可能です。</p>
+        <h3><i class="bi bi-check2-square"></i>一括操作</h3>
+        <p>チェックボックスで複数スキルを選択し、「アーカイブ」「カテゴリ変更」「難易度変更」を一括実行できます。</p>
+        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>Adminのみ「カタログを初期化」ボタンでHILS向けデフォルトカタログに戻せます（既存のスキル申告データも削除されます）。</div>
+      </section>
+
+      <!-- カテゴリー管理 -->
+      <section class="manual-section mb-4 card p-4" id="categories">
+        <h2><i class="bi bi-tags text-primary"></i>カテゴリー管理
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>スキルを分類するカテゴリーの追加・編集・削除ができます。</p>
+        <ul style="font-size:.88rem;">
+          <li><strong>カードビュー</strong> — カラーカードで各カテゴリーのスキル一覧を確認</li>
+          <li><strong>行（リスト）ビュー</strong> — テーブル形式でコンパクトに一覧表示</li>
+        </ul>
+        <p>右上のビュー切替ボタン（グリッド/リスト）で表示を切り替えられます。設定はブラウザに保存されます。</p>
+        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>カテゴリーを削除すると、そのカテゴリーに属するスキルは「未分類」になります。</div>
+      </section>
+
+      <!-- グループ管理 -->
+      <section class="manual-section mb-4 card p-4" id="groups">
+        <h2><i class="bi bi-people-fill text-primary"></i>グループ管理
+          <span class="role-badge role-manager">Manager（担当のみ）</span>
+          <span class="role-badge role-admin">Admin（全体）</span>
+        </h2>
+        <h3><i class="bi bi-plus-circle"></i>グループ作成</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>「グループ作成」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>グループ名と説明を入力</span></div>
+        <div class="step-item"><span class="step-badge">3</span><span>担当Managerを検索欄で検索して複数選択（追加済みManagerは下部に表示）</span></div>
+        <div class="step-item"><span class="step-badge">4</span><span>親グループを設定すると階層構造になり、親のスキルが継承されます</span></div>
+        <div class="step-item"><span class="step-badge">5</span><span>「対象スキル割当」で必須スキルを設定するとギャップ分析が有効になります</span></div>
+        <h3><i class="bi bi-person-plus-fill"></i>メンバー追加</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>グループカードの「メンバー管理」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>ページ上部の「メンバーを追加」ボタン → モーダルで複数選択して一括追加</span></div>
+        <h3><i class="bi bi-diagram-3"></i>表示ビュー</h3>
+        <p>「カード」「ツリー」ボタンで表示を切り替えられます。ツリービューでは親子階層が視覚的に確認できます。</p>
+        <div class="tip-box"><i class="bi bi-info-circle me-1"></i>担当Manager検索欄でManagerを複数設定できます。設定したManagerだけが担当グループを管理できます。</div>
+      </section>
+
+      <!-- 教育リソース管理 -->
+      <section class="manual-section mb-4 card p-4" id="education-mgmt">
+        <h2><i class="bi bi-mortarboard-fill text-primary"></i>教育リソース管理
+          <span class="role-badge role-manager">Manager</span>
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <h3><i class="bi bi-plus-circle"></i>リソースの追加</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>「リンクを追加」ボタンをクリック</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>タイトル・URL（必須）、説明を入力 — URLを入力するとファビコンが自動表示されます</span></div>
+        <div class="step-item"><span class="step-badge">3</span><span>カテゴリーを選択するとスキルの候補が絞り込まれます。関連スキルを指定すると検索しやすくなります</span></div>
+        <div class="step-item"><span class="step-badge">4</span><span>「追加する」をクリックして保存</span></div>
+      </section>
+
+      <!-- 管理パネル -->
+      <section class="manual-section mb-4 card p-4" id="admin-panel">
+        <h2><i class="bi bi-shield-check text-primary"></i>管理パネル
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>システム全体のサマリーと新規登録ユーザーの承認待ち一覧が表示されます。</p>
+        <div class="success-box"><i class="bi bi-person-check me-1"></i>新しいユーザーが登録するとここに表示されます。承認するとそのユーザーがログインできるようになります。</div>
+      </section>
+
+      <!-- ユーザー管理 -->
+      <section class="manual-section mb-4 card p-4" id="users">
+        <h2><i class="bi bi-people text-primary"></i>ユーザー管理
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <ul style="font-size:.88rem;">
+          <li><strong>承認/却下</strong> — 新規登録ユーザーを承認・却下できます</li>
+          <li><strong>ロール変更</strong> — user / manager / admin の3段階でロールを変更できます</li>
+          <li><strong>パスワードリセット</strong> — Adminがユーザーのパスワードをリセットできます</li>
+          <li><strong>アカウント削除</strong> — ユーザーと関連データを削除します（操作は取り消せません）</li>
+        </ul>
+        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>ロールを変更するとアクセスできる機能が即座に変わります。慎重に操作してください。</div>
+      </section>
+
+      <!-- メール設定 -->
+      <section class="manual-section mb-4 card p-4" id="mail">
+        <h2><i class="bi bi-envelope-at text-primary"></i>メール設定
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>SMTPサーバーを設定することで、以下のメール通知が自動送信されます。</p>
+        <ul style="font-size:.88rem;">
+          <li>ユーザー登録承認通知</li>
+          <li>スキル承認・差し戻し通知</li>
+          <li>パスワードリセットリンク</li>
+        </ul>
+        <h3><i class="bi bi-wrench"></i>設定手順</h3>
+        <div class="step-item"><span class="step-badge">1</span><span>SMTPホスト・ポート・ユーザー名・パスワードを入力</span></div>
+        <div class="step-item"><span class="step-badge">2</span><span>「設定を保存」後、「テスト送信」で動作確認</span></div>
+        <div class="tip-box"><i class="bi bi-info-circle me-1"></i>Gmailの場合はアプリパスワードを使用してください。ポートはTLSなら587、SSLなら465が一般的です。</div>
+      </section>
+
+      <!-- カタログ初期化 -->
+      <section class="manual-section mb-4 card p-4" id="catalog-init">
+        <h2><i class="bi bi-arrow-counterclockwise text-primary"></i>カタログ初期化
+          <span class="role-badge role-admin">Admin</span>
+        </h2>
+        <p>スキルカタログページの「カタログを初期化」ボタンで、現在のカテゴリ・スキル・スキル申告データをすべて削除し、HILS向けデフォルトカタログ（10カテゴリ・73スキル）に戻します。</p>
+        <div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>この操作はスキル申告データも削除されます。実行前にCSVエクスポートでバックアップを取ることを推奨します。</div>
+      </section>
+
+      <!-- クイックスタート -->
+      <section class="manual-section mb-4 card p-4" id="quickstart">
+        <h2><i class="bi bi-play-circle-fill text-primary"></i>クイックスタート</h2>
+        <p>初回ログイン後にロール別のガイドツアーが自動起動します。サイドバー下部の「クイックスタート」ボタンからいつでも再実行できます。</p>
+        <div class="row g-3">
+          {% for role, color, steps in [
+            ('User', '#0ea5e9', 'ダッシュボード → スキル申告 → 申請状況 → タイムライン → 教育リソース → 問い合わせ → 検索 → プロフィール（全10ステップ）'),
+            ('Manager', '#22c55e', 'ダッシュボード → 承認依頼 → マトリクス → カタログ → グループ → 教育 → 問い合わせ → 検索（全10ステップ）'),
+            ('Admin', '#dc2626', 'ダッシュボード → 承認 → マトリクス → カタログ → グループ → 教育 → 管理パネル → ユーザー管理 → チケット → メール（全12ステップ）'),
+          ] %}
+          <div class="col-md-4">
+            <div class="p-3 rounded" style="background:#f8fafc;border-left:4px solid {{ color }};">
+              <div class="fw-bold mb-1"><span class="badge" style="background:{{ color }};">{{ role }}</span></div>
+              <div class="text-muted" style="font-size:.75rem;">{{ steps }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="tip-box mt-3"><i class="bi bi-info-circle me-1"></i>ツアー中は Esc キーでいつでもスキップできます。「次へ」で次のステップに進み、「前へ」で戻ることができます。</div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="manual-section mb-4 card p-4" id="faq">
+        <h2><i class="bi bi-question-circle text-primary"></i>よくある質問</h2>
+        {% for q, a in [
+          ('スキルを申告しても承認されません', 'Managerまたは承認者に申告の連絡をしてください。承認者のメール設定が有効な場合、通知が届いているはずです。「自分の申請状況」ページで申告の状態を確認してください。'),
+          ('申告したスキルが差し戻されました', '「自分の申請状況」でコメントを確認し、内容を踏まえてレベルを修正した上で再申告してください。'),
+          ('グループに自分が追加されません', 'Admin/Managerのみグループへの追加ができます。担当Managerに連絡してください。'),
+          ('チャットバブルが赤くなっています', 'Admin側から返信があります。チャットアイコンをクリックして確認してください。'),
+          ('カタログに自分のスキルが表示されません（Manager）', 'グループ編集画面の「対象スキル割当」で、担当グループにスキルが割り当てられているか確認してください。'),
+          ('ダッシュボードにデータが表示されません', 'まだスキル申告・承認が行われていないか、グループにメンバーが追加されていない可能性があります。'),
+          ('クイックスタートを再度見たい', 'サイドバー下部の「クイックスタート」ボタンをクリックしてください。ロールに応じたツアーが起動します。'),
+        ] %}
+        <div class="mb-3">
+          <div class="fw-semibold d-flex gap-2 align-items-start" style="font-size:.9rem;color:#374151;">
+            <i class="bi bi-question-circle-fill" style="color:#f97316;flex-shrink:0;margin-top:2px;"></i>{{ q }}
+          </div>
+          <div class="ms-4 text-muted" style="font-size:.85rem;line-height:1.6;">{{ a }}</div>
+        </div>
+        {% endfor %}
+      </section>
+
+    <!-- 検索結果なし -->
+    <div id="manualNoResult" class="col-12">
+      <i class="bi bi-search d-block mb-2" style="font-size:2.5rem;color:#fed7aa;"></i>
+      <h5>「<span id="manualNoResultWord"></span>」に一致する内容が見つかりません</h5>
+      <p class="small text-muted">別のキーワードでお試しください。</p>
+    </div>
 
     </div>
   </div>
 </div>
 
-<!-- Scroll to top -->
-<a href="#" class="btn btn-primary back-btn shadow-lg" style="border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
-  <i class="bi bi-arrow-up"></i>
+<!-- 戻るボタン -->
+<a href="{{ request.headers.get('referer', '/dashboard') }}" class="btn btn-primary" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:50;border-radius:20px;padding:.5rem 1.2rem;">
+  <i class="bi bi-arrow-left me-1"></i>戻る
 </a>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Highlight active nav on scroll
+// ── アクティブナビ ────────────────────────────────────────────
 const sections = document.querySelectorAll('.manual-section');
-const navLinks = document.querySelectorAll('.manual-nav a');
-window.addEventListener('scroll', () => {
-  let current = '';
-  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80 && !s.classList.contains('search-hidden')) current = s.id; });
-  navLinks.forEach(a => {
-    a.classList.remove('active');
-    if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+const navLinks  = document.querySelectorAll('.manual-nav a');
+const observer  = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
+    }
   });
-});
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
 
-// Search functionality
-const searchInput = document.getElementById('manualSearch');
-const searchClear = document.getElementById('searchClear');
-const searchCount = document.getElementById('searchResultCount');
-const origContents = new Map();
-sections.forEach(s => origContents.set(s, s.innerHTML));
+// ── 検索機能 ─────────────────────────────────────────────────
+// 各セクションの元のテキストを保存（ハイライト解除用）
+const _sectionOriginals = new Map();
+sections.forEach(s => _sectionOriginals.set(s, s.innerHTML));
 
-let searchTimer = null;
-searchInput.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(doSearch, 200);
-});
+function manualSearch(q) {
+  const trimmed = q.trim();
+  const clearBtn   = document.getElementById('manualSearchClear');
+  const infoEl     = document.getElementById('manualSearchInfo');
+  const noResult   = document.getElementById('manualNoResult');
+  const noResultWord = document.getElementById('manualNoResultWord');
 
-function doSearch() {
-  const q = searchInput.value.trim();
-  searchClear.style.display = q ? 'block' : 'none';
+  // クリアボタン表示
+  if (clearBtn) clearBtn.style.display = trimmed ? '' : 'none';
 
-  // restore originals
-  sections.forEach(s => { s.innerHTML = origContents.get(s); s.classList.remove('search-hidden'); });
-  navLinks.forEach(a => a.style.display = '');
+  // 元のHTMLに戻す
+  sections.forEach(s => {
+    s.innerHTML = _sectionOriginals.get(s);
+    s.classList.remove('search-hidden');
+  });
 
-  if (!q) { searchCount.textContent = ''; return; }
+  if (!trimmed) {
+    if (infoEl) infoEl.style.display = 'none';
+    if (noResult) noResult.style.display = 'none';
+    // ナビも全表示
+    navLinks.forEach(a => { a.style.display = ''; });
+    return;
+  }
 
-  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp('(' + escaped + ')', 'gi');
-  let found = 0;
+  const lower = trimmed.toLowerCase();
+  let matchCount = 0;
 
   sections.forEach(s => {
-    const text = s.textContent;
-    if (re.test(text)) {
-      found++;
-      highlightNode(s, re);
+    const text = s.textContent || '';
+    if (text.toLowerCase().includes(lower)) {
+      // マッチしたセクション: キーワードをハイライト
+      highlightText(s, trimmed);
+      matchCount++;
+      // 対応するナビリンクを表示
+      const id = s.id;
+      navLinks.forEach(a => {
+        if (a.getAttribute('href') === '#' + id) a.style.display = '';
+      });
     } else {
+      // マッチしないセクションを非表示
       s.classList.add('search-hidden');
+      const id = s.id;
+      navLinks.forEach(a => {
+        if (a.getAttribute('href') === '#' + id) a.style.display = 'none';
+      });
     }
   });
 
-  // sync nav links
-  navLinks.forEach(a => {
-    const targetId = a.getAttribute('href')?.substring(1);
-    const sec = document.getElementById(targetId);
-    a.style.display = sec && !sec.classList.contains('search-hidden') ? '' : 'none';
-  });
-
-  searchCount.textContent = found > 0
-    ? found + ' 件のセクションが見つかりました'
-    : '該当するセクションがありません';
-
-  // scroll to first match
-  const first = document.querySelector('.manual-section:not(.search-hidden)');
-  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (infoEl) {
+    infoEl.style.display = '';
+    infoEl.textContent = `${matchCount} セクションに「${trimmed}」が見つかりました`;
+  }
+  if (noResult) {
+    noResult.style.display = matchCount === 0 ? 'block' : 'none';
+    if (noResultWord) noResultWord.textContent = trimmed;
+  }
 }
 
-function highlightNode(el, re) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+function highlightText(el, keyword) {
+  // テキストノードを走査してキーワードをハイライト
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => {
+      // script/style タグ内はスキップ
+      const p = n.parentElement;
+      if (p && (p.tagName === 'SCRIPT' || p.tagName === 'STYLE' || p.tagName === 'CODE')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return n.textContent.toLowerCase().includes(keyword.toLowerCase())
+        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    }
+  });
   const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+
   nodes.forEach(node => {
-    if (node.parentElement && (node.parentElement.tagName === 'SCRIPT' || node.parentElement.tagName === 'STYLE')) return;
-    if (re.test(node.textContent)) {
-      const span = document.createElement('span');
-      span.innerHTML = node.textContent.replace(re, '<mark>$1</mark>');
-      node.parentNode.replaceChild(span, node);
+    const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    const text = node.textContent;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'search-hl';
+      mark.textContent = m[0];
+      frag.appendChild(mark);
+      last = m.index + m[0].length;
     }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
   });
 }
 
-function clearSearch() {
-  searchInput.value = '';
-  searchClear.style.display = 'none';
-  searchCount.textContent = '';
-  sections.forEach(s => { s.innerHTML = origContents.get(s); s.classList.remove('search-hidden'); });
-  navLinks.forEach(a => a.style.display = '');
-  searchInput.focus();
+function clearManualSearch() {
+  const input = document.getElementById('manualSearch');
+  if (input) { input.value = ''; input.focus(); }
+  manualSearch('');
 }
 
-// Ctrl+K / Cmd+K shortcut
+// Ctrl+F / Cmd+F で検索欄にフォーカス
 document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); searchInput.focus(); searchInput.select(); }
-  if (e.key === 'Escape' && document.activeElement === searchInput) { clearSearch(); searchInput.blur(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+    const inp = document.getElementById('manualSearch');
+    if (inp) { e.preventDefault(); inp.focus(); inp.select(); }
+  }
+  if (e.key === 'Escape') clearManualSearch();
 });
 </script>
 </body>

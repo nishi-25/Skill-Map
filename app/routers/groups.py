@@ -12,10 +12,30 @@ router = APIRouter(prefix="/groups")
 
 
 def _can_manage_group(user: models.User, group: models.Group) -> bool:
-    """グループを編集できるか (admin か そのグループのmanager)"""
-    return user.role == "admin" or (
-        user.role == "manager" and group.manager_id == user.id
-    )
+    """グループを編集できるか (admin か そのグループのmanager/co-manager)"""
+    if user.role == "admin":
+        return True
+    if user.role == "manager":
+        if group.manager_id == user.id:
+            return True
+        if any(m.id == user.id for m in group.managers):
+            return True
+    return False
+
+
+def _get_managed_groups(user: models.User, db) -> list:
+    """Managerが管理するグループの一覧を返す（primary/co両方）"""
+    from sqlalchemy import text
+    rows = db.execute(
+        text("SELECT DISTINCT group_id FROM group_managers WHERE user_id = :uid"),
+        {"uid": user.id}
+    ).fetchall()
+    gm_ids = {r[0] for r in rows}
+    primary = {g.id for g in db.query(models.Group).filter(models.Group.manager_id == user.id).all()}
+    all_ids = gm_ids | primary
+    if not all_ids:
+        return []
+    return db.query(models.Group).filter(models.Group.id.in_(all_ids)).all()
 
 
 def _get_skills_by_cat(db) -> tuple:
@@ -71,9 +91,10 @@ def groups_list(request: Request, db: Session = Depends(get_db)):
     if user.role == "admin":
         groups = db.query(models.Group).order_by(models.Group.name).all()
     else:
-        groups = db.query(models.Group).filter(
-            models.Group.manager_id == user.id
-        ).order_by(models.Group.name).all()
+        groups = sorted(
+            _get_managed_groups(user, db),
+            key=lambda g: g.name
+        )
     return templates.TemplateResponse(request, "groups.html", {
         "current_user": user, "groups": groups,
     })
@@ -93,6 +114,7 @@ def group_new_get(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "group_form.html", {
         "current_user": user, "group": None,
         "managers": managers, "error": None,
+        "selected_manager_ids": set(),
         "all_categories": all_categories,
         "skills_by_cat": skills_by_cat,
         "assigned_skill_ids": set(),
@@ -106,14 +128,14 @@ async def group_new_post(
     request: Request,
     name: str = Form(...),
     description: str = Form(""),
-    manager_id: int = Form(0),
     parent_id: int = Form(0),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
     form = await request.form()
-    skill_ids = [int(v) for v in form.getlist("skill_ids")]
-    all_groups = db.query(models.Group).order_by(models.Group.name).all()
+    skill_ids   = [int(v) for v in form.getlist("skill_ids")]
+    manager_ids = [int(v) for v in form.getlist("manager_ids")]
+    all_groups  = db.query(models.Group).order_by(models.Group.name).all()
 
     if db.query(models.Group).filter(models.Group.name == name).first():
         managers = db.query(models.User).filter(
@@ -123,29 +145,34 @@ async def group_new_post(
         all_categories, skills_by_cat = _get_skills_by_cat(db)
         return templates.TemplateResponse(request, "group_form.html", {
             "current_user": user, "group": None,
-            "managers": managers,
+            "managers": managers, "selected_manager_ids": set(manager_ids),
             "error": "そのグループ名は既に使用されています",
-            "all_categories": all_categories,
-            "skills_by_cat": skills_by_cat,
-            "assigned_skill_ids": set(skill_ids),
-            "inherited_skill_ids": set(),
+            "all_categories": all_categories, "skills_by_cat": skills_by_cat,
+            "assigned_skill_ids": set(skill_ids), "inherited_skill_ids": set(),
             "all_groups": all_groups,
         })
-    # managerが自分で作る場合は自身をmanagerに固定
-    assigned_manager = manager_id if (user.role == "admin" and manager_id) else user.id
+
+    # Managerが作る場合は自身を含める
+    if user.role == "manager" and user.id not in manager_ids:
+        manager_ids.append(user.id)
+
+    primary_manager = manager_ids[0] if manager_ids else None
     group = models.Group(
         name=name,
         description=description or None,
-        manager_id=assigned_manager,
+        manager_id=primary_manager,
         parent_id=parent_id if parent_id else None,
     )
     db.add(group)
     db.flush()
 
-    # スキル割当
+    # co-manager登録
+    if manager_ids:
+        mgr_users = db.query(models.User).filter(models.User.id.in_(manager_ids)).all()
+        group.managers = mgr_users
+
     if skill_ids:
-        assigned_skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all()
-        group.skills = assigned_skills
+        group.skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all()
 
     db.commit()
     return RedirectResponse("/groups", status_code=303)
@@ -172,6 +199,7 @@ def group_edit_get(gid: int, request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "group_form.html", {
         "current_user": user, "group": group,
         "managers": managers, "error": None,
+        "selected_manager_ids": {m.id for m in group.managers},
         "all_categories": all_categories,
         "skills_by_cat": skills_by_cat,
         "assigned_skill_ids": assigned_skill_ids,
@@ -196,7 +224,8 @@ async def group_edit_post(
         return RedirectResponse("/groups", status_code=303)
 
     form = await request.form()
-    skill_ids = [int(v) for v in form.getlist("skill_ids")]
+    skill_ids   = [int(v) for v in form.getlist("skill_ids")]
+    manager_ids = [int(v) for v in form.getlist("manager_ids")]
 
     dup = db.query(models.Group).filter(
         models.Group.name == name, models.Group.id != gid
@@ -211,18 +240,15 @@ async def group_edit_post(
                       if g.id != gid and not _is_descendant_of(g.id, gid, db)]
         return templates.TemplateResponse(request, "group_form.html", {
             "current_user": user, "group": group,
-            "managers": managers,
+            "managers": managers, "selected_manager_ids": set(manager_ids),
             "error": "そのグループ名は既に使用されています",
-            "all_categories": all_categories,
-            "skills_by_cat": skills_by_cat,
+            "all_categories": all_categories, "skills_by_cat": skills_by_cat,
             "assigned_skill_ids": set(skill_ids),
             "inherited_skill_ids": _get_ancestor_skill_ids(group),
             "all_groups": all_groups,
         })
     group.name = name
     group.description = description or None
-    if user.role == "admin" and manager_id:
-        group.manager_id = manager_id
 
     # 循環防止: 自分自身 or 自分の子孫を親にしない
     if parent_id and parent_id != gid and not _is_descendant_of(parent_id, gid, db):
@@ -230,9 +256,17 @@ async def group_edit_post(
     else:
         group.parent_id = None
 
+    # Manager更新（admin/manager どちらでも操作可）
+    if manager_ids:
+        mgr_users = db.query(models.User).filter(models.User.id.in_(manager_ids)).all()
+        group.managers = mgr_users
+        group.manager_id = manager_ids[0]
+    else:
+        group.managers = []
+        group.manager_id = None
+
     # スキル割当の更新
-    assigned_skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all() if skill_ids else []
-    group.skills = assigned_skills
+    group.skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all() if skill_ids else []
 
     db.commit()
     return RedirectResponse("/groups", status_code=303)
@@ -270,6 +304,29 @@ def group_member_add(
     if not exists:
         db.add(models.GroupMembership(group_id=gid, user_id=user_id))
         db.commit()
+    return RedirectResponse(f"/groups/{gid}", status_code=303)
+
+
+@router.post("/{gid}/members/bulk-add")
+def group_member_bulk_add(
+    gid: int,
+    request: Request,
+    user_ids: List[int] = Form(default=[]),
+    db: Session = Depends(get_db),
+):
+    """複数メンバーを一括追加"""
+    user = auth.require_manager_or_admin(request, db)
+    group = db.query(models.Group).filter(models.Group.id == gid).first()
+    if not group or not _can_manage_group(user, group):
+        return RedirectResponse("/groups", status_code=303)
+    for uid in user_ids:
+        exists = db.query(models.GroupMembership).filter(
+            models.GroupMembership.group_id == gid,
+            models.GroupMembership.user_id == uid,
+        ).first()
+        if not exists:
+            db.add(models.GroupMembership(group_id=gid, user_id=uid))
+    db.commit()
     return RedirectResponse(f"/groups/{gid}", status_code=303)
 
 
@@ -393,12 +450,12 @@ def group_detail(
 
     categories = db.query(models.Category).order_by(models.Category.name).all()
 
-    # 追加できるユーザー（既にメンバーでない承認済みuserのみ）
+    # 追加できるユーザー（既にメンバーでない承認済みユーザー・全ロール対象）
     addable = db.query(models.User).filter(
         models.User.is_approved == True,
-        models.User.role == "user",
         ~models.User.id.in_(member_ids),
-    ).all() if _can_manage_group(user, group) else []
+    ).order_by(models.User.display_name, models.User.username).all() \
+    if _can_manage_group(user, group) else []
 
     # レーダーチャート用: メンバーごとのカテゴリー別平均レベル
     radar_data = {}

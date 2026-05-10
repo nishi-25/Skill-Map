@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="page-header">
-  <h1><i class="bi bi-shield-check me-2" style="color:#6366f1;"></i>管理パネル</h1>
+  <h1><i class="bi bi-shield-check me-2" style="color:#f97316;"></i>管理パネル</h1>
   <p class="text-muted mb-0 small">システム全体の管理</p>
 </div>
 
@@ -42,6 +42,56 @@
 </div>
 {% endif %}
 
+<!-- プロモーション動画管理 -->
+{% if request.query_params.get('promo_uploaded') %}
+<div class="alert alert-success py-2 small mb-3" style="border-radius:10px;">
+  <i class="bi bi-check-circle-fill me-1"></i>プロモーション動画をアップロードしました。
+</div>
+{% endif %}
+{% if promo_error is defined and promo_error %}
+<div class="alert alert-danger py-2 small mb-3" style="border-radius:10px;">
+  <i class="bi bi-x-circle me-1"></i>{{ promo_error }}
+</div>
+{% endif %}
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="border-bottom:2px solid #f97316;">
+    <i class="bi bi-play-circle-fill me-2" style="color:#f97316;"></i>プロモーション動画管理
+  </div>
+  <div class="card-body">
+    {% if promo_video_exists %}
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:.5rem 1rem;font-size:.85rem;color:#166534;">
+        <i class="bi bi-check-circle-fill me-1"></i>動画が登録済みです
+      </div>
+      <video controls style="max-width:280px;border-radius:8px;max-height:160px;" preload="metadata">
+        <source src="/promo-video" type="video/mp4">
+      </video>
+      <form method="post" action="/admin/delete-promo-video"
+            onsubmit="return confirm('プロモーション動画を削除しますか？')">
+        <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:20px;">
+          <i class="bi bi-trash me-1"></i>動画を削除
+        </button>
+      </form>
+    </div>
+    <hr class="my-3">
+    {% endif %}
+    <form method="post" action="/admin/upload-promo-video" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">
+          {{ '動画を差し替える' if promo_video_exists else 'プロモーション動画をアップロード' }}
+        </label>
+        <input type="file" name="video" class="form-control" accept=".mp4,.webm,.mov"
+               style="border-radius:10px;" required>
+        <div class="form-text">対応形式: .mp4 .webm .mov（最大500MB）。ログイン画面に「動画を見る」ボタンが表示されます。</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;">
+        <i class="bi bi-cloud-upload me-1"></i>アップロード
+      </button>
+    </form>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span class="fw-bold"><i class="bi bi-people me-2"></i>ユーザー一覧</span>
@@ -68,7 +118,7 @@
           <td class="text-muted">{{ u.email or '-' }}</td>
           <td>
             {% if u.role == 'admin' %}
-            <span class="badge" style="background:#6366f1;">Admin</span>
+            <span class="badge" style="background:#f97316;">Admin</span>
             {% elif u.role == 'manager' %}
             <span class="badge" style="background:#0ea5e9;">Manager</span>
             {% else %}

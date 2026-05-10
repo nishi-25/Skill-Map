@@ -4,64 +4,358 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-tags me-2" style="color:#6366f1;"></i>カテゴリー</h1>
+    <h1><i class="bi bi-tags me-2" style="color:#f97316;"></i>カテゴリー</h1>
     <p class="text-muted mb-0 small">スキルの分類グループを管理します（{{ categories|length }} 件）</p>
   </div>
-  <a href="/categories/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
-    <i class="bi bi-plus-lg me-1"></i>新規追加
-  </a>
+  <div class="d-flex gap-2 align-items-center">
+    <!-- ビュー切り替え -->
+    <div class="btn-group btn-group-sm" role="group">
+      <button type="button" id="btnCardView" class="btn btn-outline-secondary active"
+              onclick="switchCatView('card')" title="カード表示" style="border-radius:20px 0 0 20px;">
+        <i class="bi bi-grid-3x2-gap"></i>
+      </button>
+      <button type="button" id="btnListView" class="btn btn-outline-secondary"
+              onclick="switchCatView('list')" title="行表示" style="border-radius:0 20px 20px 0;">
+        <i class="bi bi-list-ul"></i>
+      </button>
+    </div>
+    <!-- エクスポートボタン（カスタムポップアップ：overflow に依存しない） -->
+    <div style="position:relative;">
+      <button class="btn btn-outline-secondary btn-sm" style="border-radius:20px;"
+              onclick="toggleCatExport(this)" type="button">
+        <i class="bi bi-download me-1"></i>エクスポート
+      </button>
+    </div>
+    <!-- ポップアップメニュー（body 直下相当・fixed 配置で overflow 回避） -->
+    <div id="catExportPopup"
+         style="display:none;position:fixed;z-index:9999;
+                background:#fff;border:1px solid #e2e8f0;border-radius:12px;
+                box-shadow:0 6px 20px rgba(0,0,0,.15);padding:.3rem 0;min-width:148px;">
+      <a href="/categories/export/csv"      class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a>
+      <a href="/categories/export/excel"    class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a>
+      <a href="/categories/export/json"     class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-json me-2 text-warning"></i>JSON</a>
+      <a href="/categories/export/markdown" class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-markdown me-2 text-primary"></i>Markdown</a>
+    </div>
+    <!-- インポート -->
+    <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius:20px;"
+            data-bs-toggle="modal" data-bs-target="#catImportModal">
+      <i class="bi bi-upload me-1"></i>インポート
+    </button>
+    <a href="/categories/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-plus-lg me-1"></i>新規追加
+    </a>
+  </div>
 </div>
 
-{% if categories %}
-<div class="row g-3">
-  {% for c in categories %}
-  <div class="col-md-6 col-lg-4">
-    <div class="card h-100" style="border-left: 4px solid {{ c.color }};">
-      <div class="card-body">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <div style="width:14px;height:14px;border-radius:50%;background:{{ c.color }};flex-shrink:0;box-shadow:0 0 8px {{ c.color }}44;"></div>
-          <h6 class="fw-bold mb-0">{{ c.name }}</h6>
-          <span class="badge bg-light text-dark ms-auto" style="font-size:.73rem;">
-            {{ c.skills | length }} スキル
-          </span>
-        </div>
-        {% if c.description %}
-        <p class="text-muted small mb-2">{{ c.description }}</p>
-        {% endif %}
-        {% if c.skills %}
-        <div class="d-flex flex-wrap gap-1 mt-2">
-          {% for s in c.skills[:5] %}
-          <span class="badge bg-light text-muted" style="font-size:.68rem;font-weight:500;">{{ s.name }}</span>
-          {% endfor %}
-          {% if c.skills|length > 5 %}
-          <span class="badge bg-light text-muted" style="font-size:.68rem;">+{{ c.skills|length - 5 }}</span>
-          {% endif %}
-        </div>
-        {% endif %}
-      </div>
-      <div class="card-footer bg-transparent border-0 pt-0 pb-2 d-flex gap-2">
-        <a href="/categories/{{ c.id }}/edit" class="btn btn-sm btn-outline-primary flex-fill" style="border-radius:20px;">
-          <i class="bi bi-pencil me-1"></i>編集
-        </a>
-        <form method="post" action="/categories/{{ c.id }}/delete" class="flex-fill"
-              onsubmit="return confirm('「{{ c.name }}」を削除しますか？このカテゴリーに属するスキルは未分類になります。')">
-          <button class="btn btn-sm btn-outline-danger w-100" style="border-radius:20px;">
-            <i class="bi bi-trash me-1"></i>削除
-          </button>
-        </form>
+<!-- 一括操作バー（スキルカタログと同じスタイル） -->
+<form method="post" action="/categories/bulk-delete" id="catBulkDeleteForm"
+      onsubmit="return confirmCatBulk()">
+  <div id="catBulkActionBar" style="display:none;"
+       class="card mb-2 border-warning">
+    <div class="card-body py-2 d-flex gap-2 align-items-center flex-wrap"
+         style="background:#fffbeb;">
+      <i class="bi bi-check2-square text-warning"></i>
+      <span id="catSelectedCount" class="fw-semibold small text-warning">0件選択中</span>
+      <span class="text-muted small">
+        <i class="bi bi-info-circle me-1"></i>
+        チェックしたカテゴリーをまとめて削除できます（紐づくスキルは未分類になります）
+      </span>
+      <div class="ms-auto d-flex gap-2 align-items-center">
+        <button type="submit" class="btn btn-danger btn-sm fw-semibold" style="border-radius:20px;">
+          <i class="bi bi-trash me-1"></i>選択を削除
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;"
+                onclick="catToggleAll(false)">選択解除</button>
       </div>
     </div>
   </div>
-  {% endfor %}
+  <div id="catHiddenInputs"></div>
+</form>
+
+<!-- カテゴリー インポートモーダル -->
+<div class="modal fade" id="catImportModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-upload me-2" style="color:#f97316;"></i>カテゴリー インポート</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-light border py-2 small mb-3" style="border-radius:10px;">
+          <b>対応形式:</b> CSV / Excel / JSON / Markdown<br>
+          <b>CSVヘッダー:</b> <code>name, color, description</code><br>
+          同名カテゴリーは自動スキップされます。
+        </div>
+        <!-- テンプレートDL -->
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <span class="text-muted small align-self-center">テンプレート:</span>
+          <a href="/categories/export/csv"      class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+          <a href="/categories/export/excel"    class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+          <a href="/categories/export/json"     class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-json me-1"></i>JSON</a>
+          <a href="/categories/export/markdown" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-markdown me-1"></i>Markdown</a>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">ファイルを選択</label>
+          <input type="file" class="form-control" id="catImportFile"
+                 accept=".csv,.xlsx,.xls,.json,.md,.markdown" style="border-radius:10px;">
+        </div>
+        <div id="catImportResult" style="display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" id="catImportBtn" onclick="doCatImport()" style="border-radius:20px;">
+          <i class="bi bi-upload me-1"></i>インポート実行
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
+{% if categories %}
+
+<!-- ════ カードビュー ════ -->
+<!-- 全選択バー -->
+<div class="d-flex align-items-center gap-2 mb-2">
+  <label class="form-check mb-0 d-flex align-items-center gap-2 small fw-semibold" style="cursor:pointer;">
+    <input type="checkbox" class="form-check-input" id="catSelectAll" onchange="catToggleAll(this.checked)">
+    <span>全選択</span>
+  </label>
+</div>
+<div id="catCardView">
+  <div class="row g-3">
+    {% for c in categories %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 cat-card" data-cat-id="{{ c.id }}"
+           style="border-left:4px solid {{ c.color }};transition:box-shadow .15s;">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <!-- チェックボックス -->
+            <input type="checkbox" class="form-check-input cat-check flex-shrink-0"
+                   value="{{ c.id }}" onchange="catUpdateBulk()"
+                   style="width:16px;height:16px;cursor:pointer;">
+            <div style="width:14px;height:14px;border-radius:50%;background:{{ c.color }};flex-shrink:0;box-shadow:0 0 8px {{ c.color }}44;"></div>
+            <h6 class="fw-bold mb-0" style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.name }}</h6>
+            <span class="badge bg-light text-dark ms-auto" style="font-size:.73rem;flex-shrink:0;">
+              {{ c.skills | length }} スキル
+            </span>
+          </div>
+          {% if c.description %}
+          <p class="text-muted small mb-2">{{ c.description }}</p>
+          {% endif %}
+          {% if c.skills %}
+          <div class="d-flex flex-wrap gap-1 mt-2">
+            {% for s in c.skills[:5] %}
+            <span class="badge bg-light text-muted" style="font-size:.68rem;font-weight:500;">{{ s.name }}</span>
+            {% endfor %}
+            {% if c.skills|length > 5 %}
+            <span class="badge bg-light text-muted" style="font-size:.68rem;">+{{ c.skills|length - 5 }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0 pb-2 d-flex gap-1 justify-content-end">
+          <a href="/categories/{{ c.id }}/edit" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <form method="post" action="/categories/{{ c.id }}/delete"
+                onsubmit="return confirm('「{{ c.name }}」を削除しますか？紐づくスキルは未分類になります。')">
+            <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;" title="削除">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ════ リスト（行）ビュー ════ -->
+<div id="catListView" style="display:none;">
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size:.88rem;">
+        <thead class="table-light">
+          <tr>
+            <th style="width:3%;"><input type="checkbox" class="form-check-input" onchange="catToggleAll(this.checked)"></th>
+            <th style="width:2%;"></th>
+            <th style="width:24%;">カテゴリー名</th>
+            <th style="width:10%;" class="text-center">スキル数</th>
+            <th class="hide-mobile">説明</th>
+            <th class="hide-mobile">スキル一覧（先頭5件）</th>
+            <th class="text-end" style="width:140px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in categories %}
+          <tr>
+            <td>
+              <input type="checkbox" class="form-check-input cat-check"
+                     value="{{ c.id }}" onchange="catUpdateBulk()">
+            </td>
+            <td>
+              <div style="width:12px;height:12px;border-radius:50%;background:{{ c.color }};box-shadow:0 0 6px {{ c.color }}55;"></div>
+            </td>
+            <td>
+              <span class="fw-semibold">{{ c.name }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge" style="background:{{ c.color }};font-size:.72rem;">{{ c.skills|length }}</span>
+            </td>
+            <td class="text-muted small hide-mobile">{{ c.description or '-' }}</td>
+            <td class="hide-mobile">
+              <div class="d-flex flex-wrap gap-1">
+                {% for s in c.skills[:5] %}
+                <span class="badge bg-light text-muted" style="font-size:.65rem;">{{ s.name }}</span>
+                {% endfor %}
+                {% if c.skills|length > 5 %}
+                <span class="badge bg-light text-muted" style="font-size:.65rem;">+{{ c.skills|length - 5 }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="text-end">
+              <div class="d-flex gap-1 justify-content-end">
+                <a href="/categories/{{ c.id }}/edit" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="post" action="/categories/{{ c.id }}/delete"
+                      onsubmit="return confirm('「{{ c.name }}」を削除しますか？紐づくスキルは未分類になります。')">
+                  <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;" title="削除">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 {% else %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-tags fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <i class="bi bi-tags fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>カテゴリーがありません</h5>
     <p class="small">スキルを整理するためのカテゴリーを作成しましょう。</p>
     <a href="/categories/new" class="btn btn-primary btn-sm" style="border-radius:20px;">カテゴリーを追加</a>
   </div>
 </div>
 {% endif %}
+
+<script>
+/* ─ カテゴリー 一括削除 ─ */
+function catUpdateBulk() {
+  const checks  = [...document.querySelectorAll('.cat-check:checked')];
+  const bar     = document.getElementById('catBulkActionBar');
+  const hidden  = document.getElementById('catHiddenInputs');
+  const countEl = document.getElementById('catSelectedCount');
+  const n       = checks.length;
+
+  if (countEl) countEl.textContent = n + '件選択中';
+  if (bar) bar.style.display = n > 0 ? '' : 'none';
+
+  // hidden input を再生成
+  if (hidden) {
+    hidden.innerHTML = checks.map(cb => `<input type="hidden" name="cat_ids" value="${cb.value}">`).join('');
+  }
+
+  // チェックされたカードをハイライト
+  document.querySelectorAll('.cat-card').forEach(card => {
+    const cb = card.querySelector('.cat-check');
+    card.style.outline = cb && cb.checked ? '2px solid #dc2626' : '';
+  });
+
+  // 全選択チェックボックス同期
+  const all    = document.querySelectorAll('.cat-check');
+  const selAll = document.getElementById('catSelectAll');
+  if (selAll) {
+    selAll.indeterminate = n > 0 && n < all.length;
+    selAll.checked = all.length > 0 && n === all.length;
+  }
+}
+
+function catToggleAll(on) {
+  document.querySelectorAll('.cat-check').forEach(cb => { cb.checked = on; });
+  catUpdateBulk();
+}
+
+function confirmCatBulk() {
+  const n = document.querySelectorAll('.cat-check:checked').length;
+  if (n === 0) return false;
+  return confirm(`選択した ${n} 件のカテゴリーを削除しますか？\n紐づくスキルは「未分類」になります。`);
+}
+
+/* ─ エクスポートポップアップ
+   stacking context 問題を回避するため <body> 直下に移動してから表示 ─ */
+document.addEventListener('DOMContentLoaded', function() {
+  const popup = document.getElementById('catExportPopup');
+  if (popup && popup.parentNode !== document.body) {
+    document.body.appendChild(popup);
+  }
+});
+
+function toggleCatExport(btn) {
+  const popup = document.getElementById('catExportPopup');
+  if (!popup) return;
+  if (popup.style.display === 'block') { popup.style.display = 'none'; return; }
+  const rect = btn.getBoundingClientRect();
+  popup.style.display = 'block';
+  const pw = popup.offsetWidth || 150;
+  popup.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  popup.style.left = Math.max(8, rect.right - pw + window.scrollX) + 'px';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#catExportPopup') && !e.target.closest('[onclick*="toggleCatExport"]')) {
+    const p = document.getElementById('catExportPopup');
+    if (p) p.style.display = 'none';
+  }
+});
+
+function switchCatView(mode) {
+  const isCard = mode === 'card';
+  document.getElementById('catCardView').style.display = isCard ? '' : 'none';
+  document.getElementById('catListView').style.display = isCard ? 'none' : '';
+  document.getElementById('btnCardView').classList.toggle('active', isCard);
+  document.getElementById('btnListView').classList.toggle('active', !isCard);
+  localStorage.setItem('catView', mode);
+}
+(function() {
+  const saved = localStorage.getItem('catView');
+  if (saved) switchCatView(saved);
+})();
+
+async function doCatImport() {
+  const file = document.getElementById('catImportFile').files[0];
+  if (!file) { showToast('ファイルを選択してください', 'error'); return; }
+  const btn = document.getElementById('catImportBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
+  const fd = new FormData();
+  fd.append('file', file);
+  const res  = await fetch('/categories/import', { method: 'POST', body: fd });
+  const data = await res.json();
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
+  const resultEl = document.getElementById('catImportResult');
+  resultEl.style.display = '';
+  if (data.ok) {
+    const skip = data.skipped ? `（${data.skipped}件スキップ）` : '';
+    let html = `<div class="alert alert-success py-2 small" style="border-radius:10px;">
+      <i class="bi bi-check-circle me-1"></i><strong>${data.added} 件</strong>のカテゴリーを追加しました ${skip}
+    </div>`;
+    if (data.errors && data.errors.length > 0) {
+      html += `<div class="alert alert-warning py-2 small" style="border-radius:10px;max-height:120px;overflow-y:auto;">
+        ${data.errors.map(e => `<div>${e}</div>`).join('')}
+      </div>`;
+    }
+    resultEl.innerHTML = html;
+    if (data.added > 0) setTimeout(() => location.reload(), 1500);
+  } else {
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">${data.error}</div>`;
+  }
+}
+</script>
 {% endblock %}
