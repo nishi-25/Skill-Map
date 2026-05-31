@@ -291,8 +291,8 @@
         <table class="table table-sm feature-table">
           <tr><td><span class="badge bg-secondary">0</span></td><td>未経験</td><td>該当スキルの経験なし</td></tr>
           <tr><td><span class="badge bg-info">1</span></td><td>入門</td><td>概念・基礎知識を学習中</td></tr>
-          <tr><td><span class="badge bg-primary">2</span></td><td>基礎</td><td>基本的な操作・作業ができる</td></tr>
-          <tr><td><span class="badge bg-warning text-dark">3</span></td><td>実務可</td><td>一人で業務に活用できる</td></tr>
+          <tr><td><span class="badge bg-primary">2</span></td><td>実務可</td><td>基本的な操作・作業ができる</td></tr>
+          <tr><td><span class="badge bg-warning text-dark">3</span></td><td>指導可</td><td>一人で業務に活用でき、他者をサポートできる</td></tr>
           <tr><td><span class="badge bg-danger">4</span></td><td>エキスパート</td><td>他者への指導・高度な設計ができる</td></tr>
         </table>
         <div class="tip-box"><i class="bi bi-filter me-1"></i>カテゴリー・グループでスキルを絞り込めます。スキル名で検索も可能です。</div>
@@ -360,7 +360,7 @@
         <p>メンバー × スキルのヒートマップです。暖色（黄→橙→赤）ほど理解度が高いことを示します。</p>
         <h4>理解度の色定義</h4>
         <div class="d-flex gap-2 flex-wrap mb-2">
-          {% for bg, text, label in [('#f1f5f9','#94a3b8','未申告'),('#fef3c7','#92400e','学習中'),('#fbbf24','#713f12','基礎習得'),('#f97316','#fff','実務可'),('#dc2626','#fff','習熟')] %}
+          {% for bg, text, label in [('#f1f5f9','#94a3b8','未申告'),('#fef3c7','#92400e','入門'),('#fbbf24','#713f12','実務可'),('#f97316','#fff','指導可'),('#dc2626','#fff','エキスパート')] %}
           <span style="background:{{ bg }};color:{{ text }};padding:.2em .6em;border-radius:6px;font-size:.75rem;font-weight:600;">{{ label }}</span>
           {% endfor %}
         </div>

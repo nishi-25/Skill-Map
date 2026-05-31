@@ -143,13 +143,46 @@
           <p class="text-muted small mb-2">{{ c.description }}</p>
           {% endif %}
           {% if c.skills %}
-          <div class="d-flex flex-wrap gap-1 mt-2">
-            {% for s in c.skills[:5] %}
+          <div class="d-flex flex-wrap gap-1 mt-2 mb-1">
+            {% for s in c.skills[:4] %}
             <span class="badge bg-light text-muted" style="font-size:.68rem;font-weight:500;">{{ s.name }}</span>
             {% endfor %}
-            {% if c.skills|length > 5 %}
-            <span class="badge bg-light text-muted" style="font-size:.68rem;">+{{ c.skills|length - 5 }}</span>
+            {% if c.skills|length > 4 %}
+            <span class="badge bg-light text-muted" style="font-size:.68rem;">+{{ c.skills|length - 4 }}</span>
             {% endif %}
+          </div>
+          <!-- スキル詳細トグル -->
+          <button class="btn btn-xs btn-outline-secondary w-100 mt-1"
+                  style="border-radius:8px;font-size:.75rem;"
+                  type="button"
+                  onclick="toggleCatSkills({{ c.id }})">
+            <i class="bi bi-chevron-down me-1" id="cat-chevron-{{ c.id }}" style="font-size:.7rem;transition:transform .2s;"></i>
+            スキル詳細を表示
+          </button>
+          <div id="cat-skills-{{ c.id }}" style="display:none;margin-top:.5rem;max-height:320px;overflow-y:auto;">
+            {% for s in c.skills %}
+            <div style="padding:.3rem 0;border-bottom:1px solid #f1f5f9;">
+              <div class="d-flex align-items-center gap-1">
+                {% set tier_colors = {'beginner':'#64748b','basic':'#0891b2','intermediate':'#f97316','advanced':'#dc2626'} %}
+                <span style="width:8px;height:8px;border-radius:50%;background:{{ tier_colors.get(s.tier,'#64748b') }};flex-shrink:0;"></span>
+                <span style="font-size:.8rem;font-weight:600;">{{ s.name }}</span>
+                {% if s.sub_skills %}
+                <span class="badge ms-auto" style="background:#f0f9ff;color:#0369a1;font-size:.65rem;">
+                  <i class="bi bi-diagram-3 me-1"></i>{{ s.sub_skills|length }}
+                </span>
+                {% endif %}
+              </div>
+              {% if s.sub_skills %}
+              <ul class="list-unstyled mb-0 mt-1" style="padding-left:1.2rem;">
+                {% for ss in s.sub_skills %}
+                <li style="font-size:.73rem;color:#64748b;padding:.1rem 0;">
+                  <i class="bi bi-chevron-right me-1" style="font-size:.6rem;"></i>{{ ss.name }}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+            {% endfor %}
           </div>
           {% endif %}
         </div>
@@ -246,6 +279,16 @@
 {% endif %}
 
 <script>
+/* ─ サブスキル展開トグル ─ */
+function toggleCatSkills(catId) {
+  const panel = document.getElementById('cat-skills-' + catId);
+  const chevron = document.getElementById('cat-chevron-' + catId);
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? '' : 'none';
+  if (chevron) chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+
 /* ─ カテゴリー 一括削除 ─ */
 function catUpdateBulk() {
   const checks  = [...document.querySelectorAll('.cat-check:checked')];

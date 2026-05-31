@@ -27,8 +27,8 @@
       <span class="text-muted small align-self-center">作成: {{ ticket.created_at|jst }}</span>
     </div>
   </div>
-  {% if current_user.role == 'admin' %}
   <div class="d-flex gap-2 align-items-center flex-wrap">
+    {% if current_user.role == 'admin' %}
     <select id="statusSelect" class="form-select form-select-sm" style="max-width:140px;border-radius:20px;"
             onchange="changeStatus(this.value)">
       {% for k, v in TICKET_STATUS.items() %}
@@ -36,8 +36,14 @@
       {% endfor %}
     </select>
     <span class="text-muted small">ステータス変更</span>
+    {% endif %}
+    {% if current_user.role == 'admin' or ticket.user_id == current_user.id %}
+    <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;"
+            onclick="deleteThisTicket({{ ticket.id }}, '{{ ticket.title|e }}')">
+      <i class="bi bi-trash me-1"></i>削除
+    </button>
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 <!-- チャット -->
@@ -153,6 +159,22 @@ async function sendReply() {
     chat.scrollTop = chat.scrollHeight;
   } else {
     showToast(data.error || '送信に失敗しました', 'error');
+  }
+}
+
+async function deleteThisTicket(tid, title) {
+  if (!confirm(`「${title}」を削除しますか？\nメッセージも含めて完全に削除されます。`)) return;
+  try {
+    const res = await fetch(`/api/tickets/${tid}/delete`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('チケットを削除しました', 'success');
+      setTimeout(() => window.location.href = '/tickets', 800);
+    } else {
+      showToast(data.error || '削除に失敗しました', 'error');
+    }
+  } catch(err) {
+    showToast('エラーが発生しました', 'error');
   }
 }
 

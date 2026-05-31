@@ -14,6 +14,16 @@ def is_setup_complete() -> bool:
         return False
 
 
+def get_config() -> dict:
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+    try:
+        with open(CONFIG_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
 def save_config(data: dict):
     os.makedirs("data", exist_ok=True)
     try:

@@ -182,7 +182,15 @@
                 <span><i class="bi bi-clock me-1"></i>{{ t.updated_at|jst }}</span>
               </div>
             </div>
-            <i class="bi bi-chevron-right text-muted align-self-center"></i>
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+              {% if current_user.role == 'admin' or t.user_id == current_user.id %}
+              <button class="btn btn-xs btn-outline-danger" style="border-radius:16px;padding:.15rem .5rem;"
+                      onclick="deleteTicket(event, {{ t.id }}, '{{ t.title|e }}')" title="削除">
+                <i class="bi bi-trash" style="font-size:.7rem;"></i>
+              </button>
+              {% endif %}
+              <i class="bi bi-chevron-right text-muted"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -206,6 +214,23 @@
 
 {% block scripts %}
 <script>
+async function deleteTicket(e, tid, title) {
+  e.preventDefault(); e.stopPropagation();
+  if (!confirm(`「${title}」を削除しますか？\nメッセージも含めて完全に削除されます。`)) return;
+  try {
+    const res = await fetch(`/api/tickets/${tid}/delete`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('チケットを削除しました', 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      showToast(data.error || '削除に失敗しました', 'error');
+    }
+  } catch(err) {
+    showToast('エラーが発生しました', 'error');
+  }
+}
+
 // openNewTicket は base.html で window.openNewTicket として定義済み
 // tickets.html の「新規作成」ボタンが押されたときにチャットパネルを開いて新規作成ビューへ
 document.addEventListener('DOMContentLoaded', function() {

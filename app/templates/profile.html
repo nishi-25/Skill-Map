@@ -158,6 +158,44 @@
         </form>
       </div>
     </div>
+
+    <!-- お知らせポップアップ設定 -->
+    <div class="col-lg-6">
+      <div class="card mb-3">
+        <div class="card-header py-2" style="background:#fafafa;">
+          <span class="fw-semibold small"><i class="bi bi-bell me-2" style="color:#f97316;"></i>お知らせ通知設定</span>
+        </div>
+        <div class="card-body">
+          {% if request.query_params.get('popup_saved') %}
+          <div class="alert alert-success py-2 small mb-3" style="border-radius:10px;">
+            <i class="bi bi-check-circle me-1"></i>設定を保存しました
+          </div>
+          {% endif %}
+          <p class="text-muted small mb-3">
+            未読のお知らせがある場合に、ページ読み込み時に画面中央にポップアップを表示します。
+          </p>
+          <form method="post" action="/profile/announcement-popup">
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="suppressPopup"
+                     name="suppress" value="1"
+                     {% if current_user.suppress_ann_popup %}checked{% endif %}
+                     style="width:2.5em;height:1.3em;">
+              <label class="form-check-label fw-semibold small" for="suppressPopup">
+                お知らせポップアップを表示しない
+              </label>
+            </div>
+            <div class="text-muted small mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              オフにすると未読お知らせがある場合にポップアップが表示されます。
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold" style="border-radius:20px;">
+              <i class="bi bi-check-lg me-1"></i>通知設定を保存
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}

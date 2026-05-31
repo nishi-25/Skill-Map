@@ -9,6 +9,30 @@
   </div>
 </div>
 
+{% if request.query_params.get('temp_pw_user') and request.query_params.get('temp_pw') %}
+<div class="alert d-flex align-items-start gap-3 mb-3"
+     style="background:#fefce8;border:1.5px solid #fde047;border-left:5px solid #f59e0b;border-radius:12px;">
+  <i class="bi bi-ticket-perforated-fill mt-1" style="color:#d97706;font-size:1.3rem;flex-shrink:0;"></i>
+  <div>
+    <div class="fw-bold" style="color:#78350f;">仮パスワードを発行しました</div>
+    <div class="mt-1" style="font-size:.88rem;color:#92400e;">
+      <strong>{{ request.query_params.get('temp_pw_user') }}</strong> の仮パスワード:
+      <code class="px-2 py-1 rounded" style="background:#431407;color:#fde68a;font-size:.85rem;letter-spacing:.1em;">
+        {{ request.query_params.get('temp_pw') }}
+      </code>
+      <button class="btn btn-xs btn-outline-secondary ms-2" style="font-size:.72rem;border-radius:8px;"
+              onclick="navigator.clipboard.writeText('{{ request.query_params.get('temp_pw') }}');showToast('コピーしました','success')">
+        <i class="bi bi-clipboard"></i>
+      </button>
+    </div>
+    <div class="mt-1 small text-muted">
+      <i class="bi bi-exclamation-triangle me-1 text-warning"></i>
+      このパスワードはこの画面を閉じると確認できません。ユーザーに安全な方法で伝えてください。
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" style="font-size:.9rem;">
@@ -72,6 +96,13 @@
                         onclick="openResetModal({{ u.id }}, '{{ u.username }}')">
                   <i class="bi bi-key me-1"></i>PW変更
                 </button>
+                <form method="post" action="/admin/users/{{ u.id }}/issue-temp-password"
+                      onsubmit="return confirm('「{{ u.username }}」に仮パスワードを発行しますか？\n次回ログイン時にパスワード変更が必要になります。')">
+                  <button class="btn btn-xs btn-outline-warning" style="font-size:.78rem;padding:.2rem .6rem;"
+                          title="仮パスワードを発行（次回ログイン時に変更必須）">
+                    <i class="bi bi-ticket-perforated me-1"></i>仮PW発行
+                  </button>
+                </form>
                 <form method="post" action="/admin/users/{{ u.id }}/delete"
                       onsubmit="return confirm('「{{ u.username }}」を削除しますか？スキルデータも削除されます。')">
                   <button class="btn btn-xs btn-outline-danger" style="font-size:.78rem;padding:.2rem .6rem;">

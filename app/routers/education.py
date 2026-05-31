@@ -1,7 +1,8 @@
+from collections import defaultdict
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
 
 import models
 import auth
@@ -41,84 +42,62 @@ def _get_user_scope(user, db) -> dict | None:
 
 
 @router.get("/education", response_class=HTMLResponse)
-def education_list(
-    request: Request,
-    category_id: int = 0,
-    skill_id: int = 0,
-    q: str = "",
-    db: Session = Depends(get_db),
-):
+def education_list(request: Request, db: Session = Depends(get_db)):
     user = auth.require_approved(request, db)
     scope = _get_user_scope(user, db)
 
-    query = db.query(models.EducationalLink)
-
-    # ── User スコープ絞り込み ──────────────────────────────────────
+    # スキルに紐づくリソースをスコープ込みで取得
+    path_query = db.query(models.EducationalLink).filter(
+        models.EducationalLink.skill_id.isnot(None)
+    )
     if scope is not None:
-        if scope["no_group"] or (not scope["skill_ids"] and not scope["cat_ids"]):
-            # グループ未所属 or グループにスキルなし → カテゴリ・スキル未指定のリンクのみ
-            query = query.filter(
-                models.EducationalLink.category_id.is_(None),
-                models.EducationalLink.skill_id.is_(None),
-            )
+        if scope["no_group"] or not scope["skill_ids"]:
+            path_query = path_query.filter(False)
         else:
-            # 参加グループのカテゴリ or スキルに一致するリンク＋未分類リンク
-            query = query.filter(
-                or_(
-                    models.EducationalLink.category_id.in_(scope["cat_ids"]),
-                    models.EducationalLink.skill_id.in_(scope["skill_ids"]),
-                    # カテゴリ・スキル未指定（全員向け）
-                    (models.EducationalLink.category_id.is_(None) &
-                     models.EducationalLink.skill_id.is_(None)),
-                )
+            path_query = path_query.filter(
+                models.EducationalLink.skill_id.in_(scope["skill_ids"])
             )
-        # フィルターパラメータもスコープ内に限定
-        if category_id and scope["cat_ids"] and category_id not in scope["cat_ids"]:
-            category_id = 0
-        if skill_id and scope["skill_ids"] and skill_id not in scope["skill_ids"]:
-            skill_id = 0
+    path_links = path_query.all()
 
-    # ── ユーザー操作フィルター ─────────────────────────────────────
-    if category_id:
-        query = query.filter(models.EducationalLink.category_id == category_id)
-    if skill_id:
-        query = query.filter(models.EducationalLink.skill_id == skill_id)
-    if q:
-        query = query.filter(
-            models.EducationalLink.title.ilike(f"%{q}%") |
-            models.EducationalLink.description.ilike(f"%{q}%")
-        )
-    links = query.order_by(
-        models.EducationalLink.category_id,
-        models.EducationalLink.title,
-    ).all()
+    # スキルID → step_order 順にソートしたリンク一覧
+    _groups: dict = defaultdict(list)
+    for lnk in path_links:
+        _groups[lnk.skill_id].append(lnk)
+    for sid in _groups:
+        _groups[sid].sort(key=lambda x: (x.step_order is None, x.step_order or 0))
 
-    # ── フィルタードロップダウンの選択肢 ──────────────────────────
-    if scope is not None and not scope["no_group"] and scope["cat_ids"]:
-        categories = (
-            db.query(models.Category)
-            .filter(models.Category.id.in_(scope["cat_ids"]))
-            .order_by(models.Category.name).all()
-        )
-        skills = (
-            db.query(models.Skill)
-            .filter(models.Skill.id.in_(scope["skill_ids"]))
-            .order_by(models.Skill.name).all()
-        )
-    else:
-        categories = db.query(models.Category).order_by(models.Category.name).all()
-        skills     = db.query(models.Skill).order_by(models.Skill.name).all()
+    # 現ユーザーの完了済みリンクID
+    completed_ids = {
+        p.educational_link_id
+        for p in db.query(models.UserLearningProgress)
+        .filter(models.UserLearningProgress.user_id == user.id)
+        .all()
+    }
+
+    # スキルごとに active / done に分割（スキルが削除済みのリンクはスキップ）
+    path_groups = []
+    for sid, lnks in _groups.items():
+        skill_obj = lnks[0].skill
+        if skill_obj is None:
+            continue  # 紐づくスキルが削除済みの場合はスキップ
+        active = [l for l in lnks if l.id not in completed_ids]
+        done   = [l for l in lnks if l.id in completed_ids]
+        path_groups.append((skill_obj, active, done))
+    path_groups.sort(key=lambda t: (t[0].category.name if t[0].category else "", t[0].name))
+
+    # カテゴリーフィルター用（path_groups に含まれるカテゴリーのみ）
+    seen: dict = {}
+    for skill_obj, _, __ in path_groups:
+        if skill_obj.category and skill_obj.category_id not in seen:
+            seen[skill_obj.category_id] = skill_obj.category
+    filter_categories = sorted(seen.values(), key=lambda c: c.name)
 
     return templates.TemplateResponse(request, "education.html", {
         "current_user": user,
-        "links": links,
-        "categories": categories,
-        "skills": skills,
-        "sel_category": category_id,
-        "sel_skill": skill_id,
-        "q": q,
-        "is_scoped": scope is not None,          # User スコープが有効か
+        "is_scoped": scope is not None,
         "no_group":  scope is not None and scope.get("no_group", False),
+        "path_groups": path_groups,
+        "filter_categories": filter_categories,
     })
 
 
@@ -144,6 +123,7 @@ async def education_new_post(
     description: str = Form(""),
     category_id: int = Form(0),
     skill_id: int = Form(0),
+    step_order: int = Form(0),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
@@ -163,6 +143,7 @@ async def education_new_post(
         description=description.strip() or None,
         category_id=category_id or None,
         skill_id=skill_id or None,
+        step_order=step_order or None,
         created_by=user.id,
     )
     db.add(link)
@@ -196,6 +177,7 @@ async def education_edit_post(
     description: str = Form(""),
     category_id: int = Form(0),
     skill_id: int = Form(0),
+    step_order: int = Form(0),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
@@ -208,6 +190,7 @@ async def education_edit_post(
     link.description = description.strip() or None
     link.category_id = category_id or None
     link.skill_id    = skill_id or None
+    link.step_order  = step_order or None
     db.commit()
     return RedirectResponse("/education", status_code=303)
 
@@ -220,3 +203,123 @@ def education_delete(link_id: int, request: Request, db: Session = Depends(get_d
         db.delete(link)
         db.commit()
     return RedirectResponse("/education", status_code=303)
+
+
+# ── 学習パス一括管理 ─────────────────────────────────────────────────
+
+@router.get("/education/path/{skill_id}", response_class=HTMLResponse)
+def education_path_get(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        return RedirectResponse("/education", status_code=303)
+    steps = (
+        db.query(models.EducationalLink)
+        .filter(models.EducationalLink.skill_id == skill_id)
+        .all()
+    )
+    steps.sort(key=lambda x: (x.step_order is None, x.step_order or 0))
+    return templates.TemplateResponse(request, "education_path.html", {
+        "current_user": user,
+        "skill": skill,
+        "steps": steps,
+        "error": None,
+    })
+
+
+@router.post("/education/path/{skill_id}/add")
+async def education_path_add(
+    skill_id: int,
+    request: Request,
+    title: str = Form(...),
+    url: str = Form(...),
+    description: str = Form(""),
+    next: str = Form("/education/path/{skill_id}"),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        return RedirectResponse("/education", status_code=303)
+
+    if not title.strip() or not url.strip():
+        steps = (
+            db.query(models.EducationalLink)
+            .filter(models.EducationalLink.skill_id == skill_id)
+            .all()
+        )
+        steps.sort(key=lambda x: (x.step_order is None, x.step_order or 0))
+        return templates.TemplateResponse(request, "education_path.html", {
+            "current_user": user,
+            "skill": skill,
+            "steps": steps,
+            "error": "タイトルとURLは必須です",
+        })
+
+    # 次のステップ番号を自動計算
+    existing = (
+        db.query(models.EducationalLink)
+        .filter(models.EducationalLink.skill_id == skill_id,
+                models.EducationalLink.step_order.isnot(None))
+        .all()
+    )
+    next_order = max((s.step_order for s in existing), default=0) + 1
+
+    link = models.EducationalLink(
+        title=title.strip(),
+        url=url.strip(),
+        description=description.strip() or None,
+        category_id=skill.category_id,
+        skill_id=skill_id,
+        step_order=next_order,
+        created_by=user.id,
+    )
+    db.add(link)
+    db.commit()
+    redirect_to = next if next.startswith("/") else f"/education/path/{skill_id}"
+    return RedirectResponse(redirect_to, status_code=303)
+
+
+@router.post("/education/path/{skill_id}/delete/{link_id}")
+def education_path_delete(skill_id: int, link_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    link = db.query(models.EducationalLink).filter(models.EducationalLink.id == link_id).first()
+    if link:
+        db.delete(link)
+        db.commit()
+    return RedirectResponse(f"/education/path/{skill_id}", status_code=303)
+
+
+@router.post("/education/progress/{link_id}/toggle")
+def toggle_progress(link_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_approved(request, db)
+    existing = (
+        db.query(models.UserLearningProgress)
+        .filter(
+            models.UserLearningProgress.user_id == user.id,
+            models.UserLearningProgress.educational_link_id == link_id,
+        )
+        .first()
+    )
+    if existing:
+        db.delete(existing)
+    else:
+        db.add(models.UserLearningProgress(user_id=user.id, educational_link_id=link_id))
+    db.commit()
+    return RedirectResponse("/education", status_code=303)
+
+
+@router.post("/education/path/{skill_id}/reorder/{link_id}")
+async def education_path_reorder(
+    skill_id: int,
+    link_id: int,
+    request: Request,
+    step_order: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    link = db.query(models.EducationalLink).filter(models.EducationalLink.id == link_id).first()
+    if link:
+        link.step_order = step_order or None
+        db.commit()
+    return RedirectResponse(f"/education/path/{skill_id}", status_code=303)

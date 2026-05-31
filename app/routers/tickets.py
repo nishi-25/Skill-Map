@@ -302,3 +302,23 @@ def ticket_detail_json(tid: int, request: Request, db: Session = Depends(get_db)
         "can_reply": ticket.status not in ("resolved", "closed"),
         "messages": messages,
     })
+
+
+# ─── チケット削除 ─────────────────────────────────────────────────
+
+@router.post("/api/tickets/{tid}/delete")
+def delete_ticket(tid: int, request: Request, db: Session = Depends(get_db)):
+    """チケット削除: Admin は全件、投稿者本人は自分のチケットのみ削除可能"""
+    user = auth.require_approved(request, db)
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == tid).first()
+    if not ticket:
+        return JSONResponse({"ok": False, "error": "チケットが見つかりません"}, status_code=404)
+    # 権限チェック
+    if user.role != "admin" and ticket.user_id != user.id:
+        return JSONResponse({"ok": False, "error": "削除権限がありません"}, status_code=403)
+    # メッセージも含めて削除
+    for msg in ticket.messages:
+        db.delete(msg)
+    db.delete(ticket)
+    db.commit()
+    return JSONResponse({"ok": True})

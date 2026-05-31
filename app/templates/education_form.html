@@ -57,7 +57,7 @@
                       style="resize:vertical;">{{ link.description if link and link.description else '' }}</textarea>
           </div>
 
-          <div class="row g-3 mb-4">
+          <div class="row g-3 mb-3">
             <!-- カテゴリー -->
             <div class="col-sm-6">
               <label class="form-label fw-semibold">関連カテゴリー</label>
@@ -76,7 +76,7 @@
             <!-- 関連スキル -->
             <div class="col-sm-6">
               <label class="form-label fw-semibold">関連スキル</label>
-              <select name="skill_id" class="form-select" id="skillSelect">
+              <select name="skill_id" class="form-select" id="skillSelect" onchange="toggleStepOrder()">
                 <option value="0">未指定</option>
                 {% for s in skills %}
                 <option value="{{ s.id }}"
@@ -87,6 +87,34 @@
                 {% endfor %}
               </select>
             </div>
+          </div>
+
+          <!-- スキル選択時: 学習パス管理リンク -->
+          <div id="pathManageLink" style="display:none;" class="mb-3">
+            <div class="alert py-2 d-flex align-items-center gap-2"
+                 style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;">
+              <i class="bi bi-signpost-split" style="color:#f97316;flex-shrink:0;"></i>
+              <div class="flex-fill small" style="color:#92400e;">
+                このスキルの学習パスをまとめて管理する場合は
+                <a id="pathManageHref" href="#" style="color:#f97316;font-weight:600;">学習パス管理ページ</a>
+                をご利用ください。
+              </div>
+            </div>
+          </div>
+
+          <!-- ステップ番号（スキル選択時のみ表示） -->
+          <div class="mb-4" id="stepOrderField" style="display:none;">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-signpost-split me-1" style="color:#f97316;"></i>学習ステップ番号
+            </label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="number" name="step_order" class="form-control" id="stepOrderInput"
+                     min="1" max="99" style="max-width:100px;"
+                     placeholder="例: 1"
+                     value="{{ link.step_order if link and link.step_order else '' }}">
+              <span class="text-muted small">番目のステップ（省略可）</span>
+            </div>
+            <div class="form-text">スキル習得の学習順序。同一スキルのリソース間で番号が小さい順に「学習パス」へ表示されます。</div>
           </div>
 
           <div class="d-flex gap-2">
@@ -131,6 +159,20 @@ function filterSkillsByCategory() {
   // 現在選択中のスキルが非表示になったらリセット
   const cur = sel.options[sel.selectedIndex];
   if (cur && cur.hidden) sel.value = '0';
+  toggleStepOrder();
+}
+
+// スキル選択時にステップ番号フィールドと管理リンクを表示/非表示
+function toggleStepOrder() {
+  const skillVal   = document.getElementById('skillSelect').value;
+  const field      = document.getElementById('stepOrderField');
+  const manageLink = document.getElementById('pathManageLink');
+  const manageHref = document.getElementById('pathManageHref');
+  const show       = skillVal && skillVal !== '0';
+  field.style.display      = show ? '' : 'none';
+  manageLink.style.display = show ? '' : 'none';
+  if (show) manageHref.href = `/education/path/${skillVal}`;
+  if (!show) document.getElementById('stepOrderInput').value = '';
 }
 
 // 初期化
@@ -138,6 +180,7 @@ function filterSkillsByCategory() {
   const url = document.querySelector('input[name="url"]').value;
   if (url) previewFavicon(url);
   filterSkillsByCategory();
+  toggleStepOrder();
 })();
 </script>
 {% endblock %}

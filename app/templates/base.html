@@ -429,8 +429,8 @@
       <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.rejected_approval_count }}</span>
       {% endif %}
     </a>
-    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="教育リソース">
-      <i class="bi bi-mortarboard-fill nav-icon"></i><span class="nav-text">教育リソース</span>
+    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
+      <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
     </a>
     <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
       <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
@@ -458,8 +458,8 @@
     <a href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
       <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
     </a>
-    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="教育リソース">
-      <i class="bi bi-mortarboard-fill nav-icon"></i><span class="nav-text">教育リソース</span>
+    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
+      <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
     </a>
     {% endif %}
 
@@ -474,9 +474,6 @@
     </a>
     <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}" data-label="カテゴリー">
       <i class="bi bi-tags nav-icon"></i><span class="nav-text" data-i18n="nav.categories">カテゴリー</span>
-    </a>
-    <a href="/tags" class="nav-link-item {% if request.url.path == '/tags' %}active{% endif %}" data-label="タグ管理">
-      <i class="bi bi-bookmark-fill nav-icon"></i><span class="nav-text" data-i18n="nav.tags">タグ管理</span>
     </a>
     <div class="nav-label" data-i18n="section.groups">グループ</div>
     <a id="navGroups" href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}" data-label="グループ管理">
@@ -495,8 +492,14 @@
       <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_user_count }}</span>
       {% endif %}
     </a>
-    <a id="navMail" href="/admin/settings/mail" class="nav-link-item {% if '/admin/settings' in request.url.path %}active{% endif %}" data-label="メール設定">
-      <i class="bi bi-envelope-at nav-icon"></i><span class="nav-text" data-i18n="nav.mail">メール設定</span>
+    <a id="navNotify" href="/admin/settings/notifications" class="nav-link-item {% if '/admin/settings/notifications' in request.url.path or '/admin/settings/mail' in request.url.path %}active{% endif %}" data-label="通知設定">
+      <i class="bi bi-bell nav-icon"></i><span class="nav-text">通知設定</span>
+    </a>
+    <a href="/admin/settings/ai" class="nav-link-item {% if '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="AI設定">
+      <i class="bi bi-stars nav-icon"></i><span class="nav-text">AI設定</span>
+    </a>
+    <a id="navTodos" href="/admin/todos" class="nav-link-item {% if '/admin/todos' in request.url.path %}active{% endif %}" data-label="ToDoリスト">
+      <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">ToDoリスト</span>
     </a>
     {% endif %}
 
@@ -1472,7 +1475,7 @@ window.openNewTicket = function() {
       'lbl.recent_updates':'最近の申告・更新',
       'lbl.skill_count2': '対象スキル',
       'lbl.fill_rate':    '入力率',
-      'lbl.expert_count': 'エキスパート数',
+      'lbl.expert_count': '上級者数',
       'lbl.user_avg':     'ユーザー平均',
       'lbl.skill_avg':    'スキル平均',
       'lbl.show_analytics':'分析チャートを表示',
@@ -1746,7 +1749,7 @@ window.openNewTicket = function() {
 
     { el: '#navSkills', pos: 'right', icon: 'bi-lightning-charge',
       title: '② スキルマップ（自己申告）',
-      body: '難易度ティア（初級〜上級）ごとのカードをクリックしてスキル一覧へ。\n「全スキルを一覧表示」で全ティアを一画面で確認できます。' },
+      body: '難易度ティア（基礎〜上級）ごとのカードをクリックしてスキル一覧へ。\n「全スキルを一覧表示」で全ティアを一画面で確認できます。' },
 
     { el: null, isHowto: 'skills', title: 'スキルの登録方法', icon: 'bi-lightning-charge-fill' },
 
@@ -1758,9 +1761,9 @@ window.openNewTicket = function() {
       title: '④ 成長タイムライン',
       body: '承認されたスキルの変化を時系列グラフで振り返ることができます。\n自分の成長を定期的に確認しましょう。' },
 
-    { el: '#navEducation', pos: 'right', icon: 'bi-mortarboard-fill',
-      title: '⑤ 教育リソース',
-      body: 'カテゴリー・スキルに紐づいた学習サイトや教材が一覧表示されます。\n「サイトを開く」ボタンで外部リソースにアクセスできます。' },
+    { el: '#navEducation', pos: 'right', icon: 'bi-signpost-split',
+      title: '⑤ 学習パス',
+      body: 'スキルごとの学習ステップが順番に表示されます。\n各ステップを「完了」にすることで進捗を管理できます。' },
 
     { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
       title: '⑥ 問い合わせ・要望',
@@ -1804,9 +1807,9 @@ window.openNewTicket = function() {
       title: '⑤ グループ管理',
       body: 'グループの作成・メンバー追加・必須スキル設定を行います。\nManagerを複数名設定でき、階層構造（親子グループ）にも対応しています。' },
 
-    { el: '#navEducation', pos: 'right', icon: 'bi-mortarboard-fill',
-      title: '⑥ 教育リソース管理',
-      body: 'カテゴリー・スキルに紐づく学習サイトのリンクを追加・編集できます。\nメンバーが自己学習に活用できるよう充実させましょう。' },
+    { el: '#navEducation', pos: 'right', icon: 'bi-signpost-split',
+      title: '⑥ 学習パス管理',
+      body: 'スキルに紐づく学習ステップを追加・編集できます。\nメンバーが段階的に学習できるよう順番を整えましょう。' },
 
     { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
       title: '⑦ 問い合わせ・要望',
@@ -1917,7 +1920,7 @@ window.openNewTicket = function() {
 
       const levelBadges = [
         ['#94a3b8','0','未経験'],['#fbbf24','1','入門'],
-        ['#f97316','2','基礎'],['#ef4444','3','実務可'],['#dc2626','4','エキスパート'],
+        ['#f97316','2','実務可'],['#ef4444','3','指導可'],['#dc2626','4','エキスパート'],
       ].map(([c,n,l]) =>
         `<span style="${tagSt(c)}">${n} ${l}</span>`
       ).join('<span style="color:#cbd5e1;padding:0 2px;font-size:.6rem;">›</span>');
@@ -1943,7 +1946,7 @@ window.openNewTicket = function() {
                 <div style="${ttlSt}">スキルマップを開く</div>
                 <div style="${subSt}">
                   左サイドバーの <b>⚡ スキルマップ</b> をクリック<br>
-                  <span style="${tagSt('#fff7ed','#c2410c')}">難易度別カード</span> が表示されます（初級 / 基礎 / 中級 / 上級）
+                  <span style="${tagSt('#fff7ed','#c2410c')}">難易度別カード</span> が表示されます（基礎 / 中級 / 上級）
                 </div>
               </div>
             </div>
@@ -1954,7 +1957,7 @@ window.openNewTicket = function() {
               <div style="flex:1;min-width:0;">
                 <div style="${ttlSt}">スキルを探す</div>
                 <div style="${subSt}">
-                  ティアカードをクリック <i style="font-size:.7rem;">（例：初級）</i> → スキル一覧が開く<br>
+                  ティアカードをクリック <i style="font-size:.7rem;">（例：基礎）</i> → スキル一覧が開く<br>
                   または <b>「全スキルを一覧表示」</b> で全ティアを一画面に表示<br>
                   <span style="color:#94a3b8;font-size:.7rem;"><i class="bi bi-search" style="font-size:.65rem;"></i> 上部の検索欄でスキル名の絞り込みも可</span>
                 </div>
@@ -1970,7 +1973,7 @@ window.openNewTicket = function() {
                 <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.2rem;margin-top:.3rem;">${levelBadges}</div>
                 <div style="font-size:.68rem;color:#94a3b8;margin-top:.25rem;">
                   ● 未経験: 知識なし　● 入門: 概念理解・指導があれば作業可<br>
-                  ● 基礎: 手順書見ながら一人で作業可　● 実務可: 手順書なしで業務活用・説明可<br>
+                  ● 基礎: 手順書見ながら一人で作業可　● 指導可: 手順書なしで業務活用・説明可<br>
                   ● エキスパート: 設計・改善・他者指導ができる
                 </div>
               </div>
@@ -2242,6 +2245,107 @@ window.openNewTicket = function() {
     setTimeout(() => { document.getElementById('searchResults').style.display = 'none'; }, 150);
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+</script>
+
+<!-- ═══ お知らせポップアップ ═══ -->
+<div class="modal fade" id="annPopupModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:20px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+      <div class="modal-header" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:20px 20px 0 0;border-bottom:2px solid #fed7aa;">
+        <div class="d-flex align-items-center gap-2">
+          <span style="width:10px;height:10px;border-radius:50%;background:#f97316;animation:pulse 1.5s infinite;display:inline-block;"></span>
+          <h5 class="modal-title fw-bold mb-0" style="color:#c2410c;">
+            <i class="bi bi-megaphone-fill me-2"></i>新しいお知らせ
+          </h5>
+        </div>
+        <button type="button" class="btn-close" onclick="closeAnnPopup()"></button>
+      </div>
+      <div class="modal-body px-4 py-3" id="annPopupBody" style="max-height:60vh;overflow-y:auto;">
+        <!-- JSで挿入 -->
+      </div>
+      <div class="modal-footer justify-content-between" style="border-top:1px solid #f1f5f9;border-radius:0 0 20px 20px;">
+        <div class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" id="suppressPopupCheck">
+          <label class="form-check-label small text-muted" for="suppressPopupCheck">
+            次回から表示しない
+          </label>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/announcements" class="btn btn-outline-primary btn-sm" style="border-radius:20px;"
+             onclick="closeAnnPopup()">
+            <i class="bi bi-list-ul me-1"></i>一覧を見る
+          </a>
+          <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;"
+                  onclick="closeAnnPopup()">
+            <i class="bi bi-check me-1"></i>確認しました
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(249,115,22,.5); }
+  50%      { box-shadow:0 0 0 6px rgba(249,115,22,0); }
+}
+</style>
+
+<script>
+// ── お知らせポップアップ ──────────────────────────────────────
+(async function initAnnPopup() {
+  try {
+    const res = await fetch('/api/announcements/popup');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // suppress設定済みなら表示しない
+    if (data.suppress || !data.announcements || data.announcements.length === 0) return;
+
+    // localStorage でこのセッション以降に既読にしたIDを管理
+    const readKey = 'ann_read_ids';
+    const readIds = JSON.parse(localStorage.getItem(readKey) || '[]');
+    const unread  = data.announcements.filter(a => !readIds.includes(a.id));
+    if (unread.length === 0) return;
+
+    // ポップアップ本文を構築
+    const body = document.getElementById('annPopupBody');
+    const typeColors = { feature:'primary', bugfix:'danger', maintenance:'warning', info:'secondary' };
+    body.innerHTML = unread.map(a => `
+      <div class="mb-3 p-3 rounded-3" style="background:#fafafa;border:1px solid #f1f5f9;">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-${typeColors[a.type_key]||'secondary'}" style="font-size:.68rem;">${a.type}</span>
+          <span class="text-muted" style="font-size:.72rem;">${a.created_at}</span>
+        </div>
+        <div class="fw-bold mb-1" style="font-size:.95rem;">${escHtml(a.title)}</div>
+        <div class="text-muted" style="font-size:.82rem;">${escHtml(a.content)}</div>
+      </div>`).join('');
+
+    // 既読IDに追加（表示したら既読扱い）
+    const newIds = [...new Set([...readIds, ...unread.map(a => a.id)])];
+    localStorage.setItem(readKey, JSON.stringify(newIds));
+
+    // ポップアップ表示
+    new bootstrap.Modal(document.getElementById('annPopupModal')).show();
+  } catch(e) { /* 通信エラーは無視 */ }
+})();
+
+async function closeAnnPopup() {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('annPopupModal'));
+  if (modal) modal.hide();
+
+  // 「次回から表示しない」がチェックされていれば設定を保存
+  if (document.getElementById('suppressPopupCheck')?.checked) {
+    try {
+      await fetch('/api/announcements/suppress-popup', { method: 'POST' });
+    } catch(e) {}
+  }
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
 </body>
 </html>

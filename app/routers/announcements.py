@@ -144,6 +144,59 @@ def announcement_delete(ann_id: int, request: Request, db: Session = Depends(get
     return RedirectResponse("/announcements", status_code=303)
 
 
+@router.get("/api/announcements/popup")
+def announcements_popup(request: Request, db: Session = Depends(get_db)):
+    """ポップアップ用: 未読のお知らせを返す（suppress設定済みユーザーは空を返す）"""
+    user = auth.get_current_user(request, db)
+    if not user or not user.is_approved:
+        return JSONResponse({"announcements": [], "suppress": True})
+    if getattr(user, "suppress_ann_popup", False):
+        return JSONResponse({"announcements": [], "suppress": True})
+
+    # セッションに既読IDを持つ（セッション未対応の場合はCookieで管理）
+    # ここではDBのお知らせ全件を返し、クライアント側でlocalStorageと照合する
+    anns = (
+        db.query(models.Announcement)
+        .filter(models.Announcement.is_published == True)
+        .order_by(models.Announcement.created_at.desc())
+        .limit(5)
+        .all()
+    )
+    return JSONResponse({
+        "suppress": False,
+        "announcements": [
+            {
+                "id":         a.id,
+                "title":      a.title,
+                "type":       models.ANNOUNCEMENT_TYPES.get(a.ann_type, a.ann_type),
+                "type_key":   a.ann_type,
+                "type_color": models.ANNOUNCEMENT_TYPE_COLORS.get(a.ann_type, "secondary"),
+                "content":    a.content[:200] + ("…" if len(a.content) > 200 else ""),
+                "created_at": a.created_at.strftime("%Y/%m/%d") if a.created_at else "",
+            }
+            for a in anns
+        ]
+    })
+
+
+@router.post("/api/announcements/suppress-popup")
+def suppress_popup(request: Request, db: Session = Depends(get_db)):
+    """ポップアップを今後表示しない設定"""
+    user = auth.require_approved(request, db)
+    user.suppress_ann_popup = True
+    db.commit()
+    return JSONResponse({"ok": True})
+
+
+@router.post("/api/announcements/enable-popup")
+def enable_popup(request: Request, db: Session = Depends(get_db)):
+    """ポップアップ表示を再有効化"""
+    user = auth.require_approved(request, db)
+    user.suppress_ann_popup = False
+    db.commit()
+    return JSONResponse({"ok": True})
+
+
 @router.get("/api/announcements/latest")
 def announcements_latest(request: Request, db: Session = Depends(get_db)):
     """ベルアイコン用: 公開中のお知らせ一覧を返す"""

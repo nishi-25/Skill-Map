@@ -6,7 +6,7 @@
   <div>
     {% if overview_mode %}
     <h1><i class="bi bi-lightning-charge me-2" style="color:#f97316;"></i><span data-i18n="page.skills">スキルマップ</span></h1>
-    <p class="text-muted mb-0 small">難易度ティアを選択してスキル申告を行います</p>
+    <p class="text-muted mb-0 small">カテゴリを選択してスキル申告を行います</p>
     {% else %}
     <h1>
       <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="text-decoration-none" style="color:#f97316;">
@@ -21,7 +21,7 @@
       {% endif %}
     </h1>
     {% if current_user.role in ('admin', 'manager') %}
-    <p class="text-muted mb-0 small">各スキルに対して自分のレベルを申告します（Admin/Managerは自動承認されます）</p>
+    <p class="text-muted mb-0 small"><i class="bi bi-shield-check me-1 text-warning"></i>管理者モード：ユーザーの申告状況を確認できます</p>
     {% else %}
     <p class="text-muted mb-0 small">各スキルに対して自分のレベルを申告します（承認者の確認後に登録されます）</p>
     {% endif %}
@@ -50,321 +50,483 @@
 </div>
 
 {% if overview_mode %}
-<!-- ═══════ ティア概要（overview_mode） ═══════ -->
 
-{% if my_groups %}
-<div class="card mb-3">
-  <div class="card-body py-2">
-    <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
-      <select name="group_id" class="form-select form-select-sm" style="max-width:200px;border-radius:20px;" onchange="this.form.submit()">
-        <option value="0">すべてのグループ</option>
-        {% for g in my_groups %}
-        <option value="{{ g.id }}" {% if sel_group == g.id %}selected{% endif %}>{{ g.name }}</option>
-        {% endfor %}
-      </select>
-      {% if sel_group %}
-      <a href="/skills" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
-      {% endif %}
-    </form>
+<!-- ═══════ 全体進捗バー ═══════ -->
+<div class="card mb-4 border-0" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">
+  <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
+    <i class="bi bi-bar-chart-fill" style="font-size:1.6rem;color:#f97316;"></i>
+    <div style="flex:1;">
+      <div class="d-flex justify-content-between align-items-baseline mb-1">
+        <span class="fw-bold" style="color:#c2410c;">スキル申告の進捗</span>
+        <span class="text-muted small">{{ total_set }} / {{ total_catalog }} 申告済み</span>
+      </div>
+      <div class="progress" style="height:8px;border-radius:4px;">
+        <div class="progress-bar" style="width:{% if total_catalog %}{{ (total_set/total_catalog*100)|int }}{% else %}0{% endif %}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px;transition:width .5s;"></div>
+      </div>
+    </div>
+    <div class="fw-bold" style="font-size:1.5rem;color:#f97316;min-width:3rem;text-align:right;">
+      {% if total_catalog %}{{ (total_set/total_catalog*100)|int }}{% else %}0{% endif %}%
+    </div>
   </div>
+</div>
+
+<!-- ═══════ 検索ボックス ═══════ -->
+<div class="mb-4 position-relative">
+  <div class="input-group input-group-lg shadow-sm">
+    <span class="input-group-text" style="background:white;border-right:none;border-radius:16px 0 0 16px;">
+      <i class="bi bi-search" style="color:#f97316;"></i>
+    </span>
+    <input type="text" id="globalSkillSearch"
+           class="form-control"
+           placeholder="スキル名を入力して申告..."
+           style="border-left:none;border-radius:0 16px 16px 0;font-size:1rem;"
+           oninput="handleGlobalSearch(this.value)"
+           autocomplete="off">
+    <button class="btn position-absolute end-0 top-50 translate-middle-y me-2 btn-sm text-muted"
+            style="border:none;background:none;z-index:10;"
+            onclick="clearGlobalSearch()"
+            id="clearSearchBtn" style="display:none;">
+      <i class="bi bi-x-circle"></i>
+    </button>
+  </div>
+  <!-- 検索結果ドロップダウン（position:fixedでスタッキングコンテキストを回避） -->
+
+</div>
+
+<!-- ═══════ グループフィルタ ═══════ -->
+{% if my_groups %}
+<div class="mb-3">
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+    <select name="group_id" class="form-select form-select-sm" style="max-width:200px;border-radius:20px;" onchange="this.form.submit()">
+      <option value="0">すべてのグループ</option>
+      {% for g in my_groups %}
+      <option value="{{ g.id }}" {% if sel_group == g.id %}selected{% endif %}>{{ g.name }}</option>
+      {% endfor %}
+    </select>
+    {% if sel_group %}
+    <a href="/skills" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
+    {% endif %}
+  </form>
 </div>
 {% endif %}
 
-<style>
-  .tier-card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
-  .tier-card-link .card {
-    transition: transform .25s, box-shadow .25s;
-    border: 2px solid transparent;
-    overflow: hidden;
-    height: 100%;
-  }
-  .tier-card-link:hover .card {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(0,0,0,.12);
-  }
-  .tier-card-link:hover .card.border-success { border-color: var(--bs-success); }
-  .tier-card-link:hover .card.border-primary { border-color: var(--bs-primary); }
-  .tier-card-link:hover .card.border-warning { border-color: var(--bs-warning); }
-  .tier-card-link:hover .card.border-danger  { border-color: var(--bs-danger); }
-  .tier-icon-wrap {
-    width: 64px; height: 64px; border-radius: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem; color: #fff; margin: 0 auto;
-    box-shadow: 0 6px 20px rgba(0,0,0,.15);
-  }
-  .tier-card-count {
-    font-size: 2rem; font-weight: 800; line-height: 1;
-  }
-</style>
+<!-- ═══════ カテゴリ進捗カード一覧 ═══════ -->
+<div class="row g-3 mb-4" id="categoryCards">
+  {% for cat_name, cat_data in skills_by_category.items() %}
+  {% set cat_total = cat_data.skills|length %}
+  {% set cat_done = namespace(n=0) %}
+  {% for sk in cat_data.skills %}{% if my_level_map.get(sk.id, 0) > 0 %}{% set cat_done.n = cat_done.n + 1 %}{% endif %}{% endfor %}
+  {% set pct = (cat_done.n / cat_total * 100)|int if cat_total else 0 %}
+  {% set cat_id = cat_data.category.id if cat_data.category else loop.index %}
 
-<div class="row g-3">
-  {% set tier_gradients = {
-    "beginner":     "linear-gradient(135deg,#22c55e,#16a34a)",
-    "basic":        "linear-gradient(135deg,#f97316,#ea580c)",
-    "intermediate": "linear-gradient(135deg,#f59e0b,#d97706)",
-    "advanced":     "linear-gradient(135deg,#ef4444,#dc2626)"
-  } %}
-  {% for tk in tier_order %}
-  {% set ts = tier_summary[tk] %}
-  <div class="col-6 col-lg-3">
-    <a href="/skills?tier={{ tk }}{% if sel_group %}&group_id={{ sel_group }}{% endif %}" class="tier-card-link">
-      <div class="card border-{{ TIER_COLORS[tk] }}">
-        <div class="card-body text-center py-4">
-          <div class="tier-icon-wrap" style="background:{{ tier_gradients[tk] }};">
-            <i class="{{ TIER_ICONS[tk] }}"></i>
-          </div>
-          <h5 class="fw-bold mt-3 mb-1">{{ TIER_NAMES[tk] }}</h5>
-          <p class="text-muted small mb-3">{{ TIER_DESCRIPTIONS[tk] }}</p>
-          <div class="tier-card-count text-{{ TIER_COLORS[tk] }}">
-            {{ ts.acquired }}
-            <span class="text-muted" style="font-size:1rem;font-weight:400;">/ {{ ts.total }}</span>
-          </div>
-          <div class="text-muted small mb-2">スキル習得</div>
-          <div class="progress" style="height:8px;border-radius:4px;">
-            <div class="progress-bar bg-{{ TIER_COLORS[tk] }}" style="width:{% if ts.total %}{{ (ts.acquired / ts.total * 100)|int }}{% else %}0{% endif %}%;border-radius:4px;"></div>
-          </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100 cat-progress-card"
+         data-cat-id="{{ cat_id }}"
+         style="cursor:pointer;border-radius:14px;transition:transform .15s,box-shadow .15s;
+                border:2px solid {% if pct == 100 %}#22c55e{% elif cat_done.n > 0 %}#f97316{% else %}#e2e8f0{% endif %};"
+         onclick="openCategoryPane({{ cat_id }})"
+         onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.1)'"
+         onmouseleave="this.style.transform='';this.style.boxShadow=''">
+      <div class="card-body py-3 px-3">
+
+        <!-- カテゴリ名 + ステータスバッジ -->
+        <div class="d-flex align-items-center gap-2 mb-2">
+          {% if cat_data.category %}
+          <span style="width:12px;height:12px;border-radius:50%;background:{{ cat_data.category.color }};flex-shrink:0;box-shadow:0 0 0 3px {{ cat_data.category.color }}33;"></span>
+          {% endif %}
+          <span class="fw-bold flex-grow-1" style="font-size:.88rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cat_name }}</span>
+          {% if pct == 100 %}
+          <span class="badge bg-success" style="font-size:.65rem;border-radius:20px;">完了</span>
+          {% elif cat_done.n > 0 %}
+          <span class="badge bg-warning text-dark" style="font-size:.65rem;border-radius:20px;">進行中</span>
+          {% else %}
+          <span class="badge bg-light text-muted" style="font-size:.65rem;border-radius:20px;">未着手</span>
+          {% endif %}
         </div>
-        <div class="card-footer bg-transparent text-center py-2" style="border-top:1px solid #f1f5f9;">
-          <span class="small fw-semibold text-{{ TIER_COLORS[tk] }}">
-            詳細を見る <i class="bi bi-chevron-right ms-1"></i>
+
+        <!-- 進捗バー -->
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="progress flex-grow-1" style="height:6px;border-radius:3px;background:#f1f5f9;">
+            <div class="progress-bar" style="width:{{ pct }}%;border-radius:3px;
+                 background:{% if pct==100 %}#22c55e{% elif cat_done.n > 0 %}linear-gradient(90deg,#f97316,#fb923c){% else %}#94a3b8{% endif %};
+                 transition:width .5s;"></div>
+          </div>
+          <span class="text-muted" style="font-size:.75rem;white-space:nowrap;">{{ cat_done.n }}/{{ cat_total }}</span>
+        </div>
+
+        <!-- スキル名をプレビュー（最大3件） -->
+        <div class="d-flex flex-wrap gap-1">
+          {% for sk in cat_data.skills[:3] %}
+          {% set lv = my_level_map.get(sk.id, 0) %}
+          <span class="badge" style="font-size:.62rem;border-radius:8px;
+                background:{% if lv > 0 %}{{ LEVEL_COLORS[lv] | replace('primary','#3b82f6') | replace('warning','#f59e0b') | replace('danger','#ef4444') | replace('info','#0ea5e9') | replace('secondary','#94a3b8') }}{% else %}#f1f5f9{% endif %};
+                color:{% if lv > 0 %}white{% else %}#64748b{% endif %};">
+            {{ sk.name[:12] }}{% if sk.name|length > 12 %}…{% endif %}
           </span>
+          {% endfor %}
+          {% if cat_data.skills|length > 3 %}
+          <span class="text-muted" style="font-size:.68rem;">+{{ cat_data.skills|length - 3 }}件</span>
+          {% endif %}
         </div>
+
       </div>
-    </a>
+      <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+        <span class="text-muted" style="font-size:.72rem;">
+          <i class="bi bi-chevron-right me-1"></i>クリックして申告
+        </span>
+      </div>
+    </div>
   </div>
   {% endfor %}
 </div>
 
-<!-- 全スキル一覧へのショートカット -->
-<div class="text-center mt-3 d-flex justify-content-center gap-2 flex-wrap">
-  <a href="/skills?view=all{% if sel_group %}&group_id={{ sel_group }}{% endif %}" class="btn btn-sm btn-primary" style="border-radius:20px;font-size:.85rem;padding:.4rem 1.2rem;">
-    <i class="bi bi-table me-1"></i>全スキルを一覧表示
-  </a>
-  {% if current_user.role in ('admin', 'manager') %}
+{% if current_user.role in ('admin', 'manager') %}
+<div class="text-end mb-2">
   <a href="/skills/tier-settings" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.8rem;">
     <i class="bi bi-gear me-1"></i>ティア名を設定
   </a>
-  {% endif %}
+</div>
+{% endif %}
+{# /overview_mode #}
+{% endif %}
+
+<!-- ═══════ 2ペイン スキル申告UI（常時レンダリング / overview_mode では非表示） ═══════ -->
+<div id="twoPaneWrapper" style="margin-top:1rem;{% if overview_mode %}display:none;{% endif %}">
+
+<!-- 閉じるボタン -->
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <span class="text-muted small" id="twoPaneTitle"><i class="bi bi-list-ul me-1"></i>全スキル一覧</span>
+  <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"
+          onclick="closeTwoPane()">
+    <i class="bi bi-x-lg me-1"></i>閉じる
+  </button>
 </div>
 
-{% else %}
-<!-- ═══════ スキル詳細一覧（tierが選択されている場合） ═══════ -->
+<!-- ウィザードステップガイド -->
+<div class="d-flex align-items-center gap-2 mb-3 px-1" style="font-size:.82rem;">
+  <span class="badge rounded-pill bg-primary" style="font-size:.7rem;">1</span>
+  <span class="text-muted">スキルを選ぶ</span>
+  <i class="bi bi-chevron-right text-muted" style="font-size:.65rem;"></i>
+  <span class="badge rounded-pill bg-secondary" style="font-size:.7rem;">2</span>
+  <span class="text-muted">サブスキルをチェック</span>
+  <i class="bi bi-chevron-right text-muted" style="font-size:.65rem;"></i>
+  <span class="badge rounded-pill bg-secondary" style="font-size:.7rem;">3</span>
+  <span class="text-muted">申告する</span>
+</div>
 
-<!-- フィルター + 検索 -->
-<div class="card mb-3">
-  <div class="card-body py-2">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <form method="get" class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
-        <input type="hidden" name="tier" value="{{ sel_tier }}">
-        {% if my_groups %}
-        <select name="group_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
-          <option value="0">すべてのグループ</option>
-          {% for g in my_groups %}
-          <option value="{{ g.id }}" {% if sel_group == g.id %}selected{% endif %}>{{ g.name }}</option>
-          {% endfor %}
-        </select>
-        {% endif %}
-        <select name="category_id" class="form-select form-select-sm" style="max-width:180px;border-radius:20px;" onchange="this.form.submit()">
-          <option value="0">すべてのカテゴリー</option>
-          {% for c in categories %}
-          <option value="{{ c.id }}" {% if sel_category == c.id %}selected{% endif %}>{{ c.name }}</option>
-          {% endfor %}
-        </select>
-        {% if sel_category or sel_group %}
-        <a href="/skills?tier={{ sel_tier }}" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
-        {% endif %}
-      </form>
-      <div class="search-box">
+<style>
+  /* ── 2ペイン コアレイアウト ── */
+  #twoPane {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: 600px;
+    height: calc(100vh - 180px);
+    display: flex;
+    box-shadow: 0 4px 24px rgba(0,0,0,.06);
+  }
+  #leftPane {
+    overflow-y: auto;
+    height: 100%;
+    width: 100%;
+    flex-shrink: 0;
+    transition: width .25s cubic-bezier(.4,0,.2,1);
+    background: #fafafa;
+  }
+  /* 右ペイン: flex縦積みで中央に最大スペースを確保 */
+  #rightPane {
+    height: 100%;
+    flex: 1;
+    min-width: 0;
+    display: none;
+    flex-direction: column;
+    border-left: 1px solid #f0f4f8;
+    background: white;
+    animation: slideInRight .22s cubic-bezier(.4,0,.2,1);
+  }
+  #twoPane.rp-open #leftPane  { width: 340px; flex-shrink: 0; }
+  #twoPane.rp-open #rightPane { display: flex; }
+  #rpContent { display: flex; flex-direction: column; height: 100%; padding: 0; }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-orange {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,.35); }
+    50%       { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+  }
+
+  /* ── 左ペイン: スキルアイテム ── */
+  .skill-left-item {
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .12s, border-left .15s;
+    border-left: 3px solid transparent;
+    position: relative;
+  }
+  .skill-left-item:hover {
+    background: linear-gradient(90deg, #fff7ed 0%, #fafafa 100%);
+    border-left-color: #fdba74;
+  }
+  .skill-left-item.active-skill {
+    background: linear-gradient(90deg, #fff7ed 0%, white 60%);
+    border-left: 3px solid #f97316;
+    animation: pulse-orange .6s ease-out;
+  }
+  .skill-left-item.active-skill .fw-semibold { color: #c2410c; }
+
+  /* ── 左ペイン: カテゴリヘッダー ── */
+  .cat-header {
+    transition: background .15s;
+    border-bottom: 1px solid #e8ecf0;
+    position: sticky;
+    top: 64px;
+    z-index: 5;
+    background: #f8fafc;
+  }
+  .cat-header:hover { background: #f1f5f9 !important; }
+  .cat-header.cat-open {
+    background: linear-gradient(90deg, #fff7ed, #fef3c7) !important;
+    border-bottom-color: #fed7aa;
+  }
+  .cat-chevron { transition: transform .22s cubic-bezier(.4,0,.2,1); }
+
+  /* ── ティアチップ ── */
+  .tier-chip {
+    padding: .2rem .75rem;
+    font-size: .73rem;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    cursor: pointer;
+    transition: all .15s;
+    font-weight: 500;
+  }
+  .tier-chip:hover { border-color: #f97316; color: #f97316; }
+  .tier-chip.active {
+    background: linear-gradient(135deg, #f97316, #fb923c);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(249,115,22,.35);
+  }
+
+  /* ── 右ペイン: ヘッダー ── */
+  /* ── 右ペイン: ヘッダー（flex-shrink:0で高さ固定） ── */
+  .rp-header {
+    flex-shrink: 0;
+    padding: .9rem 1.25rem .75rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #fff7ed 0%, white 70%);
+  }
+
+  /* ── 右ペイン: サブスキルスクロール領域（flex:1で残り全て） ── */
+  .rp-sub-scroll {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: .75rem 1rem;
+  }
+
+  /* ── サブスキル: 2カラムグリッド ── */
+  .rp-sub-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .rp-sub-grid .sub-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: .5rem .65rem;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, transform .1s;
+    animation: fadeInUp .15s ease-out both;
+    font-size: .82rem;
+    line-height: 1.35;
+    background: white;
+    min-width: 0;
+  }
+  .rp-sub-grid .sub-item:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .rp-sub-grid .sub-item:has(input:checked) {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-color: #86efac;
+  }
+  .rp-sub-grid .sub-item:has(input:checked) .sub-name { color: #166534; font-weight: 700; }
+  .rp-sub-grid .sub-item input[type=checkbox] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 1.05em;
+    height: 1.05em;
+    accent-color: #22c55e;
+    cursor: pointer;
+  }
+  .sub-name { font-weight: 600; word-break: break-all; }
+  .sub-desc { font-size: .72rem; color: #94a3b8; margin-top: 2px; }
+
+  /* ── 右ペイン: 申告エリア（flex-shrink:0で高さ固定） ── */
+  .rp-action-area {
+    flex-shrink: 0;
+    padding: .75rem 1.25rem 1rem;
+    border-top: 1px solid #f1f5f9;
+    background: linear-gradient(180deg, white, #fafafa);
+  }
+
+  /* ── カテゴリカード（進捗カード）── */
+  .cat-progress-card {
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s !important;
+  }
+  .cat-progress-card:hover {
+    transform: translateY(-6px) scale(1.01) !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,.12) !important;
+  }
+
+  /* ── 2ペインラッパー表示アニメ ── */
+  #twoPaneWrapper {
+    animation: fadeInUp .25s ease-out;
+  }
+
+  /* ── スピナー ── */
+  .rp-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    gap: .75rem;
+  }
+  .rp-spinner .spinner-border { color: #f97316; }
+
+  @media (max-width: 991px) {
+    #twoPane.rp-open #leftPane { width: 260px; }
+  }
+</style>
+
+<div id="twoPane">
+  <!-- ──────── 左ペイン: スキル一覧 ──────── -->
+  <div id="leftPane">
+
+    <!-- 検索 + ティアフィルタ -->
+    <div class="p-2 border-bottom" style="position:sticky;top:0;z-index:10;background:var(--bs-body-bg);">
+      <div class="search-box mb-2">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="skillSearch" class="form-control form-control-sm" placeholder="data-i18n-placeholder="lbl.search" placeholder="スキルを検索..." style="width:200px;">
+        <input type="text" id="skillSearchLeft" class="form-control form-control-sm"
+               placeholder="スキルを検索..." oninput="filterLeft()" style="padding-left:2rem;">
+      </div>
+      <div class="d-flex gap-1 flex-wrap">
+        <span class="tier-chip active" data-tier="" onclick="filterTierLeft(this,'')">全て</span>
+        {% for tk in tier_order %}
+        <span class="tier-chip" data-tier="{{ tk }}" onclick="filterTierLeft(this,'{{ tk }}')">{{ TIER_NAMES[tk] }}</span>
+        {% endfor %}
       </div>
     </div>
-  </div>
-</div>
 
-{% for tier_key in tier_order %}
-{% set tier_skills = by_tier.get(tier_key, []) %}
-{% if tier_skills %}
-<div class="tier-section" data-tier="{{ tier_key }}">
-  <div class="tier-header" onclick="toggleTier(this)">
-    <div class="d-flex align-items-center gap-2">
-      <span class="badge bg-{{ TIER_COLORS[tier_key] }}" style="font-size:.85rem;padding:.4em .8em;">
-        <i class="{{ TIER_ICONS[tier_key] }} me-1"></i>{{ TIER_NAMES[tier_key] }}
-      </span>
-      <span class="text-muted small">{{ tier_skills | length }} スキル</span>
-      {% set tier_done = tier_skills | selectattr('id', 'in', my_level_map.keys()) | list | length %}
-      <div class="d-flex align-items-center gap-2 ms-2">
-        <div class="tier-progress-mini" style="width:80px;">
-          <div class="bar bg-{{ TIER_COLORS[tier_key] }}" style="width:{% if tier_skills %}{{ (tier_done / tier_skills|length * 100)|int }}{% else %}0{% endif %}%;"></div>
-        </div>
-        <span class="text-muted" style="font-size:.75rem;">{{ tier_done }}/{{ tier_skills|length }}</span>
+    <!-- カテゴリ → スキルの2段階リスト -->
+    {% if skills_by_category %}
+    {% for cat_name, cat_data in skills_by_category.items() %}
+    {% set cat_id = cat_data.category.id if cat_data.category else loop.index %}
+    <div class="skill-cat-block" data-cat-id="{{ cat_id }}">
+
+      <!-- ── カテゴリ行（クリックでスキル一覧を展開） ── -->
+      {% set cat_acquired = namespace(n=0) %}
+      {% for sk in cat_data.skills %}{% if my_level_map.get(sk.id, 0) > 0 %}{% set cat_acquired.n = cat_acquired.n + 1 %}{% endif %}{% endfor %}
+
+      <div class="cat-header d-flex align-items-center gap-2 px-3 py-2"
+           data-cat-id="{{ cat_id }}"
+           style="cursor:pointer;border-bottom:1px solid #e2e8f0;user-select:none;"
+           onclick="toggleCat({{ cat_id }}, this)">
+        {% if cat_data.category %}
+        <span style="width:10px;height:10px;border-radius:50%;background:{{ cat_data.category.color }};flex-shrink:0;"></span>
+        {% endif %}
+        <span class="fw-semibold text-truncate" style="font-size:.85rem;flex:1;">{{ cat_name }}</span>
+        <span class="text-muted" style="font-size:.72rem;">{{ cat_acquired.n }}/{{ cat_data.skills|length }}</span>
+        <i class="bi bi-chevron-right cat-chevron text-muted" style="font-size:.72rem;transition:transform .2s;flex-shrink:0;"></i>
       </div>
-    </div>
-    <i class="bi bi-chevron-down tier-chevron"></i>
-  </div>
-  <div class="tier-body">
-    <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:-1px;">
-      <div class="table-responsive">
-        <table class="table table-skill align-middle mb-0" style="font-size:.88rem;">
-          <thead class="table-light">
-            <tr>
-              <th style="width:22%;">スキル</th>
-              <th style="width:10%;cursor:pointer;user-select:none;" onclick="sortSkillTable(this,'cat')">
-                カテゴリー <i class="bi bi-arrow-down-up sort-icon" style="font-size:.68rem;color:#94a3b8;"></i>
-              </th>
-              <th style="width:20%;" class="hide-mobile">説明</th>
-              <th style="width:24%;cursor:pointer;user-select:none;text-align:center;" onclick="sortSkillTable(this,'level')">
-                自分のレベル <i class="bi bi-arrow-down-up sort-icon" style="font-size:.68rem;color:#94a3b8;"></i>
-                <span tabindex="0" role="button"
-                      data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-html="true"
-                      data-bs-content="
-                        <table class='table table-sm mb-0' style='font-size:.78rem;min-width:220px;'>
-                          <tr><td><span class='badge bg-secondary'>0</span></td><td><b>未経験</b></td><td>経験・知識がない</td></tr>
-                          <tr><td><span class='badge bg-info'>1</span></td><td><b>入門</b></td><td>概念を理解し、指導があれば作業できる</td></tr>
-                          <tr><td><span class='badge bg-primary'>2</span></td><td><b>基礎</b></td><td>手順を見ながら一人で作業できる</td></tr>
-                          <tr><td><span class='badge bg-warning text-dark'>3</span></td><td><b>実務可</b></td><td>手順書なしで業務に活用・説明できる</td></tr>
-                          <tr><td><span class='badge bg-danger'>4</span></td><td><b>エキスパート</b></td><td>設計・改善・他者指導ができる</td></tr>
-                        </table>"
-                      style="margin-left:4px;color:#94a3b8;font-size:.8rem;cursor:help;"
-                      onclick="event.stopPropagation()">
-                  <i class="bi bi-question-circle"></i>
-                </span>
-              </th>
-              {% if current_user.role not in ('admin', 'manager') %}
-              <th style="width:12%;" class="text-center">承認者</th>
+
+      <!-- ── スキル一覧（初期非表示） ── -->
+      <div id="cat-skills-{{ cat_id }}" style="display:none;">
+        {% for sk in cat_data.skills %}
+        {% set cur_level = my_level_map.get(sk.id, 0) %}
+        {% set cur_status = my_approval_map.get(sk.id) %}
+        {% set subs = sub_skills_map.get(sk.id, []) %}
+        {% set done_count = namespace(n=0) %}
+        {% for ss in subs %}{% if ss.id in done_sub_ids %}{% set done_count.n = done_count.n + 1 %}{% endif %}{% endfor %}
+
+        <div class="skill-left-item d-flex align-items-center gap-2 px-3 py-2"
+             data-skill-id="{{ sk.id }}"
+             data-tier="{{ sk.tier }}"
+             data-name="{{ sk.name | lower }}"
+             data-cat="{{ cat_id }}"
+             onclick="selectSkill({{ sk.id }}, this)"
+             style="padding-left:1.5rem!important;">
+          <div style="flex:1;min-width:0;">
+            <div class="fw-semibold text-truncate" style="font-size:.84rem;">{{ sk.name }}</div>
+            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+              <span class="badge bg-light text-muted" style="font-size:.6rem;">{{ TIER_NAMES[sk.tier] }}</span>
+              {% if subs %}<span class="text-muted" style="font-size:.65rem;">{{ done_count.n }}/{{ subs|length }}</span>{% endif %}
+              {# 希少性スコア #}
+              {% set holders = skill_holder_map.get(sk.id, 0) %}
+              {% if holders == 0 %}
+              <span class="badge" style="background:#fef9c3;color:#713f12;border:1px solid #fde047;font-size:.58rem;border-radius:10px;" title="まだ誰も申告していないスキル">
+                <i class="bi bi-star-fill me-1" style="font-size:.5rem;"></i>未申告
+              </span>
+              {% elif holders == 1 %}
+              <span class="badge" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-size:.58rem;border-radius:10px;" title="チームであなただけが持つ希少スキル">
+                <i class="bi bi-gem me-1" style="font-size:.5rem;"></i>希少
+              </span>
+              {% elif holders <= 2 %}
+              <span class="badge" style="background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;font-size:.58rem;border-radius:10px;" title="{{ holders }}人が申告済み">
+                <i class="bi bi-people me-1" style="font-size:.5rem;"></i>{{ holders }}人
+              </span>
               {% endif %}
-              <th style="width:12%;" class="text-center">ステータス</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for sk in tier_skills %}
-            {% set cur_level = my_level_map.get(sk.id, 0) %}
-            {% set cur_status = my_approval_map.get(sk.id, '') %}
-            <tr class="skill-row" data-skill-name="{{ sk.name }}" data-skill-id="{{ sk.id }}"
-                data-cat="{{ sk.category.name | lower if sk.category else '' }}"
-                data-level="{{ cur_level }}">
-              <td>
-                <div class="fw-semibold">{{ sk.name }}</div>
-              </td>
-              <td>
-                {% if sk.category %}
-                <span class="badge" style="background:{{ sk.category.color }};font-size:.7rem;">{{ sk.category.name }}</span>
-                {% else %}<span class="text-muted">-</span>{% endif %}
-              </td>
-              <td class="text-muted hide-mobile" style="font-size:.82rem;">{{ sk.description or '' }}</td>
-              <td>
-                <div class="d-flex align-items-center gap-2 justify-content-center flex-wrap">
-                  <!-- Level dots -->
-                  <div class="level-dots" id="dots-{{ sk.id }}">
-                    {% for i in range(1, 5) %}
-                    <span class="level-dot {% if i <= cur_level %}active lv-{{ cur_level }}{% endif %}"
-                          data-level="{{ i }}" data-skill="{{ sk.id }}"
-                          onclick="openApprovalModal({{ sk.id }}, {{ i }})"
-                          title="{{ SKILL_LEVELS[i] }}"></span>
-                    {% endfor %}
-                  </div>
-                  <!-- Select -->
-                  <div class="level-select-wrap">
-                    <select class="level-select-modal"
-                            data-skill="{{ sk.id }}"
-                            aria-label="レベル選択">
-                      {% for lv, lv_name in SKILL_LEVELS.items() %}
-                      <option value="{{ lv }}" {% if cur_level == lv %}selected{% endif %}>{{ lv_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <!-- Badge -->
-                  <span class="badge bg-{{ LEVEL_COLORS[cur_level] }} badge-level" id="badge-{{ sk.id }}"
-                        style="font-size:.72rem;white-space:nowrap;{% if cur_level == 0 %}opacity:.4;{% endif %}">
-                    {{ SKILL_LEVELS[cur_level] }}
-                  </span>
-                </div>
-              </td>
-              {% if current_user.role not in ('admin', 'manager') %}
-              <td class="text-center">
-                {% if my_approver_map.get(sk.id) %}
-                  {% set approver_user = approvers | selectattr('id', 'equalto', my_approver_map[sk.id]) | first %}
-                  {% if approver_user %}
-                  <span class="small text-muted">{{ approver_user.display_name or approver_user.username }}</span>
-                  {% else %}<span class="text-muted">-</span>{% endif %}
-                {% else %}<span class="text-muted">-</span>{% endif %}
-              </td>
-              {% endif %}
-              <td class="text-center" id="status-{{ sk.id }}">
-                {% if cur_status %}
-                <span class="badge bg-{{ APPROVAL_STATUS_COLORS[cur_status] }}" style="font-size:.7rem;">
-                  {{ APPROVAL_STATUS[cur_status] }}
-                </span>
-                {% if cur_status == 'pending' and my_pending_level_map.get(sk.id) %}
-                <div style="font-size:.68rem;color:#92400e;margin-top:.2rem;">
-                  申請中: {{ SKILL_LEVELS[my_pending_level_map[sk.id]] }}
-                </div>
-                {% endif %}
-                {% else %}<span class="text-muted small">未申請</span>{% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% endfor %}
-
-{% if not by_tier %}
-<div class="card">
-  <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-inbox fs-1 d-block mb-3" style="color:#fed7aa;"></i>
-    <h5>このティアにはスキルがありません</h5>
-    <p class="small">管理者またはマネージャーにスキルカタログの追加を依頼してください。</p>
-    <a href="/skills{% if sel_group %}?group_id={{ sel_group }}{% endif %}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
-      <i class="bi bi-arrow-left me-1"></i>ティア一覧に戻る
-    </a>
-  </div>
-</div>
-{% endif %}
-
-<!-- 承認者選択モーダル（一般ユーザーのみ） -->
-{% if current_user.role not in ('admin', 'manager') %}
-<div class="modal fade" id="approverModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius:16px;border:none;">
-      <div class="modal-header" style="border-bottom:2px solid #f97316;">
-        <h6 class="modal-title fw-bold"><i class="bi bi-send me-2 text-primary"></i>スキルレベル申請</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label fw-semibold small">申告レベル</label>
-          <div class="d-flex align-items-center gap-2">
-            <span id="modalLevelBadge" class="badge" style="font-size:.9rem;padding:.5em .9em;"></span>
+            </div>
           </div>
+          {% if cur_level > 0 %}
+          <span class="badge bg-{{ LEVEL_COLORS[cur_level] }} flex-shrink-0" style="font-size:.67rem;">
+            {{ SKILL_LEVELS[cur_level] }}{% if cur_status == 'approved' %} ✓{% endif %}
+          </span>
+          {% elif cur_status == 'pending' %}
+          <span class="badge bg-warning text-dark flex-shrink-0" style="font-size:.67rem;">申請中</span>
+          {% else %}
+          <span class="badge bg-secondary opacity-40 flex-shrink-0" style="font-size:.65rem;">未申告</span>
+          {% endif %}
         </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold small">承認者を選択 <span class="text-danger">*</span></label>
-          <select id="modalApprover" class="form-select" required>
-            <option value="">-- 承認者を選択してください --</option>
-            {% for u in approvers %}
-            <option value="{{ u.id }}">{{ u.display_name or u.username }}{% if u.role == 'admin' %} (Admin){% elif u.role == 'manager' %} (Manager){% endif %}</option>
-            {% endfor %}
-          </select>
-          <div class="form-text">選択した承認者がスキルレベルを確認・承認します</div>
-        </div>
+        {% endfor %}
       </div>
-      <div class="modal-footer" style="border-top:none;">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
-        <button type="button" class="btn btn-primary btn-sm" id="modalSubmitBtn" onclick="submitApproval()" style="border-radius:20px;">
-          <i class="bi bi-send me-1"></i>申請する
-        </button>
-      </div>
+
     </div>
-  </div>
+    {% endfor %}
+    {% else %}
+    <div class="p-4 text-center text-muted small">スキルがありません</div>
+    {% endif %}
+  </div><!-- /leftPane -->
+
+  <!-- ──────── 右ペイン: サブスキル + 申告（クリックで表示） ──────── -->
+  <div id="rightPane">
+    <div id="rpContent"></div>
+  </div><!-- /rightPane -->
+
+</div><!-- /twoPane -->
+
+</div><!-- /twoPaneWrapper -->
+
+<!-- 検索ドロップダウン（body直下に置きtransformの影響を回避） -->
+<div id="globalSearchResults"
+     style="display:none;position:fixed;z-index:99999;max-height:360px;overflow-y:auto;
+            border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);
+            background:white;border:1px solid #e2e8f0;">
 </div>
-{% endif %}
-{# end if overview_mode else #}
-{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -533,7 +695,7 @@
 </div>
 
 <script>
-  const LEVEL_NAMES = {0:'未経験', 1:'入門', 2:'基礎', 3:'実務可', 4:'エキスパート'};
+  const LEVEL_NAMES = {0:'未経験', 1:'入門', 2:'実務可', 3:'指導可', 4:'エキスパート'};
   const LEVEL_COLORS = {0:'secondary', 1:'info', 2:'primary', 3:'warning', 4:'danger'};
   const APPROVAL_COLORS = {'pending':'warning', 'approved':'success', 'rejected':'danger'};
   const APPROVAL_NAMES = {'pending':'承認待ち', 'approved':'承認済み', 'rejected':'差し戻し'};
@@ -740,24 +902,7 @@
     rows.forEach(r => tbody.appendChild(r));
   };
 
-  /* ── Client-side search ── */
-  const searchEl = document.getElementById('skillSearch');
-  if (searchEl) {
-    searchEl.addEventListener('input', function() {
-      const q = this.value.toLowerCase().trim();
-      document.querySelectorAll('.skill-row').forEach(row => {
-        const name = row.dataset.skillName.toLowerCase();
-        row.style.display = !q || name.includes(q) ? '' : 'none';
-      });
-      // Show/hide tier sections if all rows hidden
-      document.querySelectorAll('.tier-section').forEach(section => {
-        const visible = section.querySelectorAll('.skill-row[style=""], .skill-row:not([style])');
-        const hidden = section.querySelectorAll('.skill-row[style*="display: none"]');
-        const allRows = section.querySelectorAll('.skill-row');
-        section.style.display = (hidden.length === allRows.length && q) ? 'none' : '';
-      });
-    });
-  }
+  /* ── Client-side search（旧テーブル用は削除済み・新UIはscriptsブロック末尾を参照） ── */
 
   /* ════════════════════════════════════════════
      インタラクティブガイド
@@ -939,5 +1084,745 @@
       }
     }
   });
+
+  /* ── クライアントサイド検索（カテゴリ別リスト対応） ── */
+  const searchElNew = document.getElementById('skillSearch');
+  if (searchElNew) {
+    searchElNew.addEventListener('input', function() {
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll('.skill-row-header').forEach(row => {
+        const name = (row.dataset.skillName || '').toLowerCase();
+        const show = !q || name.includes(q);
+        row.style.display = show ? '' : 'none';
+        // 展開パネルも対象
+        const skillId = row.getAttribute('onclick')?.match(/\d+/)?.[0];
+        if (skillId) {
+          const panel = document.getElementById('skill-panel-' + skillId);
+          if (panel && !show) panel.style.display = 'none';
+        }
+      });
+      // カテゴリセクションで全スキルが非表示なら隠す
+      document.querySelectorAll('.skill-category-section').forEach(section => {
+        const allRows = section.querySelectorAll('.skill-row-header');
+        const hiddenRows = section.querySelectorAll('.skill-row-header[style*="display: none"]');
+        section.style.display = (q && hiddenRows.length === allRows.length) ? 'none' : '';
+      });
+    });
+  }
+
+  // ── カテゴリカード → 2ペインを開く ─────────────────────────
+  function openCategoryPane(catId) {
+    // 2ペインを開く
+    const wrapper = document.getElementById('twoPaneWrapper');
+    if (!wrapper) return;
+    wrapper.style.display = '';
+    wrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    // ティアフィルタリセット
+    _activeTierFilter = '';
+    _openCatId = null;
+    document.querySelectorAll('.skill-left-item').forEach(el => el.classList.remove('d-none'));
+
+    // カテゴリチップ全てリセット
+    document.querySelectorAll('.tier-chip').forEach(c => c.classList.toggle('active', c.dataset.tier === ''));
+
+    // 対応カテゴリを自動展開
+    if (catId) {
+      const catContent = document.getElementById('cat-skills-' + catId);
+      const catHeader  = document.querySelector('.cat-header[data-cat-id="' + catId + '"]');
+      if (catContent && catContent.style.display === 'none' && catHeader) {
+        toggleCat(catId, catHeader);
+      }
+    }
+
+    // カテゴリカードのアクティブ表示
+    document.querySelectorAll('.cat-progress-card').forEach(c => {
+      c.style.outline = (c.dataset.catId == catId) ? '3px solid #f97316' : '';
+    });
+
+    // カテゴリヘッダーをアクティブにする
+    if (catId) {
+      const catHeader = document.querySelector('.cat-header[data-cat-id="' + catId + '"]');
+      if (catHeader) {
+        catHeader.classList.add('cat-open');
+      }
+    }
+
+    // ティアカードの矢印リセット
+    document.querySelectorAll('.tier-card-btn').forEach(b => b.classList.remove('active-tier'));
+    ['basic','intermediate','advanced'].forEach(tk => {
+      const ch = document.getElementById('tier-chevron-' + tk);
+      if (ch) ch.style.transform = '';
+    });
+    _activeTier = null;
+  }
+
+  // ── スキル検索インデックス（スキル名＋サブスキル名を含む） ──
+  const _SEARCH_INDEX = [
+    {% for cat_name, cat_data in skills_by_category.items() %}
+    {% set cat_id = cat_data.category.id if cat_data.category else loop.index %}
+    {% for sk in cat_data.skills %}
+    {
+      id: {{ sk.id }},
+      name: {{ sk.name | tojson }},
+      cat_id: {{ cat_id }},
+      cat_name: {{ cat_name | tojson }},
+      tier: {{ TIER_NAMES[sk.tier] | tojson }},
+      sub_skills: [{% for ss in sub_skills_map.get(sk.id, []) %}{{ ss.name | tojson }},{% endfor %}]
+    },
+    {% endfor %}
+    {% endfor %}
+  ];
+
+  // ── ドロップダウン位置を検索ボックスに追従 ─────────────────
+  function positionSearchDropdown() {
+    const input = document.getElementById('globalSkillSearch');
+    const box   = document.getElementById('globalSearchResults');
+    if (!input || !box) return;
+    const r = input.getBoundingClientRect();
+    box.style.top   = (r.bottom + 4) + 'px';
+    box.style.left  = r.left + 'px';
+    box.style.width = r.width + 'px';
+  }
+
+  // ── グローバル検索 ──────────────────────────────────────────
+  function handleGlobalSearch(q) {
+    const clearBtn   = document.getElementById('clearSearchBtn');
+    const resultsBox = document.getElementById('globalSearchResults');
+    if (clearBtn) clearBtn.style.display = q ? '' : 'none';
+
+    if (!q.trim()) {
+      if (resultsBox) resultsBox.style.display = 'none';
+      return;
+    }
+    positionSearchDropdown();
+
+    const ql = q.toLowerCase();
+    // スキル名・サブスキル名でマッチ
+    const matches = _SEARCH_INDEX.filter(sk => {
+      if (sk.name.toLowerCase().includes(ql)) return true;
+      return sk.sub_skills.some(ssName => ssName.toLowerCase().includes(ql));
+    });
+
+    if (!resultsBox) return;
+
+    if (matches.length === 0) {
+      resultsBox.style.display = '';
+      resultsBox.innerHTML = '<div class="px-3 py-2 text-muted small">該当するスキルが見つかりません</div>';
+      return;
+    }
+
+    resultsBox.style.display = '';
+    resultsBox.innerHTML = matches.slice(0, 12).map(sk => {
+      // マッチしたサブスキルを表示
+      const matchedSubs = sk.sub_skills.filter(n => n.toLowerCase().includes(ql));
+      const subHint = matchedSubs.length > 0
+        ? `<span class="text-muted" style="font-size:.72rem;">— サブ: ${matchedSubs[0]}${matchedSubs.length > 1 ? ' 他' + (matchedSubs.length - 1) + '件' : ''}</span>`
+        : '';
+      return `<div class="px-3 py-2 d-flex align-items-start gap-2"
+                   style="cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:.88rem;"
+                   onmouseenter="this.style.background='#f8fafc'"
+                   onmouseleave="this.style.background=''"
+                   onclick="selectFromSearch(${sk.id})">
+                <i class="bi bi-${matchedSubs.length > 0 ? 'diagram-3' : 'collection'} text-muted mt-1" style="font-size:.75rem;flex-shrink:0;"></i>
+                <div style="flex:1;min-width:0;">
+                  <div class="fw-semibold">${sk.name}</div>
+                  ${subHint}
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                  <span class="badge bg-light text-muted" style="font-size:.62rem;">${sk.tier}</span>
+                  <span class="text-muted" style="font-size:.65rem;">${sk.cat_name}</span>
+                </div>
+              </div>`;
+    }).join('');
+    if (matches.length > 12) {
+      resultsBox.innerHTML += `<div class="px-3 py-1 text-muted small text-center border-top">他 ${matches.length - 12} 件...</div>`;
+    }
+  }
+
+  function clearGlobalSearch() {
+    const input = document.getElementById('globalSkillSearch');
+    if (input) input.value = '';
+    handleGlobalSearch('');
+  }
+
+  function selectFromSearch(skillId) {
+    // 検索ドロップダウンを閉じる
+    const resultsBox = document.getElementById('globalSearchResults');
+    if (resultsBox) resultsBox.style.display = 'none';
+
+    // 対応するスキル行を探してカテゴリを開く
+    const el = document.querySelector('.skill-left-item[data-skill-id="' + skillId + '"]');
+    if (!el) return;
+
+    const catId = el.dataset.cat;
+    if (catId) openCategoryPane(parseInt(catId));
+
+    // スキルを選択して右ペインを開く
+    setTimeout(() => {
+      el.scrollIntoView({behavior: 'smooth', block: 'center'});
+      selectSkill(parseInt(skillId), el);
+    }, 300);
+  }
+
+  // 検索ボックス外クリックでドロップダウンを閉じる
+  document.addEventListener('click', function(e) {
+    const sb = document.getElementById('globalSearchResults');
+    const si = document.getElementById('globalSkillSearch');
+    if (sb && si && !si.contains(e.target) && !sb.contains(e.target)) {
+      sb.style.display = 'none';
+    }
+  });
+
+  // ── ティアカード → 2ペイントグル ──────────────────────────
+  let _activeTier = null;
+
+  function toggleTwoPane(tier) {
+    const wrapper = document.getElementById('twoPaneWrapper');
+    const isOpen  = wrapper.style.display !== 'none';
+    const sameTier = (_activeTier === tier);
+
+    // 同じカードを再クリック → 閉じる
+    if (isOpen && sameTier) {
+      closeTwoPane();
+      return;
+    }
+
+    // 開く
+    wrapper.style.display = '';
+    _activeTier = tier;
+    wrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    // タイトル更新
+    const TIER_NAMES_JS = {{ TIER_NAMES | tojson }};
+    const title = document.getElementById('twoPaneTitle');
+    if (title) title.innerHTML = '<i class="bi bi-list-ul me-1"></i>' + (tier ? TIER_NAMES_JS[tier] + ' スキル一覧' : '全スキル一覧');
+
+    // ティアカードは2ペインを開くだけ。フィルタ・カテゴリ状態をリセット
+    _activeTierFilter = '';
+    _openCatId = null;
+    // 全カテゴリを閉じてスキルを非表示に
+    document.querySelectorAll('[id^="cat-skills-"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.cat-chevron').forEach(ch => ch.style.transform = '');
+    document.querySelectorAll('.cat-header').forEach(h => h.style.background = '');
+    document.querySelectorAll('.skill-left-item').forEach(el => el.classList.remove('d-none'));
+
+    // チップは「全て」をアクティブにリセット
+    document.querySelectorAll('.tier-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.tier === '');
+    });
+
+    // ティアカードのアクティブ表示
+    document.querySelectorAll('.tier-card-btn').forEach(b => b.classList.remove('active-tier'));
+    const activeBtn = document.getElementById('tier-btn-' + tier);
+    if (activeBtn) activeBtn.classList.add('active-tier');
+
+    // 矢印アイコン切り替え
+    ['basic','intermediate','advanced'].forEach(tk => {
+      const ch = document.getElementById('tier-chevron-' + tk);
+      if (ch) ch.style.transform = (tk === tier) ? 'rotate(180deg)' : '';
+    });
+  }
+
+  function closeTwoPane() {
+    const wrapper = document.getElementById('twoPaneWrapper');
+    wrapper.style.display = 'none';
+    _activeTier = null;
+    document.querySelectorAll('.tier-card-btn').forEach(b => b.classList.remove('active-tier'));
+    ['basic','intermediate','advanced'].forEach(tk => {
+      const ch = document.getElementById('tier-chevron-' + tk);
+      if (ch) ch.style.transform = '';
+    });
+    // 右ペインをリセット
+    closeRightPane();
+  }
+
+  // ── 2ペイン スキル申告UI ─────────────────────────────────
+  const _SK_LEVELS = {{ SKILL_LEVELS | tojson }};
+  const _LV_COLORS = {{ LEVEL_COLORS | tojson }};
+  const _COLOR_MAP = {'0':'secondary','1':'info','2':'primary','3':'warning','4':'danger'};
+  let _selectedItem = null;
+  let _currentSkillId = null;
+
+  function calcLevelFromRatio(done, total) {
+    if (!total || !done) return 0;
+    const r = done / total;
+    if (r <= 0.25) return 1;
+    if (r <= 0.50) return 2;
+    if (r <= 0.75) return 3;
+    return 4;
+  }
+
+  // 右ペインを開く
+  function openRightPane(html) {
+    const pane = document.getElementById('twoPane');
+    const rp   = document.getElementById('rightPane');
+    const rc   = document.getElementById('rpContent');
+    rc.innerHTML = html;
+    rp.style.display = 'block';
+    pane.classList.add('rp-open');
+  }
+
+  // 右ペインを閉じる
+  function closeRightPane() {
+    const pane = document.getElementById('twoPane');
+    pane.classList.remove('rp-open');
+    document.getElementById('rpContent').innerHTML = '';
+    if (_selectedItem) { _selectedItem.classList.remove('active-skill'); _selectedItem = null; }
+    _currentSkillId = null;
+  }
+
+  // スキルクリック
+  async function selectSkill(skillId, el) {
+    // 同じスキルを再クリック → 閉じる
+    if (_currentSkillId === skillId) {
+      closeRightPane();
+      return;
+    }
+
+    // 選択状態を更新
+    if (_selectedItem) _selectedItem.classList.remove('active-skill');
+    el.classList.add('active-skill');
+    _selectedItem = el;
+    _currentSkillId = skillId;
+
+    // スピナー表示で右ペインを開く
+    openRightPane('<div class="rp-spinner"><div class="spinner-border"></div><div class="text-muted small">読み込み中...</div></div>');
+
+    try {
+      const res = await fetch('/api/skills/' + skillId + '/panel');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      openRightPane(buildRightPane(data));
+      recalcRp(data.sub_skills.length);
+      if (data.override_level !== null && data.override_level !== undefined) {
+        const tog = document.getElementById('rp-override-toggle');
+        if (tog) { tog.checked = true; toggleRpOverride(true); }
+        const sel = document.getElementById('rp-override-sel');
+        if (sel) sel.value = data.override_level;
+        const rsn = document.getElementById('rp-override-reason');
+        if (rsn) rsn.value = data.override_reason || '';
+      }
+    } catch(e) {
+      openRightPane('<div class="alert alert-danger m-3">読み込みに失敗しました: ' + e.message + '</div>');
+    }
+  }
+
+  function buildRightPane(data) {
+    const sk = data.skill;
+
+    // 承認者セレクト
+    const mgrHtml = (!data.is_auto_approve && data.group_managers && data.group_managers.length > 0) ? `
+      <div class="mb-3">
+        <label class="form-label small fw-semibold"><i class="bi bi-person-check me-1 text-primary"></i>承認者</label>
+        <select id="rp-approver" class="form-select form-select-sm">
+          <option value="">-- 承認者を選択（任意）--</option>
+          ${data.group_managers.map(m => `<option value="${m.id}">${escH(m.name)}</option>`).join('')}
+        </select>
+      </div>` : '';
+
+    // 現在のステータス
+    const stColors = {approved:'success',pending:'warning',rejected:'danger'};
+    const stLabels = {approved:'承認済',pending:'申請中',rejected:'却下'};
+    const currentInfo = data.current_status ? `
+      <div class="text-muted mt-2" style="font-size:.73rem;">
+        現在の申告:
+        <span class="badge bg-${_LV_COLORS[data.current_level]||'secondary'}">${_SK_LEVELS[data.current_level]||'未経験'}</span>
+        <span class="badge bg-${stColors[data.current_status]||'secondary'}">${stLabels[data.current_status]||''}</span>
+      </div>` : '';
+
+    const total = data.sub_skills.length;
+    const subsGrid = total === 0
+      ? '<div class="text-muted small py-4 text-center"><i class="bi bi-inbox mb-2 d-block fs-4"></i>サブスキルが登録されていません</div>'
+      : data.sub_skills.map((ss, i) => `
+          <label class="sub-item" style="animation-delay:${i * 0.025}s;">
+            <input type="checkbox" class="rp-sub-check"
+                   value="${ss.id}" ${ss.done ? 'checked' : ''}
+                   onchange="recalcRp(${total})">
+            <div style="flex:1;min-width:0;">
+              <div class="sub-name">${escH(ss.name)}</div>
+              ${ss.description ? `<div class="sub-desc">${escH(ss.description.substring(0,40))}${ss.description.length>40?'…':''}</div>` : ''}
+            </div>
+          </label>`).join('');
+
+    return `
+    <!-- ① ヘッダー（固定高さ） -->
+    <div class="rp-header">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span style="width:12px;height:12px;border-radius:50%;background:${sk.category_color};flex-shrink:0;box-shadow:0 0 0 3px ${sk.category_color}33;"></span>
+        <div style="flex:1;min-width:0;">
+          <div class="fw-bold text-truncate" style="font-size:.95rem;color:#1e293b;">${escH(sk.name)}</div>
+          <div class="d-flex gap-1 mt-1 flex-wrap">
+            <span class="text-muted" style="font-size:.72rem;">${escH(sk.category_name)}</span>
+            <span class="badge bg-light text-muted" style="font-size:.62rem;border:1px solid #e2e8f0;">${escH(sk.tier_name)}</span>
+          </div>
+        </div>
+        <!-- 全選択・全解除ボタン -->
+        ${total > 0 ? `
+        <div class="d-flex gap-1 flex-shrink-0">
+          <button type="button" class="btn btn-xs btn-outline-success" style="font-size:.7rem;border-radius:16px;padding:.15rem .6rem;" onclick="checkAllRp(true,${total})">全選択</button>
+          <button type="button" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;border-radius:16px;padding:.15rem .6rem;" onclick="checkAllRp(false,${total})">全解除</button>
+        </div>` : ''}
+      </div>
+      <!-- 進捗バー（コンパクト） -->
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted" style="font-size:.72rem;white-space:nowrap;">自動計算:</span>
+        <span id="rp-calc-badge" class="badge px-2" style="font-size:.75rem;"></span>
+        <span id="rp-calc-name" class="fw-semibold" style="font-size:.78rem;"></span>
+        <div class="progress flex-grow-1" style="height:5px;border-radius:3px;background:#f1f5f9;">
+          <div id="rp-calc-bar" class="progress-bar" style="background:linear-gradient(90deg,#f97316,#fb923c);border-radius:3px;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
+        </div>
+        <span id="rp-calc-pct" class="text-muted" style="font-size:.72rem;white-space:nowrap;"></span>
+      </div>
+    </div>
+
+    <!-- ② サブスキル一覧（flex:1で残り全スペース・スクロール可） -->
+    <div class="rp-sub-scroll">
+      <div class="rp-sub-grid">${subsGrid}</div>
+    </div>
+
+    <!-- ③ 申告エリア（固定高さ） -->
+    <div class="rp-action-area">
+      <!-- 手動上書き -->
+      <div class="mb-2 px-2 py-2 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" id="rp-override-toggle"
+                 onchange="toggleRpOverride(this.checked)" style="width:2em;height:1.1em;">
+          <label class="form-check-label small fw-semibold" for="rp-override-toggle" style="color:#475569;">
+            <i class="bi bi-pencil-square me-1" style="color:#f97316;"></i>手動でレベルを上書きする
+          </label>
+        </div>
+        <div id="rp-override-area" style="display:none;" class="mt-2 row g-2">
+          <div class="col-sm-5">
+            <select id="rp-override-sel" class="form-select form-select-sm" style="border-radius:10px;">
+              <option value="">-- レベル選択 --</option>
+              ${Object.entries(data.skill_levels).map(([lv,nm]) => `<option value="${lv}">${lv} - ${nm}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-sm-7">
+            <input type="text" id="rp-override-reason" class="form-control form-control-sm"
+                   placeholder="上書き理由（必須）" style="border-radius:10px;">
+          </div>
+        </div>
+      </div>
+      ${mgrHtml}
+      <!-- エビデンス -->
+      ${data.is_auto_approve ? '' : `
+      <div class="mb-2">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <span class="small fw-semibold" style="color:#475569;"><i class="bi bi-paperclip me-1 text-primary"></i>エビデンス</span>
+        </div>
+        <!-- 既存エビデンス一覧 -->
+        <div id="rp-ev-list-${sk.id}" class="mb-2">
+          ${(data.evidences && data.evidences.length > 0)
+            ? data.evidences.map(ev => {
+                const label = ev.evidence_type==='url'
+                  ? `<i class="bi bi-link-45deg text-primary flex-shrink-0"></i>
+                     <a href="${escH(ev.content)}" target="_blank" rel="noopener"
+                        class="text-truncate flex-grow-1" style="max-width:140px;" title="${escH(ev.content)}">
+                       ${escH(ev.title||ev.content)}
+                     </a>
+                     <i class="bi bi-box-arrow-up-right text-muted" style="font-size:.6rem;"></i>`
+                  : ev.evidence_type==='file'
+                    ? `<i class="bi bi-file-earmark-arrow-down text-success flex-shrink-0"></i>
+                       <a href="/skills/evidence/${ev.id}/download"
+                          class="text-truncate flex-grow-1 text-success" style="max-width:140px;" title="${escH(ev.original_filename||ev.title||'ファイル')}">
+                         ${escH(ev.original_filename||ev.title||'ファイル')}
+                       </a>`
+                    : (() => {
+                        const txt = ev.content || '';
+                        return txt.length > 30
+                          ? `<i class="bi bi-sticky text-warning flex-shrink-0"></i>
+                             <span class="text-truncate flex-grow-1 text-muted" style="max-width:120px;cursor:pointer;"
+                                   onclick="showMemoPopup('${escH(ev.title||'メモ')}','${escH(txt).replace(/'/g,"\\'")}')"
+                                   title="クリックで全文表示">${escH(ev.title||(txt.substring(0,28)+'…'))}</span>
+                             <i class="bi bi-arrows-expand text-muted" style="font-size:.6rem;cursor:pointer;"
+                                onclick="showMemoPopup('${escH(ev.title||'メモ')}','${escH(txt).replace(/'/g,"\\'")}')" title="全文表示"></i>`
+                          : `<i class="bi bi-sticky text-warning flex-shrink-0"></i>
+                             <span class="text-muted flex-grow-1">${escH(ev.title||txt)}</span>`;
+                      })();
+                return `<div class="d-flex align-items-center gap-1 mb-1 px-2 py-1 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.76rem;">
+                  ${label}
+                  <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-1 flex-shrink-0" style="font-size:.7rem;"
+                          onclick="deleteRpEvidence(${ev.id},${sk.id})">&times;</button>
+                </div>`;
+              }).join('')
+            : ''
+          }
+        </div>
+        <!-- エビデンス追加フォーム（デフォルト表示） -->
+        <div id="rp-ev-form-${sk.id}" style="margin-top:4px;">
+          <ul class="nav nav-tabs nav-fill mb-2" style="font-size:.74rem;">
+            <li class="nav-item">
+              <button class="nav-link active px-1 py-1" onclick="switchEvTab('url','${sk.id}')" id="rp-ev-tab-url-${sk.id}">
+                <i class="bi bi-link-45deg me-1"></i>URL
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link px-1 py-1" onclick="switchEvTab('file','${sk.id}')" id="rp-ev-tab-file-${sk.id}">
+                <i class="bi bi-file-earmark me-1"></i>ファイル
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link px-1 py-1" onclick="switchEvTab('note','${sk.id}')" id="rp-ev-tab-note-${sk.id}">
+                <i class="bi bi-sticky me-1"></i>メモ
+              </button>
+            </li>
+          </ul>
+          <!-- URL -->
+          <div id="rp-ev-panel-url-${sk.id}">
+            <input type="text" id="rp-ev-url-title-${sk.id}" class="form-control form-control-sm mb-1" placeholder="タイトル（任意）" style="border-radius:8px;font-size:.78rem;">
+            <input type="url" id="rp-ev-url-content-${sk.id}" class="form-control form-control-sm mb-1" placeholder="https://..." style="border-radius:8px;font-size:.78rem;">
+            <button type="button" class="btn btn-sm btn-primary w-100" style="border-radius:8px;font-size:.78rem;" onclick="addRpEvidence('url',${sk.id})">
+              <i class="bi bi-plus-lg me-1"></i>URLを追加
+            </button>
+          </div>
+          <!-- ファイル -->
+          <div id="rp-ev-panel-file-${sk.id}" style="display:none;">
+            <input type="file" id="rp-ev-file-${sk.id}" class="form-control form-control-sm mb-1" style="border-radius:8px;font-size:.78rem;">
+            <button type="button" class="btn btn-sm btn-success w-100" style="border-radius:8px;font-size:.78rem;" onclick="addRpEvidence('file',${sk.id})">
+              <i class="bi bi-upload me-1"></i>アップロード
+            </button>
+          </div>
+          <!-- メモ -->
+          <div id="rp-ev-panel-note-${sk.id}" style="display:none;">
+            <input type="text" id="rp-ev-note-title-${sk.id}" class="form-control form-control-sm mb-1" placeholder="タイトル（任意）" style="border-radius:8px;font-size:.78rem;">
+            <textarea id="rp-ev-note-content-${sk.id}" class="form-control form-control-sm mb-1" rows="2" placeholder="メモ内容" style="border-radius:8px;font-size:.78rem;resize:none;"></textarea>
+            <button type="button" class="btn btn-sm btn-warning w-100" style="border-radius:8px;font-size:.78rem;" onclick="addRpEvidence('note',${sk.id})">
+              <i class="bi bi-sticky me-1"></i>メモを追加
+            </button>
+          </div>
+        </div>
+      </div>
+      `}
+      ${data.is_auto_approve
+        ? `<div class="alert py-2 px-3 mb-0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:.82rem;color:#64748b;">
+             <i class="bi bi-info-circle me-1"></i>Admin/Manager は申告を行いません。スキルマップはユーザーの申告状況確認用です。
+           </div>`
+        : `<form id="rp-declare-form" method="post" action="/skills/${sk.id}/declare">
+             <button type="button" class="btn btn-primary w-100 fw-bold"
+                     style="border-radius:24px;font-size:.92rem;padding:.55rem;
+                            background:linear-gradient(135deg,#f97316,#fb923c);border:none;
+                            box-shadow:0 4px 14px rgba(249,115,22,.4);transition:transform .15s,box-shadow .15s;"
+                     onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(249,115,22,.5)'"
+                     onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(249,115,22,.4)'"
+                     onclick="submitRpDeclare(${sk.id})">
+               <i class="bi bi-send-fill me-2"></i>申告する
+             </button>
+           </form>`
+      }
+      ${currentInfo}
+    </div>
+  `;
+  }
+
+  function escH(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function checkAllRp(checked, total) {
+    document.querySelectorAll('.rp-sub-check').forEach(cb => { cb.checked = checked; });
+    recalcRp(total);
+  }
+
+  function recalcRp(total) {
+    const checks = document.querySelectorAll('.rp-sub-check');
+    const done = [...checks].filter(c => c.checked).length;
+    const lv = calcLevelFromRatio(done, total);
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+    const badge = document.getElementById('rp-calc-badge');
+    const name  = document.getElementById('rp-calc-name');
+    const pctEl = document.getElementById('rp-calc-pct');
+    const bar   = document.getElementById('rp-calc-bar');
+
+    if (badge) { badge.className = 'badge px-2 py-1 fs-6 bg-' + (_COLOR_MAP[lv]||'secondary'); badge.textContent = lv; }
+    if (name)  { name.textContent = _SK_LEVELS[lv] || ''; }
+    if (pctEl) { pctEl.textContent = pct + '%'; }
+    if (bar)   { bar.style.width = pct + '%'; }
+  }
+
+  function toggleRpOverride(on) {
+    const area = document.getElementById('rp-override-area');
+    if (area) area.style.display = on ? '' : 'none';
+  }
+
+  /* ── エビデンス（右ペイン）── */
+  function showMemoPopup(title, content) {
+    let modal = document.getElementById('_memoModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = '_memoModal';
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+          <div class="modal-content" style="border-radius:14px;border:none;">
+            <div class="modal-header py-2" style="border-bottom:2px solid #f59e0b;">
+              <h6 class="modal-title fw-bold" id="_memoTitle" style="font-size:.88rem;"></h6>
+              <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="white-space:pre-wrap;font-size:.84rem;word-break:break-word;" id="_memoContent"></div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+    document.getElementById('_memoTitle').textContent  = title;
+    document.getElementById('_memoContent').textContent = content;
+    new bootstrap.Modal(modal).show();
+  }
+
+  function switchEvTab(type, skillId) {
+    ['url','file','note'].forEach(t => {
+      const panel = document.getElementById('rp-ev-panel-' + t + '-' + skillId);
+      const tab   = document.getElementById('rp-ev-tab-'   + t + '-' + skillId);
+      if (panel) panel.style.display = t === type ? '' : 'none';
+      if (tab)   { tab.classList.toggle('active', t === type); }
+    });
+  }
+
+  async function addRpEvidence(type, skillId) {
+    const fd = new FormData();
+    fd.append('evidence_type', type);
+
+    if (type === 'url') {
+      const title   = document.getElementById('rp-ev-url-title-' + skillId)?.value.trim() || '';
+      const content = document.getElementById('rp-ev-url-content-' + skillId)?.value.trim() || '';
+      if (!content) { alert('URLを入力してください'); return; }
+      fd.append('title', title); fd.append('content', content);
+    } else if (type === 'file') {
+      const fileEl = document.getElementById('rp-ev-file-' + skillId);
+      if (!fileEl?.files.length) { alert('ファイルを選択してください'); return; }
+      fd.append('upload_file', fileEl.files[0]);
+    } else {
+      const title   = document.getElementById('rp-ev-note-title-' + skillId)?.value.trim() || '';
+      const content = document.getElementById('rp-ev-note-content-' + skillId)?.value.trim() || '';
+      if (!content) { alert('メモ内容を入力してください'); return; }
+      fd.append('title', title); fd.append('content', content);
+    }
+
+    const res  = await fetch('/skills/' + skillId + '/evidence/add', { method: 'POST', body: fd });
+    if (res.redirected || res.ok) {
+      // reload panel data
+      const pRes  = await fetch('/api/skills/' + skillId + '/panel');
+      const pData = await pRes.json();
+      openRightPane(buildRightPane(pData));
+      setTimeout(() => recalcRp(pData.sub_skills.length), 50);
+    } else {
+      alert('エビデンスの追加に失敗しました');
+    }
+  }
+
+  async function deleteRpEvidence(evidenceId, skillId) {
+    if (!confirm('このエビデンスを削除しますか？')) return;
+    const fd = new FormData();
+    const res = await fetch('/skills/evidence/' + evidenceId + '/delete', { method: 'POST', body: fd });
+    if (res.ok || res.redirected) {
+      const pRes  = await fetch('/api/skills/' + skillId + '/panel');
+      const pData = await pRes.json();
+      openRightPane(buildRightPane(pData));
+      setTimeout(() => recalcRp(pData.sub_skills.length), 50);
+    }
+  }
+
+  function submitRpDeclare(skillId) {
+    const form = document.getElementById('rp-declare-form');
+    if (!form) return;
+
+    form.querySelectorAll('input[type=hidden]').forEach(el => el.remove());
+
+    document.querySelectorAll('.rp-sub-check:checked').forEach(cb => {
+      const i = document.createElement('input'); i.type='hidden'; i.name='sub_skill_ids'; i.value=cb.value; form.appendChild(i);
+    });
+
+    const tog = document.getElementById('rp-override-toggle');
+    if (tog && tog.checked) {
+      const sel = document.getElementById('rp-override-sel');
+      const rsn = document.getElementById('rp-override-reason');
+      if (sel && sel.value) { const i=document.createElement('input'); i.type='hidden'; i.name='override_level'; i.value=sel.value; form.appendChild(i); }
+      if (rsn && rsn.value.trim()) { const i=document.createElement('input'); i.type='hidden'; i.name='override_reason'; i.value=rsn.value.trim(); form.appendChild(i); }
+    }
+
+    const apr = document.getElementById('rp-approver');
+    if (apr && apr.value) { const i=document.createElement('input'); i.type='hidden'; i.name='approver_id'; i.value=apr.value; form.appendChild(i); }
+
+    form.submit();
+  }
+
+  // 左ペイン: 検索フィルタ
+  // d-flex に !important が付いているので d-none クラスで制御する
+  let _activeTierFilter = '';
+  let _openCatId = null;
+
+  // カテゴリのアコーディオン開閉
+  function toggleCat(catId, headerEl) {
+    const content = document.getElementById('cat-skills-' + catId);
+    const chevron = headerEl.querySelector('.cat-chevron');
+    const isOpen  = content.style.display !== 'none';
+
+    // 現在開いているカテゴリを閉じる
+    if (_openCatId !== null && _openCatId !== catId) {
+      const prevContent = document.getElementById('cat-skills-' + _openCatId);
+      const prevHeader  = document.querySelector('.cat-header[data-cat-id="' + _openCatId + '"]');
+      if (prevContent) prevContent.style.display = 'none';
+      if (prevHeader) {
+        const prevChevron = prevHeader.querySelector('.cat-chevron');
+        if (prevChevron) prevChevron.style.transform = '';
+        prevHeader.style.background = '';
+      }
+    }
+
+    if (isOpen) {
+      // 閉じる
+      content.style.display = 'none';
+      if (chevron) chevron.style.transform = '';
+      headerEl.style.background = '';
+      _openCatId = null;
+    } else {
+      // 開く
+      content.style.display = '';
+      if (chevron) chevron.style.transform = 'rotate(90deg)';
+      headerEl.style.background = '#fff7ed';
+      _openCatId = catId;
+      // ティアフィルタ再適用
+      applyFilters();
+    }
+  }
+
+  // フィルタ（検索＋tier）を全スキル行に適用
+  function applyFilters() {
+    const q    = (document.getElementById('skillSearchLeft') || {}).value || '';
+    const ql   = q.toLowerCase();
+    const tier = _activeTierFilter;
+    document.querySelectorAll('.skill-left-item').forEach(el => {
+      const matchSearch = !ql || el.dataset.name.includes(ql);
+      const matchTier   = !tier || el.dataset.tier === tier;
+      el.classList.toggle('d-none', !(matchSearch && matchTier));
+    });
+    // 検索ヒット時はそのスキルが属するカテゴリを自動展開
+    if (ql) {
+      document.querySelectorAll('.skill-left-item:not(.d-none)').forEach(el => {
+        const cid = el.dataset.cat;
+        if (cid) {
+          const c = document.getElementById('cat-skills-' + cid);
+          if (c && c.style.display === 'none') {
+            // ヘッダーを探して開く
+            const h = document.querySelector('.cat-header[data-cat-id="' + cid + '"]');
+            if (h) toggleCat(parseInt(cid), h);
+          }
+        }
+      });
+    }
+  }
+
+  function filterLeft() { applyFilters(); }
+
+  // 左ペイン: tierフィルタ
+  function filterTierLeft(btn, tier) {
+    _activeTierFilter = tier;
+    document.querySelectorAll('.tier-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  }
 </script>
 {% endblock %}

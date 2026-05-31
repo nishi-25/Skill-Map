@@ -94,6 +94,37 @@
 </div>
 {% endif %}
 
+<!-- ═══ 獲得バッジ（全view_mode共通） ═══ -->
+{% if user_badges is defined and user_badges %}
+<div class="card mb-3">
+  <div class="card-header py-2 d-flex align-items-center gap-2">
+    <i class="bi bi-award-fill text-warning"></i>
+    <span class="fw-semibold small">獲得バッジ</span>
+    <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">{{ user_badges|length }}</span>
+  </div>
+  <div class="card-body py-2 px-3">
+    <div class="d-flex flex-wrap gap-2">
+      {% for ub in user_badges %}
+      {% set bdef = BADGE_DEFS.get(ub.badge_key, {}) %}
+      {% if bdef %}
+      <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
+           style="background:#fafafa;border:1px solid #e2e8f0;transition:box-shadow .15s;"
+           onmouseenter="this.style.boxShadow='0 2px 8px rgba(0,0,0,.1)'"
+           onmouseleave="this.style.boxShadow=''"
+           title="{{ bdef.desc }} ({{ ub.awarded_at.strftime('%Y/%m/%d') }})">
+        <i class="{{ bdef.icon }}" style="color:{{ bdef.color }};font-size:1.2rem;"></i>
+        <span class="fw-semibold" style="font-size:.8rem;">{{ bdef.label }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <p class="text-muted mb-0 mt-2" style="font-size:.73rem;">
+      <i class="bi bi-info-circle me-1"></i>スキル申告や達成状況に応じてバッジが付与されます
+    </p>
+  </div>
+</div>
+{% endif %}
+
 <!-- ═══ ALL モード: 管理者概要 ═══ -->
 {% if view_mode == 'all' %}
 
@@ -224,7 +255,7 @@
   <div data-key="level">
     <div style="font-weight:700;color:#f59e0b;margin-bottom:.5rem;"><i class="bi bi-bar-chart-fill me-1"></i data-i18n="lbl.level_dist">レベル分布</div>
     {% set level_colors = {1:'#38bdf8',2:'#f97316',3:'#f59e0b',4:'#ef4444'} %}
-    {% set level_names = {1:'入門',2:'基礎',3:'実務可',4:'エキスパート'} %}
+    {% set level_names = {1:'入門',2:'実務可',3:'指導可',4:'エキスパート'} %}
     {% set level_total = level_dist.values()|sum %}
     <div style="display:flex;flex-direction:column;gap:.35rem;">
       {% for lv in [4,3,2,1] %}
@@ -1160,6 +1191,70 @@
   </div>
   {% endif %}
 
+  <!-- バッジセクション -->
+  {% if user_badges is defined and user_badges %}
+  <div class="col-12">
+    <div class="card mb-3">
+      <div class="card-header py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-award-fill text-warning"></i>
+        <span class="fw-semibold small">獲得バッジ</span>
+        <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">{{ user_badges|length }}</span>
+      </div>
+      <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap gap-2">
+          {% for ub in user_badges %}
+          {% set bdef = BADGE_DEFS.get(ub.badge_key, {}) %}
+          {% if bdef %}
+          <div class="d-flex align-items-center gap-1 px-3 py-2 rounded-3"
+               style="background:#fafafa;border:1px solid #e2e8f0;"
+               title="{{ bdef.desc }} ({{ ub.awarded_at.strftime('%Y/%m/%d') }})">
+            <i class="{{ bdef.icon }}" style="color:{{ bdef.color }};font-size:1.1rem;"></i>
+            <span class="fw-semibold" style="font-size:.8rem;">{{ bdef.label }}</span>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+
+  <!-- 所属グループ情報（User ロール・self モードのみ） -->
+  {% if my_groups_info is defined and my_groups_info and view_mode == 'self' %}
+  <div class="col-12">
+    <div class="card mb-3">
+      <div class="card-header py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-people-fill" style="color:#f97316;"></i>
+        <span class="fw-semibold small">所属グループ</span>
+        <span class="badge bg-light text-muted ms-1" style="font-size:.65rem;">{{ my_groups_info|length }}グループ</span>
+      </div>
+      <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap gap-2">
+          {% for g in my_groups_info %}
+          <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
+               style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.84rem;">
+            <i class="bi bi-people text-muted" style="font-size:.8rem;"></i>
+            <div>
+              <div class="fw-semibold">{{ g.name }}</div>
+              {% if g.description %}<div class="text-muted" style="font-size:.73rem;">{{ g.description }}</div>{% endif %}
+            </div>
+            {% if g.manager %}
+            <span class="badge bg-light text-muted" style="font-size:.62rem;border-radius:10px;">
+              <i class="bi bi-person-gear me-1"></i>{{ g.manager.display_name or g.manager.username }}
+            </span>
+            {% endif %}
+            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.62rem;border-radius:10px;">
+              {{ g.skill_count }}スキル
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Recent Updates -->
   <div class="col-12">
     <div class="card">
@@ -1381,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
   {% endif %}
 
   /* ── Level Distribution Chart ── */
-  const levelNames = ['未経験', '入門', '基礎', '実務可', 'エキスパート'];
+  const levelNames = ['未経験', '入門', '実務可', '指導可', 'エキスパート'];
   const levelColors = ['#94a3b8', '#06b6d4', '#f97316', '#f59e0b', '#ef4444'];
   const levelData = [{{ level_dist[0] }}, {{ level_dist[1] }}, {{ level_dist[2] }}, {{ level_dist[3] }}, {{ level_dist[4] }}];
 

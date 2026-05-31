@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}ToDoリスト（Kanban）- Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h1><i class="bi bi-kanban me-2" style="color:#f97316;"></i>ToDoリスト <span class="badge bg-danger" style="font-size:.6rem;vertical-align:middle;">Admin専用</span></h1>
+    <p class="text-muted mb-0 small">アプリ改善・機能追加のタスク管理（ドラッグ&ドロップで移動）</p>
+  </div>
+  <button class="btn btn-primary btn-sm" style="border-radius:20px;" data-bs-toggle="modal" data-bs-target="#addTodoModal">
+    <i class="bi bi-plus-lg me-1"></i>タスクを追加
+  </button>
+</div>
+
+<!-- Kanban ボード -->
+<div class="row g-3" id="kanbanBoard">
+  {% for col_key, col_label, col_color, col_icon in [
+    ('pending',     '作業前',   '#64748b', 'bi-inbox'),
+    ('in_progress', '進行中',   '#f97316', 'bi-play-circle-fill'),
+    ('review',      'レビュー', '#8b5cf6', 'bi-eye-fill'),
+    ('done',        '完了',     '#22c55e', 'bi-check-circle-fill'),
+  ] %}
+  {% set col_todos = columns[col_key] %}
+  <div class="col-md-6 col-xl-3">
+    <!-- カラムヘッダー -->
+    <div class="d-flex align-items-center gap-2 mb-2 px-1">
+      <i class="{{ col_icon }}" style="color:{{ col_color }};font-size:.9rem;"></i>
+      <span class="fw-bold" style="font-size:.9rem;">{{ col_label }}</span>
+      <span class="badge rounded-pill" style="background:{{ col_color }};font-size:.65rem;min-width:20px;">{{ col_todos|length }}</span>
+    </div>
+    <!-- カラム本体（ドロップゾーン） -->
+    <div class="kanban-col rounded-3 p-2"
+         id="col-{{ col_key }}"
+         data-status="{{ col_key }}"
+         style="min-height:300px;background:{% if col_key == 'done' %}#f0fdf4{% elif col_key == 'review' %}#f5f3ff{% elif col_key == 'in_progress' %}#fff7ed{% else %}#f8fafc{% endif %};border:2px dashed {% if col_key == 'done' %}#86efac{% elif col_key == 'review' %}#c4b5fd{% elif col_key == 'in_progress' %}#fed7aa{% else %}#e2e8f0{% endif %};">
+      {% for todo in col_todos %}
+      <div class="kanban-card card mb-2 shadow-sm"
+           id="todo-{{ todo.id }}"
+           data-id="{{ todo.id }}"
+           data-status="{{ todo.status }}"
+           style="border-radius:10px;border:none;cursor:grab;border-left:3px solid {{ col_color }};">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex align-items-start gap-2">
+            <div style="flex:1;min-width:0;">
+              <div class="fw-semibold" style="font-size:.85rem;{% if col_key == 'done' %}text-decoration:line-through;color:#94a3b8;{% endif %}">
+                {{ todo.title }}
+              </div>
+              {% if todo.description %}
+              <div class="text-muted mt-1" style="font-size:.73rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+                {{ todo.description }}
+              </div>
+              {% endif %}
+              <!-- 優先度バッジ -->
+              {% if todo.priority == 'high' %}
+              <span class="badge mt-1" style="background:#fee2e2;color:#dc2626;font-size:.6rem;border-radius:8px;">🔴 高優先度</span>
+              {% elif todo.priority == 'medium' %}
+              <span class="badge mt-1" style="background:#fef3c7;color:#d97706;font-size:.6rem;border-radius:8px;">🟡 中優先度</span>
+              {% else %}
+              <span class="badge mt-1" style="background:#f0fdf4;color:#16a34a;font-size:.6rem;border-radius:8px;">🟢 長期</span>
+              {% endif %}
+            </div>
+            <div class="d-flex flex-column gap-1 flex-shrink-0">
+              <button class="btn btn-xs btn-outline-secondary" style="border-radius:10px;padding:.1rem .35rem;"
+                      onclick="openEditTodo({{ todo.id }}, '{{ todo.title|e }}', '{{ (todo.description or '')|e }}', '{{ todo.priority }}', '{{ todo.status }}')"
+                      title="編集"><i class="bi bi-pencil" style="font-size:.65rem;"></i></button>
+              <form method="post" action="/admin/todos/{{ todo.id }}/delete"
+                    onsubmit="return confirm('削除しますか？')">
+                <button class="btn btn-xs btn-outline-danger" style="border-radius:10px;padding:.1rem .35rem;" title="削除">
+                  <i class="bi bi-trash" style="font-size:.65rem;"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- タスク追加モーダル -->
+<div class="modal fade" id="addTodoModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-plus-lg me-2" style="color:#f97316;"></i>タスクを追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/admin/todos">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">タイトル <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">説明</label>
+            <textarea name="description" class="form-control" rows="2" style="border-radius:10px;"></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">優先度</label>
+              <select name="priority" class="form-select" style="border-radius:10px;">
+                <option value="high">🔴 高優先度</option>
+                <option value="medium" selected>🟡 中優先度</option>
+                <option value="long_term">🟢 長期目線</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">初期ステータス</label>
+              <select name="status" class="form-select" style="border-radius:10px;">
+                <option value="pending">作業前</option>
+                <option value="in_progress">進行中</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;"><i class="bi bi-plus me-1"></i>追加</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- タスク編集モーダル -->
+<div class="modal fade" id="editTodoModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2" style="color:#f97316;"></i>タスクを編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editTodoForm" method="post">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">タイトル <span class="text-danger">*</span></label>
+            <input type="text" name="title" id="editTitle" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">説明</label>
+            <textarea name="description" id="editDesc" class="form-control" rows="2" style="border-radius:10px;"></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">優先度</label>
+              <select name="priority" id="editPriority" class="form-select" style="border-radius:10px;">
+                <option value="high">🔴 高優先度</option>
+                <option value="medium">🟡 中優先度</option>
+                <option value="long_term">🟢 長期目線</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">ステータス</label>
+              <select name="status" id="editStatus" class="form-select" style="border-radius:10px;">
+                <option value="pending">作業前</option>
+                <option value="in_progress">進行中</option>
+                <option value="review">レビュー</option>
+                <option value="done">完了</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;"><i class="bi bi-check me-1"></i>保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+// Kanban ドラッグ&ドロップ
+document.querySelectorAll('.kanban-col').forEach(col => {
+  new Sortable(col, {
+    group: 'kanban',
+    animation: 200,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    handle: '.kanban-card',
+    onEnd: async function(evt) {
+      const card = evt.item;
+      const newStatus = evt.to.dataset.status;
+      const todoId = card.dataset.id;
+      const newIndex = evt.newIndex;
+      // ステータスとorder_indexをサーバーに保存
+      await fetch(`/admin/todos/${todoId}/move`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `status=${newStatus}&order_index=${newIndex}`,
+      });
+      // カラムのカード数バッジを更新
+      updateColCount();
+    }
+  });
+});
+
+function updateColCount() {
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const status = col.dataset.status;
+    const count = col.querySelectorAll('.kanban-card').length;
+    const badge = col.previousElementSibling?.querySelector('.badge');
+    if (badge) badge.textContent = count;
+  });
+}
+
+function openEditTodo(id, title, desc, priority, status) {
+  document.getElementById('editTodoForm').action = '/admin/todos/' + id + '/edit';
+  document.getElementById('editTitle').value = title;
+  document.getElementById('editDesc').value = desc;
+  document.getElementById('editPriority').value = priority;
+  document.getElementById('editStatus').value = status;
+  new bootstrap.Modal(document.getElementById('editTodoModal')).show();
+}
+</script>
+
+<style>
+.kanban-card:active { cursor: grabbing; }
+.sortable-ghost { opacity: .4; background: #e0f2fe !important; }
+.sortable-drag { box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+</style>
+{% endblock %}

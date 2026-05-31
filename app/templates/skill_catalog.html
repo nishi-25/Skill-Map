@@ -21,14 +21,23 @@
     <div id="skillExportPopup"
          style="display:none;position:fixed;z-index:9999;
                 background:#fff;border:1px solid #e2e8f0;border-radius:12px;
-                box-shadow:0 6px 20px rgba(0,0,0,.15);padding:.3rem 0;min-width:148px;">
+                box-shadow:0 6px 20px rgba(0,0,0,.15);padding:.3rem 0;min-width:200px;">
+      <div class="px-3 py-1 text-muted" style="font-size:.72rem;font-weight:600;border-bottom:1px solid #f1f5f9;">スキルのみ</div>
       <a href="/skills/catalog/export/csv"      class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a>
       <a href="/skills/catalog/export/excel"    class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a>
       <a href="/skills/catalog/export/json"     class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-json me-2 text-warning"></i>JSON</a>
       <a href="/skills/catalog/export/markdown" class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-markdown me-2 text-primary"></i>Markdown</a>
+      <div class="px-3 py-1 text-muted mt-1" style="font-size:.72rem;font-weight:600;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;">一括（カテゴリ+スキル+サブスキル）</div>
+      <a href="/skills/bulk-export" class="dropdown-item py-2 px-3" style="font-size:.88rem;">
+        <i class="bi bi-box-arrow-down me-2 text-primary"></i>一括エクスポート（JSON）
+      </a>
     </div>
     <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;" data-bs-toggle="modal" data-bs-target="#importModal">
       <i class="bi bi-upload me-1"></i>インポート
+    </button>
+    <!-- 一括インポートボタン -->
+    <button type="button" class="btn btn-outline-success btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;" data-bs-toggle="modal" data-bs-target="#bulkImportModal">
+      <i class="bi bi-box-arrow-in-down me-1"></i>一括インポート
     </button>
     <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
       <i class="bi bi-plus-lg me-1"></i>スキルを追加
@@ -184,11 +193,12 @@
           <th style="width:8%;cursor:pointer;" onclick="sortByHeader('count')" class="sort-th text-center" data-sort="count" data-i18n="lbl.declared_count">
             申告数 <i class="bi bi-arrow-down-up text-muted" id="sort-icon-count" style="font-size:.7rem;"></i>
           </th>
+          <th style="width:3%;" class="text-center">サブ</th>
           <th class="text-end" data-i18n="lbl.actions">操作</th>
         </tr>
       </thead>
       <tbody>
-        {% set TIER_ORDER = {'beginner':0,'basic':1,'intermediate':2,'advanced':3} %}
+        {% set TIER_ORDER = {'basic':0,'intermediate':1,'advanced':2} %}
         {% for s in skills %}
         {% set declared_count = s.user_levels | selectattr('level', 'gt', 0) | list | length %}
         <tr class="skill-row"
@@ -235,6 +245,24 @@
             {% set count = s.user_levels | selectattr('level', 'gt', 0) | list | length %}
             <span class="badge bg-light text-dark" style="font-size:.78rem;">{{ count }}</span>
           </td>
+          <td style="width:3%;" class="text-center">
+            {% if s.sub_skills %}
+            <button class="btn btn-xs btn-outline-secondary" style="border-radius:20px;padding:.2rem .5rem;"
+                    type="button"
+                    onclick="toggleSubSkills({{ s.id }})"
+                    title="サブスキル {{ s.sub_skills|length }}件">
+              <i class="bi bi-diagram-3 me-1" style="font-size:.7rem;"></i>
+              <span style="font-size:.72rem;">{{ s.sub_skills|length }}</span>
+            </button>
+            {% else %}
+            <button class="btn btn-xs btn-outline-light text-muted" style="border-radius:20px;padding:.2rem .5rem;"
+                    type="button"
+                    onclick="toggleSubSkills({{ s.id }})"
+                    title="サブスキルを追加">
+              <i class="bi bi-plus" style="font-size:.7rem;"></i>
+            </button>
+            {% endif %}
+          </td>
           <td class="text-end">
             <div class="d-flex gap-1 justify-content-end">
               <a href="/skills/catalog/{{ s.id }}/edit" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集">
@@ -247,6 +275,56 @@
                 </button>
               </form>
             </div>
+          </td>
+        </tr>
+        <tr id="sub-skills-{{ s.id }}" style="display:none;background:#f8fafc;">
+          <td colspan="8" style="padding:.75rem 1.5rem .75rem 3rem;">
+            <!-- 既存サブスキル一覧 -->
+            {% if s.sub_skills %}
+            <ul class="list-unstyled mb-2" id="sub-list-{{ s.id }}" style="font-size:.84rem;">
+              {% for ss in s.sub_skills %}
+              <li class="d-flex align-items-center gap-2 py-1 border-bottom border-light" data-sub-id="{{ ss.id }}">
+                <i class="bi bi-grip-vertical drag-handle text-muted"
+                   style="cursor:grab;font-size:.9rem;flex-shrink:0;" title="ドラッグで並び替え"></i>
+                <div style="flex:1;">
+                  <span class="fw-semibold">{{ ss.name }}</span>
+                  {% if ss.description %}
+                  <span class="text-muted ms-2" style="font-size:.78rem;">{{ ss.description }}</span>
+                  {% endif %}
+                </div>
+                <div class="d-flex gap-1 flex-shrink-0">
+                  <button class="btn btn-xs btn-outline-secondary" style="border-radius:16px;padding:.15rem .5rem;font-size:.72rem;"
+                          onclick="openEditSubSkill({{ ss.id }}, '{{ ss.name|e }}', '{{ (ss.description or '')|e }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form method="post" action="/skills/sub-skills/{{ ss.id }}/delete"
+                        onsubmit="return confirm('「{{ ss.name }}」を削除しますか？')">
+                    <button class="btn btn-xs btn-outline-danger" style="border-radius:16px;padding:.15rem .5rem;font-size:.72rem;">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            <!-- サブスキル追加フォーム -->
+            <form method="post" action="/skills/{{ s.id }}/sub-skills/add"
+                  class="d-flex gap-2 align-items-end flex-wrap mt-1">
+              <div>
+                <label class="form-label mb-1" style="font-size:.75rem;color:#64748b;">サブスキル名</label>
+                <input type="text" name="name" class="form-control form-control-sm"
+                       placeholder="例: ブランチの作成・切り替え" style="border-radius:8px;min-width:220px;" required>
+              </div>
+              <div>
+                <label class="form-label mb-1" style="font-size:.75rem;color:#64748b;">説明（任意）</label>
+                <input type="text" name="description" class="form-control form-control-sm"
+                       placeholder="簡単な説明" style="border-radius:8px;min-width:200px;">
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary" style="border-radius:20px;">
+                <i class="bi bi-plus-lg me-1"></i>追加
+              </button>
+            </form>
           </td>
         </tr>
         {% endfor %}
@@ -374,8 +452,8 @@
   }
 
   /* ══ 複数ソート機能 ══════════════════════════════════════════ */
-  // sortKeys: [{key, dir}, ...] 優先順位順
-  let _sortKeys = [];
+  // sortKeys: [{key, dir}, ...] 優先順位順（デフォルト: カテゴリー昇順 → 難易度 易→難）
+  let _sortKeys = [{key: 'cat', dir: 'asc'}, {key: 'tier', dir: 'asc'}];
 
   const _SORT_LABELS = {
     name:  'スキル名', cat: 'カテゴリー', tier: '難易度', count: '申告数'
@@ -489,6 +567,53 @@
     });
   }
 
+  document.addEventListener('DOMContentLoaded', function() {
+    _renderSortChips();
+  });
+
+  function toggleSubSkills(skillId) {
+    const row = document.getElementById('sub-skills-' + skillId);
+    if (!row) return;
+    const opening = row.style.display === 'none';
+    row.style.display = opening ? '' : 'none';
+    if (opening) _initSortable(skillId);
+  }
+
+  function _initSortable(skillId) {
+    if (typeof Sortable === 'undefined') return;
+    const ul = document.getElementById('sub-list-' + skillId);
+    if (!ul || ul._sortableInit) return;
+    ul._sortableInit = true;
+    new Sortable(ul, {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: function() {
+        const ids = [...ul.querySelectorAll('li[data-sub-id]')]
+                      .map(li => parseInt(li.dataset.subId));
+        fetch('/skills/sub-skills/reorder', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ids})
+        });
+      }
+    });
+  }
+
+  // highlight パラメータがある場合、該当スキルのサブスキルを自動展開
+  (function() {
+    const params = new URLSearchParams(location.search);
+    const h = params.get('highlight');
+    if (h) {
+      const row = document.getElementById('sub-skills-' + h);
+      if (row) {
+        row.style.display = '';
+        _initSortable(h);
+        row.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+    }
+  })();
+
   function _applySort() {
     if (_sortKeys.length === 0) return;
     const tbody = document.querySelector('tbody');
@@ -507,10 +632,48 @@
       }
       return 0;
     });
-    rows.forEach(r => tbody.appendChild(r));
+    // スキル行を移動するときサブスキル行も直後に追随させる
+    rows.forEach(r => {
+      tbody.appendChild(r);
+      const subRow = document.getElementById('sub-skills-' + r.dataset.skill);
+      if (subRow) tbody.appendChild(subRow);
+    });
     filterSkills();
   }
 </script>
+
+<!-- 一括インポートモーダル -->
+<div class="modal fade" id="bulkImportModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #22c55e;">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-box-arrow-in-down me-2" style="color:#22c55e;"></i>一括インポート
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info py-2 small mb-3" style="border-radius:10px;">
+          <i class="bi bi-info-circle me-1"></i>
+          一括エクスポートで出力した JSON ファイルを読み込みます。<br>
+          <strong>カテゴリ・スキルカタログ・サブスキル</strong>を一括でインポートします。<br>
+          同名のカテゴリ・スキルは自動スキップされます。
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">JSONファイルを選択</label>
+          <input type="file" id="bulkImportFile" class="form-control" accept=".json" style="border-radius:10px;">
+        </div>
+        <div id="bulkImportResult" style="display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-success btn-sm" id="bulkImportBtn" onclick="doBulkImport()" style="border-radius:20px;">
+          <i class="bi bi-upload me-1"></i>一括インポート実行
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- インポートモーダル（CSV / Excel / Markdown / JSON 対応） -->
 <div class="modal fade" id="importModal" tabindex="-1">
@@ -541,7 +704,7 @@
         <div id="desc-csv" class="fmt-desc">
           <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
             <b>ヘッダー（1行目）:</b> <code>category_name, category_color, skill_name, tier, description</code><br>
-            <b>tier の値:</b> <code>beginner / basic / intermediate / advanced</code><br>
+            <b>tier の値:</b> <code>basic / intermediate / advanced</code><br>
             カテゴリが未登録の場合は自動作成されます。UTF-8 または Shift-JIS に対応。
           </div>
         </div>
@@ -555,7 +718,7 @@
         <div id="desc-markdown" class="fmt-desc" style="display:none;">
           <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;font-family:monospace;">
             <b>## カテゴリ名 #カラー(16進)</b><br>
-            <b>### tier名</b> （beginner / basic / intermediate / advanced）<br>
+            <b>### tier名</b> （basic / intermediate / advanced）<br>
             <b>- スキル名: 説明文</b>
           </div>
         </div>
@@ -654,5 +817,85 @@ async function doImport() {
     </div>`;
   }
 }
+
+async function doBulkImport() {
+  const fileInput = document.getElementById('bulkImportFile');
+  const resultEl  = document.getElementById('bulkImportResult');
+  const btn       = document.getElementById('bulkImportBtn');
+  if (!fileInput.files.length) {
+    alert('ファイルを選択してください');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
+  resultEl.style.display = '';
+  resultEl.innerHTML = '<div class="text-muted small">インポート中...</div>';
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  try {
+    const res  = await fetch('/skills/bulk-import', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      resultEl.innerHTML = `
+        <div class="alert alert-success py-2 small" style="border-radius:10px;">
+          <i class="bi bi-check-circle me-1"></i>一括インポート完了<br>
+          カテゴリ: <strong>${data.added_categories}</strong>件追加 / ${data.skipped_categories}件スキップ<br>
+          スキル: <strong>${data.added_skills}</strong>件追加 / ${data.skipped_skills}件スキップ<br>
+          サブスキル: <strong>${data.added_sub_skills}</strong>件追加 / ${data.skipped_sub_skills}件スキップ
+        </div>`;
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
+        <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}</div>`;
+    }
+  } catch(e) {
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">通信エラーが発生しました</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-1"></i>一括インポート実行';
+}
 </script>
+
+<!-- サブスキル編集モーダル -->
+<div class="modal fade" id="editSubSkillModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2" style="color:#f97316;"></i>サブスキルを編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editSubSkillForm" method="post">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">サブスキル名</label>
+            <input type="text" name="name" id="editSubSkillName" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">説明（任意）</label>
+            <input type="text" name="description" id="editSubSkillDesc" class="form-control" style="border-radius:10px;">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;"><i class="bi bi-check-lg me-1"></i>保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+function openEditSubSkill(id, name, desc) {
+  document.getElementById('editSubSkillForm').action = '/skills/sub-skills/' + id + '/edit';
+  document.getElementById('editSubSkillName').value = name;
+  document.getElementById('editSubSkillDesc').value = desc;
+  new bootstrap.Modal(document.getElementById('editSubSkillModal')).show();
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+  .sortable-ghost { opacity: .4; background: #e0f2fe; border-radius: 6px; }
+  .drag-handle:active { cursor: grabbing; }
+</style>
 {% endblock %}

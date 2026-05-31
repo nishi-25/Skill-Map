@@ -30,7 +30,9 @@
   .user-header .rate-fill { height: 100%; border-radius: 2px; transition: width .3s; }
 
   /* セル: 習得度合いで濃淡 */
-  .matrix-table td.lv-cell { text-align: center; font-weight: 600; font-size: .72rem; transition: background .2s; }
+  .matrix-table td.lv-cell { text-align: center; font-weight: 600; font-size: .72rem; transition: background .2s; min-width: 64px; }
+  .coverage-bar { height: 4px; border-radius: 2px; background: #e2e8f0; overflow: hidden; margin-top: 3px; }
+  .coverage-bar-inner { height: 100%; border-radius: 2px; transition: width .4s; }
 
   .matrix-scroll { overflow: auto; max-height: 78vh; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); background: #fff; }
 
@@ -81,10 +83,10 @@
       <div class="ms-auto matrix-legend">
         <span class="text-muted fw-semibold me-1">理解度:</span>
         <span class="leg-item"><span class="leg-swatch" style="background:#f1f5f9;border:1px solid #e2e8f0;"></span><span class="text-muted">未申告</span></span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#fef3c7;"></span>学習中</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#fbbf24;"></span>基礎習得</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#f97316;"></span>実務可</span>
-        <span class="leg-item"><span class="leg-swatch" style="background:#dc2626;"></span><span style="color:#dc2626;font-weight:700;">習熟</span></span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#fef3c7;"></span>入門</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#fbbf24;"></span>実務可</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#f97316;"></span>指導可</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#dc2626;"></span><span style="color:#dc2626;font-weight:700;">エキスパート</span></span>
       </div>
     </form>
   </div>
@@ -283,6 +285,15 @@
           </div>
           {% endif %}
           <span class="user-name" title="{{ u.display_name or u.username }}">{{ u.display_name or u.username }}</span>
+          {% if ai_summary_enabled %}
+          <button type="button"
+                  class="btn btn-link p-0 mt-1"
+                  style="font-size:.9rem;line-height:1;color:#a78bfa;"
+                  data-bs-toggle="tooltip" data-bs-placement="top" title="AIスキル要約を生成"
+                  onclick="generateSummary({{ u.id }}, '{{ (u.display_name or u.username)|e }}')">
+            ✨
+          </button>
+          {% endif %}
           <span class="user-avg" style="color:
             {%- if st.avg >= 3 %}#dc2626
             {%- elif st.avg >= 2 %}#f97316
@@ -304,6 +315,7 @@
         </th>
         {% endfor %}
         <th style="text-align:center;vertical-align:bottom;font-size:.68rem;white-space:nowrap;min-width:50px;">スキル<br>平均</th>
+        <th style="text-align:center;vertical-align:bottom;font-size:.68rem;white-space:nowrap;min-width:60px;background:#f0f9ff;color:#0369a1;">カバレッジ<br><span style="font-size:.6rem;">(申告者数)</span></th>
       </tr>
     </thead>
 
@@ -327,7 +339,7 @@
         <td class="skill-col" title="{{ sk.name }}" style="font-size:.76rem;">
           {{ sk.name }}
         </td>
-        {% set lv_labels = {0:'-', 1:'学習中', 2:'基礎', 3:'実務可', 4:'習熟'} %}
+        {% set lv_labels = {0:'-', 1:'入門', 2:'実務可', 3:'指導可', 4:'エキスパート'} %}
         {% for u in users %}
         {% set lv = level_map.get((u.id, sk.id), 0) %}
         <td class="lv-cell" style="background:
@@ -352,6 +364,16 @@
           <span style="color:#ea580c;">{{ (ns_sk.sum / ns_sk.count)|round(1) }}</span>
           {% else %}<span class="text-muted">-</span>{% endif %}
         </td>
+        {# カバレッジ列 #}
+        {% set cov_pct = (ns_sk.count / users|length * 100)|int if users else 0 %}
+        <td class="text-center" style="background:#f0f9ff;font-size:.72rem;">
+          <div class="fw-bold" style="color:{% if cov_pct >= 80 %}#16a34a{% elif cov_pct >= 40 %}#d97706{% else %}#dc2626{% endif %};">
+            {{ ns_sk.count }}/{{ users|length }}
+          </div>
+          <div class="coverage-bar">
+            <div class="coverage-bar-inner" style="width:{{ cov_pct }}%;background:{% if cov_pct >= 80 %}#22c55e{% elif cov_pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+          </div>
+        </td>
       </tr>
       {% endfor %}
 
@@ -371,6 +393,17 @@
           {%- endif %};">{{ st.avg }}</td>
         {% endfor %}
         <td></td>
+        {# カバレッジ合計セル #}
+        {% set total_covered = namespace(n=0) %}
+        {% for sk2 in skills %}
+          {% set holders2 = namespace(h=0) %}
+          {% for u2 in users %}{% if level_map.get((u2.id, sk2.id), 0) > 0 %}{% set holders2.h = holders2.h + 1 %}{% endif %}{% endfor %}
+          {% if holders2.h > 0 %}{% set total_covered.n = total_covered.n + 1 %}{% endif %}
+        {% endfor %}
+        <td class="text-center" style="background:#e0f2fe;font-size:.72rem;color:#0369a1;font-weight:700;">
+          {{ total_covered.n }}/{{ skills|length }}<br>
+          <span style="font-size:.6rem;font-weight:400;">スキル</span>
+        </td>
       </tr>
     </tbody>
   </table>
@@ -392,7 +425,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   const CHART_COLORS = ['#f97316','#dc2626','#fbbf24','#22c55e','#f97316','#06b6d4','#ec4899','#8b5cf6','#14b8a6','#64748b'];
   const LEVEL_COLORS_MAP = {'0':'#f1f5f9','1':'#fef3c7','2':'#fbbf24','3':'#f97316','4':'#dc2626'};
-  const LEVEL_LABELS = ['Lv.0 未申告','Lv.1 学習中','Lv.2 基礎習得','Lv.3 実務可','Lv.4 習熟'];
+  const LEVEL_LABELS = ['Lv.0 未申告','Lv.1 入門','Lv.2 実務可','Lv.3 指導可','Lv.4 エキスパート'];
 
   // ── 1) 成長トレンド折れ線 ──
   {% if growth_trend %}
@@ -667,6 +700,117 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+/* ── ツールチップ初期化 ── */
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+  new bootstrap.Tooltip(el, { trigger: 'hover' });
+});
 </script>
+
+<!-- AI スキル要約モーダル -->
+<div class="modal fade" id="skillSummaryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:18px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+      <div class="modal-header" style="border-bottom:2px solid #a78bfa;background:linear-gradient(135deg,#f5f3ff,#fff);">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <span style="font-size:1.1rem;">✨</span>
+          <span id="summaryModalTitle">AIスキル要約</span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="min-height:120px;">
+        <!-- ローディング -->
+        <div id="summaryLoading" class="text-center py-4" style="display:none;">
+          <div class="spinner-border text-primary mb-3" style="width:2rem;height:2rem;border-width:.2rem;"></div>
+          <div class="text-muted small">Claude がスキルを分析中...</div>
+        </div>
+        <!-- 結果 -->
+        <div id="summaryResult" style="display:none;">
+          <div class="d-flex gap-2 mb-3">
+            <span class="badge bg-light text-muted border" id="summarySkillCount" style="font-size:.74rem;"></span>
+          </div>
+          <div id="summaryText"
+               style="line-height:1.85;font-size:.9rem;color:#334155;
+                      background:#f8fafc;border-radius:12px;padding:1rem 1.1rem;
+                      border-left:3px solid #a78bfa;white-space:pre-wrap;word-break:break-word;"></div>
+        </div>
+        <!-- エラー -->
+        <div id="summaryError" style="display:none;">
+          <div class="alert alert-danger py-2 small mb-0" style="border-radius:10px;">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <span id="summaryErrorMsg"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:none;justify-content:space-between;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="summaryRetryBtn"
+                style="border-radius:20px;display:none;" onclick="retrySummary()">
+          <i class="bi bi-arrow-clockwise me-1"></i>再生成
+        </button>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="summaryCopyBtn"
+                style="border-radius:20px;display:none;" onclick="copySummary()">
+          <i class="bi bi-clipboard me-1"></i>コピー
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let _summaryUserId   = null;
+let _summaryUserName = '';
+
+async function generateSummary(userId, userName) {
+  _summaryUserId   = userId;
+  _summaryUserName = userName;
+
+  document.getElementById('summaryModalTitle').textContent = `${userName} のスキル要約`;
+  document.getElementById('summaryLoading').style.display  = '';
+  document.getElementById('summaryResult').style.display   = 'none';
+  document.getElementById('summaryError').style.display    = 'none';
+  document.getElementById('summaryRetryBtn').style.display = 'none';
+  document.getElementById('summaryCopyBtn').style.display  = 'none';
+
+  new bootstrap.Modal(document.getElementById('skillSummaryModal')).show();
+
+  try {
+    const res  = await fetch(`/api/users/${userId}/skill-summary`);
+    const data = await res.json();
+    document.getElementById('summaryLoading').style.display = 'none';
+
+    if (data.ok) {
+      document.getElementById('summarySkillCount').textContent = `承認済みスキル ${data.skill_count} 件`;
+      document.getElementById('summaryText').textContent       = data.summary;
+      document.getElementById('summaryResult').style.display  = '';
+      document.getElementById('summaryCopyBtn').style.display = '';
+      document.getElementById('summaryRetryBtn').style.display = '';
+    } else {
+      document.getElementById('summaryErrorMsg').textContent  = data.error || '要約の生成に失敗しました';
+      document.getElementById('summaryError').style.display  = '';
+      document.getElementById('summaryRetryBtn').style.display = '';
+    }
+  } catch(e) {
+    document.getElementById('summaryLoading').style.display = 'none';
+    document.getElementById('summaryErrorMsg').textContent  = '通信エラーが発生しました';
+    document.getElementById('summaryError').style.display  = '';
+    document.getElementById('summaryRetryBtn').style.display = '';
+  }
+}
+
+function retrySummary() {
+  if (_summaryUserId) generateSummary(_summaryUserId, _summaryUserName);
+}
+
+function copySummary() {
+  const text = document.getElementById('summaryText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('summaryCopyBtn');
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>コピー済み';
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>コピー'; }, 2000);
+  });
+}
+</script>
+
 {% endif %}
 {% endblock %}

@@ -1,7 +1,8 @@
 from typing import List, Optional
 import csv
 import io
-from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
+import os
+from fastapi import APIRouter, Request, Form, Depends, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -152,10 +153,10 @@ def categories_bulk_delete(
 # ════════════════════════════════════════════════════════════════
 
 _CAT_SAMPLE = [
-    {"name": "HILS基盤・操作",         "color": "#dc2626", "description": ""},
-    {"name": "dSPACEツール",           "color": "#2563eb", "description": ""},
-    {"name": "ソフト検証・テスト",      "color": "#7c3aed", "description": ""},
-    {"name": "モデル開発（Simulink）",  "color": "#f97316", "description": ""},
+    {"name": "HILS基盤・構築",             "color": "#dc2626", "description": ""},
+    {"name": "HILSプラットフォームツール",  "color": "#2563eb", "description": ""},
+    {"name": "計測・診断ツール",            "color": "#0891b2", "description": ""},
+    {"name": "テスト自動化",               "color": "#059669", "description": ""},
 ]
 
 
@@ -371,7 +372,19 @@ def catalog_list(
         q = q.filter(models.Skill.category_id == category_id)
     if tier:
         q = q.filter(models.Skill.tier == tier)
-    skills = q.order_by(models.Skill.tier, models.Skill.name).all()
+
+    from sqlalchemy import case as _case
+    _tier_order = _case(
+        (models.Skill.tier == "basic",        0),
+        (models.Skill.tier == "intermediate", 1),
+        (models.Skill.tier == "advanced",     2),
+        else_=9,
+    )
+    skills = (
+        q.outerjoin(models.Category, models.Skill.category_id == models.Category.id)
+         .order_by(models.Category.name.nullslast(), _tier_order, models.Skill.name)
+         .all()
+    )
 
     # カテゴリもManagerのスコープに絞る
     if user.role == "manager":
@@ -389,6 +402,7 @@ def catalog_list(
         "categories": categories,
         "sel_category": category_id, "sel_tier": tier,
         "all_tags": all_tags,
+        "highlight": request.query_params.get("highlight", ""),
     })
 
 
@@ -486,13 +500,13 @@ def catalog_delete(skill_id: int, request: Request, db: Session = Depends(get_db
 # ────────────────────────────────────────────────────────────────
 # インポート共通ヘルパー
 # ────────────────────────────────────────────────────────────────
-_VALID_TIERS = {"beginner", "basic", "intermediate", "advanced"}
+_VALID_TIERS = {"basic", "intermediate", "advanced"}
 
 _SAMPLE_RECORDS = [
-    {"category": "HILS基盤・操作",  "color": "#dc2626", "name": "HILS基本操作",       "tier": "beginner",     "description": "HILSの電源投入・基本操作・ステータス確認"},
-    {"category": "HILS基盤・操作",  "color": "#dc2626", "name": "HILSキャリブレーション","tier": "basic",      "description": "センサ・アクチュエータの校正・調整手順"},
-    {"category": "dSPACEツール",    "color": "#2563eb", "name": "ControlDesk基本操作", "tier": "beginner",     "description": "レイアウト作成・変数モニタリング・データ記録"},
-    {"category": "DevOps・自動化",  "color": "#059669", "name": "GitHub Actions",       "tier": "basic",        "description": "CI/CDパイプライン構築・自動テスト・通知連携"},
+    {"category": "HILS基盤・構築",            "color": "#dc2626", "name": "HILS基本操作",       "tier": "beginner",     "description": "HILSの電源投入・基本操作・ステータス確認"},
+    {"category": "HILSプラットフォームツール", "color": "#2563eb", "name": "ControlDesk 基本操作","tier": "beginner",    "description": "レイアウト作成・変数モニタリング・データ記録"},
+    {"category": "計測・診断ツール",           "color": "#0891b2", "name": "CANoe 基礎",          "tier": "basic",        "description": "基本操作・ログ取得・DBC読み込み・信号モニタリング"},
+    {"category": "テスト自動化",              "color": "#059669", "name": "ecu.test 基礎",        "tier": "basic",        "description": "テストケース作成・実行・レポート出力・基本設定"},
 ]
 
 
@@ -563,10 +577,9 @@ def _parse_markdown_bytes(content: bytes) -> tuple[list, list]:
         text = content.decode("cp932", errors="replace")
     records, errors = [], []
     current_cat, current_color, current_tier = "", "#f97316", "basic"
-    tier_map = {"beginner": "beginner", "ビギナー": "beginner", "初級": "beginner",
-                "basic": "basic",       "ベーシック": "basic",   "基礎": "basic",
-                "intermediate": "intermediate", "アドバンスド": "intermediate", "中級": "intermediate",
-                "advanced": "advanced", "エキスパート": "advanced", "上級": "advanced"}
+    tier_map = {"basic": "basic",       "ベーシック": "basic",   "基礎": "basic",
+                "intermediate": "intermediate", "中級": "intermediate",
+                "advanced": "advanced", "上級": "advanced"}
     for line_no, line in enumerate(text.splitlines(), start=1):
         line = line.rstrip()
         if line.startswith("## "):          # カテゴリ
@@ -904,7 +917,7 @@ def catalog_template(fmt: str, request: Request, db: Session = Depends(get_db)):
 def tier_settings_get(request: Request, db: Session = Depends(get_db)):
     user = auth.require_manager_or_admin(request, db)
     tier_names = models.get_tier_display_names(db)
-    tier_order = ["beginner", "basic", "intermediate", "advanced"]
+    tier_order = ["basic", "intermediate", "advanced"]
     return templates.TemplateResponse(request, "tier_settings.html", {
         "current_user": user,
         "tier_names": tier_names,
@@ -918,7 +931,6 @@ def tier_settings_get(request: Request, db: Session = Depends(get_db)):
 @router.post("/skills/tier-settings")
 def tier_settings_post(
     request: Request,
-    tier_beginner: str = Form(""),
     tier_basic: str = Form(""),
     tier_intermediate: str = Form(""),
     tier_advanced: str = Form(""),
@@ -926,7 +938,6 @@ def tier_settings_post(
 ):
     user = auth.require_manager_or_admin(request, db)
     mapping = {
-        "beginner": tier_beginner.strip(),
         "basic": tier_basic.strip(),
         "intermediate": tier_intermediate.strip(),
         "advanced": tier_advanced.strip(),
@@ -944,7 +955,7 @@ def tier_settings_post(
     db.commit()
 
     tier_names = models.get_tier_display_names(db)
-    tier_order = ["beginner", "basic", "intermediate", "advanced"]
+    tier_order = ["basic", "intermediate", "advanced"]
     return templates.TemplateResponse(request, "tier_settings.html", {
         "current_user": user,
         "tier_names": tier_names,
@@ -972,7 +983,7 @@ def skills_my(
 
     # カスタムティア名
     tier_names = models.get_tier_display_names(db)
-    tier_order = ["beginner", "basic", "intermediate", "advanced"]
+    tier_order = ["basic", "intermediate", "advanced"]
 
     # ユーザーの所属グループ
     my_groups = (
@@ -986,9 +997,20 @@ def skills_my(
     # グループでスキル絞込み
     group_skill_ids = None
     if group_id:
+        # 明示的なグループ選択
         sel_group = db.query(models.Group).filter(models.Group.id == group_id).first()
         if sel_group:
             group_skill_ids = _get_all_group_skill_ids(sel_group)
+    elif user.role == "user":
+        # User ロールは所属グループのスキルのみ自動表示
+        if my_groups:
+            auto_ids: set[int] = set()
+            for grp in my_groups:
+                auto_ids.update(_get_all_group_skill_ids(grp))
+            group_skill_ids = auto_ids
+        else:
+            # どのグループにも所属していない場合はスキルなし
+            group_skill_ids = set()
 
     # 全カタログ取得（tierフィルタなし → 概要計算用）
     q_all = db.query(models.Skill)
@@ -1101,6 +1123,71 @@ def skills_my(
     for sk in catalog:
         by_tier[sk.tier].append(sk)
 
+    # ── カテゴリ別スキルマップ（新UI用） ──
+    from collections import OrderedDict
+
+    # 表示するスキルのID一覧
+    displayed_skill_ids = [sk.id for sk in catalog]
+
+    # 全スキルのサブスキルを一括取得（skill_id → [SubSkill]マップ）
+    sub_skills_map: dict[int, list] = defaultdict(list)
+    if displayed_skill_ids:
+        all_subs = (
+            db.query(models.SubSkill)
+            .filter(models.SubSkill.skill_id.in_(displayed_skill_ids))
+            .order_by(models.SubSkill.skill_id, models.SubSkill.order_index)
+            .all()
+        )
+        for ss in all_subs:
+            sub_skills_map[ss.skill_id].append(ss)
+
+    # ユーザーが「できる」にしているサブスキルIDのセット（一括取得）
+    done_sub_ids: set = set()
+    if displayed_skill_ids:
+        done_records = (
+            db.query(models.UserSubSkillLevel)
+            .filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.can_do == True,
+            )
+            .all()
+        )
+        done_sub_ids = {r.sub_skill_id for r in done_records}
+
+    # 各スキルの現在の自動計算レベル
+    auto_level_map: dict[int, int] = {}
+    for skill_id, subs in sub_skills_map.items():
+        done = sum(1 for ss in subs if ss.id in done_sub_ids)
+        auto_level_map[skill_id] = calc_level_from_ratio(done, len(subs))
+
+    # ── 希少性スコア: 各スキルを何人が申告済みか（チーム内） ──
+    # 対象: 全承認済みユーザーの承認済み申告
+    skill_holder_map: dict[int, int] = {}  # skill_id → 人数
+    if displayed_skill_ids:
+        from sqlalchemy import func as _func
+        rows = (
+            db.query(models.UserSkillLevel.skill_id, _func.count(models.UserSkillLevel.user_id))
+            .filter(
+                models.UserSkillLevel.skill_id.in_(displayed_skill_ids),
+                models.UserSkillLevel.approval_status == "approved",
+                models.UserSkillLevel.level > 0,
+            )
+            .group_by(models.UserSkillLevel.skill_id)
+            .all()
+        )
+        skill_holder_map = {skill_id: cnt for skill_id, cnt in rows}
+
+    # カテゴリ別スキルのOrderedDict
+    skills_by_category: OrderedDict = OrderedDict()
+    for sk in catalog:
+        cat_name = sk.category.name if sk.category else "未分類"
+        if cat_name not in skills_by_category:
+            skills_by_category[cat_name] = {
+                "category": sk.category,
+                "skills": []
+            }
+        skills_by_category[cat_name]["skills"].append(sk)
+
     return templates.TemplateResponse(request, "skills.html", {
         "current_user": user,
         "by_tier": by_tier,
@@ -1122,7 +1209,18 @@ def skills_my(
         "TIER_NAMES": tier_names,
         "TIER_ICONS": models.TIER_ICONS,
         "TIER_DESCRIPTIONS": models.TIER_DESCRIPTIONS,
+        "TIER_COLORS": models.TIER_COLORS,
+        "SKILL_LEVELS": models.SKILL_LEVELS,
+        "LEVEL_COLORS": models.LEVEL_COLORS,
+        "APPROVAL_STATUS": models.APPROVAL_STATUS,
+        "APPROVAL_STATUS_COLORS": models.APPROVAL_STATUS_COLORS,
         "view": view,
+        # 新UI用
+        "sub_skills_map": dict(sub_skills_map),
+        "done_sub_ids": done_sub_ids,
+        "auto_level_map": auto_level_map,
+        "skills_by_category": skills_by_category,
+        "skill_holder_map": skill_holder_map,
     })
 
 
@@ -1216,30 +1314,66 @@ def set_skill_level(
 
 @router.get("/approvals", response_class=HTMLResponse)
 def approvals_list(request: Request, db: Session = Depends(get_db)):
-    """承認者として自分に割り当てられた承認依頼一覧（Admin/Managerのみ）"""
+    """承認依頼一覧。Admin は全ユーザーの全申告を確認可能、Manager は担当分のみ。"""
     user = auth.require_manager_or_admin(request, db)
-    pending = (
-        db.query(models.UserSkillLevel)
-        .filter(
-            models.UserSkillLevel.approver_id == user.id,
-            models.UserSkillLevel.approval_status == "pending",
+
+    if user.role == "admin":
+        # Admin: 全ユーザーの全申告を表示
+        pending = (
+            db.query(models.UserSkillLevel)
+            .filter(models.UserSkillLevel.approval_status == "pending")
+            .order_by(models.UserSkillLevel.updated_at.desc())
+            .all()
         )
-        .all()
-    )
-    history = (
-        db.query(models.UserSkillLevel)
-        .filter(
-            models.UserSkillLevel.approver_id == user.id,
-            models.UserSkillLevel.approval_status.in_(["approved", "rejected"]),
+        history = (
+            db.query(models.UserSkillLevel)
+            .filter(models.UserSkillLevel.approval_status.in_(["approved", "rejected"]))
+            .order_by(models.UserSkillLevel.approved_at.desc())
+            .limit(200)
+            .all()
         )
-        .order_by(models.UserSkillLevel.approved_at.desc())
-        .limit(50)
-        .all()
-    )
+    else:
+        # Manager: 自分が承認者に指定されたもののみ
+        pending = (
+            db.query(models.UserSkillLevel)
+            .filter(
+                models.UserSkillLevel.approver_id == user.id,
+                models.UserSkillLevel.approval_status == "pending",
+            )
+            .all()
+        )
+        history = (
+            db.query(models.UserSkillLevel)
+            .filter(
+                models.UserSkillLevel.approver_id == user.id,
+                models.UserSkillLevel.approval_status.in_(["approved", "rejected"]),
+            )
+            .order_by(models.UserSkillLevel.approved_at.desc())
+            .limit(50)
+            .all()
+        )
+    # pending + history 両方のエビデンスを一括取得 (user_id, skill_id) -> list
+    all_records = list(pending) + list(history)
+    evidence_map: dict[tuple, list] = {}
+    if all_records:
+        all_ev = db.query(models.SkillEvidence).filter(
+            models.SkillEvidence.user_id.in_([r.user_id for r in all_records]),
+            models.SkillEvidence.skill_id.in_([r.skill_id for r in all_records]),
+        ).order_by(models.SkillEvidence.created_at).all()
+        for ev in all_ev:
+            key = (ev.user_id, ev.skill_id)
+            evidence_map.setdefault(key, []).append(ev)
+
     return templates.TemplateResponse(request, "approvals.html", {
         "current_user": user,
         "pending": pending,
         "history": history,
+        "is_admin_all_view": user.role == "admin",
+        "evidence_map": evidence_map,
+        "SKILL_LEVELS": models.SKILL_LEVELS,
+        "LEVEL_COLORS": models.LEVEL_COLORS,
+        "APPROVAL_STATUS": models.APPROVAL_STATUS,
+        "APPROVAL_STATUS_COLORS": models.APPROVAL_STATUS_COLORS,
     })
 
 
@@ -1250,13 +1384,15 @@ def approve_skill(
     comment: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """スキルレベルを承認する"""
+    """スキルレベルを承認する。Admin は承認者に関係なく全申告を承認可能。"""
     user = auth.require_manager_or_admin(request, db)
-    record = db.query(models.UserSkillLevel).filter(
+    _q = db.query(models.UserSkillLevel).filter(
         models.UserSkillLevel.id == record_id,
-        models.UserSkillLevel.approver_id == user.id,
         models.UserSkillLevel.approval_status == "pending",
-    ).first()
+    )
+    if user.role != "admin":
+        _q = _q.filter(models.UserSkillLevel.approver_id == user.id)
+    record = _q.first()
     if record:
         # 承認前のレベルを取得（履歴用）
         prev_history = (
@@ -1293,19 +1429,73 @@ def reject_skill(
     comment: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """スキルレベルを差し戻す"""
+    """スキルレベルを差し戻す。Admin は承認者に関係なく全申告を差し戻し可能。"""
     user = auth.require_manager_or_admin(request, db)
-    record = db.query(models.UserSkillLevel).filter(
+    _rq = db.query(models.UserSkillLevel).filter(
         models.UserSkillLevel.id == record_id,
-        models.UserSkillLevel.approver_id == user.id,
         models.UserSkillLevel.approval_status == "pending",
-    ).first()
+    )
+    if user.role != "admin":
+        _rq = _rq.filter(models.UserSkillLevel.approver_id == user.id)
+    record = _rq.first()
     if record:
         record.approval_status = "rejected"
         record.approved_at = func.now()
         record.approver_comment = comment or None
         db.commit()
     return RedirectResponse("/approvals", status_code=303)
+
+
+@router.post("/api/approvals/{record_id}/revoke")
+def revoke_approval(
+    record_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """承認済み・差し戻し済みレコードを pending に戻す（Admin/Manager）"""
+    user = auth.require_manager_or_admin(request, db)
+    q = db.query(models.UserSkillLevel).filter(
+        models.UserSkillLevel.id == record_id,
+        models.UserSkillLevel.approval_status.in_(["approved", "rejected"]),
+    )
+    if user.role != "admin":
+        q = q.filter(models.UserSkillLevel.approver_id == user.id)
+    record = q.first()
+    if not record:
+        return JSONResponse({"ok": False, "error": "対象レコードが見つかりません"}, status_code=404)
+    record.approval_status = "pending"
+    record.approved_at = None
+    record.approver_comment = None
+    db.commit()
+    return JSONResponse({"ok": True})
+
+
+@router.post("/api/approvals/{record_id}/edit")
+def edit_approval(
+    record_id: int,
+    request: Request,
+    level: int = Form(...),
+    comment: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """承認済みレコードのレベル・コメントを編集する（Admin/Manager）"""
+    user = auth.require_manager_or_admin(request, db)
+    q = db.query(models.UserSkillLevel).filter(
+        models.UserSkillLevel.id == record_id,
+        models.UserSkillLevel.approval_status.in_(["approved", "rejected"]),
+    )
+    if user.role != "admin":
+        q = q.filter(models.UserSkillLevel.approver_id == user.id)
+    record = q.first()
+    if not record:
+        return JSONResponse({"ok": False, "error": "対象レコードが見つかりません"}, status_code=404)
+    if level not in models.SKILL_LEVELS:
+        return JSONResponse({"ok": False, "error": "無効なレベル"}, status_code=400)
+    record.level = level
+    record.approver_comment = comment.strip() or None
+    record.approved_at = func.now()
+    db.commit()
+    return JSONResponse({"ok": True})
 
 
 @router.post("/api/approvals/bulk-action")
@@ -1321,15 +1511,14 @@ def bulk_approval_action(
     if action not in ("approve", "reject") or not record_ids:
         return JSONResponse({"ok": False, "error": "無効なリクエスト"}, status_code=400)
 
-    records = (
-        db.query(models.UserSkillLevel)
-        .filter(
-            models.UserSkillLevel.id.in_(record_ids),
-            models.UserSkillLevel.approver_id == user.id,
-            models.UserSkillLevel.approval_status == "pending",
-        )
-        .all()
+    q = db.query(models.UserSkillLevel).filter(
+        models.UserSkillLevel.id.in_(record_ids),
+        models.UserSkillLevel.approval_status == "pending",
     )
+    # Admin は全件対象、Manager は自分が承認者のもののみ
+    if user.role != "admin":
+        q = q.filter(models.UserSkillLevel.approver_id == user.id)
+    records = q.all()
 
     processed = 0
     for record in records:
@@ -1542,6 +1731,477 @@ def withdraw_my_approval(record_id: int, request: Request, db: Session = Depends
     return JSONResponse({"ok": True})
 
 
+# ════════════════════════════════════════════════════════════════
+# スキル申告フロー再設計（案5）
+# ════════════════════════════════════════════════════════════════
+
+def calc_level_from_ratio(done: int, total: int) -> int:
+    """サブスキル達成率からレベルを自動計算する
+    0: 未経験 / 1: 入門 / 2: 実務可 / 3: 指導可 / 4: エキスパート
+    """
+    if total == 0 or done == 0:
+        return 0
+    ratio = done / total
+    if ratio <= 0.25:
+        return 1   # 入門
+    if ratio <= 0.50:
+        return 2   # 基礎
+    if ratio <= 0.75:
+        return 3   # 中級
+    return 4       # 上級
+
+
+@router.get("/api/skills/{skill_id}/panel")
+def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    """2ペインUI用：右ペインに必要なデータをJSONで返す"""
+    from fastapi.responses import JSONResponse as _JSONResponse
+    user = auth.require_approved(request, db)
+
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        raise HTTPException(status_code=404)
+
+    sub_skills = (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == skill_id)
+        .order_by(models.SubSkill.order_index)
+        .all()
+    )
+
+    done_ids: set[int] = set()
+    if sub_skills:
+        done_ids = {
+            r.sub_skill_id for r in
+            db.query(models.UserSubSkillLevel).filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.sub_skill_id.in_([ss.id for ss in sub_skills]),
+                models.UserSubSkillLevel.can_do == True,
+            ).all()
+        }
+
+    current_usl = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.skill_id == skill_id,
+        )
+        .first()
+    )
+
+    calc_lv = calc_level_from_ratio(len(done_ids), len(sub_skills))
+
+    # グループマネージャー
+    from sqlalchemy import text as _text2
+    mgr_ids: set[int] = set()
+    for row in db.execute(
+        _text2("SELECT DISTINCT gm.user_id FROM group_managers gm "
+               "JOIN group_memberships gms ON gm.group_id = gms.group_id "
+               "WHERE gms.user_id = :uid"), {"uid": user.id}
+    ).fetchall():
+        mgr_ids.add(row[0])
+    for row in db.execute(
+        _text2("SELECT DISTINCT g.manager_id FROM groups g "
+               "JOIN group_memberships gms ON g.id = gms.group_id "
+               "WHERE gms.user_id = :uid AND g.manager_id IS NOT NULL"), {"uid": user.id}
+    ).fetchall():
+        mgr_ids.add(row[0])
+
+    managers = []
+    if mgr_ids:
+        managers = [
+            {"id": u.id, "name": u.display_name or u.username}
+            for u in db.query(models.User).filter(
+                models.User.id.in_(mgr_ids),
+                models.User.role.in_(["manager", "admin"]),
+                models.User.is_approved == True,
+            ).order_by(models.User.display_name).all()
+        ]
+
+    # 目標データ
+    goal_obj = db.query(models.SkillGoal).filter(
+        models.SkillGoal.user_id == user.id,
+        models.SkillGoal.skill_id == skill_id,
+    ).first()
+
+    return _JSONResponse({
+        "skill": {
+            "id": skill.id,
+            "name": skill.name,
+            "description": skill.description or "",
+            "tier": skill.tier,
+            "tier_name": models.DEFAULT_TIER_NAMES.get(skill.tier, skill.tier),
+            "category_name": skill.category.name if skill.category else "",
+            "category_color": skill.category.color if skill.category else "#999",
+        },
+        "sub_skills": [
+            {"id": ss.id, "name": ss.name, "description": ss.description or "", "done": ss.id in done_ids}
+            for ss in sub_skills
+        ],
+        "current_level": current_usl.level if current_usl else 0,
+        "current_level_name": models.SKILL_LEVELS.get(current_usl.level if current_usl else 0, "未経験"),
+        "current_level_color": models.LEVEL_COLORS.get(current_usl.level if current_usl else 0, "secondary"),
+        "current_status": current_usl.approval_status if current_usl else None,
+        "override_level": current_usl.override_level if current_usl else None,
+        "override_reason": current_usl.override_reason or "" if current_usl else "",
+        "calc_level": calc_lv,
+        "calc_level_name": models.SKILL_LEVELS.get(calc_lv, "未経験"),
+        "skill_levels": models.SKILL_LEVELS,
+        "level_colors": models.LEVEL_COLORS,
+        "group_managers": managers,
+        "is_auto_approve": user.role in ("admin", "manager"),
+        "evidences": [
+            {
+                "id": ev.id,
+                "evidence_type": ev.evidence_type,
+                "title": ev.title or "",
+                "content": ev.content or "",
+                "original_filename": ev.original_filename or "",
+                "created_at": ev.created_at.strftime("%Y-%m-%d") if ev.created_at else "",
+            }
+            for ev in db.query(models.SkillEvidence).filter(
+                models.SkillEvidence.user_id == user.id,
+                models.SkillEvidence.skill_id == skill_id,
+            ).order_by(models.SkillEvidence.created_at.desc()).all()
+        ],
+        "goal": {
+            "target_level": goal_obj.target_level,
+            "target_level_name": models.SKILL_LEVELS.get(goal_obj.target_level, ""),
+            "target_date": goal_obj.target_date.isoformat() if goal_obj.target_date else None,
+            "note": goal_obj.note or "",
+        } if goal_obj else None,
+    })
+
+
+@router.get("/skills/{skill_id}/declare", response_class=HTMLResponse)
+def skill_declare_get(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    """スキル申告フォーム（サブスキルチェック + エビデンス）。Admin/Manager は申告不可。"""
+    user = auth.require_approved(request, db)
+    # Admin/Manager は申告ページにアクセス不可（管理者は申告しない）
+    if user.role in ("admin", "manager"):
+        return RedirectResponse("/skills/catalog", status_code=303)
+
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        return RedirectResponse("/skills", status_code=303)
+
+    sub_skills = (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == skill_id)
+        .order_by(models.SubSkill.order_index)
+        .all()
+    )
+
+    # ユーザーが「できる」にしているサブスキルIDのset
+    done_records = (
+        db.query(models.UserSubSkillLevel)
+        .filter(
+            models.UserSubSkillLevel.user_id == user.id,
+            models.UserSubSkillLevel.sub_skill_id.in_([ss.id for ss in sub_skills]),
+            models.UserSubSkillLevel.can_do == True,
+        )
+        .all()
+    )
+    done_ids = {r.sub_skill_id for r in done_records}
+
+    # 現在のUserSkillLevel
+    current = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.skill_id == skill_id,
+        )
+        .first()
+    )
+
+    # 既存エビデンス
+    evidences = (
+        db.query(models.SkillEvidence)
+        .filter(
+            models.SkillEvidence.user_id == user.id,
+            models.SkillEvidence.skill_id == skill_id,
+        )
+        .order_by(models.SkillEvidence.created_at.desc())
+        .all()
+    )
+
+    # 現在の達成率から計算したレベル
+    calc_level = calc_level_from_ratio(len(done_ids), len(sub_skills))
+
+    # ユーザーが所属するグループのマネージャー一覧を取得
+    from sqlalchemy import text as _text
+
+    group_manager_ids = set()
+    # group_managers テーブル（多対多）から取得
+    gm_rows = db.execute(
+        _text("SELECT DISTINCT gm.user_id FROM group_managers gm "
+              "JOIN group_memberships gms ON gm.group_id = gms.group_id "
+              "WHERE gms.user_id = :uid"),
+        {"uid": user.id}
+    ).fetchall()
+    for row in gm_rows:
+        group_manager_ids.add(row[0])
+
+    # グループの manager_id（単数形）も含める
+    single_mgr_rows = db.execute(
+        _text("SELECT DISTINCT g.manager_id FROM groups g "
+              "JOIN group_memberships gms ON g.id = gms.group_id "
+              "WHERE gms.user_id = :uid AND g.manager_id IS NOT NULL"),
+        {"uid": user.id}
+    ).fetchall()
+    for row in single_mgr_rows:
+        group_manager_ids.add(row[0])
+
+    group_managers = []
+    if group_manager_ids:
+        group_managers = (
+            db.query(models.User)
+            .filter(
+                models.User.id.in_(group_manager_ids),
+                models.User.role.in_(["manager", "admin"]),
+                models.User.is_approved == True,
+            )
+            .order_by(models.User.display_name)
+            .all()
+        )
+
+    # 目標データ
+    skill_goal = db.query(models.SkillGoal).filter(
+        models.SkillGoal.user_id == user.id,
+        models.SkillGoal.skill_id == skill_id,
+    ).first()
+
+    return templates.TemplateResponse(request, "skill_declare.html", {
+        "current_user": user,
+        "skill": skill,
+        "sub_skills": sub_skills,
+        "done_ids": done_ids,
+        "current": current,
+        "evidences": evidences,
+        "calc_level": calc_level,
+        "SKILL_LEVELS": models.SKILL_LEVELS,
+        "LEVEL_COLORS": models.LEVEL_COLORS,
+        "APPROVAL_STATUS": models.APPROVAL_STATUS,
+        "APPROVAL_STATUS_COLORS": models.APPROVAL_STATUS_COLORS,
+        "group_managers": group_managers,
+        "skill_goal": skill_goal,
+    })
+
+
+@router.post("/skills/{skill_id}/declare")
+def skill_declare_post(
+    skill_id: int,
+    request: Request,
+    sub_skill_ids: List[int] = Form(default=[]),
+    override_level: Optional[int] = Form(default=None),
+    override_reason: str = Form(default=""),
+    approver_id: Optional[int] = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    """スキル申告フォーム送信処理。Admin/Manager は申告不可。"""
+    user = auth.require_approved(request, db)
+    if user.role in ("admin", "manager"):
+        return RedirectResponse("/skills/catalog", status_code=303)
+
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        return RedirectResponse("/skills", status_code=303)
+
+    # 1. UserSubSkillLevel を upsert
+    all_sub_skills = (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == skill_id)
+        .all()
+    )
+    checked_ids = set(sub_skill_ids)
+
+    for ss in all_sub_skills:
+        existing = (
+            db.query(models.UserSubSkillLevel)
+            .filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.sub_skill_id == ss.id,
+            )
+            .first()
+        )
+        can_do = ss.id in checked_ids
+        if existing:
+            existing.can_do = can_do
+        else:
+            db.add(models.UserSubSkillLevel(
+                user_id=user.id,
+                sub_skill_id=ss.id,
+                can_do=can_do,
+            ))
+
+    # 2. 達成率からレベルを計算
+    done_count = len(checked_ids)
+    total_count = len(all_sub_skills)
+    auto_level = calc_level_from_ratio(done_count, total_count)
+
+    # 3. override_level が指定されている場合は使用（reason必須チェック）
+    if override_level is not None and override_level != auto_level:
+        if not override_reason.strip():
+            # 理由なしの場合は自動計算レベルを使用
+            override_level = None
+
+    final_level = override_level if override_level is not None else auto_level
+
+    # 4. UserSkillLevel を upsert
+    # Admin/Manager は自動承認
+    is_auto_approve = user.role in ("admin", "manager")
+    approval_status = "approved" if is_auto_approve else "pending"
+
+    existing_usl = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.skill_id == skill_id,
+        )
+        .first()
+    )
+
+    if existing_usl:
+        existing_usl.level = final_level
+        existing_usl.approval_status = approval_status
+        existing_usl.override_level = override_level
+        existing_usl.override_reason = override_reason.strip() or None
+        if is_auto_approve:
+            existing_usl.approved_at = func.now()
+            existing_usl.approver_comment = "自動承認（サブスキル申告）"
+    else:
+        new_usl = models.UserSkillLevel(
+            user_id=user.id,
+            skill_id=skill_id,
+            level=final_level,
+            approval_status=approval_status,
+            override_level=override_level,
+            override_reason=override_reason.strip() or None,
+        )
+        if is_auto_approve:
+            new_usl.approved_at = func.now()
+            new_usl.approver_comment = "自動承認（サブスキル申告）"
+        db.add(new_usl)
+
+    # 承認者の設定（一般ユーザーのみ、グループマネージャーを指定する場合）
+    if not is_auto_approve and approver_id:
+        valid_approver = db.query(models.User).filter(
+            models.User.id == approver_id,
+            models.User.role.in_(["manager", "admin"]),
+        ).first()
+        if valid_approver:
+            if existing_usl:
+                existing_usl.approver_id = valid_approver.id
+            else:
+                new_usl.approver_id = valid_approver.id
+
+    _award_badges(user.id, db)
+    db.commit()
+    return RedirectResponse("/skills", status_code=303)
+
+
+EVIDENCE_UPLOAD_DIR = "/app/data/uploads/evidence"
+
+
+@router.post("/skills/{skill_id}/evidence/add")
+async def skill_evidence_add(
+    skill_id: int,
+    request: Request,
+    evidence_type: str = Form(...),          # 'url', 'note', 'file'
+    title: str = Form(default=""),
+    content: str = Form(default=""),
+    upload_file: UploadFile = File(default=None),
+    db: Session = Depends(get_db),
+):
+    """スキルエビデンスを追加する"""
+    import shutil
+    import uuid as _uuid
+    user = auth.require_approved(request, db)
+
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        return RedirectResponse("/skills", status_code=303)
+
+    if evidence_type == "file" and upload_file and upload_file.filename:
+        os.makedirs(EVIDENCE_UPLOAD_DIR, exist_ok=True)
+        original_name = upload_file.filename
+        ext = os.path.splitext(original_name)[1] if "." in original_name else ""
+        saved_name = f"{_uuid.uuid4()}{ext}"
+        save_path = os.path.join(EVIDENCE_UPLOAD_DIR, saved_name)
+        with open(save_path, "wb") as f:
+            shutil.copyfileobj(upload_file.file, f)
+        db.add(models.SkillEvidence(
+            user_id=user.id,
+            skill_id=skill_id,
+            evidence_type="file",
+            title=title.strip() or original_name,
+            content="",
+            file_path=save_path,
+            original_filename=original_name,
+        ))
+    elif evidence_type == "url":
+        db.add(models.SkillEvidence(
+            user_id=user.id,
+            skill_id=skill_id,
+            evidence_type="url",
+            title=title.strip() or None,
+            content=content.strip(),
+        ))
+    else:
+        db.add(models.SkillEvidence(
+            user_id=user.id,
+            skill_id=skill_id,
+            evidence_type="note",
+            title=title.strip() or None,
+            content=content.strip(),
+        ))
+    db.commit()
+    return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+
+
+@router.post("/skills/evidence/{evidence_id}/delete")
+def skill_evidence_delete(
+    evidence_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """スキルエビデンスを削除する"""
+    user = auth.require_approved(request, db)
+
+    evidence = (
+        db.query(models.SkillEvidence)
+        .filter(
+            models.SkillEvidence.id == evidence_id,
+            models.SkillEvidence.user_id == user.id,
+        )
+        .first()
+    )
+    if evidence:
+        skill_id = evidence.skill_id
+        db.delete(evidence)
+        db.commit()
+        referer = request.headers.get("referer", "")
+        if referer:
+            return RedirectResponse(referer, status_code=303)
+        return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+
+    return RedirectResponse("/skills", status_code=303)
+
+
+@router.get("/skills/evidence/{evidence_id}/download")
+def skill_evidence_download(evidence_id: int, request: Request, db: Session = Depends(get_db)):
+    """アップロードされたエビデンスファイルをダウンロードする"""
+    from fastapi.responses import FileResponse
+    user = auth.require_approved(request, db)
+    q = db.query(models.SkillEvidence).filter(models.SkillEvidence.id == evidence_id)
+    # Admin/Manager は全員のファイルをダウンロード可能、User は自分のみ
+    if user.role not in ("admin", "manager"):
+        q = q.filter(models.SkillEvidence.user_id == user.id)
+    ev = q.first()
+    if not ev or not ev.file_path or not os.path.exists(ev.file_path):
+        raise HTTPException(status_code=404)
+    return FileResponse(ev.file_path, filename=ev.original_filename or "download")
+
+
 @router.get("/api/dashboard/stats")
 def api_dashboard_stats(request: Request, db: Session = Depends(get_db)):
     """AJAX: ダッシュボード用の集計 JSON を返す"""
@@ -1742,6 +2402,8 @@ def skill_matrix(
         })
     user_avg_ranking.sort(key=lambda x: x["avg"], reverse=True)
 
+    from config import get_config as _gcfg
+    _cfg = _gcfg()
     return templates.TemplateResponse(request, "skill_matrix.html", {
         "current_user": user,
         "users": users,
@@ -1757,6 +2419,7 @@ def skill_matrix(
         "level_dist": level_dist,
         "growth_trend": growth_trend,
         "user_avg_ranking": user_avg_ranking,
+        "ai_summary_enabled": _cfg.get("ai_summary_enabled", False),
     })
 
 
@@ -2077,3 +2740,441 @@ def skills_bulk_action(
 
     db.commit()
     return RedirectResponse("/skills/catalog", status_code=303)
+
+
+# ════════════════════════════════════════════════════════════════
+# サブスキル管理（Admin / Manager のみ）
+# ════════════════════════════════════════════════════════════════
+
+@router.post("/skills/{skill_id}/sub-skills/add")
+def sub_skill_add(skill_id: int, request: Request,
+                  name: str = Form(...), description: str = Form(""),
+                  db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        raise HTTPException(status_code=404)
+    max_order = db.query(func.max(models.SubSkill.order_index)).filter(
+        models.SubSkill.skill_id == skill_id).scalar() or -1
+    db.add(models.SubSkill(
+        skill_id=skill_id, name=name.strip(),
+        description=description.strip() or None,
+        order_index=max_order + 1,
+        created_by=user.id,
+    ))
+    db.commit()
+    return RedirectResponse(f"/skills/catalog?highlight={skill_id}", status_code=303)
+
+
+@router.post("/skills/sub-skills/{sub_id}/delete")
+def sub_skill_delete(sub_id: int, request: Request, db: Session = Depends(get_db)):
+    auth.require_manager_or_admin(request, db)
+    ss = db.query(models.SubSkill).filter(models.SubSkill.id == sub_id).first()
+    if ss:
+        db.delete(ss)
+        db.commit()
+    return RedirectResponse(f"/skills/catalog?highlight={ss.skill_id if ss else ''}", status_code=303)
+
+
+@router.post("/skills/sub-skills/{sub_id}/edit")
+def sub_skill_edit(sub_id: int, request: Request,
+                   name: str = Form(...), description: str = Form(""),
+                   db: Session = Depends(get_db)):
+    auth.require_manager_or_admin(request, db)
+    ss = db.query(models.SubSkill).filter(models.SubSkill.id == sub_id).first()
+    if ss:
+        ss.name = name.strip()
+        ss.description = description.strip() or None
+        db.commit()
+    return RedirectResponse(f"/skills/catalog?highlight={ss.skill_id if ss else ''}", status_code=303)
+
+
+@router.post("/skills/sub-skills/reorder")
+async def sub_skill_reorder(request: Request, db: Session = Depends(get_db)):
+    auth.require_manager_or_admin(request, db)
+    data = await request.json()
+    for i, sub_id in enumerate(data.get("ids", [])):
+        ss = db.query(models.SubSkill).filter(models.SubSkill.id == sub_id).first()
+        if ss:
+            ss.order_index = i
+    db.commit()
+    return {"ok": True}
+
+
+# ════════════════════════════════════════════════════════════════
+# スキル目標設定
+# ════════════════════════════════════════════════════════════════
+
+@router.post("/skills/{skill_id}/goal")
+def skill_goal_set(
+    skill_id: int,
+    request: Request,
+    target_level: int = Form(...),
+    target_date: str = Form(default=""),
+    note: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_approved(request, db)
+    existing = db.query(models.SkillGoal).filter(
+        models.SkillGoal.user_id == user.id,
+        models.SkillGoal.skill_id == skill_id,
+    ).first()
+    from datetime import date as _date
+    td = None
+    if target_date.strip():
+        try:
+            td = _date.fromisoformat(target_date.strip())
+        except ValueError:
+            pass
+    if existing:
+        existing.target_level = target_level
+        existing.target_date = td
+        existing.note = note.strip() or None
+    else:
+        db.add(models.SkillGoal(
+            user_id=user.id, skill_id=skill_id,
+            target_level=target_level, target_date=td,
+            note=note.strip() or None,
+        ))
+    db.commit()
+    return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+
+
+@router.post("/skills/{skill_id}/goal/delete")
+def skill_goal_delete(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_approved(request, db)
+    db.query(models.SkillGoal).filter(
+        models.SkillGoal.user_id == user.id,
+        models.SkillGoal.skill_id == skill_id,
+    ).delete()
+    db.commit()
+    return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+
+
+# ════════════════════════════════════════════════════════════════
+# 達成バッジ付与ヘルパー
+# ════════════════════════════════════════════════════════════════
+
+def _award_badges(user_id: int, db) -> list:
+    """申告後にバッジ条件をチェックして新しいバッジを付与する。新規取得バッジキーのリストを返す。"""
+    from models import UserSkillLevel, UserSubSkillLevel, UserBadge, BADGE_DEFS, Skill
+
+    already = {b.badge_key for b in db.query(UserBadge).filter(UserBadge.user_id == user_id).all()}
+    new_badges = []
+
+    def award(key):
+        if key not in already:
+            db.add(UserBadge(user_id=user_id, badge_key=key))
+            new_badges.append(key)
+            already.add(key)
+
+    levels = db.query(UserSkillLevel).filter(
+        UserSkillLevel.user_id == user_id,
+        UserSkillLevel.approval_status.in_(["approved", "pending"]),
+    ).all()
+
+    # 初申告
+    if levels:
+        award("first_declare")
+    # 初承認
+    if any(l.approval_status == "approved" for l in levels):
+        award("first_approved")
+    # 上級スキル
+    if any(l.level == 4 for l in levels):
+        award("level4_skill")
+    # サブスキルチェック数
+    done_count = db.query(UserSubSkillLevel).filter(
+        UserSubSkillLevel.user_id == user_id,
+        UserSubSkillLevel.can_do == True,
+    ).count()
+    if done_count >= 10:
+        award("sub_check_10")
+    if done_count >= 50:
+        award("sub_check_50")
+    # カテゴリ数
+    declared_skill_ids = {l.skill_id for l in levels}
+    cat_ids = {s.category_id for s in db.query(Skill).filter(Skill.id.in_(declared_skill_ids)).all() if s.category_id}
+    if len(cat_ids) >= 5:
+        award("multi_cat_5")
+    # カテゴリ制覇（1カテゴリの全スキルを申告）
+    for cat_id in cat_ids:
+        cat_skills = db.query(Skill).filter(Skill.category_id == cat_id, Skill.is_archived == False).all()
+        if cat_skills and all(s.id in declared_skill_ids for s in cat_skills):
+            award("cat_complete")
+            break
+
+    if new_badges:
+        db.flush()
+    return new_badges
+
+
+# ════════════════════════════════════════════════════════════════
+# 一括エクスポート / インポート（カテゴリ + スキル + サブスキル）
+# ════════════════════════════════════════════════════════════════
+
+@router.get("/skills/bulk-export")
+def bulk_export(request: Request, db: Session = Depends(get_db)):
+    """カテゴリ・スキルカタログ・サブスキルを1つのJSONファイルで一括エクスポート"""
+    from fastapi.responses import Response as _Response
+    import json as _json
+    from datetime import datetime as _dt
+    auth.require_manager_or_admin(request, db)
+
+    cats = db.query(models.Category).order_by(models.Category.name).all()
+    skills = db.query(models.Skill).filter(models.Skill.is_archived == False).order_by(models.Skill.id).all()
+    sub_skills = db.query(models.SubSkill).order_by(models.SubSkill.skill_id, models.SubSkill.order_index).all()
+
+    data = {
+        "exported_at": _dt.now().isoformat(),
+        "categories": [
+            {"id": c.id, "name": c.name, "color": c.color, "description": c.description or ""}
+            for c in cats
+        ],
+        "skills": [
+            {
+                "id": sk.id,
+                "name": sk.name,
+                "description": sk.description or "",
+                "tier": sk.tier,
+                "category_name": sk.category.name if sk.category else "",
+            }
+            for sk in skills
+        ],
+        "sub_skills": [
+            {
+                "skill_id": ss.skill_id,
+                "skill_name": ss.skill.name if ss.skill else "",
+                "name": ss.name,
+                "description": ss.description or "",
+                "order_index": ss.order_index,
+            }
+            for ss in sub_skills
+        ],
+    }
+
+    body = _json.dumps(data, ensure_ascii=False, indent=2)
+    filename = f"skillmap_bulk_{_dt.now().strftime('%Y%m%d')}.json"
+    return _Response(
+        content=body.encode("utf-8"),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/skills/bulk-import")
+async def bulk_import(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """一括エクスポートJSONファイルからカテゴリ・スキル・サブスキルを一括インポート"""
+    import json as _json
+    auth.require_manager_or_admin(request, db)
+
+    content = await file.read()
+    try:
+        data = _json.loads(content.decode("utf-8-sig"))
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON の解析に失敗しました"}, status_code=400)
+
+    added_cats = added_skills = added_subs = 0
+    skipped_cats = skipped_skills = skipped_subs = 0
+
+    # ─ カテゴリのインポート ─
+    cat_name_to_id: dict[str, int] = {}
+    for c in data.get("categories", []):
+        name = (c.get("name") or "").strip()
+        if not name:
+            continue
+        existing = db.query(models.Category).filter(models.Category.name == name).first()
+        if existing:
+            cat_name_to_id[name] = existing.id
+            skipped_cats += 1
+        else:
+            new_cat = models.Category(
+                name=name,
+                color=c.get("color") or "#6366f1",
+                description=c.get("description") or None,
+            )
+            db.add(new_cat)
+            db.flush()
+            cat_name_to_id[name] = new_cat.id
+            added_cats += 1
+
+    # ─ スキルのインポート ─
+    skill_id_map: dict[int, int] = {}  # 旧id -> 新id
+    for sk in data.get("skills", []):
+        name = (sk.get("name") or "").strip()
+        if not name:
+            continue
+        cat_name = (sk.get("category_name") or "").strip()
+        cat_id = cat_name_to_id.get(cat_name)
+        if not cat_id and cat_name:
+            # カテゴリが存在しない場合は新規作成
+            new_cat = models.Category(name=cat_name, color="#6366f1")
+            db.add(new_cat)
+            db.flush()
+            cat_name_to_id[cat_name] = new_cat.id
+            cat_id = new_cat.id
+
+        existing = db.query(models.Skill).filter(models.Skill.name == name).first()
+        if existing:
+            skill_id_map[sk.get("id", 0)] = existing.id
+            skipped_skills += 1
+        else:
+            new_skill = models.Skill(
+                name=name,
+                description=sk.get("description") or None,
+                tier=sk.get("tier") or "basic",
+                category_id=cat_id,
+            )
+            db.add(new_skill)
+            db.flush()
+            skill_id_map[sk.get("id", 0)] = new_skill.id
+            added_skills += 1
+
+    # ─ サブスキルのインポート ─
+    for ss in data.get("sub_skills", []):
+        ss_name = (ss.get("name") or "").strip()
+        if not ss_name:
+            continue
+        old_skill_id = ss.get("skill_id", 0)
+        new_skill_id = skill_id_map.get(old_skill_id)
+        if not new_skill_id:
+            # skill_name でも検索
+            sk_name = (ss.get("skill_name") or "").strip()
+            if sk_name:
+                found = db.query(models.Skill).filter(models.Skill.name == sk_name).first()
+                if found:
+                    new_skill_id = found.id
+        if not new_skill_id:
+            skipped_subs += 1
+            continue
+        existing_ss = db.query(models.SubSkill).filter(
+            models.SubSkill.skill_id == new_skill_id,
+            models.SubSkill.name == ss_name,
+        ).first()
+        if existing_ss:
+            skipped_subs += 1
+        else:
+            db.add(models.SubSkill(
+                skill_id=new_skill_id,
+                name=ss_name,
+                description=ss.get("description") or None,
+                order_index=ss.get("order_index", 0),
+            ))
+            added_subs += 1
+
+    db.commit()
+    return JSONResponse({
+        "ok": True,
+        "added_categories": added_cats,
+        "skipped_categories": skipped_cats,
+        "added_skills": added_skills,
+        "skipped_skills": skipped_skills,
+        "added_sub_skills": added_subs,
+        "skipped_sub_skills": skipped_subs,
+    })
+
+
+# ════════════════════════════════════════════════════════════════
+# AI スキル要約
+# ════════════════════════════════════════════════════════════════
+
+@router.get("/api/users/{target_user_id}/skill-summary")
+async def skill_summary_api(
+    target_user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """LLM を使ってユーザーのスキルを自然言語で要約する"""
+    import os as _os
+    from config import get_config as _get_cfg
+
+    user = auth.require_manager_or_admin(request, db)
+
+    cfg = _get_cfg()
+    if not cfg.get("ai_summary_enabled", False):
+        return JSONResponse(
+            {"ok": False, "error": "AI要約機能は現在無効です。管理者設定の「AI設定」から有効にしてください。"},
+            status_code=503,
+        )
+
+    provider = cfg.get("ai_provider", "anthropic")
+
+    if provider == "anthropic":
+        import anthropic as _anthropic
+        api_key = _os.environ.get("ANTHROPIC_API_KEY", "").strip()
+        if not api_key:
+            return JSONResponse(
+                {"ok": False, "error": "ANTHROPIC_API_KEY が設定されていません。環境変数に設定してください。"},
+                status_code=503,
+            )
+
+    target = db.query(models.User).filter(models.User.id == target_user_id).first()
+    if not target:
+        return JSONResponse({"ok": False, "error": "ユーザーが見つかりません"}, status_code=404)
+
+    # 承認済みスキルを取得
+    approved = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id == target_user_id,
+            models.UserSkillLevel.approval_status == "approved",
+        )
+        .all()
+    )
+
+    if not approved:
+        return JSONResponse({"ok": True, "summary": f"{target.display_name or target.username} さんはまだ承認済みスキルがありません。"})
+
+    # カテゴリ別にグループ化
+    cat_groups: dict[str, list[str]] = {}
+    for usl in approved:
+        sk = usl.skill
+        if not sk:
+            continue
+        cat = sk.category.name if sk.category else "その他"
+        level_name = models.SKILL_LEVELS.get(usl.level, "未経験")
+        cat_groups.setdefault(cat, []).append(f"  - {sk.name}：{level_name}")
+
+    skill_lines = []
+    for cat, items in sorted(cat_groups.items()):
+        skill_lines.append(f"【{cat}】")
+        skill_lines.extend(items)
+
+    skill_text = "\n".join(skill_lines)
+    name = target.display_name or target.username
+
+    prompt = f"""\
+以下は社内スキルマップシステムに登録された、エンジニア「{name}」さんの承認済みスキル一覧です。
+レベルは「未経験／入門／実務可／指導可／エキスパート」の5段階です。
+
+{skill_text}
+
+この情報をもとに、{name} さんの技術的な強みと特徴を、採用・アサイン・育成の参考になるよう200〜300文字程度の自然な日本語で要約してください。
+箇条書きは使わず、読みやすい文章形式にしてください。"""
+
+    if provider == "anthropic":
+        client = _anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        summary = message.content[0].text.strip()
+    else:
+        # ローカル LLM（OpenAI 互換 API）
+        import httpx as _httpx
+        local_url = cfg.get("local_llm_url", "").rstrip("/")
+        if not local_url:
+            return JSONResponse({"ok": False, "error": "ローカル LLM の URL が設定されていません。"}, status_code=503)
+        resp = _httpx.post(
+            f"{local_url}/chat/completions",
+            json={"model": "local", "messages": [{"role": "user", "content": prompt}], "max_tokens": 512},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        summary = resp.json()["choices"][0]["message"]["content"].strip()
+
+    return JSONResponse({"ok": True, "summary": summary, "name": name, "skill_count": len(approved)})

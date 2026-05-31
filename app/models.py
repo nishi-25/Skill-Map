@@ -1,5 +1,5 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Table
+from datetime import datetime, date as _date_type
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, Boolean, UniqueConstraint, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -21,8 +21,8 @@ APPROVAL_STATUS_COLORS = {
 SKILL_LEVELS = {
     0: "未経験",
     1: "入門",
-    2: "基礎",
-    3: "実務可",
+    2: "実務可",
+    3: "指導可",
     4: "エキスパート",
 }
 
@@ -36,14 +36,12 @@ LEVEL_COLORS = {
 
 # ── スキルカタログの難易度ティア ────────────────────────────────
 SKILL_TIERS = {
-    "beginner":     "初級",
     "basic":        "基礎",
     "intermediate": "中級",
     "advanced":     "上級",
 }
 
 TIER_COLORS = {
-    "beginner":     "success",
     "basic":        "primary",
     "intermediate": "warning",
     "advanced":     "danger",
@@ -51,22 +49,19 @@ TIER_COLORS = {
 
 # ── ティア表示名（カスタマイズ可、DB優先） ──────────────────────
 DEFAULT_TIER_NAMES = {
-    "beginner":     "初級",
     "basic":        "基礎",
     "intermediate": "中級",
     "advanced":     "上級",
 }
 
 TIER_ICONS = {
-    "beginner":     "bi-rocket-takeoff",
     "basic":        "bi-book",
     "intermediate": "bi-star-half",
     "advanced":     "bi-trophy",
 }
 
 TIER_DESCRIPTIONS = {
-    "beginner":     "基本的な操作・知識を習得するスキル",
-    "basic":        "業務で実際に活用できる実践スキル",
+    "basic":        "業務で実際に活用できる基礎スキル",
     "intermediate": "チームをリードできる応用・設計スキル",
     "advanced":     "専門家レベルの高度・体系的なスキル",
 }
@@ -95,6 +90,8 @@ class User(Base):
     role = Column(String(20), default="user")        # admin / manager / user
     is_approved = Column(Boolean, default=False)
     avatar_path = Column(String(255), nullable=True)
+    suppress_ann_popup = Column(Boolean, default=False)   # お知らせポップアップを非表示にするか
+    must_change_password = Column(Boolean, default=False) # 仮パスワードでログイン後の強制変更フラグ
     created_at = Column(DateTime, server_default=func.now())
 
     skill_levels = relationship("UserSkillLevel", back_populates="user",
@@ -142,6 +139,9 @@ class Skill(Base):
     user_levels = relationship("UserSkillLevel", back_populates="skill",
                                cascade="all, delete-orphan")
     tags = relationship("SkillTag", secondary="skill_tag_associations", back_populates="skills")
+    sub_skills = relationship("SubSkill", back_populates="skill",
+                              order_by="SubSkill.order_index",
+                              cascade="all, delete-orphan")
 
 
 # ─── ユーザーのスキルレベル自己申告 ──────────────────────────────
@@ -159,6 +159,9 @@ class UserSkillLevel(Base):
     approved_at = Column(DateTime, nullable=True)
     approver_comment = Column(Text, nullable=True)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    override_level = Column(Integer, nullable=True)    # 手動上書きレベル
+    override_reason = Column(Text, nullable=True)      # 上書き理由
 
     user = relationship("User", back_populates="skill_levels", foreign_keys=[user_id])
     skill = relationship("Skill", back_populates="user_levels")
@@ -299,6 +302,7 @@ class EducationalLink(Base):
     description = Column(Text, nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     skill_id    = Column(Integer, ForeignKey("skills.id"), nullable=True)
+    step_order  = Column(Integer, nullable=True)
     created_by  = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at  = Column(DateTime, server_default=func.now())
     updated_at  = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -306,6 +310,22 @@ class EducationalLink(Base):
     category = relationship("Category", foreign_keys=[category_id])
     skill    = relationship("Skill",    foreign_keys=[skill_id])
     creator  = relationship("User",     foreign_keys=[created_by])
+
+
+# ─── 学習進捗 ────────────────────────────────────────────────────
+
+class UserLearningProgress(Base):
+    __tablename__ = "user_learning_progress"
+
+    id                  = Column(Integer, primary_key=True, index=True)
+    user_id             = Column(Integer, ForeignKey("users.id"), nullable=False)
+    educational_link_id = Column(Integer, ForeignKey("educational_links.id"), nullable=False)
+    completed_at        = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("user_id", "educational_link_id"),)
+
+    user = relationship("User",             foreign_keys=[user_id])
+    link = relationship("EducationalLink",  foreign_keys=[educational_link_id])
 
 
 # ─── 問い合わせ・要望チケット ─────────────────────────────────────
@@ -390,3 +410,114 @@ class SkillTag(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     skills = relationship("Skill", secondary="skill_tag_associations", back_populates="tags")
+
+
+# ─── サブスキル ───────────────────────────────────────────────────
+
+class SubSkill(Base):
+    __tablename__ = "sub_skills"
+    id = Column(Integer, primary_key=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    order_index = Column(Integer, default=0)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    skill = relationship("Skill", back_populates="sub_skills")
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+# ─── ユーザーのサブスキル達成状況 ────────────────────────────────
+
+class UserSubSkillLevel(Base):
+    __tablename__ = "user_sub_skill_levels"
+    __table_args__ = (UniqueConstraint("user_id", "sub_skill_id", name="uq_user_subSkill"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    sub_skill_id = Column(Integer, ForeignKey("sub_skills.id", ondelete="CASCADE"), nullable=False)
+    can_do = Column(Boolean, default=False, nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    sub_skill = relationship("SubSkill", foreign_keys=[sub_skill_id])
+
+
+# ─── スキルエビデンス ─────────────────────────────────────────────
+
+class SkillEvidence(Base):
+    __tablename__ = "skill_evidences"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False)
+    evidence_type = Column(String(20), nullable=False)  # 'url', 'note', 'file'
+    title = Column(String(200), nullable=True)
+    content = Column(Text, nullable=False, default="")
+    file_path = Column(String(500), nullable=True)           # アップロードファイルのサーバ保存パス
+    original_filename = Column(String(255), nullable=True)   # 元のファイル名（表示用）
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    skill = relationship("Skill", foreign_keys=[skill_id])
+
+
+# ─── スキル目標 ───────────────────────────────────────────────────
+
+class SkillGoal(Base):
+    __tablename__ = "skill_goals"
+    __table_args__ = (UniqueConstraint("user_id", "skill_id", name="uq_skill_goal"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False)
+    target_level = Column(Integer, nullable=False)  # 1-4
+    target_date = Column(Date, nullable=True)
+    note = Column(String(200), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    skill = relationship("Skill", foreign_keys=[skill_id])
+
+
+# ─── 達成バッジ ───────────────────────────────────────────────────
+
+BADGE_DEFS = {
+    "first_declare":    {"label": "初申告",        "icon": "bi-star-fill",        "color": "#f59e0b", "desc": "初めてスキルを申告した"},
+    "first_approved":   {"label": "初承認",        "icon": "bi-patch-check-fill", "color": "#22c55e", "desc": "初めてスキルが承認された"},
+    "cat_complete":     {"label": "カテゴリ制覇",   "icon": "bi-trophy-fill",       "color": "#f97316", "desc": "1カテゴリの全スキルを申告した"},
+    "sub_check_10":     {"label": "サブスキル10",  "icon": "bi-check2-all",        "color": "#3b82f6", "desc": "サブスキルを10個以上チェックした"},
+    "sub_check_50":     {"label": "サブスキル50",  "icon": "bi-check-circle-fill", "color": "#8b5cf6", "desc": "サブスキルを50個以上チェックした"},
+    "level4_skill":     {"label": "上級スキル",    "icon": "bi-award-fill",         "color": "#ef4444", "desc": "上級レベルのスキルを申告した"},
+    "multi_cat_5":      {"label": "マルチスキル",  "icon": "bi-grid-fill",          "color": "#0ea5e9", "desc": "5カテゴリ以上でスキルを申告した"},
+}
+
+
+class UserBadge(Base):
+    __tablename__ = "user_badges"
+    __table_args__ = (UniqueConstraint("user_id", "badge_key", name="uq_user_badge"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    badge_key = Column(String(50), nullable=False)
+    awarded_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class AdminTodo(Base):
+    __tablename__ = "admin_todos"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    priority = Column(String(20), default="medium", nullable=False)   # high / medium / long_term
+    status = Column(String(20), default="pending", nullable=False)    # pending / in_progress / review / done
+    order_index = Column(Integer, default=0)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    creator = relationship("User", foreign_keys=[created_by])

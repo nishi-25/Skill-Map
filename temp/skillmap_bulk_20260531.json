@@ -1,0 +1,7143 @@
+{
+  "exported_at": "2026-05-31T15:34:03.001636",
+  "categories": [
+    {
+      "id": 1,
+      "name": "DevOps・開発基盤",
+      "color": "#0f766e",
+      "description": "Git/GitHub・Docker・CI/CDなど、ソフトウェア開発基盤の構築・運用・自動化に必要なツールと技術"
+    },
+    {
+      "id": 3,
+      "name": "HILSプラットフォームツール",
+      "color": "#2563eb",
+      "description": "dSPACE ControlDesk・ModelDesk・VEOSなど、HILSリアルタイム演算環境を操作・設定するツール群"
+    },
+    {
+      "id": 2,
+      "name": "HILS基盤・構築",
+      "color": "#dc2626",
+      "description": "HILSシステムの設計・環境構築・保守・障害対応など、HILS環境を立ち上げ維持するための基盤スキル"
+    },
+    {
+      "id": 9,
+      "name": "Simulinkモデル開発",
+      "color": "#f97316",
+      "description": "MATLAB/Simulinkによるプラントモデル・制御モデルの開発、モデル結合・インタフェース設計スキル"
+    },
+    {
+      "id": 4,
+      "name": "ソフトウェアテスト",
+      "color": "#7c3aed",
+      "description": "テスト設計・実行・解析・カバレッジ管理など、ECUソフトウェアの品質を担保するテスト技術"
+    },
+    {
+      "id": 12,
+      "name": "テスト自動化",
+      "color": "#059669",
+      "description": "ecu.test・AutomationDeskを用いたHILSテストの自動化・実行基盤の設計・構築スキル"
+    },
+    {
+      "id": 6,
+      "name": "ハードウェア・W/H",
+      "color": "#d97706",
+      "description": "回路図読解・W/H設計・HILSラック組立・電源設計・故障注入など、HILS環境のハードウェア全般スキル"
+    },
+    {
+      "id": 7,
+      "name": "プログラミング",
+      "color": "#6366f1",
+      "description": "Python・C/C++・データ解析・Webアプリ・ローコード開発など、業務自動化・開発に必要なプログラミングスキル"
+    },
+    {
+      "id": 11,
+      "name": "リプロ・計測ツール",
+      "color": "#0891b2",
+      "description": "CANoe・INCA・リプロツールなど、ECUの計測・診断・キャリブレーション・ソフト書き換えに使うツール群"
+    },
+    {
+      "id": 10,
+      "name": "制御・パワトレ知識",
+      "color": "#374151",
+      "description": "EFI・HEV/BEV・LKASなどの制御ドメイン知識と、ECU・AUTOSAR・機能安全に関する車両制御の理解"
+    },
+    {
+      "id": 5,
+      "name": "品質・プロセス管理",
+      "color": "#be185d",
+      "description": "テスト計画・不具合管理・品質指標・プロジェクト管理・コミュニケーションツールなど、品質と業務プロセス全般のスキル"
+    },
+    {
+      "id": 14,
+      "name": "計測・診断ツール",
+      "color": "#0891b2",
+      "description": ""
+    },
+    {
+      "id": 13,
+      "name": "車載通信・診断",
+      "color": "#9333ea",
+      "description": "CAN/CAN FD/LIN/CXPI/SENTなどの車載通信プロトコルと、UDS/OBD診断通信の知識・運用スキル"
+    }
+  ],
+  "skills": [
+    {
+      "id": 1,
+      "name": "ASPICE",
+      "description": "Automotive SPICEのプロセスアセスメントモデルを理解し、組織のプロセス評価・改善施策を立案する",
+      "tier": "advanced",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 2,
+      "name": "テストレポート作成",
+      "description": "テスト結果を集計・分析し品質評価・未完了事項・リリース判定を記述したレポートを作成する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 3,
+      "name": "テスト計画策定",
+      "description": "テスト方針・スコープ・スケジュール・リソースを計画しステークホルダーと合意する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 4,
+      "name": "不具合管理",
+      "description": "検出されたバグを重要度・再現条件とともにトラッキングし、修正確認・クローズまで管理する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 5,
+      "name": "QMSプロセス理解",
+      "description": "品質マネジメントシステムのプロセス・手順を理解し、規定に準拠した活動と監査対応を行う",
+      "tier": "intermediate",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 6,
+      "name": "品質指標管理",
+      "description": "KPI（バグ検出数・カバレッジ・テスト消化率等）を設定・収集し傾向を分析して改善活動につなげる",
+      "tier": "intermediate",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 7,
+      "name": "HILS環境整備・保守",
+      "description": "HILSラック整備・定期メンテナンス・信頼性確保",
+      "tier": "advanced",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 8,
+      "name": "HILSキャリブレーション",
+      "description": "センサ・アクチュエータの校正・調整手順",
+      "tier": "basic",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 9,
+      "name": "HILS基本操作",
+      "description": "HILSの電源投入・基本操作・ステータス確認",
+      "tier": "basic",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 10,
+      "name": "HILS構成理解",
+      "description": "HILSシステム全体構成（HW/SW/モデル）の理解",
+      "tier": "basic",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 11,
+      "name": "HILSシステム設計",
+      "description": "要件からHILS全体構成の設計・機器選定",
+      "tier": "intermediate",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 12,
+      "name": "HILS障害切り分け",
+      "description": "HW/SW/モデル起因の問題を切り分け・原因特定",
+      "tier": "intermediate",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 13,
+      "name": "HILS筐体・構成設計",
+      "description": "HILSシステム全体のHW構成設計・機器選定・仕様策定",
+      "tier": "advanced",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 14,
+      "name": "ECU接続・結線",
+      "description": "ECUコネクタへの配線接続・導通確認・ピンアサイン",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 15,
+      "name": "W/H設計",
+      "description": "HILS用ハーネス設計・仕様書作成・製作指示",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 16,
+      "name": "W/H基礎知識",
+      "description": "ワイヤハーネスの基本構成・端子・コネクタ種類",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 17,
+      "name": "回路図・配線図読解",
+      "description": "電気回路図・車両配線図の読み方・記号理解",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 18,
+      "name": "HILSラック組立・配線",
+      "description": "dSPACEボード・ECU・電源のラック組み立て・配線",
+      "tier": "intermediate",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 19,
+      "name": "電源設計",
+      "description": "電源要件定義・回路設計・保護回路・ノイズ対策",
+      "tier": "intermediate",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 22,
+      "name": "Stateflow",
+      "description": "状態遷移・フローチャート設計・イベント処理",
+      "tier": "basic",
+      "category_name": "Simulinkモデル開発"
+    },
+    {
+      "id": 23,
+      "name": "プラントモデル開発",
+      "description": "車両・アクチュエータ・センサの物理モデル開発",
+      "tier": "basic",
+      "category_name": "Simulinkモデル開発"
+    },
+    {
+      "id": 24,
+      "name": "MATLAB 基礎",
+      "description": "MATLAB Script・数値計算・基本データ操作・グラフ描画",
+      "tier": "basic",
+      "category_name": "Simulinkモデル開発"
+    },
+    {
+      "id": 25,
+      "name": "Simulink 基礎",
+      "description": "基本ブロック操作・信号接続・シミュレーション実行",
+      "tier": "basic",
+      "category_name": "Simulinkモデル開発"
+    },
+    {
+      "id": 26,
+      "name": "S-Function 開発",
+      "description": "カスタムブロック（C / MATLAB S-Function）開発",
+      "tier": "intermediate",
+      "category_name": "Simulinkモデル開発"
+    },
+    {
+      "id": 27,
+      "name": "モデル結合・I/F設計",
+      "description": "複数モデルの統合・信号インタフェース（Bus/Mux/Constant等）設計・検証",
+      "tier": "intermediate",
+      "category_name": "Simulinkモデル開発"
+    },
+    {
+      "id": 28,
+      "name": "VEOS（仮想ECU）",
+      "description": "実機なしでECUソフトウェアをPCで実行するSIL環境をVEOSで構築し、HILSテスト前の初期検証を行う",
+      "tier": "advanced",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 29,
+      "name": "AutomationDesk",
+      "description": "AutomationDeskでHILSテストシーケンスを作成・自動化し外部ツールと連携するスキル",
+      "tier": "intermediate",
+      "category_name": "テスト自動化"
+    },
+    {
+      "id": 30,
+      "name": "ConfigurationDesk",
+      "description": "I/O・通信設定、ハードウェアコンフィグレーション",
+      "tier": "basic",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 31,
+      "name": "ControlDesk 基本操作",
+      "description": "レイアウト作成・変数モニタリング・データ記録",
+      "tier": "basic",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 32,
+      "name": "SCALEXIO シミュレータ設定",
+      "description": "SCALEXIOの入出力チャンネル・通信ボード・電源構成をConfigurationDeskで設定しシミュレータを構築する",
+      "tier": "basic",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 34,
+      "name": "ModelDesk",
+      "description": "車両モデル・ドライバモデルの設定・シナリオ実行",
+      "tier": "intermediate",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 37,
+      "name": "Docker",
+      "description": "Dockerfile・イメージ・コンテナ操作・Docker Compose・ネットワーク・ボリューム・マルチステージビルドまでコンテナ技術を実務で活用する",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 38,
+      "name": "GitHub Actions",
+      "description": "ワークフローYAMLを作成してCI/CDパイプラインを構築し、テスト自動化・ビルド・通知連携を実現する",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 41,
+      "name": "CI/CDパイプライン設計",
+      "description": "複数ツール・ステージを組み合わせたテスト・ビルド・デプロイ・結果通知の自動化パイプラインを設計・構築する",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 43,
+      "name": "社内ツール・アプリ企画・設計",
+      "description": "業務課題を整理し効率化WebアプリやGUIツールの要件定義・設計・開発・運用までを担う",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 44,
+      "name": "テスト自動化設計",
+      "description": "テストフレームワーク設計・自動化戦略の立案・実装",
+      "tier": "advanced",
+      "category_name": "テスト自動化"
+    },
+    {
+      "id": 45,
+      "name": "テストケース作成",
+      "description": "同値分割・境界値・状態遷移・デシジョンテーブル活用",
+      "tier": "basic",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 46,
+      "name": "テスト分析",
+      "description": "要求仕様・設計書からテスト観点を洗い出しリスクを考慮したテスト分析を行う",
+      "tier": "intermediate",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 47,
+      "name": "テスト結果解析",
+      "description": "波形・ログ解析・NG原因の特定・レポート作成",
+      "tier": "basic",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 48,
+      "name": "テスト仕様書読解",
+      "description": "テスト仕様書の内容理解・テスト項目把握",
+      "tier": "basic",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 49,
+      "name": "テスト実行・記録",
+      "description": "手順に従ったテスト実行・結果記録・エビデンス取得",
+      "tier": "basic",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 51,
+      "name": "回帰テスト設計",
+      "description": "変更影響範囲の特定・効率的な回帰テスト設計",
+      "tier": "intermediate",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 52,
+      "name": "網羅率分析・管理",
+      "description": "C0/C1カバレッジ分析・未検証部位の特定と対策",
+      "tier": "intermediate",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 53,
+      "name": "プロセス改善",
+      "description": "課題を構造的に分析して改善策を立案・実施し、KPIで効果を測定して横展開する",
+      "tier": "advanced",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 54,
+      "name": "スケジュール管理",
+      "description": "WBSを作成してマイルストーンを設定し、遅延リスクを早期検知して関係者に共有・調整する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 55,
+      "name": "技術レビュー実施",
+      "description": "設計書・コード・テスト仕様に対して観点を持ちレビューし、建設的なフィードバックを提供する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 57,
+      "name": "タスク管理・進捗報告",
+      "description": "担当タスクの優先度付け・期限管理を行い定例会議で的確に進捗・課題を報告する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 58,
+      "name": "技術ドキュメント作成",
+      "description": "議事録・仕様書・手順書・技術メモをWord・Markdown・図表を活用して分かりやすく作成する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 59,
+      "name": "チームリード",
+      "description": "メンバーへのタスク割当・進捗フォロー・育成を行い技術的な意思決定とステークホルダー調整を担う",
+      "tier": "intermediate",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 60,
+      "name": "機能安全（ISO 26262）",
+      "description": "ASIL分類・安全要求・ハザード分析の概要理解（知識レベル）",
+      "tier": "intermediate",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 61,
+      "name": "CAN通信",
+      "description": "CANプロトコル・DBC・メッセージ・信号定義の理解",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 62,
+      "name": "LIN通信",
+      "description": "LINプロトコル・マスタ/スレーブ・スケジュール表",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 63,
+      "name": "ECU基礎知識",
+      "description": "ECUの役割・入出力・ソフトウェア構成の基本",
+      "tier": "basic",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 64,
+      "name": "車両基礎知識",
+      "description": "車両系統（パワトレ・シャシ・ボデー）の基本的な理解",
+      "tier": "basic",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 65,
+      "name": "AUTOSAR知識",
+      "description": "AUTOSARアーキテクチャ・SWC・RTE・BSWの理解",
+      "tier": "intermediate",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 66,
+      "name": "車載Ethernet",
+      "description": "100BASE-T1・DoIP・AVB/TSN・車載ネットワーク設計",
+      "tier": "intermediate",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 67,
+      "name": "C++ 基礎",
+      "description": "クラス・継承・STL・組込みC++",
+      "tier": "basic",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 68,
+      "name": "Python 応用",
+      "description": "クラス・外部ライブラリ（pandas/numpy等）・データ処理",
+      "tier": "intermediate",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 69,
+      "name": "C言語 基礎",
+      "description": "変数・ポインタ・構造体・組込み向けC言語基礎",
+      "tier": "basic",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 70,
+      "name": "Python 基礎",
+      "description": "変数・制御文・関数・ファイル操作・基本ライブラリ",
+      "tier": "basic",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 71,
+      "name": "GUI開発（Python）",
+      "description": "PyQt / Tkinter・デスクトップアプリ設計・開発",
+      "tier": "intermediate",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 72,
+      "name": "Webアプリ開発",
+      "description": "FastAPI / Flask・REST API設計・フロントエンド連携",
+      "tier": "intermediate",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 73,
+      "name": "データ解析・可視化（Python）",
+      "description": "pandas/matplotlib・測定データ集計・グラフ可視化",
+      "tier": "intermediate",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 74,
+      "name": "オシロスコープ",
+      "description": "オシロスコープでプローブを接続し波形観測・トリガ設定・カーソル計測で信号の電気特性を確認する",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 75,
+      "name": "CANoe",
+      "description": "基本操作・ログ取得・DBC読み込み・信号モニタリングでCAN通信の観測・記録を行う",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 77,
+      "name": "INCA",
+      "description": "INCAでECUに接続し計測変数の設定・データ取得・基本的なキャリブレーション操作を行う",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 79,
+      "name": "温度監視ロガー（グラフテック製）",
+      "description": "グラフテック製データロガーでチャンネルを設定し温度等のアナログ値を記録・アラート管理・データ出力する",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 80,
+      "name": "CAN FD通信",
+      "description": "CAN FDのフレーム構造・ビットレート切替・CAN比較",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 81,
+      "name": "CXPI通信",
+      "description": "CXPIプロトコル・ボデー系ネットワーク・LIN後継の基礎",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 82,
+      "name": "SENT通信",
+      "description": "SENTプロトコル・センサ値伝送・ニブル列の読み方",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 83,
+      "name": "UDS診断（ISO 14229）",
+      "description": "SID/DIDの体系・診断サービス要求・レスポンス解釈",
+      "tier": "intermediate",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 84,
+      "name": "OBD診断（ISO 15765）",
+      "description": "PID読み出し・エミッション診断・OBD-IIフレーム構造",
+      "tier": "intermediate",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 85,
+      "name": "診断通信テスト設計",
+      "description": "CANoeを用いた診断シーケンス設計・異常系テスト・DoIPテスト",
+      "tier": "advanced",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 86,
+      "name": "EFI制御知識",
+      "description": "エンジン制御（燃料噴射・点火・空燃比）の基礎知識",
+      "tier": "basic",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 87,
+      "name": "HEV/BEV制御知識",
+      "description": "ハイブリッド・EV制御（モータ・バッテリ・回生）の理解",
+      "tier": "intermediate",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 88,
+      "name": "ecu.test",
+      "description": "ecu.testでHILSテストケースを作成・実行し結果管理・自動化まで行うスキル",
+      "tier": "intermediate",
+      "category_name": "テスト自動化"
+    },
+    {
+      "id": 90,
+      "name": "生成AI活用",
+      "description": "GitHub Copilot等による開発補助・プロンプト設計・活用ノウハウ",
+      "tier": "basic",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 91,
+      "name": "ネットワーク基礎",
+      "description": "IP・DNS・ルーティング・VLANなど複数PC接続環境の知識",
+      "tier": "basic",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 92,
+      "name": "静的解析・QAC活用",
+      "description": "QAC等の静的解析ツールでコーディング規約違反・未使用変数・危険な記述を検出し対応する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 93,
+      "name": "ControlDesk Automation",
+      "description": "ControlDesk Automation APIをPythonから呼び出して計測・変数操作・レコーダー制御を自動化し、計測データの処理・エクスポート・レイアウト制御を含むワークフローを構築する",
+      "tier": "intermediate",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 94,
+      "name": "CAPL開発",
+      "description": "CANoe用スクリプト言語CAPLでノードシミュレーション・診断自動化・テストシーケンスを実装する",
+      "tier": "intermediate",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 95,
+      "name": "DBC / CANdb++ 管理",
+      "description": "CAN信号定義ファイルの作成・編集・バージョン管理",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 96,
+      "name": "XCP / A2Lプロトコル",
+      "description": "キャリブレーション通信プロトコル・A2LファイルとINCAの連携",
+      "tier": "basic",
+      "category_name": "車載通信・診断"
+    },
+    {
+      "id": 97,
+      "name": "レーン制御・ADAS知識",
+      "description": "LKAS/EPS系ECUの制御概要・車線維持・操舵制御のテスト観点",
+      "tier": "intermediate",
+      "category_name": "制御・パワトレ知識"
+    },
+    {
+      "id": 98,
+      "name": "故障注入回路設計（FIU）",
+      "description": "故障注入ユニットの回路設計・断線/短絡/電圧異常の再現回路構築",
+      "tier": "advanced",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 99,
+      "name": "テスト戦略策定",
+      "description": "プロジェクト全体のテスト方針・スコープ・優先度・リスク評価の設計",
+      "tier": "advanced",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 100,
+      "name": "コマンドライン操作",
+      "description": "Linux bash / Windows PowerShell・コマンドプロンプト共通の操作。ls/dir・ping・grep・find等のコマンド活用",
+      "tier": "basic",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 101,
+      "name": "Git / GitHub基礎",
+      "description": "バージョン管理・ブランチ・コミット・マージ・PR・Issue・コードレビュー",
+      "tier": "basic",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 102,
+      "name": "テスト設計",
+      "description": "同値分割・境界値・状態遷移・デシジョンテーブル等の技法でテストケースを設計する",
+      "tier": "intermediate",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 103,
+      "name": "I/O設計",
+      "description": "In・Outの設計ができる",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 104,
+      "name": "I/F設計",
+      "description": "インターフェース設計ができる",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 105,
+      "name": "通信設計",
+      "description": "終端抵抗を理解した通信設計ができる",
+      "tier": "basic",
+      "category_name": "ハードウェア・W/H"
+    },
+    {
+      "id": 106,
+      "name": "Panel4",
+      "description": "Panel4でECU・AI・AIO・CANモジュールを使用した計測チャンネル設定・データ記録・基本操作を行う",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 108,
+      "name": "TS-Writer",
+      "description": "TS-WriterでECUのリプロ・強制書き換え・ダイアグ診断（SID/DID操作）を実施する",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 109,
+      "name": "KNOWTON",
+      "description": "KNOWTONでECUのリプロ・ソフト品番読出・ダイアグ診断・任意CANメッセージ送受信を行う",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 110,
+      "name": "GTS",
+      "description": "GTSでダイアグ診断・ソフト品番読出・強制駆動・任意CANメッセージ送受信を行う",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 115,
+      "name": "Git / GitHub 応用",
+      "description": "ブランチ戦略・履歴操作・チーム運用など中級以上のGit/GitHub活用",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 117,
+      "name": "Kubernetes",
+      "description": "Pod・Service・Deployment・Helm・HPA・RBAC・Ingress等を活用したコンテナアプリの構築・運用・トラブルシュート",
+      "tier": "advanced",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 119,
+      "name": "課題追跡・プロジェクト管理（JIRA）",
+      "description": "JIRAでIssue管理・スプリント計画・ボード運用・ダッシュボードを活用しチームのプロジェクトを管理する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 120,
+      "name": "チームWiki・ナレッジ管理（Confluence）",
+      "description": "Confluenceでスペース・ページ・テンプレートを活用しチームの知識・設計情報・議事録を一元管理する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 121,
+      "name": "JFrog Artifactory",
+      "description": "ビルド成果物（バイナリ・Dockerイメージ等）をArtifactoryで管理し、CI/CDパイプラインと連携する",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 122,
+      "name": "ビジネスチャット（Teams）",
+      "description": "Microsoft Teamsでチャンネル・会議・ファイル共有・Webhook通知を活用してチームコミュニケーションを行う",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 123,
+      "name": "ビジネスチャット（Slack）",
+      "description": "Slackでチャンネル・スレッド・ワークフロー・Webhook通知・外部アプリ連携を活用してチームコミュニケーションを行う",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 124,
+      "name": "ドキュメント・ファイル管理（SharePoint）",
+      "description": "SharePointでチームサイト・ドキュメントライブラリ・リスト・権限管理を行い組織のファイル基盤を運用する",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 125,
+      "name": "業務フロー自動化（Power Automate）",
+      "description": "業務フローをPower Automateで自動化するスキル",
+      "tier": "basic",
+      "category_name": "品質・プロセス管理"
+    },
+    {
+      "id": 126,
+      "name": "データ可視化・BI（Power BI）",
+      "description": "データをPower BIで分析・可視化しレポート・ダッシュボードを作成するスキル",
+      "tier": "basic",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 127,
+      "name": "ローコードアプリ開発（Power Apps）",
+      "description": "Power Appsでローコードビジネスアプリを開発するスキル",
+      "tier": "basic",
+      "category_name": "プログラミング"
+    },
+    {
+      "id": 128,
+      "name": "AURELION",
+      "description": "dSPACE AURELIONを用いた自動運転・ADAS向けセンサモデルの統合・シナリオ設定・HILSテスト実行",
+      "tier": "intermediate",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 131,
+      "name": "HILS仕様書作成",
+      "description": "HILS環境の構成・I/O設定・通信設定・信号定義を記述した仕様書を作成しチーム間で共有・管理する",
+      "tier": "advanced",
+      "category_name": "HILS基盤・構築"
+    },
+    {
+      "id": 132,
+      "name": "テストデータ管理",
+      "description": "入力信号・刺激パターン・期待値を定義したテストデータを作成・バージョン管理し再利用性を高める",
+      "tier": "intermediate",
+      "category_name": "ソフトウェアテスト"
+    },
+    {
+      "id": 133,
+      "name": "Pythonによるテスト自動化",
+      "description": "Pythonスクリプトでecu.test/AutomationDesk・計測器を制御しテストシーケンス・結果収集を自動化する",
+      "tier": "intermediate",
+      "category_name": "テスト自動化"
+    },
+    {
+      "id": 134,
+      "name": "WSL（Windows Subsystem for Linux）",
+      "description": "Windows上でLinux環境を構築しDocker・シェルスクリプト・Linux系ツールを実行する",
+      "tier": "basic",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 135,
+      "name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "description": "Vector VNシリーズ・PCAN等のCANインタフェース機器をPCに接続し通信チャンネルを設定・管理する",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    },
+    {
+      "id": 136,
+      "name": "AWS",
+      "description": "AWSを用いたクラウド基盤の構築・運用・CI/CD連携スキル",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 137,
+      "name": "Azure",
+      "description": "Azureを用いたクラウド基盤の構築・運用・DevOps連携スキル",
+      "tier": "intermediate",
+      "category_name": "DevOps・開発基盤"
+    },
+    {
+      "id": 138,
+      "name": "CANMM",
+      "description": "dSPACE CAN MultiMessage ConfiguratorでCANバスメッセージ・信号をHILS環境向けに設定しCANノードをシミュレートする",
+      "tier": "basic",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 139,
+      "name": "LINMM",
+      "description": "dSPACE LIN MultiMessage ConfiguratorでLINバスのマスタ/スレーブスケジュール・信号をHILS環境向けに設定する",
+      "tier": "basic",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 140,
+      "name": "BusManager",
+      "description": "dSPACE BusManagerでCAN/LIN等の複数バス通信を一元管理し、ボードへの割り当て・ネットワーク構成を統合設定する",
+      "tier": "intermediate",
+      "category_name": "HILSプラットフォームツール"
+    },
+    {
+      "id": 141,
+      "name": "定電圧電源",
+      "description": "定電圧電源をECU電源供給やバッテリ模擬に使用し、出力電圧・電流設定・過電流保護の操作を行う",
+      "tier": "basic",
+      "category_name": "リプロ・計測ツール"
+    }
+  ],
+  "sub_skills": [
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "ASPICEのプロセスリファレンスモデルの説明",
+      "description": "SWE/SYS/SUP等のプロセスグループと各プロセスを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "プロセス能力レベル（0〜5）の説明",
+      "description": "各レベルの達成条件とエビデンス要件を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "アセスメント計画の作成",
+      "description": "スコープ・スケジュール・参加者を含むアセスメント計画を作成できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "インタビューでの証跡提示",
+      "description": "アセスメントインタビューで必要な作業成果物を提示できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "ギャップ分析の実施",
+      "description": "現状レベルと目標レベルのギャップを項目別に分析できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "改善施策の立案",
+      "description": "ギャップ埋めに向けた具体的な施策を立案できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 1,
+      "skill_name": "ASPICE",
+      "name": "証跡の体系的な整備",
+      "description": "アセスメント評価の根拠となる証跡を体系的に整理できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "テスト実施数と完了率の集計",
+      "description": "テスト件数・実施数・完了率を集計できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "合格・不合格数の集計",
+      "description": "OK/NG/ブロックの件数と割合を算出できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "カバレッジ達成率の記載",
+      "description": "ステートメント・ブランチカバレッジの達成率を記載できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "NG案件の一覧化",
+      "description": "NGとなったテストケースの概要・重要度・対応状況を一覧化できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "品質評価コメントの記述",
+      "description": "テスト結果から見た品質評価と懸念事項をコメントで記述できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "リリース判定の根拠記述",
+      "description": "OK条件を満たしているか否かとその根拠を明記できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 2,
+      "skill_name": "テストレポート作成",
+      "name": "レポートのレビュー依頼",
+      "description": "作成したレポートを上長やQA担当にレビュー依頼できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "テスト対象範囲の定義",
+      "description": "どの機能・ECU・フェーズをテストするか明確に定義できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "テスト方針の決定",
+      "description": "テストレベル・技法・自動化方針をプロジェクト特性に合わせ決定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "テスト工数の見積もり",
+      "description": "テストケース数・複雑度からテスト工数を見積もれる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "テストスケジュールの作成",
+      "description": "フェーズごとの開始・終了日をスケジュール表で管理できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "テスト環境計画の策定",
+      "description": "必要なHILS・計測器・ツールの準備計画を立てられる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "テスト計画書の作成",
+      "description": "上記項目をまとめたテスト計画書を作成できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 3,
+      "skill_name": "テスト計画策定",
+      "name": "ステークホルダーへの承認取得",
+      "description": "テスト計画書を関係者にレビューしてもらい承認を得られる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "不具合の登録",
+      "description": "バグトラッキングツールに不具合を登録できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "重要度・優先度の設定",
+      "description": "Critical/High/Medium/Lowで重要度・優先度を設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "再現手順の記録",
+      "description": "誰でも再現できる詳細な手順と環境情報を記録できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "修正担当者へのアサイン",
+      "description": "適切な担当者に不具合をアサインできる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "修正状況の定期追跡",
+      "description": "未クローズ不具合の修正状況を定期的に確認し催促できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "修正確認テストの実施",
+      "description": "修正後に再現手順でテストを実施し修正効果を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 4,
+      "skill_name": "不具合管理",
+      "name": "クローズ基準の確認とクローズ処理",
+      "description": "クローズ条件を満たしたことを確認し不具合をクローズできる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 5,
+      "skill_name": "QMSプロセス理解",
+      "name": "QMSの目的とPDCAサイクルの説明",
+      "description": "QMSが何を目指し変更・改善をどうサイクルさせるかを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 5,
+      "skill_name": "QMSプロセス理解",
+      "name": "作業標準・手順書の参照",
+      "description": "作業前に該当する手順書・標準を確認してから作業できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 5,
+      "skill_name": "QMSプロセス理解",
+      "name": "品質記録の正確な作成",
+      "description": "検査記録・テスト記録を正確に記入し必要情報を漏れなく残せる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 5,
+      "skill_name": "QMSプロセス理解",
+      "name": "記録のファイリングと保管",
+      "description": "完成した品質記録を定められた場所・方法でファイリングできる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 5,
+      "skill_name": "QMSプロセス理解",
+      "name": "内部監査への準備",
+      "description": "監査で確認される項目に対して証跡・記録を整理して準備できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 5,
+      "skill_name": "QMSプロセス理解",
+      "name": "不適合事項の報告",
+      "description": "プロセス逸脱や問題を発見した場合に適切に報告できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 6,
+      "skill_name": "品質指標管理",
+      "name": "品質KPIの定義",
+      "description": "バグ検出数・テストカバレッジ等のKPIとその目標値を定義できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 6,
+      "skill_name": "品質指標管理",
+      "name": "定期データの収集",
+      "description": "テスト結果・不具合管理ツールからKPIデータを定期的に収集できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 6,
+      "skill_name": "品質指標管理",
+      "name": "グラフによる傾向可視化",
+      "description": "時系列グラフで品質トレンドの傾向を視覚化できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 6,
+      "skill_name": "品質指標管理",
+      "name": "目標未達の原因分析",
+      "description": "KPI未達の原因をデータから分析して特定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 6,
+      "skill_name": "品質指標管理",
+      "name": "改善アクションの立案",
+      "description": "原因に対する具体的な改善アクションを立案できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 6,
+      "skill_name": "品質指標管理",
+      "name": "品質レポートの作成と共有",
+      "description": "KPI達成状況と改善状況をレポートにまとめて共有できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 7,
+      "skill_name": "HILS環境整備・保守",
+      "name": "配線とコネクタの外観点検",
+      "description": "ラック内配線の緩み・損傷・コネクタ抜けを目視で点検できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 7,
+      "skill_name": "HILS環境整備・保守",
+      "name": "電源電圧の定期測定",
+      "description": "各電源ラインの電圧を測定し規定範囲内であることを確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 7,
+      "skill_name": "HILS環境整備・保守",
+      "name": "ソフトウェアの更新管理",
+      "description": "dSPACEソフトウェアのバージョンアップ計画を立て適用できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 7,
+      "skill_name": "HILS環境整備・保守",
+      "name": "消耗品の在庫管理と予防交換",
+      "description": "ヒューズ・コネクタ等の消耗品在庫を把握し期限前に交換できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 7,
+      "skill_name": "HILS環境整備・保守",
+      "name": "プロジェクト設定のバックアップ",
+      "description": "dSPACEプロジェクトとモデルファイルを定期的にバックアップできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 7,
+      "skill_name": "HILS環境整備・保守",
+      "name": "保守記録の更新",
+      "description": "点検・修理・部品交換の内容を保守台帳に記録・更新できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 8,
+      "skill_name": "HILSキャリブレーション",
+      "name": "リファレンス器の準備と確認",
+      "description": "校正に使用する基準器の精度と有効期限を確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 8,
+      "skill_name": "HILSキャリブレーション",
+      "name": "アナログ入力チャンネルの校正",
+      "description": "リファレンス信号を入力しソフトウェア上の換算値を調整できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 8,
+      "skill_name": "HILSキャリブレーション",
+      "name": "アナログ出力チャンネルの校正",
+      "description": "テスタで出力電圧を測定しスケーリングパラメータを調整できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 8,
+      "skill_name": "HILSキャリブレーション",
+      "name": "校正誤差が許容範囲内であることの確認",
+      "description": "測定値と基準値の差が仕様書の許容範囲内であることを確認できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 8,
+      "skill_name": "HILSキャリブレーション",
+      "name": "校正記録の作成",
+      "description": "日付・担当者・測定値・調整結果を校正記録台帳に記載できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 8,
+      "skill_name": "HILSキャリブレーション",
+      "name": "次回校正期限の登録",
+      "description": "校正周期に基づき次回期限を管理台帳に登録できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 9,
+      "skill_name": "HILS基本操作",
+      "name": "電源投入手順の実施",
+      "description": "規定の順序でHILS機器の電源を投入できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 9,
+      "skill_name": "HILS基本操作",
+      "name": "電源切断手順の実施",
+      "description": "規定の手順で安全にHILS機器の電源を切断できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 9,
+      "skill_name": "HILS基本操作",
+      "name": "起動完了ステータスの確認",
+      "description": "各コンポーネントの起動完了を確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 9,
+      "skill_name": "HILS基本操作",
+      "name": "異常インジケータの確認",
+      "description": "LED・ソフトウェア表示でエラー状態を早期発見できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 9,
+      "skill_name": "HILS基本操作",
+      "name": "基本トラブルの初動対応",
+      "description": "起動不良・通信エラー等の一般的な問題に初動対処できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 9,
+      "skill_name": "HILS基本操作",
+      "name": "作業内容の記録",
+      "description": "実施した操作内容と発生した事象を操作記録に残せる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 10,
+      "skill_name": "HILS構成理解",
+      "name": "ハードウェア構成図の読み取り",
+      "description": "搭載ボード・配線・機器レイアウトを構成図と照合して把握できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 10,
+      "skill_name": "HILS構成理解",
+      "name": "ソフトウェア構成の把握",
+      "description": "リアルタイムモデル・スクリプト・設定ファイルの構成を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 10,
+      "skill_name": "HILS構成理解",
+      "name": "ECU－HILS間の接続対応確認",
+      "description": "ECUのI/OピンとHILSチャンネルの対応をマトリクスで確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 10,
+      "skill_name": "HILS構成理解",
+      "name": "信号フローの追跡",
+      "description": "センサ入力からECU処理・アクチュエータ出力までの流れを追える",
+      "order_index": 3
+    },
+    {
+      "skill_id": 10,
+      "skill_name": "HILS構成理解",
+      "name": "使用中のソフトウェアバージョン確認",
+      "description": "各ツール・モデルのバージョン情報を確認し記録できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 10,
+      "skill_name": "HILS構成理解",
+      "name": "構成を他者に説明する",
+      "description": "HILSシステムの構成と動作を新メンバーにわかりやすく説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 11,
+      "skill_name": "HILSシステム設計",
+      "name": "テスト要件の整理とHILS化範囲の決定",
+      "description": "ECUテスト要件を整理し何をHILS化するか決定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 11,
+      "skill_name": "HILSシステム設計",
+      "name": "リアルタイムボードの選定",
+      "description": "信号数・通信ch数からdSPACEボード構成を選定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 11,
+      "skill_name": "HILSシステム設計",
+      "name": "I/Oチャンネルの設計",
+      "description": "入出力信号の種類・レンジをリスト化しチャンネルに割り当てられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 11,
+      "skill_name": "HILSシステム設計",
+      "name": "通信ネットワーク構成の設計",
+      "description": "CAN/LINのID・ボーレート・ノード構成を設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 11,
+      "skill_name": "HILSシステム設計",
+      "name": "プラントモデルの要件定義",
+      "description": "HILSで使用するプラントモデルの入出力と精度要件を定義できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 11,
+      "skill_name": "HILSシステム設計",
+      "name": "設計レビューの実施",
+      "description": "設計内容をチームでレビューし問題点を洗い出せる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "症状の再現と詳細記録",
+      "description": "発生した異常を再現しエラーメッセージ・タイミングを詳細に記録できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "ハードウェア起因の確認",
+      "description": "配線の導通・コネクタ接触・電源電圧を測定してHW要因を確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "モデル・スクリプト起因の確認",
+      "description": "直近の変更点をGit差分で確認しSW起因かどうか切り分けられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "通信系の確認",
+      "description": "CANoeやログで通信エラー・フレーム欠落の有無を確認できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "ログファイルの解析",
+      "description": "エラーログ・syslogを読み込み発生時刻と内容を特定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "暫定対策の実施と確認",
+      "description": "根本原因が特定される前の一時的な回避策を実施して効果を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 12,
+      "skill_name": "HILS障害切り分け",
+      "name": "恒久対策の立案と実施",
+      "description": "根本原因に対する恒久対策を立案し変更を加えて再発防止できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "システム要件からの機器選定",
+      "description": "テスト要件を分析し必要なボード・機器・スロット数を確定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "筐体サイズとラックへの配置設計",
+      "description": "機器の寸法・重量を考慮したレイアウトを設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "熱計算と冷却設計",
+      "description": "発熱量を計算し必要な排熱能力のファンや換気設計ができる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "配線経路の分離設計",
+      "description": "パワー線・信号線・通信線を分離したルーティングを設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "ケーブルマネジメントの設計",
+      "description": "ケーブルタイ・ダクトでケーブルを整理する方法を設計できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "筐体仕様書の作成",
+      "description": "機器リスト・外形図・配線図を含む筐体仕様書を作成できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 13,
+      "skill_name": "HILS筐体・構成設計",
+      "name": "設計レビューの実施",
+      "description": "設計書を関係者でレビューし問題点を洗い出して修正できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "ECUコネクタ型番の確認",
+      "description": "ECU仕様書からコネクタ型番と必要な工具を確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "ピン配置図でのピン番号確認",
+      "description": "ピン配置図で接続対象のピン番号と配線番号を確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "適切な端子工具の選定",
+      "description": "端子サイズに合った圧着工具を選定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "端子の圧着作業",
+      "description": "電線に端子を正確に圧着できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "コネクタハウジングへの端子挿入",
+      "description": "端子をコネクタハウジングに正しい向きで挿入し確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "テスタによる導通確認",
+      "description": "テスタの導通チェックモードで接続が正しいことを確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 14,
+      "skill_name": "ECU接続・結線",
+      "name": "絶縁抵抗の確認",
+      "description": "意図しない短絡がないことを絶縁抵抗測定で確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "接続先と信号種別のリストアップ",
+      "description": "接続する全端子の接続先・信号種別・電流容量をリスト化できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "電線断面積の選定",
+      "description": "電流容量と電圧降下要件から適切な断面積の電線を選定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "コネクタと端子の選定",
+      "description": "環境要件（防水・耐熱等）に合わせたコネクタと端子を選定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "配線経路と取り回しの設計",
+      "description": "ラック内の機器配置を考慮した効率的な配線ルートを設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "ハーネス図面の作成",
+      "description": "接続先・電線色・端子番号を明記したハーネス図面を作成できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "部品リストの作成",
+      "description": "使用する電線・端子・コネクタの種類と数量をリスト化できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 15,
+      "skill_name": "W/H設計",
+      "name": "製作指示書の作成",
+      "description": "外注や製作者向けに製作手順と仕上がり基準を記述できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 16,
+      "skill_name": "W/H基礎知識",
+      "name": "電線の種類と用途の識別",
+      "description": "AVS・AVSS・AEX等の規格と耐熱性・用途を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 16,
+      "skill_name": "W/H基礎知識",
+      "name": "電線断面積の選定基準の理解",
+      "description": "電流容量からmm²（sq）やAWG断面積の要件を算出できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 16,
+      "skill_name": "W/H基礎知識",
+      "name": "端子の種類と用途の識別",
+      "description": "丸型・Y型・連結型・防水型の端子を用途に応じて識別できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 16,
+      "skill_name": "W/H基礎知識",
+      "name": "コネクタの種類と防水グレードの理解",
+      "description": "AMP・モレックス・住友等の主要コネクタとIPグレードを説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 16,
+      "skill_name": "W/H基礎知識",
+      "name": "ハーネス図面の読み方",
+      "description": "結線図・展開図・断面図の見方を理解して必要情報を読み取れる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 16,
+      "skill_name": "W/H基礎知識",
+      "name": "ハーネスの修理・補修方法の理解",
+      "description": "断線・端子不良の補修方法と補修部品の選定方法を説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "電気部品記号の識別",
+      "description": "抵抗・コンデンサ・トランジスタ等の電気記号を正しく識別できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "電源ラインの追跡",
+      "description": "バッテリ→ヒューズ→リレー→ECUの電源供給ラインを図面で追える",
+      "order_index": 1
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "GNDラインの確認",
+      "description": "GND接続ポイントとアース経路を配線図で確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "信号ラインの追跡",
+      "description": "センサ出力からECU入力ピンまでの信号線を配線図で追える",
+      "order_index": 3
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "コネクタピンと配線番号の確認",
+      "description": "コネクタ記号から端子番号と対応する配線番号を読み取れる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "シールド線の処理確認",
+      "description": "シールド線の片端接地か両端接地かを図面から確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 17,
+      "skill_name": "回路図・配線図読解",
+      "name": "回路変更点の識別",
+      "description": "改訂履歴から変更された箇所を旧版と比較して特定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "機器レイアウトの確認と準備",
+      "description": "設計図を確認し取り付け位置・固定方法を把握できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "dSPACEボードの取り付け",
+      "description": "リアルタイムボードとI/OボードをシャーシやPCIeスロットに正しく取り付けられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "ECU・電源ユニットの固定",
+      "description": "ECUと電源ユニットをラック内の所定位置に固定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "ハーネスの接続",
+      "description": "ハーネス設計書に従いECU-HILS間の全配線を接続できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "電源線の接続と配線整理",
+      "description": "電源線を接続し配線をまとめて整然とした状態にできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "アース・シールド処理",
+      "description": "フレームアースの接続とシールド線の片端接地処理ができる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "配線の全数外観確認",
+      "description": "全ての配線を目視確認し未接続・誤接続がないことを確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 18,
+      "skill_name": "HILSラック組立・配線",
+      "name": "通電確認と動作チェック",
+      "description": "電源を入れてECUとHILSが正常に起動することを確認できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "電源要件の整理",
+      "description": "各機器の定格電圧・最大電流・突入電流を要件として洗い出せる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "電源供給回路の設計",
+      "description": "降圧レギュレータ等を使い各機器に安定した電圧を供給する回路を設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "ヒューズ・ブレーカーの選定",
+      "description": "過電流保護のためのヒューズ電流値と型番を選定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "リレー回路の設計",
+      "description": "電源のシーケンス制御用リレー回路を設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "逆接保護回路の設計",
+      "description": "電源の逆接続からECUを保護する回路を設計できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "ノイズフィルタの選定",
+      "description": "フェライトビードやコンデンサでノイズを低減できる設計ができる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 19,
+      "skill_name": "電源設計",
+      "name": "電源設計書の作成",
+      "description": "仕様・回路図・部品リスト・注意事項を記載した設計書を作成できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "新規チャートの作成",
+      "description": "Simulinkモデル上にStateflowチャートブロックを追加できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "Stateの追加と名前付け",
+      "description": "チャート上にState（状態）を追加し名前を付けられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "Transitionの設定",
+      "description": "State間にTransitionを引き遷移条件をguard式で記述できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "Eventの定義",
+      "description": "状態遷移をトリガーするEventを定義できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "Entryアクションの記述",
+      "description": "State入場時に実行されるEntry actionを記述できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "Duringアクションの記述",
+      "description": "State滞在中に実行されるDuring actionを記述できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "Exitアクションの記述",
+      "description": "State退場時に実行されるExit actionを記述できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "入出力ポートとSimulinkの信号接続",
+      "description": "チャートの入出力ポートをSimulinkの信号に接続できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 22,
+      "skill_name": "Stateflow",
+      "name": "シミュレーションによる動作確認",
+      "description": "チャートをシミュレーション実行し状態遷移を確認できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "テスト対象システムの物理要素分解",
+      "description": "モデル化する対象を質量・ばね・ダンパ等の要素に分解できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "運動方程式のブロック線図への変換",
+      "description": "物理式をSimulinkブロック線図として実装できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "物理パラメータの変数化と管理",
+      "description": "モデルパラメータをワークスペース変数で一元管理できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "センサモデルの実装",
+      "description": "遅延・ノイズ・飽和を含むセンサ特性をモデルで表現できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "アクチュエータモデルの実装",
+      "description": "応答遅延・入力制限を含むアクチュエータ特性をモデルで表現できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "シミュレーション精度の確認",
+      "description": "サンプル時間とソルバーを適切に設定し発散を防げる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "実測データとのオーバーレイ比較",
+      "description": "CSVで読み込んだ実測値とシミュレーション結果を重ねて精度確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 23,
+      "skill_name": "プラントモデル開発",
+      "name": "パラメータのチューニング",
+      "description": "実測との誤差が小さくなるようパラメータを調整できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "変数への値の代入",
+      "description": "変数を宣言し数値・文字列・論理値を代入できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "スカラー・ベクトル・行列の作成",
+      "description": "コロン演算子やbracketでベクトル・行列を作成できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "配列要素のインデックス参照",
+      "description": "インデックスと範囲指定で配列の要素を取り出せる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "基本演算（四則・べき乗・剰余）",
+      "description": "数値の四則演算・べき乗・剰余をMATLABで計算できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "if文による条件分岐",
+      "description": "条件に応じた処理をif/elseif/elseで分岐できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "forループによる繰り返し処理",
+      "description": "forループで配列要素を順番に処理できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "whileループの実装",
+      "description": "条件が真の間繰り返すwhileループを実装できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "関数の定義と呼び出し",
+      "description": "functionキーワードで関数を定義し引数と戻り値を設定できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "グラフの作成と見た目の設定",
+      "description": "plot/xlabel/ylabel/title/legendでグラフを作成できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 24,
+      "skill_name": "MATLAB 基礎",
+      "name": "CSVデータの読み込みと保存",
+      "description": "csvread/xlsread/writetableでデータを入出力できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "新規モデルの作成とブロックの配置",
+      "description": "Simulinkモデルを新規作成しブロックをキャンバスに配置できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "ブロック間の信号接続",
+      "description": "ポート同士をラインで接続して信号を伝達させられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "基本ブロック（Sum/Gain/Integrator）の設定",
+      "description": "信号の加算・ゲイン・積分を行うブロックのパラメータを設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "Constantブロックによる定数の設定",
+      "description": "Constantブロックに固定値または変数名を設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "Scopeによる波形の確認",
+      "description": "Scopeブロックで信号波形をリアルタイムに確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "To Workspaceでデータを記録",
+      "description": "シミュレーション結果をワークスペース変数に保存できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "シミュレーション時間とソルバーの設定",
+      "description": "終了時間とソルバー種類（ode45等）を適切に設定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "サブシステムの作成",
+      "description": "複数ブロックを選択してサブシステムにまとめられる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 25,
+      "skill_name": "Simulink 基礎",
+      "name": "モデルの保存とバージョン管理",
+      "description": "モデルをslxファイルに保存しGitで変更管理できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "S-Functionの種類と用途の理解",
+      "description": "Level-1/Level-2・C/MATLABの種類と使い分けを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "Level-2 MATLAB S-Functionのテンプレート作成",
+      "description": "matlabファイルのテンプレートから必要関数を実装できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "入力・出力ポートの定義",
+      "description": "setup関数で入出力の数・幅・データ型を定義できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "サンプル時間の設定",
+      "description": "離散・連続・継承の各サンプル時間タイプを設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "Outputsメソッドへの計算処理実装",
+      "description": "outputs関数に計算ロジックを記述し出力値を生成できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "C S-Functionのmexコンパイル",
+      "description": "Cファイルをmexコマンドでコンパイルしブロックとして使用できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 26,
+      "skill_name": "S-Function 開発",
+      "name": "テストモデルでの動作検証",
+      "description": "入力信号を与えるテストモデルを作成しS-Functionの出力を確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "Bus Objectの定義",
+      "description": "Bus Editorで信号束ね定義（Bus Object）を作成できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "BusCreatorで信号を束ねる",
+      "description": "BusCreatorブロックで複数信号を1本のBus信号にまとめられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "BusSelectorで信号を取り出す",
+      "description": "BusSelectorブロックでBusから特定信号を取り出せる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "MuxとDemuxの使い方",
+      "description": "Mux/Demuxでベクトル信号を束ねたり分解したりできる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "Constantによるパラメータの集中管理",
+      "description": "Constantブロックにワークスペース変数を参照させ一元管理できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "モデル参照（Model Reference）の設定",
+      "description": "独立モデルをModel Referenceブロックで別モデルから参照できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "インタフェース仕様書の作成",
+      "description": "結合点の信号名・型・レンジを記したI/F仕様書を作成できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 27,
+      "skill_name": "モデル結合・I/F設計",
+      "name": "結合後の信号整合性確認",
+      "description": "結合モデルを実行して各信号の値が期待通りか確認できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "VEOSのインストールとライセンス設定",
+      "description": "VEOSをインストールしライセンスサーバと接続できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "新規プロジェクトの作成",
+      "description": "VEOSプロジェクトを作成しECUアプリを取り込む設定ができる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "ECUアプリケーションのインポート",
+      "description": "コンパイル済みバイナリをVEOSプロジェクトにインポートできる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "仮想CANネットワークの設定",
+      "description": "VirtualCANチャンネルを設定しCANoe等と接続できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "シミュレーションの起動・停止",
+      "description": "VEOSシミュレーションを起動・停止し動作状態を確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "内部変数のモニタリング",
+      "description": "ControlDeskやVEOSツールでECU内部変数の値を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 28,
+      "skill_name": "VEOS（仮想ECU）",
+      "name": "実機HILSとの結果比較",
+      "description": "SIL結果と実機HILS実行結果を比較し差分を確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "プロジェクトの作成",
+      "description": "AutomationDeskで新規プロジェクトを作成しフォルダ構成を設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "シーケンスの作成",
+      "description": "テストシーケンスを追加しステップを順番に構成できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "信号書き込みアクションの追加",
+      "description": "指定した信号に値を書き込むアクションブロックを追加できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "待機アクションの追加",
+      "description": "指定時間または条件成立まで待機するアクションを追加できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "合否判定アクションの追加",
+      "description": "信号値が期待範囲内かを判定するCheckアクションを追加できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "シーケンスの実行と結果確認",
+      "description": "シーケンスを実行し各ステップの合否とログを確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "HTMLレポートの出力",
+      "description": "テスト結果をHTMLレポートとして保存・共有できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "Pythonスクリプトブロックの追加",
+      "description": "Pythonコードブロックをシーケンスに組み込んで実行できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "Pythonでの変数データ取得・書き込み",
+      "description": "dspaceapi経由でControlDesk変数をPythonから読み書きできる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "条件分岐ロジックの実装",
+      "description": "IfブロックまたはPythonで測定値に応じた分岐処理を実装できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "ループ処理の実装",
+      "description": "N回繰り返しや条件ループをシーケンスで実装できる",
+      "order_index": 10
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "MATLAB関数の呼び出し",
+      "description": "MATLABブロックを追加しMATLAB解析関数をシーケンス内から呼び出せる",
+      "order_index": 11
+    },
+    {
+      "skill_id": 29,
+      "skill_name": "AutomationDesk",
+      "name": "エラー発生時の安全停止処理",
+      "description": "異常検知時にシーケンスを安全に中断するエラーハンドリングを実装できる",
+      "order_index": 12
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "接続ボードの認識確認",
+      "description": "起動時にdSPACEボードが正しく認識されていることを確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "アナログ入力チャンネルの設定",
+      "description": "AIチャンネルに変数をマッピングしレンジ・スケーリングを設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "アナログ出力チャンネルの設定",
+      "description": "AOチャンネルに変数をマッピングし出力レンジを設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "デジタルI/Oチャンネルの設定",
+      "description": "DI/DOチャンネルに変数をマッピングしアクティブレベルを設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "CANボードの通信設定",
+      "description": "CAN ch のボーレート・終端抵抗をConfigurationDeskで設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "LINボードの通信設定",
+      "description": "LIN chのボーレード・プロトコルバージョンを設定できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "アプリのビルドとダウンロード",
+      "description": "コンパイルしたアプリをリアルタイムボードにダウンロードできる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 30,
+      "skill_name": "ConfigurationDesk",
+      "name": "設定ファイルの保存とバージョン管理",
+      "description": "ConfigurationDeskのプロジェクトをファイル保存しGitで管理できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "新しいレイアウトの作成と保存",
+      "description": "目的に合わせたレイアウトファイルを新規作成して保存できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "変数ブラウザでの計測変数選択",
+      "description": "変数ブラウザからモニタリング対象変数を検索して選択できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "数値ディスプレイの設置と設定",
+      "description": "変数値をリアルタイム表示する数値ディスプレイを配置できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "グラフ（時系列）の設置と設定",
+      "description": "複数変数の時系列グラフを配置しスケール・色を設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "データレコーダーの設定",
+      "description": "記録対象変数・記録時間・サンプルレートを設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "計測の開始・停止",
+      "description": "レコーダーの計測を開始・停止しデータを保存できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "MDFデータのエクスポート",
+      "description": "記録されたMDFファイルをCSVまたはMATLAB形式でエクスポートできる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 31,
+      "skill_name": "ControlDesk 基本操作",
+      "name": "変数への値の書き込み",
+      "description": "スライダーや入力ボックスでパラメータ変数に値を書き込める",
+      "order_index": 7
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "ネットワーク接続とIP確認",
+      "description": "SCALEXIOのIPアドレスをPCと同一セグメントで設定し接続確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "ボード構成の確認",
+      "description": "搭載されているI/O・通信ボードの型番をConfigurationDeskで確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "AIチャンネルのレンジ設定",
+      "description": "アナログ入力チャンネルの電圧レンジ（±10V等）を設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "AOチャンネルの出力設定",
+      "description": "アナログ出力チャンネルのレンジと初期値を設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "CAN ch のボーレート設定",
+      "description": "CAN通信チャンネルのビットレートと終端抵抗を設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "LIN ch のボーレート設定",
+      "description": "LIN通信チャンネルのボーレードとプロトコルを設定できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "ファームウェアバージョンの確認",
+      "description": "搭載FWバージョンをConfDeskで確認し必要に応じ更新できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 32,
+      "skill_name": "SCALEXIO シミュレータ設定",
+      "name": "起動確認と動作チェック",
+      "description": "電源投入後にステータスを確認し正常動作していることを検証できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "車両質量・ホイールベースの設定",
+      "description": "自車の基本物理パラメータをModelDeskで入力できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "タイヤモデルパラメータの設定",
+      "description": "タイヤ摩擦特性・有効半径等をパラメータとして設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "ドライバ目標速度・アクセル特性の設定",
+      "description": "ドライバモデルの目標速度と操作特性を設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "マニューバー（走行シナリオ）の定義",
+      "description": "直線定速・加減速・旋回等の走行パターンをマニューバーで定義できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "テストシナリオの実行",
+      "description": "設定済みシナリオをModelDeskから実行できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "走行結果の確認",
+      "description": "実行後の車両速度・加速度・軌跡データを確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 34,
+      "skill_name": "ModelDesk",
+      "name": "モデルパラメータの修正と再実行",
+      "description": "実測データとの差異を確認しパラメータを調整して再実行できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "Dockerfileのベースイメージ選定",
+      "description": "ユースケースに合った公式ベースイメージを選択しDockerfileを作成できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "レイヤーキャッシュを活用したDockerfile最適化",
+      "description": "ビルド高速化のためにレイヤーキャッシュを考慮した命令順序を設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "イメージのビルドとタグ付け",
+      "description": "docker buildでイメージを作成しdocker tagで意味のある名前を付けられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "コンテナの起動・停止・削除",
+      "description": "docker run/stop/rm/psでコンテナのライフサイクルを管理できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "コンテナログの確認",
+      "description": "docker logsでコンテナの標準出力・エラー出力を確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "Docker Composeでの複数サービス定義",
+      "description": "compose.ymlにサービス・ネットワーク・ボリュームを定義し一括起動できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "コンテナ間ネットワークの設定",
+      "description": "bridge/customネットワークを作成しコンテナ間で通信させられる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "ボリュームによるデータ永続化",
+      "description": "named volumeまたはbindマウントでコンテナ外にデータを保持できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "マルチステージビルドの実装",
+      "description": "ビルド用ステージと実行用ステージを分けてイメージサイズを削減できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 37,
+      "skill_name": "Docker",
+      "name": "コンテナ内でのシェル操作",
+      "description": "docker exec -itでコンテナ内に入り調査・デバッグができる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "ワークフローファイルの作成",
+      "description": ".github/workflows/ 配下にYAMLファイルを作成する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "トリガーの設定（on:）",
+      "description": "push / pull_request / schedule / workflow_dispatch 等で起動条件を定義する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "ランナーの指定（runs-on:）",
+      "description": "ubuntu-latest 等のGitHub提供ランナーを指定する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "ジョブとステップの定義",
+      "description": "jobs: / steps: でタスクの実行単位を構成する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "アクションの利用（uses:）",
+      "description": "actions/checkout 等の公開アクションをステップで利用する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "環境変数の設定（env:）",
+      "description": "ワークフロー・ジョブ・ステップレベルで環境変数を定義する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "条件実行（if:）",
+      "description": "if: 式でステップ・ジョブの実行条件を制御する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "ジョブ間の依存関係（needs:）",
+      "description": "needs: で複数ジョブの実行順序・依存を制御する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "アーティファクトの保存・取得",
+      "description": "upload/download-artifact でジョブ間・ワークフロー間でファイルを受け渡す",
+      "order_index": 8
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "マトリックス戦略（matrix:）",
+      "description": "複数OS・バージョンの組み合わせでジョブを並列実行する",
+      "order_index": 9
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "Variables（リポジトリ変数）の設定",
+      "description": "リポジトリ・環境レベルの変数を定義し ${{ vars.XXX }} で参照する",
+      "order_index": 10
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "Environments（デプロイ環境）の設定",
+      "description": "ステージング・本番等の環境を定義し承認者・待機時間・保護ルールを設定する",
+      "order_index": 11
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "GitHub Secrets管理",
+      "description": "APIキー等のシークレットを登録し ${{ secrets.XXX }} でワークフローに渡す",
+      "order_index": 12
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "再利用可能ワークフロー",
+      "description": "workflow_call: で共通ワークフローを定義し他ワークフローから呼び出す",
+      "order_index": 13
+    },
+    {
+      "skill_id": 38,
+      "skill_name": "GitHub Actions",
+      "name": "セルフホストランナーの設定",
+      "description": "自社環境のサーバをランナーとして登録しジョブを実行させる",
+      "order_index": 14
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "パイプラインのトリガー設計",
+      "description": "プッシュ・PR・スケジュール等のトリガー種別を設計できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "ステージ・ジョブの構造設計",
+      "description": "ビルド→テスト→デプロイのステージ分割とジョブ依存関係を設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "自動テストのパイプライン組み込み",
+      "description": "ユニットテスト・結合テストの実行ステップをパイプラインに追加できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "ビルド成果物の管理設計",
+      "description": "アーティファクトの生成・保存・バージョン付けの仕組みを設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "デプロイ戦略の選択と設計",
+      "description": "ローリング・ブルーグリーン等の方式を要件に合わせて設計できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "通知・アラート連携の設定",
+      "description": "Slack/Teams等への成功・失敗通知を設定できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "パイプラインのSecrets管理設計",
+      "description": "API키等のシークレットを環境変数で安全に扱う設計ができる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 41,
+      "skill_name": "CI/CDパイプライン設計",
+      "name": "失敗時のロールバック設計",
+      "description": "デプロイ失敗時に前バージョンへ自動ロールバックする仕組みを設計できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "業務課題のヒアリング・整理",
+      "description": "現場担当者にヒアリングして業務のペインと改善要望を整理できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "システム要件の定義",
+      "description": "機能要件と非機能要件をリストアップして関係者に提示できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "データモデルの設計",
+      "description": "テーブル定義・ER図を作成しデータの持ち方を設計できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "API仕様の設計",
+      "description": "エンドポイント・リクエスト・レスポンス形式を定義したAPI仕様書を書ける",
+      "order_index": 3
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "画面レイアウト・遷移フローの設計",
+      "description": "モックアップツールや手書きで画面の構成と遷移を設計できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "開発スケジュールの策定",
+      "description": "タスクを分解し優先度と工数を見積もってスケジュールを立てられる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "リリース・デプロイ手順の整備",
+      "description": "本番環境へのデプロイ手順とロールバック手順を文書化できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "操作マニュアル・運用ドキュメントの作成",
+      "description": "利用者向け操作手順書と管理者向け運用マニュアルを作成できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 43,
+      "skill_name": "社内ツール・アプリ企画・設計",
+      "name": "ユーザーフィードバックの収集と改善対応",
+      "description": "アンケートや直接ヒアリングで改善要望を収集し優先度を決めて対応できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "自動化対象テストケースの選定基準定義",
+      "description": "ROI・安定性・頻度を考慮した自動化対象の選定基準を定義できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "テストフレームワーク構成の設計",
+      "description": "ツール・ディレクトリ構造・データ管理を含むFW全体設計ができる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "テストデータ管理戦略の設計",
+      "description": "テストデータの生成・保管・バージョン管理の仕組みを設計できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "CI/CDへの統合設計",
+      "description": "パイプラインへのテスト組み込みと結果通知フローを設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "保守性を考慮した設計原則の策定",
+      "description": "仕様変更に強い再利用可能なテスト設計の原則を文書化できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "拡張性の確保",
+      "description": "新規テストケース追加が容易なフレームワーク構造を設計できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 44,
+      "skill_name": "テスト自動化設計",
+      "name": "自動化戦略書の作成",
+      "description": "方針・対象範囲・期待効果・工数をまとめた戦略書を作成できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "テスト対象機能の洗い出し",
+      "description": "テスト対象を機能単位・信号単位に分解して列挙できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "同値クラスの設定",
+      "description": "有効同値クラスと無効同値クラスを特定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "境界値の特定",
+      "description": "各同値クラスの境界にあたる値を識別できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "状態遷移テーブルの作成",
+      "description": "ECUの動作状態と遷移条件をテーブル化してテストに落とせる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "デシジョンテーブルの作成",
+      "description": "条件の組み合わせをテーブル化し漏れなくカバーできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "テストケース番号・名称の付与",
+      "description": "一意のID・意味のある名称をテストケースに付与できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 45,
+      "skill_name": "テストケース作成",
+      "name": "手順・入力値・期待値の記述",
+      "description": "実施手順・与える入力値・確認する期待値を明確に記述できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 46,
+      "skill_name": "テスト分析",
+      "name": "要求仕様からのテスト観点抽出",
+      "description": "要求仕様の各項目から確認すべき観点を漏れなく抽出できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 46,
+      "skill_name": "テスト分析",
+      "name": "設計書からのリスク抽出",
+      "description": "設計書を読んで見落としやすい境界ケース・リスク箇所を特定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 46,
+      "skill_name": "テスト分析",
+      "name": "テスト優先度の設定",
+      "description": "機能重要度と変更影響を考慮しテストケースの優先度を設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 46,
+      "skill_name": "テスト分析",
+      "name": "テスト観点一覧の作成",
+      "description": "抽出した観点をカテゴリ別に整理した観点一覧表を作成できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 46,
+      "skill_name": "テスト分析",
+      "name": "カバレッジ目標の設定",
+      "description": "品質目標に合わせたステートメント・ブランチカバレッジ目標を設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 46,
+      "skill_name": "テスト分析",
+      "name": "テスト観点のレビュー実施",
+      "description": "観点の漏れ・重複・誤りをチームでレビューできる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "ControlDesk波形の読み取り",
+      "description": "計測波形から信号の変化タイミングと値を読み取れる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "CANoeトレースの読み取り",
+      "description": "CANoeのTrace窓でメッセージ・信号値の変化を確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "NGタイミングと条件の特定",
+      "description": "NGが発生したタイミングと引き金となった条件を特定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "再現確認の実施",
+      "description": "NG条件を再設定してNGが再現することを確認できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "正常時との比較解析",
+      "description": "NG時と正常時の波形・ログを比較して差異を見つけられる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "原因仮説の立案",
+      "description": "解析結果からNG原因の仮説を立て検証方針を提案できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 47,
+      "skill_name": "テスト結果解析",
+      "name": "解析レポートの作成",
+      "description": "証跡・原因・対応方針を含む解析レポートを作成できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 48,
+      "skill_name": "テスト仕様書読解",
+      "name": "テスト対象機能の確認",
+      "description": "どの機能・信号・条件をテストするか仕様書から読み取れる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 48,
+      "skill_name": "テスト仕様書読解",
+      "name": "前提条件の把握",
+      "description": "テスト実施に必要なECU設定・環境条件を確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 48,
+      "skill_name": "テスト仕様書読解",
+      "name": "テスト手順の解釈",
+      "description": "テスト手順を1ステップずつ正確に理解し実施できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 48,
+      "skill_name": "テスト仕様書読解",
+      "name": "入力値の確認",
+      "description": "テストで与える信号値・操作量を仕様書から読み取れる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 48,
+      "skill_name": "テスト仕様書読解",
+      "name": "期待値・合否判定基準の確認",
+      "description": "期待出力値と許容範囲を仕様書から把握できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 48,
+      "skill_name": "テスト仕様書読解",
+      "name": "疑問点を担当者に確認する",
+      "description": "不明な仕様を設計担当者に確認してFBIとして記録できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "テスト環境のセットアップ",
+      "description": "HILS・ECU・計測ツールを手順書に従い正しい状態に設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "テスト前条件の確認",
+      "description": "テスト実施前にECU状態・前提信号が条件を満たすことを確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "各テストステップの実施",
+      "description": "手順書のステップを順番通りに省略せず実施できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "測定値の読み取りと記録",
+      "description": "オシロスコープ・ControlDeskの測定値を正確に読み取り記録できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "OKかNGかの判定",
+      "description": "測定値を期待値・合否基準と照合してOK/NGを判定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "NGの際の詳細情報記録",
+      "description": "NG発生時に条件・症状・波形をスクリーンショット付きで記録できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 49,
+      "skill_name": "テスト実行・記録",
+      "name": "エビデンスのファイリング",
+      "description": "テスト結果データを決められたフォルダ・命名規則で保存できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 51,
+      "skill_name": "回帰テスト設計",
+      "name": "変更箇所の特定",
+      "description": "変更されたコード・モデル・パラメータを変更履歴から特定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 51,
+      "skill_name": "回帰テスト設計",
+      "name": "変更影響範囲の分析",
+      "description": "変更された機能が影響を与える周辺機能・ECU間通信を分析できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 51,
+      "skill_name": "回帰テスト設計",
+      "name": "回帰テスト対象ケースの選定",
+      "description": "影響範囲から再テストが必要なテストケースを絞り込める",
+      "order_index": 2
+    },
+    {
+      "skill_id": 51,
+      "skill_name": "回帰テスト設計",
+      "name": "優先度の設定",
+      "description": "重要度とリスクに応じて回帰テストの実施順位を付けられる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 51,
+      "skill_name": "回帰テスト設計",
+      "name": "自動化対象の抽出",
+      "description": "繰り返し実施するケースから自動化に適したものを抽出できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 51,
+      "skill_name": "回帰テスト設計",
+      "name": "回帰テストセットのバージョン管理",
+      "description": "選定したテストセットをGit等でバージョン管理できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "カバレッジツールの設定",
+      "description": "プロジェクトに合わせたカバレッジルール・対象ファイルを設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "テスト実行とカバレッジ計測",
+      "description": "テスト実行後にカバレッジレポートを生成できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "C0（ステートメント）カバレッジの確認",
+      "description": "各ステートメントが実行されたかをレポートで確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "C1（ブランチ）カバレッジの確認",
+      "description": "各分岐（true/false）が網羅されたかを確認できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "未カバー箇所の特定",
+      "description": "レポートで実行されていないコードパスを特定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "未カバー箇所へのテスト追加",
+      "description": "未カバー部位を実行するテストケースを追加できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 52,
+      "skill_name": "網羅率分析・管理",
+      "name": "カバレッジレポートの作成",
+      "description": "カバレッジ達成率と残課題をまとめたレポートを作成できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "問題の事実ベースでの整理",
+      "description": "発生した問題を5W1H・数値データで客観的に整理できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "特性要因図による原因分析",
+      "description": "特性要因図（フィッシュボーン）で根本原因を系統立てて分析できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "5Whyによる根本原因の追究",
+      "description": "「なぜ」を繰り返して表面的原因から根本原因まで掘り下げられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "改善策の立案と効果予測",
+      "description": "根本原因に対する具体的改善策と期待効果を立案できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "改善の実施と結果測定",
+      "description": "改善策を実施しKPIの変化を測定して効果を確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "有効な改善の標準化",
+      "description": "効果が確認された改善を手順書・標準として定着させられる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 53,
+      "skill_name": "プロセス改善",
+      "name": "水平展開の実施",
+      "description": "有効な改善を他チーム・プロジェクトに展開できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "タスクのWBS分解",
+      "description": "作業を実施可能な最小タスク単位まで分解できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "工数見積もり",
+      "description": "経験・複雑度から各タスクの所要時間を見積もれる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "マイルストーンの設定",
+      "description": "主要成果物の完了期限をマイルストーンとして設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "クリティカルパスの把握",
+      "description": "遅延が全体に影響する経路を特定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "進捗の定期モニタリング",
+      "description": "予定と実績を週次で比較し乖離を検知できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "遅延リスクの早期報告",
+      "description": "遅延が見込まれる段階で関係者に報告できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 54,
+      "skill_name": "スケジュール管理",
+      "name": "スケジュール再調整",
+      "description": "遅延発生時にタスクの優先度を見直し計画を再設定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 55,
+      "skill_name": "技術レビュー実施",
+      "name": "レビュー観点リストの準備",
+      "description": "レビュー対象に応じたチェック観点をリストアップできる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 55,
+      "skill_name": "技術レビュー実施",
+      "name": "設計書の整合性確認",
+      "description": "要件に対して設計が漏れなく対応しているか確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 55,
+      "skill_name": "技術レビュー実施",
+      "name": "テスト仕様書の網羅性確認",
+      "description": "テストケースが設計書の全機能をカバーしているか確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 55,
+      "skill_name": "技術レビュー実施",
+      "name": "コードのコーディング規約チェック",
+      "description": "コーディング規約への準拠を確認しNGを指摘できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 55,
+      "skill_name": "技術レビュー実施",
+      "name": "指摘事項の記録と分類",
+      "description": "指摘内容を必須修正・推奨・質問に分類して記録できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 55,
+      "skill_name": "技術レビュー実施",
+      "name": "修正対応の確認",
+      "description": "指摘への対応状況をトラッキングし未対応を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 57,
+      "skill_name": "タスク管理・進捗報告",
+      "name": "タスクの優先度付け",
+      "description": "緊急度と重要度のマトリクスでタスクの優先順位を設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 57,
+      "skill_name": "タスク管理・進捗報告",
+      "name": "タスクの期限設定",
+      "description": "各タスクに達成可能な期限を設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 57,
+      "skill_name": "タスク管理・進捗報告",
+      "name": "日次進捗の自己確認",
+      "description": "毎日の作業終わりに当日の進捗と翌日の計画を確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 57,
+      "skill_name": "タスク管理・進捗報告",
+      "name": "定例報告の資料作成",
+      "description": "進捗・完了・課題・リスクを1ページにまとめた報告資料を作成できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 57,
+      "skill_name": "タスク管理・進捗報告",
+      "name": "課題の見える化",
+      "description": "ブロッカーや依存事項を早期にチームに共有できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 57,
+      "skill_name": "タスク管理・進捗報告",
+      "name": "タスクの完了確認",
+      "description": "完了基準を確認してからタスクをクローズできる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 58,
+      "skill_name": "技術ドキュメント作成",
+      "name": "ドキュメントの目的と読者の定義",
+      "description": "誰に何を伝えるための文書かを明確にしてから書き始められる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 58,
+      "skill_name": "技術ドキュメント作成",
+      "name": "章立て・目次の設計",
+      "description": "読者が必要な情報を探しやすい構成と目次を設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 58,
+      "skill_name": "技術ドキュメント作成",
+      "name": "図・表・フローチャートの作成",
+      "description": "説明を補足する図表を作成して文書に挿入できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 58,
+      "skill_name": "技術ドキュメント作成",
+      "name": "簡潔で明確な文章の記述",
+      "description": "一文に一つの情報を盛り込む簡潔な文体で記述できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 58,
+      "skill_name": "技術ドキュメント作成",
+      "name": "レビューコメントへの対応",
+      "description": "受け取ったコメントを分析し文書に適切に反映できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 58,
+      "skill_name": "技術ドキュメント作成",
+      "name": "バージョン番号と改訂履歴の管理",
+      "description": "改訂のたびにバージョンを更新し変更箇所を履歴に記録できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "タスクの割り当てと期限設定",
+      "description": "メンバーの能力と負荷を考慮してタスクを適切に割り振れる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "進捗の定期フォロー",
+      "description": "週次1on1やチーム会議で各メンバーの進捗と課題を把握できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "技術的な方針判断",
+      "description": "チームが行き詰まった技術課題の解決方針を判断・決定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "メンバーへの技術指導",
+      "description": "OJTや設計レビューを通じてメンバーの技術力向上を支援できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "課題のエスカレーション判断",
+      "description": "チーム内で解決できない課題を上位に適切にエスカレーションできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "ステークホルダーへの報告",
+      "description": "進捗・課題・リスクを管理職や他部署に適切に報告できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 59,
+      "skill_name": "チームリード",
+      "name": "チームの目標設定",
+      "description": "フェーズ・スプリントの目標をチームと合意して設定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "機能安全の目的と対象の説明",
+      "description": "機能安全がなぜ必要で何を防ぐための規格かを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "ASIL分類（A〜D）の説明",
+      "description": "ASIL決定に使う重大度・暴露度・制御可能性の3要素を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "ハザード分析（HARA）の手順の説明",
+      "description": "ハザードを特定しHARAマトリクスでASILを決定する手順を説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "セーフティゴールの導出の説明",
+      "description": "HARAAの結果からセーフティゴールを設定する考え方を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "フォールトトレランス設計の概念説明",
+      "description": "シングルポイント故障を防ぐ二重化・多様化設計の概念を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "ISO 26262パート構成の説明",
+      "description": "パート1〜12の内容とV字モデルへのマッピングを説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 60,
+      "skill_name": "機能安全（ISO 26262）",
+      "name": "V&V（検証・妥当性確認）の概念説明",
+      "description": "安全要求の検証（Verification）と妥当性確認（Validation）の違いを説明できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "CANバス・ノード構成の説明",
+      "description": "バストポロジーと各ノードの関係を図で説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "CANフレーム構造の説明",
+      "description": "SOF/ID/RTR/DLC/Data/CRC/ACK/EOFの各フィールドを説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "アービトレーションの仕組みの説明",
+      "description": "複数ノード同時送信時にID優先度で調停する仕組みを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "標準IDと拡張IDの違いの説明",
+      "description": "11bitと29bitのID長の違いと用途を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "DBCでのメッセージ・信号定義の読み方",
+      "description": "DBCファイルを開きMessage IDとSignalのビット配置を読み取れる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "CANoeのTraceでのメッセージ確認",
+      "description": "Trace窓でフレームを選択しIDとデータバイトを確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "信号値のデコード",
+      "description": "DBCのエンコード設定（Factor/Offset）で生データを物理値に変換できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "CRCによるフレームエラー検出の説明",
+      "description": "CANフレームに含まれる15bitCRCが送受信間でビット誤りを検出する仕組みを説明できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "チェックサムによる信号整合性確認の説明",
+      "description": "アプリケーション層でチェックサム値を信号に付加してデータ化けを検出する仕組みを説明できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "E2Eプロテクション（AUTOSAR E2E）の概要の説明",
+      "description": "AUTOSAR E2EプロファイルがCRC＋Counterで送受信データの欠落・重複・化けを保護する仕組みを説明できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 61,
+      "skill_name": "CAN通信",
+      "name": "MAC認証（SecOC）の概要の説明",
+      "description": "AUTOSAR SecOCがMAC（メッセージ認証コード）でCANメッセージの正当性を保証する仕組みを説明できる",
+      "order_index": 10
+    },
+    {
+      "skill_id": 62,
+      "skill_name": "LIN通信",
+      "name": "LINのマスタ/スレーブ構成の説明",
+      "description": "マスタが通信を主導しスレーブが応答する構造を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 62,
+      "skill_name": "LIN通信",
+      "name": "LINフレームの各フィールドの説明",
+      "description": "ブレーク・シンク・PID・データ・チェックサムを説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 62,
+      "skill_name": "LIN通信",
+      "name": "スケジュールテーブルの仕組みの説明",
+      "description": "マスタが定義済みスケジュールでフレームを定周期発行する仕組みを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 62,
+      "skill_name": "LIN通信",
+      "name": "Protected IDの計算",
+      "description": "Frame IDから2bitのパリティを付加したPIDを計算できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 62,
+      "skill_name": "LIN通信",
+      "name": "LDFファイルでの信号定義確認",
+      "description": "LDFを開きSignalのビット配置とframe_idを確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 62,
+      "skill_name": "LIN通信",
+      "name": "CANoeでのLINトレース確認",
+      "description": "LIN Trace窓でスレーブ応答とシグナル値を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "ECUの種類と担当制御の説明",
+      "description": "EFI・TCU・BCM・ABS等のECUがそれぞれ何を制御するか説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "ECUハードウェア構成の説明",
+      "description": "CPU・フラッシュ・RAM・クロック・I/Oの役割を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "ソフトウェア層構造の説明",
+      "description": "OS（BSW）・アプリケーション・ドライバの層構造を説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "デジタル入出力信号の理解",
+      "description": "ハイ/ロー電圧による信号伝達の仕組みを説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "アナログ入力信号の理解",
+      "description": "ADC変換によるセンサ値の取り込み精度と分解能を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "CAN通信によるECU間データ交換の理解",
+      "description": "CAN IDと周期でどのようにデータが共有されるか説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 63,
+      "skill_name": "ECU基礎知識",
+      "name": "ECU起動シーケンスの説明",
+      "description": "電源投入からイニシャライズ・通信開始までの流れを説明できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "エンジン・トランスミッションの役割の説明",
+      "description": "動力発生と変速・伝達の仕組みを他者に説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "ブレーキシステムの仕組みの説明",
+      "description": "油圧ブレーキとABSの基本動作を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "ステアリングシステムの仕組みの説明",
+      "description": "EPS（電動パワーステアリング）の動作原理を説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "サスペンションの役割の説明",
+      "description": "バネ・ダンパによる振動吸収と乗り心地の関係を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "ボデー電装システムの理解",
+      "description": "ドアロック・パワーウィンドウ・ライト等の電気系統を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "主要ECUとCAN通信の連携の説明",
+      "description": "EFI/TCU/ABS/EPS等のECUがCANでどう協調するか説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 64,
+      "skill_name": "車両基礎知識",
+      "name": "車両電源系統（バッテリ・オルタネータ）の説明",
+      "description": "バッテリ・オルタネータ・電源分配の仕組みを説明できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "AUTOSAR階層構造の説明",
+      "description": "Application/RTE/BSW/MCALの4層とその役割を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "SWCの役割と配置の説明",
+      "description": "SWCが何を担い複数ECUにどう分散配置されるか説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "PortとInterfaceの概念の説明",
+      "description": "Required/Provided PortとInterfaceによる結合の仕組みを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "RTEの通信仲介の説明",
+      "description": "Rte_Read/WriteによるSWC間のデータ交換を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "BSWモジュールの構造の説明",
+      "description": "COM/DCM/NVM/Dem等の主要BSWモジュールの役割を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "MCALの役割の説明",
+      "description": "ハードウェア依存部分をMCALが抽象化する目的を説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 65,
+      "skill_name": "AUTOSAR知識",
+      "name": "AUTOSAR設定ファイル（arxml）の概要の説明",
+      "description": "arxmlファイルにどんな情報が記述されるかを説明できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 66,
+      "skill_name": "車載Ethernet",
+      "name": "100BASE-T1の物理層特性の説明",
+      "description": "シングルペアツイストケーブルで100Mbpsを実現する特性を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 66,
+      "skill_name": "車載Ethernet",
+      "name": "DoIPのプロトコル階層の説明",
+      "description": "IP/UDP/TCPの上にDoIPが位置しUDS診断を伝送する構造を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 66,
+      "skill_name": "車載Ethernet",
+      "name": "DoIPのロジカルアドレス割り当ての説明",
+      "description": "ECUとテスタにDoIPロジカルアドレスが割り当てられる仕組みを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 66,
+      "skill_name": "車載Ethernet",
+      "name": "AVBのタイムスタンプと帯域保証の説明",
+      "description": "IEEE 802.1AS時刻同期と802.1Qav帯域予約の概念を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 66,
+      "skill_name": "車載Ethernet",
+      "name": "TSNのトラフィックシェーピングの説明",
+      "description": "優先度別にフレームを整形し低レイテンシを保証する仕組みを説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 66,
+      "skill_name": "車載Ethernet",
+      "name": "CANoeでの車載Ethernetフレーム確認",
+      "description": "Ethernetプラグインを使いフレームのヘッダーとペイロードを確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "クラスの定義とメンバ変数・関数の宣言",
+      "description": "classとpublic/privateでデータと操作をカプセル化できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "コンストラクタとデストラクタの実装",
+      "description": "初期化処理と終了処理をコンストラクタ・デストラクタに実装できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "継承による機能の拡張",
+      "description": "基底クラスを継承した派生クラスを定義できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "仮想関数によるポリモーフィズム",
+      "description": "virtualキーワードで動的ポリモーフィズムを実現できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "vectorコンテナの使用",
+      "description": "std::vectorで可変長配列を使いpush_back・イテレータを活用できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "mapコンテナの使用",
+      "description": "std::mapでキーと値のペアを管理できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "スマートポインタの基礎使用",
+      "description": "unique_ptrでメモリリークを防ぎながらヒープを使用できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 67,
+      "skill_name": "C++ 基礎",
+      "name": "組込みC++での注意事項の理解",
+      "description": "動的メモリ確保・例外の制限など組込み環境特有の制約を説明できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "クラスの定義とインスタンス化",
+      "description": "classでクラスを定義し__init__でインスタンスを初期化できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "継承とメソッドオーバーライド",
+      "description": "基底クラスを継承し子クラスでメソッドを上書きできる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "例外の捕捉と処理",
+      "description": "try/except/finally/raiseで例外を適切に処理できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "仮想環境の作成とパッケージ管理",
+      "description": "venvで仮想環境を作成しpip/requirements.txtで依存関係を管理できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "pandasでのデータ読み込みと整形",
+      "description": "read_csv等でデータを読み込みフィルタ・型変換・欠損処理ができる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "pandasでの集計・グループ化",
+      "description": "groupby/pivot_tableで統計的な集計ができる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "numpyによる配列演算",
+      "description": "numpyの配列演算で数値計算をベクトル化して高速化できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "正規表現によるテキスト処理",
+      "description": "reモジュールでパターンマッチングや置換ができる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 68,
+      "skill_name": "Python 応用",
+      "name": "ファイルパスの操作",
+      "description": "pathlibまたはos.pathでパスを安全に組み立て・操作できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "変数と基本データ型の宣言",
+      "description": "int/float/char/unsigned等を使い目的に合った変数を宣言できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "四則演算と比較・論理演算子の使用",
+      "description": "算術・比較・論理演算子を使い正しい式を記述できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "if/switch文による条件分岐",
+      "description": "if-else-ifとswitch-caseで多岐分岐処理を実装できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "for/while/do-whileによるループ",
+      "description": "ループ構文でカウンタ処理・条件ループを実装できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "関数の定義・宣言・呼び出し",
+      "description": "プロトタイプ宣言し関数を定義して別ファイルから呼び出せる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "ポインタ変数の宣言と間接参照",
+      "description": "ポインタ変数を宣言し*・&演算子で間接参照ができる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "配列とポインタの関係の理解",
+      "description": "配列名がポインタであることを理解し要素にアクセスできる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "構造体の定義と使用",
+      "description": "structで複合データ型を定義しメンバにアクセスできる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "標準ライブラリ関数の活用",
+      "description": "printf/scanf/strlen/memcpy等の標準関数を適切に使用できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 69,
+      "skill_name": "C言語 基礎",
+      "name": "ファイルの入出力操作",
+      "description": "fopen/fclose/fread/fwriteでファイルにデータを読み書きできる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "変数への値の代入と型の確認",
+      "description": "整数・浮動小数・文字列・ブール型を変数に代入しtype()で確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "リストの作成と要素の操作",
+      "description": "リストを作成し要素の追加・削除・インデックスアクセスができる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "辞書の作成とキー・値の操作",
+      "description": "辞書を作成しキーで値を取得・追加・更新・削除できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "if文による条件分岐の実装",
+      "description": "if/elif/elseで複数条件に応じた処理を実装できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "forループでの繰り返し処理",
+      "description": "forループでリスト要素やrange()を順番に処理できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "whileループの実装と無限ループ対策",
+      "description": "条件付きループを実装し無限ループを防ぐbreak/continueを使える",
+      "order_index": 5
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "関数の定義と引数・戻り値の設定",
+      "description": "defで関数を定義し引数・デフォルト値・戻り値を設定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "テキストファイルの読み込みと書き込み",
+      "description": "open()でファイルを開きread/write/appendモードで操作できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "CSVファイルの読み書き",
+      "description": "csvモジュールまたはpandasでCSVデータを読み込み・書き出しできる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 70,
+      "skill_name": "Python 基礎",
+      "name": "標準ライブラリ（os/sys/datetime）の活用",
+      "description": "os.path/sys.argv/datetimeで実用的な処理を実装できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "ウィンドウの作成と表示",
+      "description": "tkinter/PyQtで基本ウィンドウを作成し画面に表示できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "ボタンウィジェットの配置とクリック処理",
+      "description": "Buttonウィジェットを配置しclickイベントにコールバックを紐付けられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "テキスト入力ウィジェットの設置",
+      "description": "Entry/QLineEditを使い文字列入力を受け付けられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "ラベルとデータ表示",
+      "description": "LabelでテキストやデータをGUI上に表示できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "GridレイアウトによるUI整列",
+      "description": "Grid/QGridLayoutでウィジェットを行・列に整列させられる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "ファイル選択ダイアログの表示",
+      "description": "filedialog/QFileDialogを使いファイルパスをGUIで選択させられる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "matplotlibグラフのGUI埋め込み",
+      "description": "FigureCanvasTkAgg等でmatplotlibグラフをウィンドウ内に表示できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "設定値のファイル保存と読み込み",
+      "description": "jsonやconfigparserで画面設定値をファイルに保存・読み込みできる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 71,
+      "skill_name": "GUI開発（Python）",
+      "name": "PyInstallerによる実行ファイル化",
+      "description": "PyInstallerで配布可能な単一実行ファイルを生成できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "FastAPI/Flaskによるルーティング設定",
+      "description": "HTTPメソッドとURLパスに対応するエンドポイントを定義できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "リクエストパラメータの受け取り",
+      "description": "クエリパラメータ・パスパラメータ・JSONボディを受け取れる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "SQLAlchemyによるDB定義とCRUD",
+      "description": "モデルクラスを定義しデータの作成・読取・更新・削除ができる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "Jinja2テンプレートによるHTML生成",
+      "description": "テンプレートにデータを渡してHTMLページを動的に生成できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "ユーザー認証の実装",
+      "description": "セッションやJWTを使いログイン・ログアウト機能を実装できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "API レスポンスのJSON形式での返却",
+      "description": "PydanticモデルまたはJSONResponseでAPIレスポンスを返せる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "pytestを使ったAPIテストの実装",
+      "description": "testclientを使いエンドポイントの動作をテストコードで検証できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 72,
+      "skill_name": "Webアプリ開発",
+      "name": "Dockerでのアプリのコンテナ化",
+      "description": "Dockerfileを作成しアプリをコンテナとして起動できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "CSVファイルのpandasへの読み込み",
+      "description": "pd.read_csvでCSVを読み込みDataFrameとして扱えた",
+      "order_index": 0
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "データの基本統計量の確認",
+      "description": "describe()/mean()/std()で基本統計量を算出できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "条件によるデータのフィルタリング",
+      "description": "boolean indexingで条件に合う行を抽出できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "グループ化と集計",
+      "description": "groupby+agg/mean/sumで複数条件の集計ができる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "時系列データのプロット",
+      "description": "matplotlibで計測時系列データを折れ線グラフで可視化できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "複数グラフのサブプロット表示",
+      "description": "plt.subplotsで複数のグラフを1枚の図にまとめられる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "グラフへの軸ラベル・凡例の追加",
+      "description": "xlabel/ylabel/legend/titleでグラフを説明する情報を付加できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 73,
+      "skill_name": "データ解析・可視化（Python）",
+      "name": "解析結果のExcel出力",
+      "description": "to_excel/openpyxlで解析結果をExcelファイルに出力できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "チャンネルとプローブの接続設定",
+      "description": "BNC/SMB入力チャンネルにプローブを接続し倍率（1x/10x）を設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "電圧軸スケールの調整",
+      "description": "対象信号のピーク電圧に合わせてV/divスケールを調整できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "時間軸スケールの調整",
+      "description": "観測したい信号周期に合わせてTime/divスケールを調整できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "エッジトリガの設定",
+      "description": "立ち上がり・立ち下がりエッジで信号を捕捉するトリガを設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "カーソルによる時間差測定",
+      "description": "2本のタイムカーソルで信号間の時間差を計測できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "カーソルによる電位差測定",
+      "description": "2本の電圧カーソルで信号の電位差を計測できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "波形データのキャプチャ保存",
+      "description": "画面イメージまたは波形データをUSBやファイルに保存できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "FFTによる周波数解析",
+      "description": "FFT機能を使い信号の周波数成分スペクトルを表示できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 74,
+      "skill_name": "オシロスコープ",
+      "name": "シリアルデコード機能の利用（対応機種）",
+      "description": "CANやUARTのシリアル信号をデコードして内容を確認できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "新規プロジェクトの作成",
+      "description": "CANoeで新規プロジェクトを作成しネットワーク設定を行える",
+      "order_index": 0
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "DBCファイルの読み込み",
+      "description": "DBCファイルをデータベースとして追加しメッセージを登録できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "CANハードウェアチャンネルへの割り当て",
+      "description": "Vector VN/PCANのチャンネルをCANネットワークに割り当てられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "Traceウィンドウでの通信確認",
+      "description": "Traceウィンドウでリアルタイムにメッセージを表示し確認できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "Graphicsウィンドウでの信号可視化",
+      "description": "Graphicsウィンドウで信号値の時系列変化を確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "計測の開始と停止",
+      "description": "CANoeの計測を開始・停止しログを保存できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "BLFログファイルの保存",
+      "description": "計測結果をBLF形式で保存できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "ログデータの後解析",
+      "description": "保存したBLFログをオフラインで解析・フィルタリングできる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "CAPLノードの追加",
+      "description": "CAPLプログラムをCANoeに追加しノードとして動作させられる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 75,
+      "skill_name": "CANoe",
+      "name": "Diagnosticsウィンドウの利用",
+      "description": "Diagnosticsウィンドウで診断通信を手動で実行できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "A2LファイルのINCAへの取り込み",
+      "description": "A2LファイルをINCAデータベースとして読み込み登録できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "XCP/CAN経由でのECU接続",
+      "description": "INCAのワークスペースでXCPまたはCAN診断でECUに接続できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "計測変数のMeasurement設定",
+      "description": "計測したい内部変数をMeasurementリストに追加できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "計測セッションの開始・停止",
+      "description": "計測セッションを実行してデータを取得し停止できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "データの記録・保存",
+      "description": "計測データをINCA MDF形式で保存できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "キャリブレーション変数の値変更",
+      "description": "スカラー・マップ・カーブのキャリブレーション値を変更できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "変更値のECUへの書き込み（Working Page）",
+      "description": "Working Pageの変更値をECUのRAMに反映できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "データセットの保存（ページスワップ）",
+      "description": "Working PageをReference Pageに書き込みデータセットを確定できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "HEXファイルのフラッシュ書き込み",
+      "description": "フラッシュ機能でHEXファイルをECUに書き込める",
+      "order_index": 8
+    },
+    {
+      "skill_id": 77,
+      "skill_name": "INCA",
+      "name": "A2Lの計測・キャリブレーション変数の検索",
+      "description": "ShortNameやラベルでA2L変数を素早く検索できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "チャンネルのセンサ種別設定",
+      "description": "熱電対（K/T/J型等）や測温抵抗体（PT100等）をch別に設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "計測レンジの設定",
+      "description": "各チャンネルの計測温度レンジを設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "サンプリング間隔の設定",
+      "description": "計測インターバル（1s/10s等）を設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "アラームしきい値の設定",
+      "description": "上限・下限温度のアラームを設定し超過時に通知させられる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "記録の開始と停止",
+      "description": "計測記録を開始しデータを内部メモリに蓄積させ停止できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "データのPC取り込み（USB/LAN）",
+      "description": "USBまたはLAN経由でデータをPCに転送できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "ソフトウェアでのグラフ表示",
+      "description": "グラフテック提供ソフトでデータを読み込みグラフ表示できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 79,
+      "skill_name": "温度監視ロガー（グラフテック製）",
+      "name": "CSVでのデータ出力",
+      "description": "記録データをCSV形式に出力してExcelで解析できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "CAN FDのフレーム構成の説明",
+      "description": "BRS・ESI・EDLビットの役割とCAN 2.0との違いを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "アービトレーションフェーズとデータフェーズの説明",
+      "description": "2段階ビットレートの切替タイミングを説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "CAN FDの最大ペイロード（64byte）の確認",
+      "description": "DLC 9〜15がどう64byteまで対応するか説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "Nominal Bit Rateの設定",
+      "description": "CAN FD対応機器でNominal Bit Rate（500kbps等）を設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "Data Bit Rateの設定",
+      "description": "Data Phase用の高速ビットレート（2M/5M等）を設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "DBCでのCAN FD信号定義の確認",
+      "description": "FDフレームに対応したDBC記述を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 80,
+      "skill_name": "CAN FD通信",
+      "name": "CANoeでのCAN FDフレーム確認",
+      "description": "CAN FDフレームをTrace窓で確認しデータを検証できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 81,
+      "skill_name": "CXPI通信",
+      "name": "CXPIの特徴と用途の説明",
+      "description": "LINの後継としてのCXPIのクロック可変・双方向特性を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 81,
+      "skill_name": "CXPI通信",
+      "name": "CXPIとLINの違いの説明",
+      "description": "ボーレード可変・ウェイクアップ機能強化の差異を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 81,
+      "skill_name": "CXPI通信",
+      "name": "CXPIフレームの構造の説明",
+      "description": "CXPIのヘッダー・データ・チェックサムフィールドを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 81,
+      "skill_name": "CXPI通信",
+      "name": "CANoeでのCXPI通信の確認",
+      "description": "CXPIプラグインを設定しフレームをTrace窓で確認できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 81,
+      "skill_name": "CXPI通信",
+      "name": "ボデー系ECUでのCXPIの適用例の説明",
+      "description": "ドアモジュール等への適用例を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 82,
+      "skill_name": "SENT通信",
+      "name": "SENTの基本概念の説明",
+      "description": "Single Edge Nibble Transmissionの単線非同期通信特性を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 82,
+      "skill_name": "SENT通信",
+      "name": "クロックティックとニブルの説明",
+      "description": "可変幅クロックティックで4bitニブルを表現する仕組みを説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 82,
+      "skill_name": "SENT通信",
+      "name": "ファストチャンネルのデータ構造説明",
+      "description": "ステータスニブル＋データニブル×Nのフォーマットを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 82,
+      "skill_name": "SENT通信",
+      "name": "シリアルメッセージの説明",
+      "description": "スローチャンネルによる追加データ伝送の仕組みを説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 82,
+      "skill_name": "SENT通信",
+      "name": "物理量への変換計算",
+      "description": "ニブル値からセンサの物理量（圧力・温度等）に変換できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 82,
+      "skill_name": "SENT通信",
+      "name": "オシロスコープでのSENT波形確認",
+      "description": "SENT信号の電圧パルスをオシロスコープで観測し正常性を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "UDS通信ベース（CAN/Ethernet）の説明",
+      "description": "CAN ISO-TPとEthernet DoIPのどちらかでUDSを通信できることを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "DiagnosticSessionControl（0x10）の実行",
+      "description": "0x10でExtendedDiag等のセッションへ切り替えられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "ReadDataByIdentifier（0x22）の実行",
+      "description": "DIDを指定してECU内部データを0x22で読み出せる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "WriteDataByIdentifier（0x2E）の実行",
+      "description": "DIDを指定してECUに値を書き込む0x2Eリクエストを送れる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "ReadDTCInformation（0x19）の実行",
+      "description": "DTCをサブ機能を指定して0x19で読み出せる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "ClearDiagnosticInformation（0x14）の実行",
+      "description": "DTCをグループ指定で0x14でクリアできる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "SecurityAccess（0x27）のSeed/Key交換",
+      "description": "Seed要求→Key計算→Key送信の手順でセキュリティを解除できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 83,
+      "skill_name": "UDS診断（ISO 14229）",
+      "name": "Negative Responseのエラーコード読み取り",
+      "description": "NRC（Negative Response Code）を確認しエラー原因を特定できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 84,
+      "skill_name": "OBD診断（ISO 15765）",
+      "name": "OBD-IIの対象車両と目的の説明",
+      "description": "エミッション規制を目的とした義務的診断規格であることを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 84,
+      "skill_name": "OBD診断（ISO 15765）",
+      "name": "OBD接続ポート（DLC）の場所の確認",
+      "description": "車室内のDLCコネクタの位置と形状を確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 84,
+      "skill_name": "OBD診断（ISO 15765）",
+      "name": "Mode 01でのリアルタイムデータ読み出し",
+      "description": "PID 0x0C（エンジン回転数）等のPIDを指定して現在値を読み出せる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 84,
+      "skill_name": "OBD診断（ISO 15765）",
+      "name": "Mode 03でのDTC読み出し",
+      "description": "Mode 03で排ガス系DTCのコードを読み出せる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 84,
+      "skill_name": "OBD診断（ISO 15765）",
+      "name": "Mode 04でのDTCクリア",
+      "description": "Mode 04で排ガス系DTCをクリアできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 84,
+      "skill_name": "OBD診断（ISO 15765）",
+      "name": "CANoeのOBDウィンドウの利用",
+      "description": "CANoeのDiagnostics窓でOBDサービスを実行し応答を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "テスト対象診断サービスの洗い出し",
+      "description": "仕様書から実装されているSIDとDIDを一覧化できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "正常系診断テストケースの設計",
+      "description": "各SIDの正常応答パターンをテストケースとして設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "異常系テストケースの設計",
+      "description": "タイムアウト・拒否応答・不正DIDのエラー応答テストを設計できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "セキュリティアクセスのテスト設計",
+      "description": "Seed/Key手順と失敗時の遅延・ロックアウトをテスト設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "DoIPテスト環境の構築",
+      "description": "EthernetインタフェースとCANoeでDoIP通信ができる環境を構築できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "CAPLによる診断シーケンスの自動化",
+      "description": "diagRequest/ResponseをCAPLで組み自動診断テストを実行できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 85,
+      "skill_name": "診断通信テスト設計",
+      "name": "テスト結果の評価とレポート作成",
+      "description": "実行結果と期待値を比較して合否を判定しレポートにまとめられる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "EFI制御の目的と概要の説明",
+      "description": "電子制御燃料噴射が従来キャブレターと比べ何を改善したか説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "エアフロー計測と吸入空気量推定の理解",
+      "description": "エアフローメータとマップセンサによる空気量推定を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "燃料噴射量の基本計算の理解",
+      "description": "空気量・空燃比目標から燃料噴射量が計算される仕組みを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "PFI方式とDI方式の違いの説明",
+      "description": "ポート噴射と直噴の特徴と利点・欠点を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "点火タイミング制御の説明",
+      "description": "ノッキング・エンジン回転・負荷に応じた点火角制御を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "O2センサによるλ制御の説明",
+      "description": "排ガスO2濃度フィードバックで空燃比をλ=1に維持する制御を説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 86,
+      "skill_name": "EFI制御知識",
+      "name": "アイドル回転数制御の説明",
+      "description": "ISC（アイドルスピードコントロール）による回転数維持を説明できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "シリーズ・パラレル・スプリット方式の違いの説明",
+      "description": "各ハイブリッド方式の動力伝達経路と動作モードを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "モータとインバータの基本動作の説明",
+      "description": "PMSMのベクトル制御とインバータのスイッチング動作を説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "SOC（State of Charge）の説明",
+      "description": "バッテリ充電状態をどう推定・管理するかを説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "セル均等化（バランシング）の説明",
+      "description": "セル間電圧差を均等化する回路と制御の仕組みを説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "回生制動の仕組みの説明",
+      "description": "減速時に運動エネルギーを電気エネルギーに変換する流れを説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "協調回生ブレーキの説明",
+      "description": "電気ブレーキと油圧ブレーキを協調させる制御を説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 87,
+      "skill_name": "HEV/BEV制御知識",
+      "name": "BEVの充電制御の説明",
+      "description": "AC/DC充電器の種類（普通充電・急速充電）と制御の概要を説明できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "プロジェクトの新規作成",
+      "description": "ecu.testで新規プロジェクトを作成しテストスイートを構成できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "テストケースの作成",
+      "description": "テストケースを追加しステップと判定条件を設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "信号チャンネルのマッピング",
+      "description": "計測に使用する信号をecu.testのチャンネルに割り当てられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "信号読み取りステップの設定",
+      "description": "指定信号の現在値を読み取るステップを追加できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "信号書き込みステップの設定",
+      "description": "指定信号に値を書き込むステップを追加できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "合否判定ステップの設定",
+      "description": "信号値が期待範囲内かを判定するステップを設定できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "テストの実行と結果確認",
+      "description": "テストを実行し合否・計測値・実行ログを確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "HTMLレポートの出力・確認",
+      "description": "テスト結果レポートを出力し内容を確認できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "UseToolの作成",
+      "description": "アダプタを作成することができる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "Pythonスクリプトとの連携",
+      "description": "ecu.test Python APIで高度な判定・後処理ロジックを実装できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "条件付き判定の実装",
+      "description": "複数信号の組み合わせ条件での合否判定を実装できる",
+      "order_index": 10
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "テストデータの外部ファイル参照",
+      "description": "CSVやExcelからテスト条件・期待値を読み込ませられる",
+      "order_index": 11
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "複数ECUの同時テスト設定",
+      "description": "複数ECUを同時にテストする環境をecu.testで構成できる",
+      "order_index": 12
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "継続実行（ナイトラン）の設定",
+      "description": "CI/CDから定期実行できる継続テスト環境をecu.testで構築できる",
+      "order_index": 13
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "tbcの設定",
+      "description": "状況に応じたtbcの設定ができる",
+      "order_index": 14
+    },
+    {
+      "skill_id": 88,
+      "skill_name": "ecu.test",
+      "name": "tbcの設定",
+      "description": "状況に応じたtbcが設定できる",
+      "order_index": 15
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "目的・条件を明確にしたプロンプトの作成",
+      "description": "役割・背景・期待する出力形式を指定した精度の高いプロンプトを作れる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "GitHub Copilotによるコード補完の活用",
+      "description": "コメントや関数シグネチャからCopilotの提案を利用してコードを記述できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "AIへのコードレビュー依頼",
+      "description": "レビューしてほしいコードをAIに貼り付けてバグや改善点を指摘させられる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "AIによるテストコードの生成",
+      "description": "関数の仕様をAIに説明しユニットテストの雛形を生成させられる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "AIを使ったドキュメントの下書き作成",
+      "description": "要点を箇条書きで与えAIに仕様書・議事録の下書きを生成させられる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "生成AIの出力を批判的に評価する",
+      "description": "AIの出力に誤りが含まれる可能性を認識し自分で検証できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 90,
+      "skill_name": "生成AI活用",
+      "name": "機密情報を入力しないルールの遵守",
+      "description": "社内機密情報や個人情報をAIサービスに入力してはいけないことを理解できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "IPアドレスとサブネットマスクの理解",
+      "description": "クラスA/B/CとCIDR表記でIPアドレス範囲とホスト数を計算できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "デフォルトゲートウェイの設定確認",
+      "description": "ゲートウェイIPを確認しルーティング経路を把握できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "DNSによる名前解決の確認",
+      "description": "nslookup/digコマンドでホスト名をIPに解決できることを確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "VLANの概念理解",
+      "description": "VLAN IDでネットワークを論理分割する仕組みを説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "ポート番号と通信プロトコルの理解",
+      "description": "TCP/UDPの主要ポート番号（80/443/22等）の用途を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "ファイアウォールの基本設定確認",
+      "description": "許可・拒否ルールの意味を理解し疎通確認に活用できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "複数PC間の疎通確認手順",
+      "description": "ping・arp・tracerouteで複数台のPC・HILS・ECU間の通信経路を確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 91,
+      "skill_name": "ネットワーク基礎",
+      "name": "ネットワーク構成図の読み取り",
+      "description": "IPアドレス・VLAN・スイッチ構成を含むネットワーク図を読み取れる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "プロジェクトのルール設定",
+      "description": "コーディング規約に合わせたルールセットをツールに設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "解析対象ファイルの選定",
+      "description": "解析するソースファイルとその除外条件を設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "解析の実行と結果一覧の確認",
+      "description": "ツールを実行し指摘件数と内容の一覧を確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "指摘のカテゴリ別分類",
+      "description": "未初期化変数・配列境界・規約違反等のカテゴリに分けられる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "誤検知（FP）のジャスティフィケーション",
+      "description": "意図的なコードに対するFPをコメントで根拠付きに除外できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "対応優先度の設定と修正依頼",
+      "description": "重要度の高い指摘を優先して開発者に修正依頼できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 92,
+      "skill_name": "静的解析・QAC活用",
+      "name": "解析結果レポートの作成",
+      "description": "指摘件数・FP数・対応状況をまとめたレポートを作成できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "Python環境とAPIライブラリのセットアップ",
+      "description": "Pythonからdspaceapiをインポートしアプリケーションに接続できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "変数値の読み取り",
+      "description": "スクリプトでControlDesk変数の現在値を読み取ることができる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "変数への値の書き込み",
+      "description": "スクリプトで指定した変数にパラメータ値を書き込めができる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "データレコーダーの開始",
+      "description": "スクリプトからレコーダーの計測開始コマンドを発行できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "データレコーダーの停止とエクスポート",
+      "description": "スクリプトからレコーダーを停止しMDFをエクスポートできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "条件待機の実装",
+      "description": "変数が特定値になるまで待機するループをスクリプトで実装できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "MDFデータの読み込みと後処理",
+      "description": "Pythonでエクスポートされたデータを読み込みグラフ化・集計できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 93,
+      "skill_name": "ControlDesk Automation",
+      "name": "エラー発生時の安全停止処理",
+      "description": "例外を捕捉して計測を安全に停止するエラーハンドリングを実装できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "CAPLプログラムファイルの作成",
+      "description": "CANoe内のCAPL Browserで新規CAPLファイルを作成できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "変数の宣言とデータ型の使用",
+      "description": "int/float/byte/char等のCAPL変数を宣言して使用できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "on messageハンドラの実装",
+      "description": "特定CANメッセージ受信時に処理を実行するハンドラを書ける",
+      "order_index": 2
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "メッセージ送信（output関数）",
+      "description": "CAPLからCANメッセージをoutput()で送信できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "信号値の読み書き（$表記）",
+      "description": "$signal_name記法でシグナル値を読み取り・書き込みできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "on key/on timerハンドラの実装",
+      "description": "キー入力・タイマーイベントを受けて処理を実行できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "setTimer/cancelTimerの使用",
+      "description": "指定時間後に処理を起動するタイマーを設定・キャンセルできる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "診断サービスのリクエスト送信",
+      "description": "diagRequest構文でUDS/OBD診断サービスを送信できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "診断レスポンスの受信と解析",
+      "description": "diagResponseハンドラで応答を受け取り内容を解析できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 94,
+      "skill_name": "CAPL開発",
+      "name": "testcase関数によるテスト自動化",
+      "description": "testcase関数でシーケンステストを記述しTestModuleで実行できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "CANdb++の起動とDBCファイルの開き方",
+      "description": "CANdb++を起動し既存DBCファイルを開いて内容を確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "新規メッセージの追加",
+      "description": "メッセージID・DLC・送信ノードを設定して新規メッセージを登録できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "信号の追加とビット配置設定",
+      "description": "StartBit・BitLength・ByteOrderを設定して信号を追加できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "スケーリング（係数・オフセット）の設定",
+      "description": "FactorとOffsetで生値から物理値への換算式を設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "最小値・最大値・単位の設定",
+      "description": "信号の物理レンジと単位を設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "環境変数の定義",
+      "description": "CANoeのCAPLから参照できる環境変数をDBCに定義できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 95,
+      "skill_name": "DBC / CANdb++ 管理",
+      "name": "DBCファイルのGit管理",
+      "description": "DBCをGitで管理し変更差分を確認・コミットできる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "XCPのマスタ/スレーブ動作の説明",
+      "description": "PCがマスタ・ECUがスレーブとして通信する構造を説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "XCPで計測できる変数の種類の説明",
+      "description": "Measurement（計測）とCharacteristic（キャリブレーション）の違いを説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "A2Lの主要要素（MODULE/MEASUREMENT等）の説明",
+      "description": "A2LのMODULE・MEASUREMENT・CHARACTERISTIC要素の役割を説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "A2LファイルのINCAへの読み込み",
+      "description": "A2LをINCAに登録しECUの変数ツリーを表示できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "XCP接続の確立と状態確認",
+      "description": "INCAのXCPコネクタでECUと接続しステータスを確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "計測変数のMeasurementリスト追加",
+      "description": "取得したいMEASUREMENT変数を計測リストに追加できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 96,
+      "skill_name": "XCP / A2Lプロトコル",
+      "name": "キャリブレーション変数の変更確認",
+      "description": "INCAでCHARACTERISTICの値を変更しECUに反映できることを確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "LKASの制御概要の説明",
+      "description": "カメラで白線を認識しEPSへ修正トルクを指令する流れを説明できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "EPSの制御概要の説明",
+      "description": "アシストトルク制御とステアリング角フィードバックの仕組みを説明できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "フロントカメラの認識対象と出力の説明",
+      "description": "白線・歩行者・車両認識の結果をどう出力するか説明できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "ミリ波レーダーの検出内容の説明",
+      "description": "前方車両の相対速度・距離の検出方法を説明できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "センサフュージョンの概念の説明",
+      "description": "カメラとレーダーの情報を統合して精度を高める考え方を説明できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "LKAS/ADASのフェールセーフ動作の説明",
+      "description": "センサ断線・判断不確かさ時に安全側に制御を移行する仕組みを説明できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 97,
+      "skill_name": "レーン制御・ADAS知識",
+      "name": "ECUテストで確認すべき観点の列挙",
+      "description": "入力信号・動作モード遷移・異常系（センサ断）のテスト観点を挙げられる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "故障モードの定義",
+      "description": "断線・GND短絡・電源短絡・電圧異常等の注入すべき故障モードを定義できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "リレー式故障注入回路の設計",
+      "description": "リレーを使い信号を断線・短絡できる回路を設計できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "制御インタフェースの設計",
+      "description": "デジタル出力信号でFIUリレーをON/OFFできるI/Fを設計できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "過電圧・過電流保護回路の設計",
+      "description": "FIU操作ミスによるECU破損を防ぐ保護回路を設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "FIU制御ソフトウェアとの連携確認",
+      "description": "HILSモデルからFIUリレーを制御できることを確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "FIU仕様書の作成",
+      "description": "故障モード・回路設計・制御I/Fを記載した仕様書を作成できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 98,
+      "skill_name": "故障注入回路設計（FIU）",
+      "name": "FIUの動作検証",
+      "description": "各故障モードを実際に注入しECUへの影響が期待通りか確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "テスト方針の定義",
+      "description": "プロジェクトの品質目標に合わせたテスト方針を文書化できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "テスト対象スコープの決定",
+      "description": "テストの対象範囲と対象外を明確に定義できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "テストレベルの選定",
+      "description": "単体/結合/システムの各テストレベルの実施方針を決定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "リスク評価とテスト重点領域の決定",
+      "description": "リスク高い領域を優先してテスト資源を配分する計画を立てられる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "テスト完了基準の定義",
+      "description": "出荷可否判断に使うカバレッジ・NG数等の完了基準を定義できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "テスト工数とスケジュールの計画",
+      "description": "フェーズごとの工数・担当・期間をスケジュール表に落とせる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 99,
+      "skill_name": "テスト戦略策定",
+      "name": "テスト戦略書の作成と承認取得",
+      "description": "まとめた戦略書をステークホルダーにレビューしてもらい承認を得られる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "カレントディレクトリの移動・確認",
+      "description": "cd/pwdコマンドで現在位置を確認しディレクトリを移動できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "ファイル・ディレクトリの一覧表示",
+      "description": "ls -la（Linux）/dir（Windows）でファイル一覧を表示できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "ファイルのコピー・移動・削除",
+      "description": "cp/mv/rm（Linux）やcopy/move/del（Windows）でファイルを操作できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "テキスト内容の検索",
+      "description": "grepコマンドで指定キーワードを含む行をファイルから抽出できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "ファイル・ディレクトリの検索",
+      "description": "findコマンドで名前・サイズ・更新日時の条件でファイルを探せる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "ネットワーク疎通確認",
+      "description": "pingコマンドで対象ホストへの通信が通っているか確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "IPアドレス・ネットワーク情報の確認",
+      "description": "ipconfig/ifconfigでIPアドレス・MACアドレス・サブネットを確認できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "プロセスの確認と終了",
+      "description": "ps/tasklist・kill/taskkillで実行中プロセスを確認・終了できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "パイプとリダイレクトの活用",
+      "description": "|・>・>>を使いコマンドの出力を別コマンドに渡したりファイルに書き出せる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 100,
+      "skill_name": "コマンドライン操作",
+      "name": "シェルスクリプトの作成・実行",
+      "description": "変数・if文・forループを使った基本的なシェルスクリプトを書いて実行できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "リポジトリの作成",
+      "description": "git init でローカルリポジトリを新規作成する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "リポジトリのクローン",
+      "description": "git clone でリモートリポジトリをローカルに複製する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "git status（状態確認）",
+      "description": "作業ツリー・インデックスの変更状態を確認する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "ブランチの作成",
+      "description": "git branch / git checkout -b で新しいブランチを作成する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "ブランチの切り替え",
+      "description": "git checkout / git switch で作業ブランチを切り替える",
+      "order_index": 4
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "ファイルのステージング",
+      "description": "git add で変更ファイルをインデックスに登録する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "コミット",
+      "description": "git commit でスナップショットをリポジトリに記録する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "git diff（差分確認）",
+      "description": "git diff でステージング前後・コミット間の差分を確認する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "git log（履歴確認）",
+      "description": "git log でコミット履歴・変更内容の一覧を確認する",
+      "order_index": 8
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "git fetch（フェッチ）",
+      "description": "git fetch でリモートの変更情報を取得する（マージなし）",
+      "order_index": 9
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "git merge（マージ）",
+      "description": "git merge で指定ブランチを現在のブランチに統合する",
+      "order_index": 10
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "コンフリクトの解消",
+      "description": "マージ時の競合箇所を特定し手動で解決する",
+      "order_index": 11
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "リモートへのプッシュ",
+      "description": "git push でローカルのコミットをリモートに送信する",
+      "order_index": 12
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "リモートからのプル",
+      "description": "git pull でリモートの変更をローカルに取り込む（fetch+merge）",
+      "order_index": 13
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "プルリクエストの作成",
+      "description": "GitHub上でPRを作成しレビュワーにレビューを依頼する",
+      "order_index": 14
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "プルリクエストのマージ",
+      "description": "レビュー承認後にPRをベースブランチにマージする",
+      "order_index": 15
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "Issue管理",
+      "description": "GitHub IssueでタスクやバグをトラッキングしClosedまで管理する",
+      "order_index": 16
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "ラベル活用",
+      "description": "IssueやPRにラベルを付けて種別・優先度を分類する",
+      "order_index": 17
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": ".gitignoreの設定",
+      "description": "不要ファイル・フォルダをバージョン管理対象から除外する",
+      "order_index": 18
+    },
+    {
+      "skill_id": 101,
+      "skill_name": "Git / GitHub基礎",
+      "name": "git stash",
+      "description": "作業中の変更を一時退避し後で復元する",
+      "order_index": 19
+    },
+    {
+      "skill_id": 102,
+      "skill_name": "テスト設計",
+      "name": "テスト設計技法の選択",
+      "description": "対象機能に最適な技法（同値分割/境界値/状態遷移等）を選択できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 102,
+      "skill_name": "テスト設計",
+      "name": "テスト条件の設定",
+      "description": "各テスト観点に対して具体的な入力値・操作条件を定義できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 102,
+      "skill_name": "テスト設計",
+      "name": "テストケースへの展開",
+      "description": "設計した条件を実施可能なテストケース形式に展開できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 102,
+      "skill_name": "テスト設計",
+      "name": "テスト手順の記述",
+      "description": "環境設定・操作手順・確認項目を実施者が迷わないよう記述できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 102,
+      "skill_name": "テスト設計",
+      "name": "合否判定基準の明確化",
+      "description": "期待値と許容誤差を明確に記述できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 102,
+      "skill_name": "テスト設計",
+      "name": "テスト設計レビューの実施",
+      "description": "設計の妥当性と網羅性を指摘しレビューできる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 103,
+      "skill_name": "I/O設計",
+      "name": "ECUとHILS間の信号リスト作成",
+      "description": "対象ECUのI/O信号を全て抽出し名称・種別・方向を一覧化できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 103,
+      "skill_name": "I/O設計",
+      "name": "信号の種別分類",
+      "description": "各信号をアナログ入力/出力・デジタル入力/出力・PWM・通信に分類できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 103,
+      "skill_name": "I/O設計",
+      "name": "電圧レンジの定義",
+      "description": "各アナログ信号の最小値・最大値と正常動作範囲を定義できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 103,
+      "skill_name": "I/O設計",
+      "name": "I/Oボードへのチャンネル割り当て",
+      "description": "dSPACEのI/Oボード仕様と照合して信号をchに割り当てられる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 103,
+      "skill_name": "I/O設計",
+      "name": "スケーリング係数の計算",
+      "description": "物理量と電気信号の変換式（係数・オフセット）を計算できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 103,
+      "skill_name": "I/O設計",
+      "name": "I/O設計書の作成",
+      "description": "割り当て・スケーリング・注意事項を記載したI/O設計書を作成できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 104,
+      "skill_name": "I/F設計",
+      "name": "インタフェース要件の整理",
+      "description": "接続先・信号レベル・コネクタ形状の要件を整理できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 104,
+      "skill_name": "I/F設計",
+      "name": "信号レベル（3.3V/5V/12V）の確認",
+      "description": "ECUとHILSの論理レベルを確認し適合しているか判断できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 104,
+      "skill_name": "I/F設計",
+      "name": "レベル変換回路の設計",
+      "description": "電圧レベルが異なる場合にレベルシフタ等の変換回路を設計できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 104,
+      "skill_name": "I/F設計",
+      "name": "プルアップ/プルダウン抵抗の設計",
+      "description": "信号の未定義状態防止のためのプルアップ/プルダウン抵抗値を計算できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 104,
+      "skill_name": "I/F設計",
+      "name": "コネクタの選定",
+      "description": "防水・ロック機構・スペースの要件に合ったコネクタを選定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 104,
+      "skill_name": "I/F設計",
+      "name": "I/F仕様書の作成",
+      "description": "ピン配置・信号仕様・電気特性を記載したI/F仕様書を作成できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 105,
+      "skill_name": "通信設計",
+      "name": "終端抵抗値の計算",
+      "description": "バス特性インピーダンス（通常120Ω）に基づく終端抵抗値を確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 105,
+      "skill_name": "通信設計",
+      "name": "終端抵抗の設置位置の確認",
+      "description": "バス両端に終端抵抗を配置する設計ができる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 105,
+      "skill_name": "通信設計",
+      "name": "CANバスのノード数とバス長の確認",
+      "description": "ノード数・スタブ長・バス長の制約を守った設計ができる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 105,
+      "skill_name": "通信設計",
+      "name": "LINバスのプルアップ抵抗設計",
+      "description": "マスタ側のプルアップ抵抗（約1kΩ）を設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 105,
+      "skill_name": "通信設計",
+      "name": "ツイストペア配線の設計",
+      "description": "ノイズ耐性向上のためツイストペア構造の配線を設計できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 105,
+      "skill_name": "通信設計",
+      "name": "通信設計書の作成",
+      "description": "終端抵抗・配線仕様・ノード構成を記載した通信設計書を作成できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "ブランチ戦略（GitHub Flow等）",
+      "description": "チーム開発のブランチ運用ルールを設計・運用する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "ブランチルールの作成・管理",
+      "description": "Branch protection rules / Rulesetsでマージ条件・レビュー必須・force push禁止等を設定する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git rebase",
+      "description": "コミット履歴の整理・ブランチの付け替えを行う",
+      "order_index": 2
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git reset",
+      "description": "コミットや変更を取り消す（--soft / --mixed / --hard）",
+      "order_index": 3
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git revert",
+      "description": "既存コミットを打ち消す新コミットを作成する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git tag",
+      "description": "リリースポイントにタグを付けてバージョンを管理する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "コードレビューの実施",
+      "description": "PRのコードを読みレビューコメント・承認・変更要求を行う",
+      "order_index": 6
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git log 応用",
+      "description": "--graph / --oneline / --author等で履歴を視覚的に分析する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git bisect",
+      "description": "バイナリサーチでバグが混入したコミットを特定する",
+      "order_index": 8
+    },
+    {
+      "skill_id": 115,
+      "skill_name": "Git / GitHub 応用",
+      "name": "git submodule",
+      "description": "外部リポジトリをサブモジュールとして組み込む・管理する",
+      "order_index": 9
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "kubeconfig の設定とクラスタ接続",
+      "description": "kubectl configでコンテキストを設定しクラスタに接続できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "Podの作成と状態確認",
+      "description": "kubectl apply/get/describeでPodのライフサイクルを管理できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "Deploymentによるレプリカ管理",
+      "description": "Deploymentで指定したレプリカ数のPodを維持・更新できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "Serviceによるアクセス設定",
+      "description": "ClusterIP/NodePort/LoadBalancerタイプのServiceを作成できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "ConfigMapで設定値を管理",
+      "description": "ConfigMapに設定ファイルを格納しPodの環境変数やボリュームとして参照できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "Secretでシークレットを管理",
+      "description": "SecretにパスワードやAPIキーを格納しPodに安全に渡せる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "Helmチャートのインストールと管理",
+      "description": "helm install/upgrade/rollbackでアプリをパッケージ管理できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "HPAで自動スケーリングを設定",
+      "description": "CPU使用率に応じてPodレプリカ数を自動調整するHPAを設定できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "RBACで権限を設定",
+      "description": "ServiceAccount・Role・RoleBindingでAPIアクセス権限を制限できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "Ingressでルーティングを設定",
+      "description": "IngressリソースでHTTPパスベースのルーティングとTLS終端を設定できる",
+      "order_index": 9
+    },
+    {
+      "skill_id": 117,
+      "skill_name": "Kubernetes",
+      "name": "kubectl logsとexecでデバッグ",
+      "description": "kubectl logs/exec/describeを組み合わせてPodの問題を特定できる",
+      "order_index": 10
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "プロジェクトの作成・設定",
+      "description": "スクラム/カンバンプロジェクトを作成し基本設定を行う",
+      "order_index": 0
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "Issue（チケット）の作成・管理",
+      "description": "バグ・タスク・ストーリー等のIssueを作成し担当者・優先度を設定する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "バックログの管理・優先度付け",
+      "description": "バックログ一覧でIssueを整理しスプリントへの振り分けを行う",
+      "order_index": 2
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "スプリントの計画・実行",
+      "description": "スプリントを作成しチームの作業量を見積もり開始・完了させる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "ボードの活用（スクラム/カンバン）",
+      "description": "ボード上でIssueのステータスを更新し進捗を可視化する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "ワークフローのカスタマイズ",
+      "description": "Issueのステータス遷移・条件・バリデーションを定義する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "フィルター・JQLの活用",
+      "description": "JQL（Jira Query Language）で条件を絞り込みIssueを検索する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "ダッシュボード・レポートの作成",
+      "description": "バーンダウンチャートや速度レポートでスプリント状況を把握する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 119,
+      "skill_name": "課題追跡・プロジェクト管理（JIRA）",
+      "name": "Confluenceとの連携",
+      "description": "JIRAのIssueをConfluenceページに埋め込み進捗を一元管理する",
+      "order_index": 8
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "スペースの作成・管理",
+      "description": "チーム・プロジェクト単位でスペースを作成しナビゲーションを整える",
+      "order_index": 0
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "ページの作成・編集",
+      "description": "リッチテキストエディタでページを作成し見出し・表・画像を挿入する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "テンプレートの活用",
+      "description": "会議メモ・仕様書・手順書等のテンプレートを使ってページを効率作成する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "ラベル・タグによる整理",
+      "description": "ページにラベルを付けて検索性を高め関連ページをグルーピングする",
+      "order_index": 3
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "マクロの活用",
+      "description": "目次・コードブロック・JIRAリンク等のマクロでページを強化する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "JIRAとの連携",
+      "description": "JIRAのIssueをConfluenceに埋め込み仕様書と課題を紐付ける",
+      "order_index": 5
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "アクセス権限の設定",
+      "description": "スペース・ページ単位で閲覧・編集権限をグループ・ユーザーに付与する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 120,
+      "skill_name": "チームWiki・ナレッジ管理（Confluence）",
+      "name": "ページツリーの設計",
+      "description": "ドキュメント構造をページツリーで整理しチームの知識基盤を構築する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "リポジトリの作成・設定",
+      "description": "Local/Remote/Virtualリポジトリを作成しパッケージ形式（Maven/npm/Docker等）を設定する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "アーティファクトのアップロード",
+      "description": "CLIやCIジョブからビルド成果物をArtifactoryにアップロードする",
+      "order_index": 1
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "アーティファクトのダウンロード・参照",
+      "description": "リポジトリからパッケージを取得しバージョンを管理する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "CI/CDパイプラインとの連携",
+      "description": "GitHub Actions / Jenkins等のCIからArtifactoryへ自動デプロイする",
+      "order_index": 3
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "アクセス権限・ユーザー管理",
+      "description": "グループ・ロール・パーミッションターゲットでアクセスを制御する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "コンポーネント検索・バージョン管理",
+      "description": "AQLやUIで成果物を検索しバージョン履歴・メタデータを確認する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "クリーンアップポリシーの設定",
+      "description": "保持ポリシーを設定し古いアーティファクトを自動削除する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 121,
+      "skill_name": "JFrog Artifactory",
+      "name": "Xray連携（セキュリティスキャン）",
+      "description": "JFrog Xrayで依存パッケージの脆弱性・ライセンス違反をスキャンする",
+      "order_index": 7
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "チャンネルの作成・管理",
+      "description": "チームにチャンネルを作成しトピック別にコミュニケーションを整理する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "ミーティングの設定・開催",
+      "description": "会議を設定し画面共有・レコーディング・ブレイクアウトを活用する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "ファイル共有・共同編集",
+      "description": "チャンネルにファイルをアップロードしOfficeファイルをリアルタイム共同編集する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "通知設定のカスタマイズ",
+      "description": "チャンネル・メンション・キーワードの通知をニーズに合わせて設定する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "タブ・アプリの追加",
+      "description": "JIRAやConfluence等のアプリをタブとして追加しTeamsから直接操作する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "Webhookによる通知連携",
+      "description": "受信Webhookを設定しCI/CDやモニタリング結果をTeamsチャンネルに通知する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 122,
+      "skill_name": "ビジネスチャット（Teams）",
+      "name": "Teamsフォンの活用",
+      "description": "通話・転送・ボイスメールを活用し社内コミュニケーションを一元化する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "チャンネルの作成・管理",
+      "description": "パブリック/プライベートチャンネルを作成しトピック・用途で整理する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "メッセージ活用（スレッド・書式）",
+      "description": "スレッドで返信を整理しMarkdown記法で見やすいメッセージを作成する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "ワークフロービルダー",
+      "description": "定型業務（日次報告・承認依頼等）をワークフローで自動化する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "アプリ・連携の設定",
+      "description": "GitHub/JIRA/Grafana等の外部サービスを連携してSlackで情報を集約する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "Incoming Webhook通知",
+      "description": "CI/CDやモニタリングの結果をWebhook経由でSlackチャンネルに送信する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "リマインダー・スケジュール投稿",
+      "description": "/remindコマンドやスケジュール投稿で定時通知・タスクリマインドを行う",
+      "order_index": 5
+    },
+    {
+      "skill_id": 123,
+      "skill_name": "ビジネスチャット（Slack）",
+      "name": "Slashコマンドの活用",
+      "description": "/コマンドでJIRA・Githubショートカット等を素早く操作する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "サイトの作成・設定",
+      "description": "チームサイト/コミュニケーションサイトを作成しナビゲーションを設定する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "ドキュメントライブラリの管理",
+      "description": "フォルダ構造を設計しファイルのアップロード・バージョン管理を行う",
+      "order_index": 1
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "リスト・フォームの作成",
+      "description": "カスタムリストで台帳・進捗管理を行いフォームで入力UIを整える",
+      "order_index": 2
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "アクセス権限の設定",
+      "description": "サイト・ライブラリ・フォルダ単位でグループ・ユーザーの権限を管理する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "バージョン管理・チェックアウト",
+      "description": "ファイルのバージョン履歴を確認しチェックアウトで同時編集を防ぐ",
+      "order_index": 4
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "検索・メタデータの活用",
+      "description": "メタデータ列を追加しフィルタリング・検索でファイルを効率的に見つける",
+      "order_index": 5
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "Power Platformとの連携",
+      "description": "Power AutomateやPower AppsからSharePointリスト・ライブラリを操作する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 124,
+      "skill_name": "ドキュメント・ファイル管理（SharePoint）",
+      "name": "Teamsタブへの追加",
+      "description": "SharePointページ・ライブラリをTeamsタブに追加してアクセスを一元化する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "フローの作成（自動化/インスタント/スケジュール）",
+      "description": "トリガー種別に応じたフローを作成し自動実行の仕組みを構築する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "トリガーとアクションの設定",
+      "description": "SharePoint更新・Teams受信・定時等のトリガーとアクションを組み合わせる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "条件分岐・ループの活用",
+      "description": "ConditionやApply to eachで分岐・繰り返し処理を実装する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "SharePoint / Teams連携フロー",
+      "description": "SharePointのリスト変更を起点にTeamsへ通知するフローを作成する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "承認フローの構築",
+      "description": "承認アクションで多段階の承認プロセスをフロー化し結果をメールで通知する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "変数・式の活用",
+      "description": "変数の初期化・設定と式エディタでデータ加工・文字列操作を行う",
+      "order_index": 5
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "エラーハンドリングと再試行",
+      "description": "スコープとRunAfterでエラー時の処理を設定し失敗を検知・通知する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 125,
+      "skill_name": "業務フロー自動化（Power Automate）",
+      "name": "HTTPアクション・Webhook連携",
+      "description": "HTTPアクションで外部API呼び出しやWebhook送信を組み込む",
+      "order_index": 7
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "データソースへの接続",
+      "description": "Excel/SharePoint/SQL/APIなど各種データソースに接続しデータを取り込む",
+      "order_index": 0
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "Power Queryでのデータ整形",
+      "description": "Power Queryエディタで列の変換・フィルタ・結合・型変換を行う",
+      "order_index": 1
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "ビジュアルの作成",
+      "description": "棒グラフ・折れ線・テーブル・マップ等のビジュアルを配置しデータを表現する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "レポートの設計",
+      "description": "ページ・フィルター・スライサーを組み合わせてインタラクティブなレポートを作る",
+      "order_index": 3
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "ダッシュボードの作成",
+      "description": "レポートのビジュアルをピン留めしリアルタイム更新ダッシュボードを構築する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "DAX関数の活用",
+      "description": "SUM/CALCULATE/FILTER等のDAX関数でカスタム集計・メジャーを作成する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "データモデルの設計",
+      "description": "テーブル間のリレーションシップを定義しスタースキーマを構築する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 126,
+      "skill_name": "データ可視化・BI（Power BI）",
+      "name": "レポートの共有・パブリッシュ",
+      "description": "Power BI Serviceに発行しワークスペース共有・アクセス権を設定する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "キャンバスアプリの作成",
+      "description": "白紙のキャンバスからUI部品をドラッグ&ドロップで配置してアプリを構築する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "データソースへの接続",
+      "description": "SharePoint/Dataverse/SQL等に接続しアプリからデータを読み書きする",
+      "order_index": 1
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "フォーム・ギャラリーの設計",
+      "description": "フォームで入力UIを作成しギャラリーで一覧表示を実装する",
+      "order_index": 2
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "Power Fx数式の活用",
+      "description": "If/Filter/LookUp/Patch等の数式でロジック・データ操作を実装する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "ボタン・ナビゲーションの実装",
+      "description": "ボタンのOnSelect・Navigateで画面遷移・操作フローを構築する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "バリデーション・エラー処理",
+      "description": "入力値の検証とNotify関数でユーザーへのフィードバックを実装する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "Power Automateとの連携",
+      "description": "アプリからPower Automateフローを呼び出し複雑な処理をフロー側に委譲する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 127,
+      "skill_name": "ローコードアプリ開発（Power Apps）",
+      "name": "アプリの共有・展開",
+      "description": "ユーザー・グループへアプリを共有しTeamsタブとして公開する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "カメラセンサモデルの設定",
+      "description": "カメラの画角・解像度・ノイズパラメータを設定できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "LiDARセンサモデルの設定",
+      "description": "LiDARの点群密度・検出範囲・反射率パラメータを設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "走行シナリオの作成",
+      "description": "道路形状・交通参加者・天候・照明を含むシナリオを定義できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "自車ダイナミクスモデルの連携",
+      "description": "SimuPackやSimulinkの自車モデルとAURELIONを接続できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "HILSリアルタイムボードへの接続設定",
+      "description": "dSPACEリアルタイムボードへのI/F設定を行い組み込めける",
+      "order_index": 4
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "シナリオの実行と出力確認",
+      "description": "シナリオを実行しセンサ出力・車両応答を確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 128,
+      "skill_name": "AURELION",
+      "name": "テスト結果の評価",
+      "description": "シナリオ実行結果をログで確認しテスト合否を判定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 131,
+      "skill_name": "HILS仕様書作成",
+      "name": "テンプレートの選定と準備",
+      "description": "組織の標準テンプレートを選択し記載項目を確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 131,
+      "skill_name": "HILS仕様書作成",
+      "name": "ハードウェア構成の記述",
+      "description": "使用機器・ボード型番・搭載スロットを図と表で記述できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 131,
+      "skill_name": "HILS仕様書作成",
+      "name": "I/O信号リストの記述",
+      "description": "信号名・方向・種別・レンジ・チャンネル番号を一覧で記述できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 131,
+      "skill_name": "HILS仕様書作成",
+      "name": "通信設定の記述",
+      "description": "CAN/LINのID・ボーレート・メッセージ構成を仕様書に記述できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 131,
+      "skill_name": "HILS仕様書作成",
+      "name": "改訂履歴の管理",
+      "description": "改訂番号・日付・変更内容・担当者を履歴表に記録できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 131,
+      "skill_name": "HILS仕様書作成",
+      "name": "関係者レビューへの対応",
+      "description": "レビュー指摘を受け付け修正し再提出できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 132,
+      "skill_name": "テストデータ管理",
+      "name": "入力信号パターンの設計",
+      "description": "テスト条件ごとに必要な入力信号の変化パターンを設計できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 132,
+      "skill_name": "テストデータ管理",
+      "name": "期待値ファイルの作成",
+      "description": "各テストケースの期待出力をExcel等のファイルで管理できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 132,
+      "skill_name": "テストデータ管理",
+      "name": "テストデータのバージョン管理",
+      "description": "テストデータをGitリポジトリで変更履歴付きで管理できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 132,
+      "skill_name": "テストデータ管理",
+      "name": "テストデータの再利用設計",
+      "description": "複数テストケースで使い回せるデータセット構造を設計できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 132,
+      "skill_name": "テストデータ管理",
+      "name": "データ変更時の影響確認",
+      "description": "テストデータ変更がどのテストケースに影響するか把握できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 132,
+      "skill_name": "テストデータ管理",
+      "name": "テストデータのレビュー実施",
+      "description": "データの妥当性・網羅性をチームでレビューできる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "Python仮想環境のセットアップ",
+      "description": "venvやcondaで独立した仮想環境を作成しライブラリをインストールできる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "ecu.test Python APIの接続",
+      "description": "ecu.testのPython APIに接続しテストケースを制御できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "信号値の読み取りスクリプト",
+      "description": "Python経由でHILS変数・計測信号の値を定期取得できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "テスト結果ログのCSV出力",
+      "description": "取得したデータをpandasでまとめCSVファイルに出力できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "計測器のVISA制御との組み合わせ",
+      "description": "pyvisa経由の計測器制御をecu.testスクリプトと連携させられる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "Excelレポートの自動生成",
+      "description": "openpyxlを使いテスト結果をExcelレポートに自動出力できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "CI/CDパイプラインからの実行",
+      "description": "GitHub ActionsのワークフローからPythonテストスクリプトを実行できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 133,
+      "skill_name": "Pythonによるテスト自動化",
+      "name": "失敗時の通知送信",
+      "description": "テスト失敗をSlackやTeamsのWebhookで自動通知できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "WSL2のインストール",
+      "description": "PowerShellコマンドでWSL2を有効化しインストールできる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "ディストリビューションの選択・初期設定",
+      "description": "Microsoft StoreからUbuntu等を選択しユーザー名・パスワードを設定できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "Windowsファイルへのアクセス",
+      "description": "/mnt/c/経由でWindowsのファイルをWSLから参照・操作できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "WSLからLinuxコマンドを実行",
+      "description": "bashシェルでLinuxコマンドをWindows上で実行できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "シェルスクリプトのWSL上での実行",
+      "description": "bashスクリプトを作成しchmod +xで実行権限を付与して動かせる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "WSLの起動・停止・再起動",
+      "description": "wsl --shutdown等のコマンドでWSLインスタンスを制御できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 134,
+      "skill_name": "WSL（Windows Subsystem for Linux）",
+      "name": "ネットワーク設定",
+      "description": "WSLでネットワーク設定ができる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "ドライバのインストール確認",
+      "description": "Vector HW Manager/PCAN-Viewでデバイスが認識されているか確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "CANoeへのハードウェア割り当て",
+      "description": "CANoeのハードウェア設定でVN/PCANのチャンネルを選択できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "ビットレートの設定",
+      "description": "使用するCAN通信速度（125k/500k/1M等）を正確に設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "CAN FD設定（対応機器の場合）",
+      "description": "Nominal/Data Bit Rateを分けてCAN FD通信パラメータを設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "内蔵終端抵抗のON/OFF設定",
+      "description": "ソフトウェアから120Ω終端抵抗を有効・無効にできる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "通信の疎通確認",
+      "description": "TraceウィンドウにメッセージフレームMが表示されることを確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 135,
+      "skill_name": "CAN計測インタフェース（Vector VN / PCAN）",
+      "name": "複数チャンネルの同時利用",
+      "description": "複数のCANバスに対応した複数chを同時に設定して使用できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "アカウント・IAM設定",
+      "description": "AWSアカウント作成・IAMユーザー/ロール/ポリシーでアクセス権を管理する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "EC2（仮想サーバー）",
+      "description": "EC2インスタンスを起動・設定しセキュリティグループ・SSH接続を管理する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "S3（オブジェクトストレージ）",
+      "description": "S3バケットを作成しファイルのアップロード・アクセス制御・バージョン管理を行う",
+      "order_index": 2
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "VPC・ネットワーク設計",
+      "description": "VPC・サブネット・セキュリティグループ・ルートテーブルでネットワークを構成する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "CloudWatch（監視・ログ）",
+      "description": "CloudWatchでメトリクス監視・ログ収集・アラート通知を設定する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "CodePipeline / CodeBuild",
+      "description": "CI/CDパイプラインをCodePipeline・CodeBuildで構築しデプロイを自動化する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "ECR / ECS（コンテナ）",
+      "description": "DockerイメージをECRに登録しECSでコンテナアプリを実行・管理する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 136,
+      "skill_name": "AWS",
+      "name": "Lambda（サーバーレス）",
+      "description": "Lambda関数を作成しイベントトリガー・API Gateway連携でサーバーレス処理を実装する",
+      "order_index": 7
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Entra ID（旧 Azure AD）",
+      "description": "ユーザー・グループ・アプリ登録・MFAを設定しIDと認証を管理する",
+      "order_index": 0
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Azure VM（仮想マシン）",
+      "description": "Azure VMを作成・設定しOSやネットワーク・ストレージを管理する",
+      "order_index": 1
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Azure Blob Storage",
+      "description": "ストレージアカウントを作成しBlobコンテナでファイルの保存・アクセス制御を行う",
+      "order_index": 2
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Azure Virtual Network",
+      "description": "VNet・サブネット・NSG・ピアリングでAzureネットワークを設計・管理する",
+      "order_index": 3
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Azure DevOps Pipelines",
+      "description": "Azure PipelinesでCI/CDパイプラインを構築しビルド・テスト・デプロイを自動化する",
+      "order_index": 4
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Azure Repos",
+      "description": "Azure Reposでソースコードを管理しブランチ戦略・PRレビューを運用する",
+      "order_index": 5
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "Azure Boards",
+      "description": "Azure BoardsでIssue・スプリント・バックログを管理しチームの進捗を可視化する",
+      "order_index": 6
+    },
+    {
+      "skill_id": 137,
+      "skill_name": "Azure",
+      "name": "AKS（Kubernetes Service）",
+      "description": "AKSでKubernetesクラスターを作成しコンテナアプリをデプロイ・スケーリングする",
+      "order_index": 7
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "DBCファイルのインポート",
+      "description": "CANMMにDBCファイルを読み込みメッセージ・信号定義を取り込める",
+      "order_index": 0
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "送信メッセージの登録",
+      "description": "送信メッセージとそのペイロード設定をCANMMに登録できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "受信メッセージの設定",
+      "description": "受信対象メッセージを指定しデータを取り込む設定ができる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "周期送信タイミングの設定",
+      "description": "メッセージごとに送信周期（ms単位）を設定できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "イベント送信トリガの設定",
+      "description": "モデル変数変化時に送信するイベントトリガを設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "バス負荷率の確認",
+      "description": "設定したメッセージ全体のバス使用率を計算・確認できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "ConfigurationDeskとの割り当て連携",
+      "description": "CANMMの設定をConfigurationDeskのCAN ch割り当てと紐付けられる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "チェックサム信号の設定",
+      "description": "チェックサム計算の対象信号・アルゴリズム（XOR等）をCANMMで設定できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 138,
+      "skill_name": "CANMM",
+      "name": "E2Eプロテクションの設定",
+      "description": "CANMMでE2EプロファイルをPDUに割り当てCRC計算とカウンタ管理を設定できる",
+      "order_index": 8
+    },
+    {
+      "skill_id": 139,
+      "skill_name": "LINMM",
+      "name": "LDF/NCFファイルのインポート",
+      "description": "LIN記述ファイルをLINMMに読み込みクラスタ情報を取り込める",
+      "order_index": 0
+    },
+    {
+      "skill_id": 139,
+      "skill_name": "LINMM",
+      "name": "マスタノードの設定",
+      "description": "LINマスタとしての動作設定（ボーレート等）をできる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 139,
+      "skill_name": "LINMM",
+      "name": "スレーブノードの設定",
+      "description": "スレーブノードのフレームIDと応答データを設定できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 139,
+      "skill_name": "LINMM",
+      "name": "フレームと信号のマッピング",
+      "description": "フレームIDに対してビット配置・信号エンコードを定義できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 139,
+      "skill_name": "LINMM",
+      "name": "スケジュールテーブルの作成",
+      "description": "マスタが定期送信するフレームの順序と周期を設定できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 139,
+      "skill_name": "LINMM",
+      "name": "ConfigurationDeskとの割り当て連携",
+      "description": "LINMMの設定をConfigurationDeskのLIN ch割り当てと紐付けられる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "CAN chへのバス割り当て",
+      "description": "CAN通信ボードの各chにDBC等を割り当てられる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "LIN chへのバス割り当て",
+      "description": "LIN通信ボードの各chにLDF等を割り当てられる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "ボーレートの設定確認",
+      "description": "各バスチャンネルのボーレートが正しく設定されていることを確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "複数バスの一覧管理",
+      "description": "システム内の全CAN/LINバスをBusManagerで一元的に管理できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "CANMM/LINMMとの整合確認",
+      "description": "CANMMArtifactsとBusManagerの割り当てが整合していることを確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "変更後のコンパイルと適用",
+      "description": "バス設定変更後にビルドしてリアルタイムボードに適用できる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "SecOC（MAC認証）の有効化",
+      "description": "BusManagerでSecOCを有効化しMAC生成・検証に使うアルゴリズムとキーIDを設定できる",
+      "order_index": 6
+    },
+    {
+      "skill_id": 140,
+      "skill_name": "BusManager",
+      "name": "E2Eプロテクション設定の確認",
+      "description": "E2Eプロテクションが適用されたPDUのBusManagerへの反映を確認できる",
+      "order_index": 7
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "出力電圧の設定と確認",
+      "description": "フロントパネルで目的の電圧値を設定しディスプレイで確認できる",
+      "order_index": 0
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "出力電流の制限値設定",
+      "description": "最大電流値を設定し定電圧・定電流モードの切り替えを確認できる",
+      "order_index": 1
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "過電流保護（OCP）の設定",
+      "description": "OCPしきい値を設定し過電流発生時に出力が切れることを確認できる",
+      "order_index": 2
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "出力のON/OFF操作",
+      "description": "出力ON/OFFボタンで安全に電源を投入・切断できる",
+      "order_index": 3
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "出力電圧・電流のモニタリング",
+      "description": "計測値を読み取り正常範囲内で動作していることを確認できる",
+      "order_index": 4
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "バッテリ電圧低下パターンの設定",
+      "description": "エンジン始動時の電圧降下（6〜7V）を模擬した電圧設定ができる",
+      "order_index": 5
+    },
+    {
+      "skill_id": 141,
+      "skill_name": "定電圧電源",
+      "name": "リモート制御（対応機種）",
+      "description": "RS-232/USB/LANインタフェースでPCから遠隔制御できる",
+      "order_index": 6
+    }
+  ]
+}

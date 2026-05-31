@@ -5,11 +5,53 @@
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
     <h1><i class="bi bi-check2-square me-2" style="color:#f97316;"></i><span data-i18n="page.approvals">承認依頼</span></h1>
+    {% if is_admin_all_view %}
+    <p class="text-muted mb-0 small"><span class="badge bg-danger me-1" style="font-size:.65rem;">Admin</span> 全ユーザーの申告状況を表示しています</p>
+    {% else %}
     <p class="text-muted mb-0 small">あなたに割り当てられたスキルレベルの承認依頼です</p>
+    {% endif %}
   </div>
   <a href="/approvals/my" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
     <i class="bi bi-send me-1"></i>自分の申請状況
   </a>
+</div>
+
+<!-- 承認編集モーダル -->
+<div class="modal fade" id="editApprovalModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-pencil-square me-2" style="color:#f97316;"></i>承認内容を編集
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editRecordId">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">承認レベル</label>
+          <select id="editLevel" class="form-select" style="border-radius:10px;">
+            <option value="0">0 - 未経験</option>
+            <option value="1">1 - 入門</option>
+            <option value="2">2 - 実務可</option>
+            <option value="3">3 - 指導可</option>
+            <option value="4">4 - エキスパート</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">コメント（任意）</label>
+          <textarea id="editComment" class="form-control" rows="3"
+                    placeholder="承認コメントを入力" style="border-radius:10px;resize:none;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="submitEditApproval()" style="border-radius:20px;">
+          <i class="bi bi-check-lg me-1"></i>保存
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- フィルターバー -->
@@ -66,6 +108,7 @@
             <th>カテゴリー</th>
             <th class="text-center" data-i18n="lbl.level">申告レベル</th>
             <th data-i18n="lbl.date">申請日</th>
+            <th>エビデンス</th>
             <th class="text-center" style="width:180px;" data-i18n="lbl.actions">アクション</th>
           </tr>
         </thead>
@@ -99,6 +142,47 @@
               </span>
             </td>
             <td class="text-muted small">{{ rec.updated_at|jst }}</td>
+            <td style="max-width:220px;">
+              {% set evs = evidence_map.get((rec.user_id, rec.skill_id), []) %}
+              {% if evs %}
+                {% for ev in evs %}
+                  <div class="d-flex align-items-center gap-1 mb-1" style="font-size:.76rem;">
+                    {% if ev.evidence_type == 'url' %}
+                      <i class="bi bi-link-45deg text-primary flex-shrink-0"></i>
+                      <a href="{{ ev.content }}" target="_blank" rel="noopener"
+                         class="text-truncate d-inline-block" style="max-width:170px;vertical-align:middle;"
+                         title="{{ ev.content }}">
+                        {{ ev.title or ev.content }}
+                      </a>
+                      <i class="bi bi-box-arrow-up-right text-muted ms-1" style="font-size:.65rem;"></i>
+                    {% elif ev.evidence_type == 'file' %}
+                      <i class="bi bi-file-earmark-arrow-down text-success flex-shrink-0"></i>
+                      <a href="/skills/evidence/{{ ev.id }}/download"
+                         class="text-truncate d-inline-block text-success" style="max-width:170px;vertical-align:middle;"
+                         title="{{ ev.original_filename or ev.title or 'ファイル' }}">
+                        {{ ev.original_filename or ev.title or 'ファイル' }}
+                      </a>
+                    {% else %}
+                      <i class="bi bi-sticky text-warning flex-shrink-0"></i>
+                      {% set memo_text = ev.content or '' %}
+                      {% if memo_text|length > 30 %}
+                        <span class="text-truncate d-inline-block text-muted" style="max-width:140px;vertical-align:middle;cursor:pointer;"
+                              data-bs-toggle="popover" data-bs-trigger="click"
+                              data-bs-placement="left" data-bs-content="{{ memo_text }}"
+                              title="{{ ev.title or 'メモ' }}">
+                          {{ ev.title or (memo_text[:28] + '…') }}
+                        </span>
+                        <i class="bi bi-arrows-expand text-muted ms-1" style="font-size:.65rem;cursor:pointer;"></i>
+                      {% else %}
+                        <span class="text-muted" style="vertical-align:middle;">{{ ev.title or memo_text }}</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted" style="font-size:.76rem;">-</span>
+              {% endif %}
+            </td>
             <td>
               <div class="d-flex flex-column gap-1">
                 <div class="d-flex gap-1 justify-content-center align-items-center">
@@ -157,8 +241,10 @@
             <th>スキル</th>
             <th class="text-center">レベル</th>
             <th class="text-center" data-i18n="lbl.status">ステータス</th>
+            <th>エビデンス</th>
             <th data-i18n="lbl.comment">コメント</th>
             <th data-i18n="lbl.handled">対応日</th>
+            <th style="width:120px;">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -176,8 +262,64 @@
                 {{ APPROVAL_STATUS[rec.approval_status] }}
               </span>
             </td>
+            <td style="max-width:200px;">
+              {% set evs = evidence_map.get((rec.user_id, rec.skill_id), []) %}
+              {% if evs %}
+                {% for ev in evs %}
+                  <div class="d-flex align-items-center gap-1 mb-1" style="font-size:.76rem;">
+                    {% if ev.evidence_type == 'url' %}
+                      <i class="bi bi-link-45deg text-primary flex-shrink-0"></i>
+                      <a href="{{ ev.content }}" target="_blank" rel="noopener"
+                         class="text-truncate d-inline-block" style="max-width:150px;" title="{{ ev.content }}">
+                        {{ ev.title or ev.content }}
+                      </a>
+                      <i class="bi bi-box-arrow-up-right text-muted" style="font-size:.65rem;"></i>
+                    {% elif ev.evidence_type == 'file' %}
+                      <i class="bi bi-file-earmark-arrow-down text-success flex-shrink-0"></i>
+                      <a href="/skills/evidence/{{ ev.id }}/download"
+                         class="text-truncate d-inline-block text-success" style="max-width:150px;"
+                         title="{{ ev.original_filename or ev.title or 'ファイル' }}">
+                        {{ ev.original_filename or ev.title or 'ファイル' }}
+                      </a>
+                    {% else %}
+                      <i class="bi bi-sticky text-warning flex-shrink-0"></i>
+                      {% set memo_text = ev.content or '' %}
+                      {% if memo_text|length > 30 %}
+                        <span class="text-truncate d-inline-block text-muted" style="max-width:120px;cursor:pointer;"
+                              data-bs-toggle="popover" data-bs-trigger="click"
+                              data-bs-placement="left" data-bs-content="{{ memo_text }}"
+                              title="{{ ev.title or 'メモ' }}">
+                          {{ ev.title or (memo_text[:28] + '…') }}
+                        </span>
+                        <i class="bi bi-arrows-expand text-muted ms-1" style="font-size:.65rem;"></i>
+                      {% else %}
+                        <span class="text-muted">{{ ev.title or memo_text }}</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted" style="font-size:.76rem;">-</span>
+              {% endif %}
+            </td>
             <td class="text-muted small">{{ rec.approver_comment or '-' }}</td>
             <td class="text-muted small">{{ rec.approved_at|jst }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-xs btn-outline-primary"
+                        style="font-size:.82rem;border-radius:8px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="編集"
+                        onclick="openEditModal({{ rec.id }}, {{ rec.level }}, '{{ (rec.approver_comment or '')|replace("'", "\\'") }}')">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-warning"
+                        style="font-size:.82rem;border-radius:8px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="承認解除"
+                        onclick="revokeApproval({{ rec.id }})">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -266,6 +408,55 @@ function updateBadge() {
   const remaining = document.querySelectorAll('.pending-row').length;
   document.getElementById('pendingBadge').textContent = remaining;
   document.getElementById('visibleCount').textContent = remaining + ' 件';
+}
+
+// ポップオーバー・ツールチップ初期化
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+    new bootstrap.Popover(el, { html: false, sanitize: true });
+  });
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el, { trigger: 'hover' });
+  });
+});
+
+/* ── 承認編集 ── */
+function openEditModal(recordId, level, comment) {
+  document.getElementById('editRecordId').value = recordId;
+  document.getElementById('editLevel').value    = level;
+  document.getElementById('editComment').value  = comment;
+  new bootstrap.Modal(document.getElementById('editApprovalModal')).show();
+}
+
+async function submitEditApproval() {
+  const id      = document.getElementById('editRecordId').value;
+  const level   = document.getElementById('editLevel').value;
+  const comment = document.getElementById('editComment').value;
+  const fd = new FormData();
+  fd.append('level', level);
+  fd.append('comment', comment);
+  const res  = await fetch(`/api/approvals/${id}/edit`, { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.ok) {
+    bootstrap.Modal.getInstance(document.getElementById('editApprovalModal')).hide();
+    showToast('承認内容を更新しました', 'success');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    showToast(data.error || '更新に失敗しました', 'error');
+  }
+}
+
+/* ── 承認解除 ── */
+async function revokeApproval(recordId) {
+  if (!confirm('この承認を解除して「承認待ち」に戻しますか？')) return;
+  const res  = await fetch(`/api/approvals/${recordId}/revoke`, { method: 'POST' });
+  const data = await res.json();
+  if (data.ok) {
+    showToast('承認を解除しました', 'success');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    showToast(data.error || '解除に失敗しました', 'error');
+  }
 }
 </script>
 {% endblock %}

@@ -484,6 +484,26 @@ def group_detail(
         .all()
     )
 
+    # 一人依存スキルアラート（グループメンバー内で習得者が1人以下のスキル）
+    from collections import Counter
+    skill_holder_counts = Counter()
+    for member in members:
+        approved_skills = db.query(models.UserSkillLevel).filter(
+            models.UserSkillLevel.user_id == member.id,
+            models.UserSkillLevel.approval_status == "approved",
+            models.UserSkillLevel.level > 0,
+        ).all()
+        for sl in approved_skills:
+            skill_holder_counts[sl.skill_id] += 1
+
+    spof_skills = []
+    for skill_id_key, count in skill_holder_counts.items():
+        if count <= 1:
+            sk = db.query(models.Skill).filter(models.Skill.id == skill_id_key).first()
+            if sk:
+                spof_skills.append({"skill": sk, "count": count})
+    spof_skills.sort(key=lambda x: x["count"])
+
     return templates.TemplateResponse(request, "group_detail.html", {
         "current_user": user, "group": group,
         "members": members, "skills_by_user": skills_by_user,
@@ -493,4 +513,5 @@ def group_detail(
         "cat_names": cat_names,
         "other_groups": other_groups,
         "transfer_history": transfer_history,
+        "spof_skills": spof_skills[:10],
     })

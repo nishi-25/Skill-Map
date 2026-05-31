@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps推進チーム チーム方針 2026</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --orange:   #F97316;
+  --amber:    #F59E0B;
+  --coral:    #FB923C;
+  --red:      #EF4444;
+  --warm-bg:  #FFF7ED;
+  --warm-bg2: #FFFBEB;
+  --dark:     #431407;
+  --dark2:    #7C2D12;
+  --gray:     #78716C;
+  --text:     #1C0A00;
+  --white:    #FFFFFF;
+}
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic',sans-serif;
+  background: #1C0A00;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.deck { width:100vw; height:100vh; position:relative; }
+
+.slide {
+  display: none;
+  width: 100%; height: 100%;
+  position: absolute; top:0; left:0;
+  animation: fadeUp .4s ease;
+}
+.slide.active { display: flex; flex-direction: column; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ──────────────────────────────
+   SLIDE 1: TITLE
+────────────────────────────── */
+.s-title {
+  background: linear-gradient(135deg, #7C2D12 0%, #C2410C 40%, #EA580C 70%, #F97316 100%);
+  justify-content: center;
+  padding: 60px 80px;
+  position: relative;
+  overflow: hidden;
+}
+.s-title .bg-gear {
+  position: absolute; right: -60px; top: -60px;
+  opacity: .08;
+}
+.s-title .bg-gear2 {
+  position: absolute; left: -40px; bottom: -80px;
+  opacity: .06;
+}
+.eyebrow {
+  font-size: 12px; letter-spacing: 5px;
+  color: #FED7AA; text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.title-main {
+  font-size: 56px; font-weight: 700;
+  color: #fff; line-height: 1.15;
+  margin-bottom: 14px;
+}
+.title-sub {
+  font-size: 20px; color: #FFEDD5;
+  margin-bottom: 36px; line-height: 1.6;
+}
+.tag-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:36px; }
+.tag {
+  display:inline-flex; align-items:center; gap:6px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 20px; padding: 6px 16px;
+  font-size: 13px; color: #fff;
+}
+.meta-row {
+  border-top: 1px solid rgba(255,255,255,.2);
+  padding-top: 20px; font-size: 13px; color: #FED7AA;
+  display:flex; gap:32px;
+}
+
+/* ──────────────────────────────
+   SHARED LAYOUT
+────────────────────────────── */
+.slide-inner {
+  flex: 1; display:flex; flex-direction:column;
+  padding: 48px 72px 80px;
+  overflow: hidden;
+}
+.slide-tag {
+  font-size: 11px; letter-spacing: 3px;
+  color: var(--orange); text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.accent-bar {
+  width: 48px; height: 4px;
+  background: linear-gradient(90deg, var(--orange), var(--amber));
+  border-radius: 2px; margin-bottom: 18px;
+}
+h2 { font-size: 32px; font-weight: 700; color: var(--dark); margin-bottom: 28px; }
+
+/* backgrounds */
+.bg-warm  { background: var(--warm-bg); }
+.bg-warm2 { background: var(--warm-bg2); }
+.bg-orange-grad {
+  background: linear-gradient(160deg, #FFF7ED 0%, #FFEDD5 100%);
+}
+
+/* ──────────────────────────────
+   SLIDE 2: 上位方針
+────────────────────────────── */
+.policy-flow {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 28px;
+}
+.policy-box {
+  flex: 1; background: #fff;
+  border: 2px solid #FDBA74;
+  border-radius: 14px; padding: 20px 18px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(249,115,22,.1);
+}
+.policy-box .icon { font-size: 32px; margin-bottom: 8px; }
+.policy-box .label { font-size: 11px; color: var(--orange); letter-spacing: 2px; margin-bottom: 4px; }
+.policy-box .val { font-size: 14px; font-weight: 700; color: var(--dark); line-height: 1.5; }
+.policy-arrow {
+  flex-shrink: 0; width: 36px; text-align: center;
+  font-size: 22px; color: var(--orange);
+}
+.policy-connect-note {
+  background: linear-gradient(90deg, #FFF7ED, #FFEDD5);
+  border-left: 4px solid var(--orange);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 20px;
+  font-size: 14px; color: var(--dark2);
+  line-height: 1.7;
+}
+
+/* ──────────────────────────────
+   SLIDE 3: 前期振り返り
+────────────────────────────── */
+.review-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; flex: 1;
+}
+.review-card {
+  background: #fff; border-radius: 14px;
+  padding: 22px; box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.review-card .card-head {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.review-card .card-head .icon { font-size: 22px; }
+.review-card .card-head h3 { font-size: 15px; font-weight: 700; color: var(--dark); }
+.review-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 11px; font-size: 13px;
+  color: #44403C; line-height: 1.6;
+}
+.review-item .dot-good {
+  width: 8px; height: 8px; background: #22C55E;
+  border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+}
+.review-item .dot-bad {
+  width: 8px; height: 8px; background: var(--red);
+  border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+}
+.review-item .dot-warn {
+  width: 8px; height: 8px; background: var(--amber);
+  border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+}
+.review-stat {
+  display: flex; justify-content: space-around;
+  background: linear-gradient(90deg,#FFF7ED,#FFEDD5);
+  border-radius: 10px; padding: 14px; margin-top: 8px;
+}
+.review-stat-item { text-align: center; }
+.review-stat-item .num { font-size: 28px; font-weight: 700; color: var(--orange); }
+.review-stat-item .lbl { font-size: 11px; color: var(--gray); }
+
+/* ──────────────────────────────
+   SLIDE 4: MISSION
+────────────────────────────── */
+.mission-row {
+  display: flex; gap: 16px; flex: 1;
+}
+.mission-card {
+  flex: 1; background: #fff;
+  border-radius: 16px; padding: 24px 18px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(249,115,22,.12);
+  border-top: 4px solid var(--orange);
+  display: flex; flex-direction: column; align-items: center;
+  transition: transform .2s;
+}
+.mission-card:nth-child(2) { border-top-color: var(--amber); }
+.mission-card:nth-child(3) { border-top-color: var(--coral); }
+.mission-card:nth-child(4) { border-top-color: #EF4444; }
+.mission-card:nth-child(5) { border-top-color: #A855F7; }
+.mission-card:nth-child(6) { border-top-color: #14B8A6; }
+.mission-card .m-icon { font-size: 36px; margin-bottom: 12px; }
+.mission-card .m-title { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 8px; line-height: 1.4; }
+.mission-card .m-desc { font-size: 11px; color: var(--gray); line-height: 1.65; }
+
+/* ──────────────────────────────
+   SLIDE 5: KPI
+────────────────────────────── */
+.kpi-row {
+  display: flex; gap: 18px; margin-bottom: 20px;
+}
+.kpi-card {
+  flex: 1; background: #fff;
+  border-radius: 14px; padding: 22px 16px;
+  box-shadow: 0 2px 12px rgba(249,115,22,.1);
+  text-align: center; position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--orange), var(--amber));
+}
+.kpi-num { font-size: 44px; font-weight: 700; color: var(--orange); line-height: 1; }
+.kpi-unit { font-size: 18px; font-weight: 400; }
+.kpi-label { font-size: 13px; color: var(--dark); font-weight: 700; margin: 8px 0 4px; }
+.kpi-desc { font-size: 11px; color: var(--gray); line-height: 1.5; }
+
+.kpi-bar-section { background: #fff; border-radius: 14px; padding: 20px 24px; }
+.kpi-bar-section h3 { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 14px; }
+.bar-item { margin-bottom: 12px; }
+.bar-item .bar-label { display:flex; justify-content:space-between; font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+.bar-track { height: 8px; background: #F5F5F4; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--orange), var(--amber)); }
+
+/* ──────────────────────────────
+   SLIDE 6: 重点施策
+────────────────────────────── */
+.施策-grid {
+  display: grid; grid-template-columns: repeat(2,1fr);
+  gap: 14px; flex: 1;
+}
+.施策-card {
+  background: #fff; border-radius: 14px; padding: 20px;
+  box-shadow: 0 2px 10px rgba(249,115,22,.1);
+  display: flex; flex-direction: column;
+}
+.施策-card .s-num {
+  font-size: 11px; letter-spacing: 2px;
+  color: var(--orange); margin-bottom: 8px;
+}
+.施策-card .s-title {
+  font-size: 15px; font-weight: 700; color: var(--dark);
+  margin-bottom: 10px; padding-bottom: 10px;
+  border-bottom: 2px solid #FEE2E2;
+  display: flex; align-items: center; gap: 8px;
+}
+.施策-card .s-items { flex:1; }
+.施策-card .s-item {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 12px; color: #44403C; line-height: 1.6;
+  margin-bottom: 8px;
+}
+.施策-card .s-item::before {
+  content: '▸'; color: var(--orange); flex-shrink:0; margin-top:1px;
+}
+.施策-card .s-tag {
+  display: inline-block; font-size: 10px;
+  background: #FFF7ED; color: var(--orange);
+  border: 1px solid #FDBA74; border-radius: 10px;
+  padding: 2px 8px; margin-top: 8px;
+}
+
+/* ──────────────────────────────
+   SLIDE 7: ACTION PLAN
+────────────────────────────── */
+.gantt-wrap { flex:1; display:flex; flex-direction:column; }
+.gantt-header {
+  display: grid; grid-template-columns: 180px repeat(4,1fr);
+  gap: 0; margin-bottom: 10px;
+}
+.gantt-qtr {
+  text-align: center; font-size: 12px; font-weight: 700;
+  color: var(--orange); padding: 8px;
+  background: #FFF7ED; border-radius: 6px; margin: 0 2px;
+}
+.gantt-qtr .month { font-size: 10px; color: var(--gray); font-weight: 400; }
+.gantt-row {
+  display: grid; grid-template-columns: 180px repeat(4,1fr);
+  gap: 0; margin-bottom: 6px; align-items: center;
+}
+.gantt-label {
+  font-size: 12px; color: var(--dark); font-weight: 600;
+  padding-right: 12px; line-height: 1.4;
+}
+.gantt-cell { padding: 0 2px; }
+.gantt-bar {
+  height: 28px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--orange), var(--amber));
+  display: flex; align-items: center; padding: 0 10px;
+  font-size: 10px; color: #fff; font-weight: 600;
+  white-space: nowrap;
+}
+.gantt-bar.light {
+  background: linear-gradient(90deg, #FDBA74, #FCD34D);
+  color: var(--dark);
+}
+.gantt-bar.outline {
+  background: transparent; border: 2px dashed #FDBA74;
+  color: var(--orange);
+}
+.legend-row { display:flex; gap:20px; margin-top:12px; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color: var(--gray); }
+.legend-dot { width:12px; height:12px; border-radius:3px; }
+
+/* ──────────────────────────────
+   SLIDE 8: 体制
+────────────────────────────── */
+.org-wrap { display:flex; flex-direction:column; align-items:center; flex:1; }
+.org-top {
+  background: linear-gradient(135deg, var(--orange), var(--amber));
+  color: #fff; border-radius: 12px; padding: 14px 40px;
+  font-size: 16px; font-weight: 700; text-align:center;
+  box-shadow: 0 4px 16px rgba(249,115,22,.3);
+}
+.org-line { width: 2px; height: 24px; background: #FDBA74; }
+.org-mid-row { display:flex; gap:20px; align-items:flex-start; }
+.org-mid-line-wrap {
+  display:flex; flex-direction:column; align-items:center;
+}
+.org-mid {
+  background: #fff; border: 2px solid #FDBA74;
+  border-radius: 10px; padding: 12px 20px;
+  text-align:center; font-size: 13px; font-weight: 700;
+  color: var(--dark2);
+  min-width: 140px;
+}
+.org-mid .role { font-size: 10px; color: var(--orange); margin-bottom: 3px; letter-spacing: 1px; }
+.org-mid .name { font-size: 14px; }
+.org-h-line {
+  height: 2px; background: #FDBA74;
+  width: 100%;
+}
+.org-members { display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; justify-content:center; }
+.org-member {
+  background: #FFF7ED; border: 1px solid #FED7AA;
+  border-radius: 8px; padding: 8px 14px;
+  font-size: 12px; color: var(--dark2);
+  text-align:center; line-height: 1.5;
+}
+.org-member .m-role { font-size: 10px; color: var(--orange); }
+.resource-row {
+  display: flex; gap: 16px; margin-top: 20px; width: 100%;
+}
+.resource-box {
+  flex:1; background: #fff; border-radius: 10px;
+  padding: 14px 18px; border-left: 4px solid var(--orange);
+}
+.resource-box:nth-child(2) { border-left-color: var(--amber); }
+.resource-box:nth-child(3) { border-left-color: var(--coral); }
+.resource-box h3 { font-size: 12px; color: var(--orange); margin-bottom: 8px; letter-spacing: 1px; }
+.resource-box ul { list-style: none; }
+.resource-box ul li { font-size: 12px; color: var(--dark); padding: 3px 0; }
+.resource-box ul li::before { content:'• '; color: var(--orange); }
+
+/* ──────────────────────────────
+   SLIDE 9: MESSAGE
+────────────────────────────── */
+.s-message {
+  background: linear-gradient(135deg, #7C2D12 0%, #C2410C 60%, #EA580C 100%);
+}
+.s-message .slide-inner { justify-content: center; align-items: flex-start; }
+.message-quote {
+  font-size: 22px; font-weight: 700; color: #fff;
+  line-height: 1.7; margin-bottom: 28px;
+  border-left: 5px solid var(--amber);
+  padding-left: 24px;
+}
+.message-body {
+  font-size: 15px; color: #FFEDD5;
+  line-height: 1.9; margin-bottom: 32px;
+  max-width: 720px;
+}
+.message-sign {
+  font-size: 16px; color: var(--amber);
+  font-weight: 700;
+}
+.message-deco {
+  position: absolute; right: 60px; top: 50%;
+  transform: translateY(-50%);
+  opacity: .12;
+}
+
+/* ──────────────────────────────
+   NAVIGATION
+────────────────────────────── */
+.nav {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,.9);
+  border: 1px solid #FED7AA;
+  border-radius: 32px; padding: 10px 24px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(249,115,22,.2);
+  z-index: 100;
+}
+.nav button {
+  background: none; border: none;
+  color: var(--orange); font-size: 18px;
+  cursor: pointer; padding: 4px 8px;
+  border-radius: 6px; transition: background .15s;
+}
+.nav button:hover { background: #FFF7ED; }
+.nav button:disabled { color: #D6D3D1; cursor: default; }
+.nav button:disabled:hover { background: none; }
+.prog-dots { display:flex; gap:5px; align-items:center; }
+.prog-dot {
+  width: 5px; height: 5px;
+  background: #D6D3D1; border-radius: 50%;
+  cursor: pointer; transition: all .2s;
+}
+.prog-dot.active {
+  background: var(--orange); width: 18px; border-radius: 3px;
+}
+.prog-label { font-size: 11px; color: var(--gray); min-width: 44px; text-align:center; }
+
+/* ──────────────────────────────
+   SLIDE NUMBER
+────────────────────────────── */
+.slide-no {
+  position: absolute; top: 20px; right: 36px;
+  font-size: 11px; color: #A8A29E; letter-spacing: 2px;
+}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ═══════════════════════════════
+     SLIDE 1: 表紙
+═══════════════════════════════ -->
+<div class="slide s-title active">
+  <!-- 背景ギア装飾 -->
+  <svg class="bg-gear" width="420" height="420" viewBox="0 0 100 100">
+    <path fill="white" d="M43.3 5.8l-1.6 6.2a34.2 34.2 0 0 0-8.2 3.4L28 12.6l-9.9 9.9 2.8 5.5a34.2 34.2 0 0 0-3.4 8.2l-6.2 1.6v14l6.2 1.6a34.2 34.2 0 0 0 3.4 8.2l-2.8 5.5 9.9 9.9 5.5-2.8a34.2 34.2 0 0 0 8.2 3.4l1.6 6.2h14l1.6-6.2a34.2 34.2 0 0 0 8.2-3.4l5.5 2.8 9.9-9.9-2.8-5.5a34.2 34.2 0 0 0 3.4-8.2l6.2-1.6v-14l-6.2-1.6a34.2 34.2 0 0 0-3.4-8.2l2.8-5.5-9.9-9.9-5.5 2.8a34.2 34.2 0 0 0-8.2-3.4l-1.6-6.2h-14zm7 20.6a23.6 23.6 0 1 1 0 47.2 23.6 23.6 0 0 1 0-47.2z"/>
+  </svg>
+  <svg class="bg-gear2" width="300" height="300" viewBox="0 0 100 100">
+    <path fill="white" d="M43.3 5.8l-1.6 6.2a34.2 34.2 0 0 0-8.2 3.4L28 12.6l-9.9 9.9 2.8 5.5a34.2 34.2 0 0 0-3.4 8.2l-6.2 1.6v14l6.2 1.6a34.2 34.2 0 0 0 3.4 8.2l-2.8 5.5 9.9 9.9 5.5-2.8a34.2 34.2 0 0 0 8.2 3.4l1.6 6.2h14l1.6-6.2a34.2 34.2 0 0 0 8.2-3.4l5.5 2.8 9.9-9.9-2.8-5.5a34.2 34.2 0 0 0 3.4-8.2l6.2-1.6v-14l-6.2-1.6a34.2 34.2 0 0 0-3.4-8.2l2.8-5.5-9.9-9.9-5.5 2.8a34.2 34.2 0 0 0-8.2-3.4l-1.6-6.2h-14zm7 20.6a23.6 23.6 0 1 1 0 47.2 23.6 23.6 0 0 1 0-47.2z"/>
+  </svg>
+
+  <div class="eyebrow">Vehicle ECU Software Development · 2026</div>
+  <div class="title-main">DevOps推進チーム<br>チーム方針</div>
+  <div class="title-sub">
+    テスト自動化 × テスト品質管理 × 開発効率向上<br>
+    ECUソフトウェア開発を次のステージへ
+  </div>
+  <div class="tag-row">
+    <span class="tag">🔧 HILS環境</span>
+    <span class="tag">⚙️ ecu.test</span>
+    <span class="tag">🚗 車両 ECU</span>
+    <span class="tag">📊 テスト管理ツール</span>
+  </div>
+  <div class="meta-row">
+    <span>DevOps推進チーム</span>
+    <span>2026年度</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 2: 上位方針との連携
+═══════════════════════════════ -->
+<div class="slide bg-warm">
+  <div class="slide-no">02 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Company Policy Alignment</div>
+    <div class="accent-bar"></div>
+    <h2>上位方針との連携</h2>
+
+    <!-- フロー図 -->
+    <div class="policy-flow" style="margin-bottom:20px;">
+      <div class="policy-box">
+        <div class="icon">🏢</div>
+        <div class="label">会社方針</div>
+        <div class="val">製品品質・開発速度の<br>グローバル競争力強化</div>
+      </div>
+      <div class="policy-arrow">▶</div>
+      <div class="policy-box">
+        <div class="icon">🚗</div>
+        <div class="label">車両開発部方針</div>
+        <div class="val">ECUソフトウェアの<br>品質確保・開発リードタイム短縮</div>
+      </div>
+      <div class="policy-arrow">▶</div>
+      <div class="policy-box" style="border-color:var(--orange); background:linear-gradient(135deg,#FFF7ED,#FFEDD5);">
+        <div class="icon">⚡</div>
+        <div class="label" style="color:var(--orange);">DevOps推進チーム</div>
+        <div class="val">テスト自動化・品質管理基盤の<br>構築・推進</div>
+      </div>
+    </div>
+
+    <!-- 貢献ポイント -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+      <div style="background:#fff; border-radius:12px; padding:18px; border-top:3px solid var(--orange);">
+        <div style="font-size:28px; margin-bottom:8px;">⚡</div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">開発速度への貢献</div>
+        <div style="font-size:12px; color:var(--gray); line-height:1.6;">自動テストによるフィードバックループ短縮で、ECUソフト変更を迅速に検証できる環境を提供</div>
+      </div>
+      <div style="background:#fff; border-radius:12px; padding:18px; border-top:3px solid var(--amber);">
+        <div style="font-size:28px; margin-bottom:8px;">🛡️</div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">品質確保への貢献</div>
+        <div style="font-size:12px; color:var(--gray); line-height:1.6;">テスト管理ツールによる品質の可視化とトレンド分析で、不具合の早期検出・再発防止を実現</div>
+      </div>
+      <div style="background:#fff; border-radius:12px; padding:18px; border-top:3px solid var(--coral);">
+        <div style="font-size:28px; margin-bottom:8px;">🌐</div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">競争力への貢献</div>
+        <div style="font-size:12px; color:var(--gray); line-height:1.6;">HILS×自動化の整備で、より多くのテストシナリオを短時間に検証し、製品信頼性を高める</div>
+      </div>
+    </div>
+
+    <div class="policy-connect-note" style="margin-top:16px;">
+      💡 <strong>DevOps推進チームは「品質」と「速度」を両立させる土台を作ることで、車両開発部全体の目標達成を支えます。</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 3: 前期の振り返り
+═══════════════════════════════ -->
+<div class="slide bg-warm2">
+  <div class="slide-no">03 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Last Year's Review</div>
+    <div class="accent-bar"></div>
+    <h2>前期の振り返り</h2>
+
+    <!-- サマリー数値 -->
+    <div class="review-stat" style="margin-bottom:16px;">
+      <div class="review-stat-item">
+        <div class="num">✅</div>
+        <div class="lbl">AtomS3 × 物理センサ<br>E2E実機自動判定</div>
+      </div>
+      <div class="review-stat-item">
+        <div class="num" style="color:var(--amber);">✅</div>
+        <div class="lbl">完成度検査<br>自動化スクリプト作成</div>
+      </div>
+      <div class="review-stat-item">
+        <div class="num" style="color:var(--red);">⚠️</div>
+        <div class="lbl">スクリプト精度不足<br>→手動検査に戻る</div>
+      </div>
+      <div class="review-stat-item">
+        <div class="num" style="color:var(--coral);">🔄</div>
+        <div class="lbl">自動化環境<br>導入プロジェクト実施</div>
+      </div>
+    </div>
+
+    <div class="review-grid">
+      <div class="review-card">
+        <div class="card-head">
+          <div class="icon">✅</div>
+          <h3>成果・達成できたこと</h3>
+        </div>
+        <div class="review-item"><div class="dot-good"></div><span><strong>AtomS3 × 物理センサ E2E：</strong>実機の挙動をセンサで取得し、自動判定する環境を構築・実現した</span></div>
+        <div class="review-item"><div class="dot-good"></div><span><strong>完成度検査の自動化：</strong>対象プロジェクトへ自動化環境を導入し、完成度検査テストスクリプトを作成した</span></div>
+        <div class="review-item"><div class="dot-good"></div><span><strong>自動化基盤の知見獲得：</strong>ecu.testとHILSを組み合わせた自動テスト構成の経験・ノウハウを蓄積した</span></div>
+      </div>
+      <div class="review-card">
+        <div class="card-head">
+          <div class="icon">⚠️</div>
+          <h3>課題・うまくいかなかったこと</h3>
+        </div>
+        <div class="review-item"><div class="dot-bad"></div><span><strong>テストスクリプトの精度不足：</strong>作成した完成度検査スクリプトが実用精度に達せず、結果として手動検査に戻らざるを得なかった</span></div>
+        <div class="review-item"><div class="dot-bad"></div><span><strong>自動化の継続実行ができなかった：</strong>精度問題により、リグレッションテストとして継続実行する体制を確立できなかった</span></div>
+        <div class="review-item"><div class="dot-warn"></div><span><strong>実行結果の管理基盤が未整備：</strong>テスト結果を一元管理・追跡できるツールがなく、品質トレンドの把握が困難だった</span></div>
+      </div>
+      <div class="review-card" style="grid-column:1/3; background:linear-gradient(135deg,#FFF7ED,#FFEDD5); border:1px solid #FDBA74;">
+        <div class="card-head">
+          <div class="icon">🎯</div>
+          <h3>前期の反省を踏まえた今期の方向性</h3>
+        </div>
+        <div style="display:flex; gap:16px;">
+          <div class="review-item" style="flex:1;"><div class="dot-good"></div><span><strong>精度向上が最優先：</strong>昨年作ったスクリプトを分析し、誤判定・不安定要因を特定して精度を改善。継続実行できるレベルへ</span></div>
+          <div class="review-item" style="flex:1;"><div class="dot-good"></div><span><strong>リグレッションの仕組みを作る：</strong>ECUソフトがリプロされたタイミングを差分トリガーとし、自動でテストが走る仕組みを実現する</span></div>
+          <div class="review-item" style="flex:1;"><div class="dot-good"></div><span><strong>結果の見える化：</strong>テスト管理ツールを作成し、実行履歴・合否トレンドを蓄積・可視化。品質をデータで語れる状態にする</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 4: ミッション
+═══════════════════════════════ -->
+<div class="slide bg-orange-grad">
+  <div class="slide-no">04 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Mission & Role</div>
+    <div class="accent-bar"></div>
+    <h2>チームのミッション・役割</h2>
+
+    <!-- ミッションステートメント -->
+    <div style="background:linear-gradient(135deg,var(--orange),var(--amber)); border-radius:14px; padding:18px 24px; margin-bottom:20px; text-align:center;">
+      <div style="font-size:18px; font-weight:700; color:#fff; line-height:1.6;">
+        「テストの精度を上げ、継続的に動かし続けることで、<br>
+        <span style="font-size:22px;">ECU開発チームが安心して変更できる環境を作る</span>」
+      </div>
+    </div>
+
+    <div class="mission-row">
+      <div class="mission-card">
+        <div class="m-icon">⚡</div>
+        <div class="m-title">テストの<br>効率化</div>
+        <div class="m-desc">ecu.testスクリプトで反復テストを自動化。エンジニアをより創造的な業務へ</div>
+      </div>
+      <div class="mission-card">
+        <div class="m-icon">🛡️</div>
+        <div class="m-title">テスト品質の<br>維持・向上</div>
+        <div class="m-desc">カバレッジ可視化と管理ツールで品質を定量的に把握・継続改善</div>
+      </div>
+      <div class="mission-card">
+        <div class="m-icon">🚀</div>
+        <div class="m-title">開発効率の<br>向上</div>
+        <div class="m-desc">CI/CDパイプラインでフィードバックループを短縮し開発サイクルを加速</div>
+      </div>
+      <div class="mission-card">
+        <div class="m-icon">🔍</div>
+        <div class="m-title">早期バグ<br>検出</div>
+        <div class="m-desc">継続的自動テストでリグレッションを即検出。修正コストを最小化</div>
+      </div>
+      <div class="mission-card">
+        <div class="m-icon">📖</div>
+        <div class="m-title">標準化・<br>ナレッジ共有</div>
+        <div class="m-desc">手順・スクリプトを標準化し、全チームへ展開。属人化を解消</div>
+      </div>
+      <div class="mission-card">
+        <div class="m-icon">📊</div>
+        <div class="m-title">データ駆動の<br>意思決定</div>
+        <div class="m-desc">テスト結果・トレンドを可視化し、エビデンスベースで品質を報告</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 5: 今期の目標・KPI
+═══════════════════════════════ -->
+<div class="slide bg-warm">
+  <div class="slide-no">05 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Goals & KPI</div>
+    <div class="accent-bar"></div>
+    <h2>今期の目標・KPI</h2>
+
+    <!-- 4テーマ別KPI -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; flex:1;">
+
+      <!-- テーマ1 -->
+      <div style="background:#fff; border-radius:14px; padding:18px; border-left:4px solid var(--orange); box-shadow:0 2px 10px rgba(249,115,22,.1);">
+        <div style="font-size:11px; color:var(--orange); letter-spacing:2px; margin-bottom:6px;">THEME 01 — テストスクリプト精度向上</div>
+        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+          <span style="font-size:38px; font-weight:700; color:var(--orange);">95</span><span style="font-size:16px; color:var(--orange);">%</span>
+          <span style="font-size:12px; color:var(--gray);">以上</span>
+        </div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">テストスクリプト合格判定精度</div>
+        <div style="font-size:11px; color:var(--gray); line-height:1.6;">誤判定・不安定要因を分析・修正し、信頼できる自動判定を実現。<br>リグレッション差分テスト（ECUリプロ時トリガー）の継続実行を確立する。</div>
+        <!-- 嬉しさ -->
+        <div style="margin-top:10px; background:#FFF7ED; border-radius:8px; padding:8px 12px; font-size:11px; color:var(--dark2);">
+          📊 <strong>嬉しさ：</strong>手動検査 → 自動化で<strong style="color:var(--orange);">検査工数を約70%削減</strong>見込み
+        </div>
+      </div>
+
+      <!-- テーマ2 -->
+      <div style="background:#fff; border-radius:14px; padding:18px; border-left:4px solid var(--amber); box-shadow:0 2px 10px rgba(245,158,11,.1);">
+        <div style="font-size:11px; color:var(--amber); letter-spacing:2px; margin-bottom:6px;">THEME 02 — テスト管理ツール作成</div>
+        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+          <span style="font-size:38px; font-weight:700; color:var(--amber);">100</span><span style="font-size:16px; color:var(--amber);">%</span>
+        </div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">テスト実行結果の自動登録率</div>
+        <div style="font-size:11px; color:var(--gray); line-height:1.6;">ecu.test実行結果を自動収集・一元管理。Pass/Fail/履歴トレンドをダッシュボードで可視化し、品質をデータで語れる状態を作る。</div>
+        <div style="margin-top:10px; background:#FFFBEB; border-radius:8px; padding:8px 12px; font-size:11px; color:var(--dark2);">
+          📊 <strong>嬉しさ：</strong>品質状態を<strong style="color:var(--amber);">いつでも即座に確認・報告</strong>できる
+        </div>
+      </div>
+
+      <!-- テーマ3 -->
+      <div style="background:#fff; border-radius:14px; padding:18px; border-left:4px solid var(--coral); box-shadow:0 2px 10px rgba(251,146,60,.1);">
+        <div style="font-size:11px; color:var(--coral); letter-spacing:2px; margin-bottom:6px;">THEME 03 — ナビ自動操作 E2Eテスト環境</div>
+        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+          <span style="font-size:38px; font-weight:700; color:var(--coral);">🗺️</span>
+          <span style="font-size:14px; font-weight:700; color:var(--coral);">自動操作<br>環境実現</span>
+        </div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">カーナビの自動操作 × E2Eテスト構築</div>
+        <div style="font-size:11px; color:var(--gray); line-height:1.6;">ナビUIを自動操作させてE2Eの挙動検証を実現。手動では毎回30分以上かかる操作シナリオを自動化する。</div>
+        <div style="margin-top:10px; background:#FFF7ED; border-radius:8px; padding:8px 12px; font-size:11px; color:var(--dark2);">
+          📊 <strong>嬉しさ：</strong>手動30分/回 → 自動<strong style="color:var(--coral);">5分/回・毎日実行</strong>可能に
+        </div>
+      </div>
+
+      <!-- テーマ4 -->
+      <div style="background:#fff; border-radius:14px; padding:18px; border-left:4px solid #3B82F6; box-shadow:0 2px 10px rgba(59,130,246,.1);">
+        <div style="font-size:11px; color:#3B82F6; letter-spacing:2px; margin-bottom:6px;">THEME 04 — テスト自動化SDK整備</div>
+        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+          <span style="font-size:38px; font-weight:700; color:#3B82F6;">∞</span>
+          <span style="font-size:13px; font-weight:700; color:#3B82F6;">チームへ展開</span>
+        </div>
+        <div style="font-size:13px; font-weight:700; color:var(--dark); margin-bottom:6px;">自動化環境を他チームが即導入できるSDKとして提供</div>
+        <div style="font-size:11px; color:var(--gray); line-height:1.6;">ecu.test（Linux版）＋Docker＋スクリプトテンプレートをパッケージ化。他のECU開発チームが <code style="background:#EFF6FF; padding:1px 4px; border-radius:3px; color:#3B82F6;">docker compose up</code> 一発で自動化環境を即スタートできる共通基盤を構築する。</div>
+        <div style="margin-top:10px; background:#EFF6FF; border-radius:8px; padding:8px 12px; font-size:11px; color:#1E3A5F;">
+          📊 <strong>嬉しさ：</strong>新プロジェクトの自動化導入 <strong style="color:#3B82F6;">半日〜1日 → 数分</strong>・導入チームが増えるほど価値↑
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 6: 重点施策
+═══════════════════════════════ -->
+<div class="slide bg-warm2">
+  <div class="slide-no">06 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Key Initiatives</div>
+    <div class="accent-bar"></div>
+    <h2>重点施策・戦略</h2>
+
+    <div class="施策-grid">
+
+      <!-- 01 テストスクリプト精度向上 + リグレッション -->
+      <div class="施策-card">
+        <div class="s-num">INITIATIVE 01</div>
+        <div class="s-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          テストスクリプト精度向上 &amp; リグレッション構築
+        </div>
+        <div class="s-items">
+          <div class="s-item">前期スクリプトの誤判定要因を分析・特定し精度95%以上へ改善</div>
+          <div class="s-item">ECUソフトのリプロ（書き換え）を差分検知してテストを自動トリガー</div>
+          <div class="s-item">差分テストの結果を蓄積し、リグレッションとして継続実行できる仕組みを整備</div>
+          <div class="s-item">テストケースのモジュール化・安定化（環境依存の排除）</div>
+        </div>
+        <!-- リグレッションフロー -->
+        <div style="background:#FFF7ED; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:10px; display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+          <span style="background:var(--orange); color:#fff; border-radius:4px; padding:2px 6px;">ECUリプロ</span>
+          <span style="color:var(--orange);">→</span>
+          <span style="background:#FDBA74; color:#fff; border-radius:4px; padding:2px 6px;">差分検知</span>
+          <span style="color:var(--orange);">→</span>
+          <span style="background:var(--orange); color:#fff; border-radius:4px; padding:2px 6px; font-weight:700;">自動テスト起動</span>
+          <span style="color:var(--orange);">→</span>
+          <span style="background:#22C55E; color:#fff; border-radius:4px; padding:2px 6px;">結果通知</span>
+        </div>
+        <span class="s-tag">ecu.test / HILS</span>
+      </div>
+
+      <!-- 02 テスト管理ツール -->
+      <div class="施策-card" style="border-top-color:var(--amber);">
+        <div class="s-num">INITIATIVE 02</div>
+        <div class="s-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          テスト実行結果 管理ツール作成
+        </div>
+        <div class="s-items">
+          <div class="s-item">ecu.test実行結果（Pass/Fail/Error）の自動収集・登録</div>
+          <div class="s-item">テスト結果一覧・合否トレンドグラフのダッシュボード</div>
+          <div class="s-item">ECUソフトバージョン × テスト結果の紐付け管理</div>
+          <div class="s-item">品質レポートの自動生成（週次・月次）</div>
+        </div>
+        <!-- ダッシュボードイメージ -->
+        <div style="background:#FFFBEB; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:10px;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div style="flex:1; background:#fff; border-radius:4px; padding:4px 6px; text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:var(--amber);">●</div>
+              <div>Pass率</div>
+            </div>
+            <div style="flex:1; background:#fff; border-radius:4px; padding:4px 6px; text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:var(--red);">●</div>
+              <div>Fail履歴</div>
+            </div>
+            <div style="flex:1; background:#fff; border-radius:4px; padding:4px 6px; text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:#22C55E;">↗</div>
+              <div>トレンド</div>
+            </div>
+          </div>
+        </div>
+        <span class="s-tag">自社開発ツール</span>
+      </div>
+
+      <!-- 03 ナビ自動操作 E2Eテスト -->
+      <div class="施策-card" style="border-top-color:var(--coral);">
+        <div class="s-num">INITIATIVE 03</div>
+        <div class="s-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FB923C" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+          ナビ自動操作 × E2Eテスト環境の実現
+        </div>
+        <div class="s-items">
+          <div class="s-item">カーナビUIの自動操作スクリプトを作成（操作シーケンス再現）</div>
+          <div class="s-item">実機挙動（ナビ動作）をセンサ・画像判定で自動判定</div>
+          <div class="s-item">手動30分の操作シナリオを自動化し毎日実行可能な体制へ</div>
+          <div class="s-item">AtomS3や物理センサを引き続き活用し精度向上</div>
+        </div>
+        <!-- 嬉しさ数値化 -->
+        <div style="background:#FFF7ED; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:10px; color:var(--dark2);">
+          <div style="font-weight:700; margin-bottom:4px; color:var(--coral);">📊 嬉しさの数値化</div>
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1; text-align:center; background:#fff; border-radius:4px; padding:4px;">
+              <div style="font-size:13px; font-weight:700; color:var(--coral);">30min→5min</div>
+              <div>1回あたりの実行時間</div>
+            </div>
+            <div style="flex:1; text-align:center; background:#fff; border-radius:4px; padding:4px;">
+              <div style="font-size:13px; font-weight:700; color:var(--coral);">週1→毎日</div>
+              <div>実行頻度</div>
+            </div>
+          </div>
+        </div>
+        <span class="s-tag">AtomS3 / 実機E2E</span>
+      </div>
+
+      <!-- 04 テスト自動化SDK -->
+      <div class="施策-card" style="border-top-color:#3B82F6;">
+        <div class="s-num">INITIATIVE 04</div>
+        <div class="s-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          テスト自動化SDKの整備・他チーム展開
+        </div>
+        <div class="s-items">
+          <div class="s-item">ecu.test（Linux版）＋Dockerを組み合わせたSDKを自チームで構築</div>
+          <div class="s-item">テストスクリプトのテンプレート・共通ライブラリをSDKに同梱</div>
+          <div class="s-item">他のECU開発チームへ提供し、新プロジェクトが即スタートできる環境を実現</div>
+          <div class="s-item">導入チームからのフィードバックをSDKに反映し、継続的に改善</div>
+        </div>
+        <!-- SDKイメージ図 -->
+        <div style="background:#EFF6FF; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:10px; color:#1E3A5F;">
+          <div style="font-weight:700; margin-bottom:5px; color:#3B82F6;">📦 SDK構成イメージ</div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <span style="background:#fff; border:1px solid #93C5FD; border-radius:4px; padding:2px 7px;">🐳 ecu.test Docker</span>
+            <span style="background:#fff; border:1px solid #93C5FD; border-radius:4px; padding:2px 7px;">📄 スクリプトテンプレ</span>
+            <span style="background:#fff; border:1px solid #93C5FD; border-radius:4px; padding:2px 7px;">🔧 共通ライブラリ</span>
+            <span style="background:#fff; border:1px solid #93C5FD; border-radius:4px; padding:2px 7px;">📖 クイックスタート</span>
+          </div>
+          <div style="margin-top:6px; color:var(--dark2);">→ 他チームは <strong style="color:#3B82F6;">docker compose up</strong> だけで即スタート</div>
+        </div>
+        <span class="s-tag" style="border-color:#93C5FD; color:#3B82F6; background:#EFF6FF;">ecu.test Linux / Docker / 横展開</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 7: アクションプラン
+═══════════════════════════════ -->
+<div class="slide bg-warm">
+  <div class="slide-no">07 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Action Plan</div>
+    <div class="accent-bar"></div>
+    <h2>アクションプラン・ロードマップ</h2>
+
+    <div class="gantt-wrap">
+      <div class="gantt-header">
+        <div></div>
+        <div class="gantt-qtr">Q1（4-6月）<div class="month">基盤整備フェーズ</div></div>
+        <div class="gantt-qtr">Q2（7-9月）<div class="month">自動化展開フェーズ</div></div>
+        <div class="gantt-qtr">Q3（10-12月）<div class="month">拡大・改善フェーズ</div></div>
+        <div class="gantt-qtr">Q4（1-3月）<div class="month">定着・高度化フェーズ</div></div>
+      </div>
+
+      <!-- テーマ01 -->
+      <div class="gantt-row">
+        <div class="gantt-label">🔧 ①スクリプト精度向上<br><span style="font-size:10px;color:var(--gray);">リグレッション構築</span></div>
+        <div class="gantt-cell"><div class="gantt-bar">誤判定要因分析・修正</div></div>
+        <div class="gantt-cell"><div class="gantt-bar">リプロ差分トリガー実装</div></div>
+        <div class="gantt-cell"><div class="gantt-bar light">精度95%達成・継続実行</div></div>
+        <div class="gantt-cell"><div class="gantt-bar light">安定運用・追加ケース</div></div>
+      </div>
+
+      <!-- テーマ02 -->
+      <div class="gantt-row">
+        <div class="gantt-label">🖥️ ②テスト管理ツール<br><span style="font-size:10px;color:var(--gray);">実行結果の一元管理</span></div>
+        <div class="gantt-cell"><div class="gantt-bar">要件定義・設計</div></div>
+        <div class="gantt-cell"><div class="gantt-bar">ecu.test連携実装・β版</div></div>
+        <div class="gantt-cell"><div class="gantt-bar">ダッシュボード・正式版</div></div>
+        <div class="gantt-cell"><div class="gantt-bar light">レポート自動化・改善</div></div>
+      </div>
+
+      <!-- テーマ03 -->
+      <div class="gantt-row">
+        <div class="gantt-label">🗺️ ③ナビ自動操作 E2E<br><span style="font-size:10px;color:var(--gray);">嬉しさ数値化込み</span></div>
+        <div class="gantt-cell"><div class="gantt-bar outline">操作シーケンス設計</div></div>
+        <div class="gantt-cell"><div class="gantt-bar">自動操作スクリプト作成</div></div>
+        <div class="gantt-cell"><div class="gantt-bar">実機E2E自動判定・検証</div></div>
+        <div class="gantt-cell"><div class="gantt-bar light">毎日実行体制・定着</div></div>
+      </div>
+
+      <!-- テーマ04 -->
+      <div class="gantt-row">
+        <div class="gantt-label">📦 ④テスト自動化SDK<br><span style="font-size:10px;color:var(--gray);">他チーム横展開</span></div>
+        <div class="gantt-cell"><div class="gantt-bar outline" style="border-color:#93C5FD; color:#3B82F6;">SDK設計・ecu.test Docker化</div></div>
+        <div class="gantt-cell"><div class="gantt-bar" style="background:linear-gradient(90deg,#3B82F6,#60A5FA);">テンプレ・ライブラリ整備</div></div>
+        <div class="gantt-cell"><div class="gantt-bar" style="background:linear-gradient(90deg,#3B82F6,#60A5FA);">他チームへ提供・初期展開</div></div>
+        <div class="gantt-cell"><div class="gantt-bar outline" style="border-color:#93C5FD; color:#3B82F6;">FB反映・改善</div></div>
+      </div>
+
+      <!-- マイルストーン -->
+      <div class="gantt-row">
+        <div class="gantt-label">📊 評価・報告</div>
+        <div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar" style="background:#22C55E;">Q2 中間評価</div></div>
+        <div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar" style="background:#22C55E;">年度末 KPI評価</div></div>
+      </div>
+    </div>
+
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,var(--orange),var(--amber));"></div> 主要活動</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#FDBA74,#FCD34D);"></div> 継続・拡大</div>
+      <div class="legend-item"><div class="legend-dot" style="background:transparent; border:2px dashed #FDBA74;"></div> 計画・検討</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22C55E;"></div> マイルストーン</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 8: 体制・リソース
+═══════════════════════════════ -->
+<div class="slide bg-warm2">
+  <div class="slide-no">08 / 09</div>
+  <div class="slide-inner">
+    <div class="slide-tag">Team Structure</div>
+    <div class="accent-bar"></div>
+    <h2>チーム体制・役割分担</h2>
+
+    <!-- 組織図 -->
+    <div class="org-wrap">
+      <div class="org-top">DevOps推進チーム リーダー</div>
+      <div class="org-line"></div>
+
+      <div style="display:flex; justify-content:center; gap:60px; position:relative;">
+        <!-- 横線 -->
+        <div style="position:absolute; top:0; left:18%; right:18%; height:2px; background:#FDBA74;"></div>
+
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div class="org-line"></div>
+          <div class="org-mid">
+            <div class="role">AUTOMATION</div>
+            <div class="name">🔧 自動化担当</div>
+          </div>
+          <div class="org-line"></div>
+          <div class="org-members">
+            <div class="org-member"><div class="m-role">ecu.test</div>スクリプト作成・保守</div>
+            <div class="org-member"><div class="m-role">HILS</div>環境構築・安定化</div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div class="org-line"></div>
+          <div class="org-mid">
+            <div class="role">TOOL DEV</div>
+            <div class="name">🖥️ ツール開発担当</div>
+          </div>
+          <div class="org-line"></div>
+          <div class="org-members">
+            <div class="org-member"><div class="m-role">Backend</div>データ収集・API</div>
+            <div class="org-member"><div class="m-role">Frontend</div>ダッシュボード</div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div class="org-line"></div>
+          <div class="org-mid">
+            <div class="role">EXPANSION</div>
+            <div class="name">📖 展開・標準化担当</div>
+          </div>
+          <div class="org-line"></div>
+          <div class="org-members">
+            <div class="org-member"><div class="m-role">Guide</div>ガイドライン策定</div>
+            <div class="org-member"><div class="m-role">Support</div>各チームサポート</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="resource-row">
+        <div class="resource-box">
+          <h3>🛠 TOOLS & ENV</h3>
+          <ul>
+            <li>ecu.test ライセンス</li>
+            <li>HILS ラック（共用）</li>
+            <li>CI/CDサーバー</li>
+          </ul>
+        </div>
+        <div class="resource-box">
+          <h3>👥 COLLABORATION</h3>
+          <ul>
+            <li>週次チームMTG</li>
+            <li>月次KPIレビュー</li>
+            <li>四半期報告会</li>
+          </ul>
+        </div>
+        <div class="resource-box">
+          <h3>🤝 PARTNER TEAMS</h3>
+          <ul>
+            <li>ECU開発チーム×4</li>
+            <li>検証・品証チーム</li>
+            <li>インフラ担当</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SLIDE 9: メッセージ
+═══════════════════════════════ -->
+<div class="slide s-message">
+  <div class="slide-no" style="color:#FED7AA;">09 / 09</div>
+
+  <!-- 装飾 -->
+  <div class="message-deco">
+    <svg width="320" height="320" viewBox="0 0 100 100">
+      <path fill="white" d="M43.3 5.8l-1.6 6.2a34.2 34.2 0 0 0-8.2 3.4L28 12.6l-9.9 9.9 2.8 5.5a34.2 34.2 0 0 0-3.4 8.2l-6.2 1.6v14l6.2 1.6a34.2 34.2 0 0 0 3.4 8.2l-2.8 5.5 9.9 9.9 5.5-2.8a34.2 34.2 0 0 0 8.2 3.4l1.6 6.2h14l1.6-6.2a34.2 34.2 0 0 0 8.2-3.4l5.5 2.8 9.9-9.9-2.8-5.5a34.2 34.2 0 0 0 3.4-8.2l6.2-1.6v-14l-6.2-1.6a34.2 34.2 0 0 0-3.4-8.2l2.8-5.5-9.9-9.9-5.5 2.8a34.2 34.2 0 0 0-8.2-3.4l-1.6-6.2h-14zm7 20.6a23.6 23.6 0 1 1 0 47.2 23.6 23.6 0 0 1 0-47.2z"/>
+    </svg>
+  </div>
+
+  <div class="slide-inner" style="justify-content:center;">
+    <div class="slide-tag" style="color:#FCD34D;">Message to the Team</div>
+    <div class="accent-bar" style="background:linear-gradient(90deg,var(--amber),#FCD34D);"></div>
+    <h2 style="color:#fff;">メンバーへのメッセージ</h2>
+
+    <div class="message-quote">
+      「昨年、精度が出なくて手動に戻った。<br>
+      それは失敗ではなく、<span style="color:var(--amber);">何が必要かを学んだ一年</span>です。<br>
+      今年は、その答えを形にする年にしましょう。」
+    </div>
+
+    <div class="message-body">
+      前期はAtomS3と物理センサでE2E自動判定を実現し、完成度検査の自動化にも挑みました。<br>
+      精度が届かず手動に戻った悔しさは、今期の施策に全部盛り込みました。<br><br>
+      今期の4テーマ ── <strong style="color:#FCD34D;">スクリプト精度向上・テスト管理ツール・ナビE2Eテスト・Docker化</strong> ── は<br>
+      どれも「継続的に自動テストが動き続ける環境」に向かっています。<br><br>
+      一つひとつは地味に見えても、積み上げが開発チーム全体の安心につながります。<br>
+      今期も一緒にやりきりましょう。
+    </div>
+
+    <div class="message-sign">— DevOps推進チーム リーダー</div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <button id="prev" onclick="go(-1)" disabled>&#8592;</button>
+  <div class="prog-dots" id="dots"></div>
+  <span class="prog-label" id="lbl">1 / 9</span>
+  <button id="next" onclick="go(1)">&#8594;</button>
+</nav>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let cur = 0;
+const dots = document.getElementById('dots');
+
+for(let i=0;i<total;i++){
+  const d=document.createElement('div');
+  d.className='prog-dot'+(i===0?' active':'');
+  d.onclick=()=>moveTo(i);
+  dots.appendChild(d);
+}
+
+function moveTo(n){
+  slides[cur].classList.remove('active');
+  dots.children[cur].classList.remove('active');
+  cur=n;
+  slides[cur].classList.add('active');
+  dots.children[cur].classList.add('active');
+  document.getElementById('lbl').textContent=(cur+1)+' / '+total;
+  document.getElementById('prev').disabled=cur===0;
+  document.getElementById('next').disabled=cur===total-1;
+}
+function go(d){ if(cur+d>=0&&cur+d<total) moveTo(cur+d); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ') go(1);
+  if(e.key==='ArrowLeft') go(-1);
+});
+</script>
+</body>
+</html>

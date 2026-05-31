@@ -174,8 +174,8 @@
             </span>
           </td>
           {% for lv in sk.levels %}
-          {% set lv_labels = {0:'', 1:'学習中', 2:'基礎', 3:'実務可', 4:'習熟'} %}
-          <td class="lv-cell lv-{{ lv }}" title="Lv{{ lv }}: {{ ['未申告','学習中','基礎習得','実務可','習熟'][lv] }}">
+          {% set lv_labels = {0:'', 1:'入門', 2:'実務可', 3:'指導可', 4:'エキスパート'} %}
+          <td class="lv-cell lv-{{ lv }}" title="Lv{{ lv }}: {{ ['未申告','入門','実務可','指導可','エキスパート'][lv] }}">
             <div style="font-size:.78rem;font-weight:700;line-height:1;">{{ lv if lv > 0 else '-' }}</div>
             <div style="font-size:.58rem;opacity:.85;line-height:1;margin-top:1px;">{{ lv_labels[lv] }}</div>
           </td>
