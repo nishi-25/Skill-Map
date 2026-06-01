@@ -33,18 +33,93 @@
 </div>
 {% endif %}
 
-<div class="card">
+{# ── 検索バー ── #}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-search text-muted"></i>
+      <input type="text" id="userSearch" class="form-control form-control-sm"
+             placeholder="ユーザー名・表示名・メールで検索..."
+             style="max-width:320px;border-radius:20px;"
+             oninput="filterUsers()">
+      <span class="text-muted small ms-auto" id="userCount"></span>
+    </div>
+  </div>
+</div>
+
+{% set pending_users  = users | selectattr('is_approved', 'eq', false) | list %}
+{% set approved_users = users | selectattr('is_approved', 'eq', true)  | list %}
+
+{# ── 承認待ちエリア ── #}
+{% if pending_users %}
+<div class="card mb-4" style="border:2px solid #fbbf24;">
+  <div class="card-header d-flex align-items-center gap-2" style="background:#fffbeb;border-bottom:1px solid #fde68a;">
+    <i class="bi bi-hourglass-split text-warning"></i>
+    <span class="fw-bold">承認待ち</span>
+    <span class="badge bg-warning text-dark ms-1">{{ pending_users|length }}</span>
+    <span class="text-muted small ms-1">— 新規登録ユーザーの承認を行ってください</span>
+  </div>
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" style="font-size:.9rem;">
+    <table class="table table-hover align-middle mb-0" style="font-size:.9rem;" id="pendingTable">
       <thead class="table-light">
         <tr>
           <th>ユーザー名</th><th>表示名</th><th>メール</th>
-          <th>権限</th><th>ステータス</th><th>登録日</th><th class="text-end">操作</th>
+          <th>権限</th><th>登録日</th><th class="text-end">操作</th>
         </tr>
       </thead>
       <tbody>
-        {% for u in users %}
+        {% for u in pending_users %}
+        <tr class="user-row" data-search="{{ (u.username ~ ' ' ~ (u.display_name or '') ~ ' ' ~ (u.email or ''))|lower }}">
+          <td class="fw-semibold">{{ u.username }}</td>
+          <td>{{ u.display_name or '-' }}</td>
+          <td class="text-muted">{{ u.email or '-' }}</td>
+          <td>
+            {% if u.role == 'admin' %}<span class="badge" style="background:#f97316;">Admin</span>
+            {% elif u.role == 'manager' %}<span class="badge" style="background:#0ea5e9;">Manager</span>
+            {% else %}<span class="badge bg-secondary">User</span>{% endif %}
+          </td>
+          <td class="text-muted">{{ u.created_at | jst('%Y/%m/%d') }}</td>
+          <td class="text-end">
+            <div class="d-flex gap-1 justify-content-end flex-wrap">
+              <form method="post" action="/admin/users/{{ u.id }}/approve">
+                <button class="btn btn-sm btn-success" style="border-radius:8px;">
+                  <i class="bi bi-check-lg me-1"></i>承認する
+                </button>
+              </form>
+              <form method="post" action="/admin/users/{{ u.id }}/delete"
+                    onsubmit="return confirm('「{{ u.username }}」を削除しますか？')">
+                <button class="btn btn-xs btn-outline-danger" style="font-size:.78rem;padding:.2rem .6rem;border-radius:8px;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ── 承認済みエリア ── #}
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2" style="background:#fff;border-bottom:2px solid #f97316;">
+    <i class="bi bi-people-fill" style="color:#f97316;"></i>
+    <span class="fw-bold">承認済みユーザー</span>
+    <span class="badge bg-light text-muted border ms-1">{{ approved_users|length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" style="font-size:.9rem;" id="approvedTable">
+      <thead class="table-light">
         <tr>
+          <th>ユーザー名</th><th>表示名</th><th>メール</th>
+          <th>権限</th><th>登録日</th><th class="text-end">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in approved_users %}
+        <tr class="user-row" data-search="{{ (u.username ~ ' ' ~ (u.display_name or '') ~ ' ' ~ (u.email or ''))|lower }}">
           <td class="fw-semibold">
             {{ u.username }}
             {% if u.id == current_user.id %}<span class="badge bg-light text-dark ms-1" style="font-size:.65rem;">自分</span>{% endif %}
@@ -52,39 +127,20 @@
           <td>{{ u.display_name or '-' }}</td>
           <td class="text-muted">{{ u.email or '-' }}</td>
           <td>
-            {% if u.role == 'admin' %}
-            <span class="badge" style="background:#f97316;">Admin</span>
-            {% elif u.role == 'manager' %}
-            <span class="badge" style="background:#0ea5e9;">Manager</span>
-            {% else %}
-            <span class="badge bg-secondary">User</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if u.is_approved %}
-            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>承認済み</span>
-            {% else %}
-            <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>承認待ち</span>
-            {% endif %}
+            {% if u.role == 'admin' %}<span class="badge" style="background:#f97316;">Admin</span>
+            {% elif u.role == 'manager' %}<span class="badge" style="background:#0ea5e9;">Manager</span>
+            {% else %}<span class="badge bg-secondary">User</span>{% endif %}
           </td>
           <td class="text-muted">{{ u.created_at | jst('%Y/%m/%d') }}</td>
           <td class="text-end">
             <div class="d-flex gap-1 justify-content-end flex-wrap">
               {% if u.id != current_user.id %}
-                {% if not u.is_approved %}
-                <form method="post" action="/admin/users/{{ u.id }}/approve">
-                  <button class="btn btn-xs btn-success" style="font-size:.78rem;padding:.2rem .6rem;">
-                    <i class="bi bi-check-lg me-1"></i>承認
-                  </button>
-                </form>
-                {% else %}
                 <form method="post" action="/admin/users/{{ u.id }}/reject">
-                  <button class="btn btn-xs btn-outline-warning" style="font-size:.78rem;padding:.2rem .6rem;"
+                  <button class="btn btn-xs btn-outline-warning" style="font-size:.78rem;padding:.2rem .6rem;border-radius:8px;"
                           onclick="return confirm('承認を取り消しますか？')">
                     <i class="bi bi-x-lg me-1"></i>停止
                   </button>
                 </form>
-                {% endif %}
                 <form method="post" action="/admin/users/{{ u.id }}/change-role" class="d-inline-flex align-items-center gap-1">
                   <select name="role" class="form-select form-select-sm" style="font-size:.78rem;padding:.2rem 1.5rem .2rem .6rem;width:auto;border-radius:8px;min-width:90px;"
                           onchange="if(confirm('権限を「' + this.options[this.selectedIndex].text + '」に変更しますか？')) this.form.submit();">
@@ -92,20 +148,20 @@
                     <option value="user" {% if u.role == 'user' %}selected{% endif %}>User</option>
                   </select>
                 </form>
-                <button class="btn btn-xs btn-outline-info" style="font-size:.78rem;padding:.2rem .6rem;"
+                <button class="btn btn-xs btn-outline-info" style="font-size:.78rem;padding:.2rem .6rem;border-radius:8px;"
                         onclick="openResetModal({{ u.id }}, '{{ u.username }}')">
                   <i class="bi bi-key me-1"></i>PW変更
                 </button>
                 <form method="post" action="/admin/users/{{ u.id }}/issue-temp-password"
                       onsubmit="return confirm('「{{ u.username }}」に仮パスワードを発行しますか？\n次回ログイン時にパスワード変更が必要になります。')">
-                  <button class="btn btn-xs btn-outline-warning" style="font-size:.78rem;padding:.2rem .6rem;"
+                  <button class="btn btn-xs btn-outline-warning" style="font-size:.78rem;padding:.2rem .6rem;border-radius:8px;"
                           title="仮パスワードを発行（次回ログイン時に変更必須）">
-                    <i class="bi bi-ticket-perforated me-1"></i>仮PW発行
+                    <i class="bi bi-ticket-perforated me-1"></i>仮PW
                   </button>
                 </form>
                 <form method="post" action="/admin/users/{{ u.id }}/delete"
                       onsubmit="return confirm('「{{ u.username }}」を削除しますか？スキルデータも削除されます。')">
-                  <button class="btn btn-xs btn-outline-danger" style="font-size:.78rem;padding:.2rem .6rem;">
+                  <button class="btn btn-xs btn-outline-danger" style="font-size:.78rem;padding:.2rem .6rem;border-radius:8px;">
                     <i class="bi bi-trash"></i>
                   </button>
                 </form>
@@ -120,6 +176,25 @@
     </table>
   </div>
 </div>
+
+<script>
+function filterUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase().trim();
+  const rows = document.querySelectorAll('.user-row');
+  let visible = 0;
+  rows.forEach(r => {
+    const match = !q || r.dataset.search.includes(q);
+    r.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('userCount').textContent = q ? `${visible} 件ヒット` : '';
+}
+// 初期件数表示
+document.addEventListener('DOMContentLoaded', () => {
+  const total = document.querySelectorAll('.user-row').length;
+  document.getElementById('userCount').textContent = `全 ${total} 名`;
+});
+</script>
 
 <!-- パスワードリセットモーダル -->
 <div class="modal fade" id="resetModal" tabindex="-1">

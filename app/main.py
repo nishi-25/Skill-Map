@@ -1184,6 +1184,7 @@ def register_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    password_confirm: str = Form(""),
     email: str = Form(""),
     display_name: str = Form(""),
     db: Session = Depends(get_db),
@@ -1191,6 +1192,10 @@ def register_post(
     if len(password) < 6:
         return templates.TemplateResponse(request, "register.html", {
             "error": "パスワードは6文字以上にしてください"
+        })
+    if password_confirm and password != password_confirm:
+        return templates.TemplateResponse(request, "register.html", {
+            "error": "パスワードと確認用パスワードが一致しません"
         })
     if db.query(models.User).filter(models.User.username == username).first():
         return templates.TemplateResponse(request, "register.html", {
@@ -1335,7 +1340,26 @@ def dashboard(
                           .order_by(models.Group.name).all())
 
     # ── データ取得 ───────────────────────────────────────────────
-    catalog_total = db.query(models.Skill).count()
+    # Manager は担当グループのスキルのみカウント
+    if current_user.role == "manager" and view_mode == "all":
+        from routers.groups import _get_all_group_skill_ids as _gids_dash
+        _mgr_skill_ids_dash: set[int] = set()
+        for _dg in (db.query(models.Group)
+                    .filter(models.Group.manager_id == current_user.id)
+                    .all()):
+            _mgr_skill_ids_dash.update(_gids_dash(_dg))
+        # group_managers テーブルからも取得
+        from sqlalchemy import text as _txt_dash
+        for _row in db.execute(
+            _txt_dash("SELECT DISTINCT group_id FROM group_managers WHERE user_id=:uid"),
+            {"uid": current_user.id}
+        ).fetchall():
+            _g2 = db.query(models.Group).filter(models.Group.id == _row[0]).first()
+            if _g2:
+                _mgr_skill_ids_dash.update(_gids_dash(_g2))
+        catalog_total = len(_mgr_skill_ids_dash)
+    else:
+        catalog_total = db.query(models.Skill).count()
     categories = db.query(models.Category).order_by(models.Category.name).all()
 
     # ── 共通分析データ計算 ───────────────────────────────────────
@@ -1474,7 +1498,17 @@ def dashboard(
                         reverse=True)[:15]
 
         # ── スキルカバレッジ分析 ─────────────────────────────────
-        all_catalog = db.query(models.Skill).all()
+        # Manager は担当グループに割り当てられたスキルのみ対象
+        if current_user.role == "manager" and all_groups:
+            from routers.groups import _get_all_group_skill_ids as _gcov_ids
+            _manager_skill_ids: set[int] = set()
+            for _g in all_groups:
+                _manager_skill_ids.update(_gcov_ids(_g))
+            all_catalog = db.query(models.Skill).filter(
+                models.Skill.id.in_(_manager_skill_ids)
+            ).all() if _manager_skill_ids else []
+        else:
+            all_catalog = db.query(models.Skill).all()
         coverage_data = []
         for sk in all_catalog:
             holders = [sl for sl in all_levels if sl.skill_id == sk.id and sl.level > 0]

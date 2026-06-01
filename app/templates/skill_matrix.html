@@ -320,26 +320,76 @@
     </thead>
 
     <tbody>
-      {# ════ 各行 = 1スキル ════ #}
-      {% set prev_cat = namespace(name="") %}
-      {% for sk in skills %}
+      {# ════ 各行 = 1スキル（カテゴリ集計行付き） ════ #}
+      {% set ns_cat = namespace(name="", sum=0, count=0, skill_n=0) %}
+      {% set lv_labels = {0:'-', 1:'入門', 2:'実務可', 3:'指導可', 4:'エキスパート'} %}
 
-      {# カテゴリー区切り行 #}
+      {% for sk in skills %}
       {% set cat_name = sk.category.name if sk.category else "未分類" %}
-      {% if cat_name != prev_cat.name %}
-      {% set prev_cat.name = cat_name %}
+
+      {# ── カテゴリ変わり目：前カテゴリの集計行を出力 ── #}
+      {% if cat_name != ns_cat.name and ns_cat.name != "" %}
+      {% set cat_avg_val = (ns_cat.sum / ns_cat.count)|round(1) if ns_cat.count > 0 else 0 %}
+      <tr style="background:#fef9c3;border-top:1px solid #fde68a;border-bottom:2px solid #fde68a;">
+        <td class="skill-col" style="font-size:.72rem;color:#92400e;font-weight:700;font-style:italic;">
+          <i class="bi bi-bar-chart-fill me-1" style="color:#d97706;"></i>{{ ns_cat.name }} 平均
+        </td>
+        {% for u in users %}
+        {% set u_avg = cat_user_avg_id.get(ns_cat.name, {}).get(u.id, 0) %}
+        <td class="text-center" style="font-size:.72rem;font-weight:700;background:
+          {%- if u_avg >= 3 %}#fef08a;color:#a16207
+          {%- elif u_avg >= 2 %}#fef9c3;color:#a16207
+          {%- elif u_avg > 0 %}#fefce8;color:#a16207
+          {%- else %}#f8fafc;color:#cbd5e1
+          {%- endif %};">
+          {{ u_avg if u_avg > 0 else '-' }}
+        </td>
+        {% endfor %}
+        <td class="text-center" style="font-size:.72rem;font-weight:700;background:#fef9c3;color:#92400e;">
+          {{ cat_avg_val if ns_cat.count > 0 else '-' }}
+        </td>
+        {% set cat_cov = cat_coverage.get(ns_cat.name, {}) %}
+        <td class="text-center" style="background:#fef3c7;font-size:.72rem;">
+          <div class="fw-bold" style="color:{% if cat_cov.pct >= 80 %}#16a34a{% elif cat_cov.pct >= 40 %}#d97706{% else %}#dc2626{% endif %};">
+            {{ cat_cov.covered }}/{{ cat_cov.total }}
+          </div>
+          <div class="coverage-bar">
+            <div class="coverage-bar-inner" style="width:{{ cat_cov.pct }}%;background:{% if cat_cov.pct >= 80 %}#22c55e{% elif cat_cov.pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+          </div>
+        </td>
+      </tr>
+      {% set ns_cat.sum = 0 %}{% set ns_cat.count = 0 %}{% set ns_cat.skill_n = 0 %}
+      {% endif %}
+
+      {# ── カテゴリ区切り行（カバレッジバッジ付き） ── #}
+      {% if cat_name != ns_cat.name %}
+      {% set ns_cat.name = cat_name %}
+      {% set cat_cov = cat_coverage.get(cat_name, {}) %}
       <tr>
         <td class="skill-col" colspan="{{ users|length + 2 }}" style="background:#f1f5f9;font-weight:700;font-size:.72rem;color:#475569;padding:.25rem .5rem;border-left:3px solid #f97316;">
           <i class="bi bi-tag-fill me-1" style="color:#f97316;"></i>{{ cat_name }}
+          {% if cat_cov %}
+          <span class="ms-2 badge" style="font-size:.6rem;font-weight:600;background:{% if cat_cov.pct >= 80 %}#dcfce7;color:#16a34a{% elif cat_cov.pct >= 40 %}#fef9c3;color:#a16207{% else %}#fee2e2;color:#dc2626{% endif %};">
+            カバレッジ {{ cat_cov.pct }}%
+          </span>
+          {% endif %}
         </td>
       </tr>
       {% endif %}
 
-      <tr>
-        <td class="skill-col" title="{{ sk.name }}" style="font-size:.76rem;">
+      {# ── スキル行 ── #}
+      {% set ns_sk = namespace(sum=0, count=0) %}
+      {% for u in users %}
+        {% set lv = level_map.get((u.id, sk.id), 0) %}
+        {% if lv > 0 %}{% set ns_sk.sum = ns_sk.sum + lv %}{% set ns_sk.count = ns_sk.count + 1 %}{% endif %}
+      {% endfor %}
+      {% set cov_pct = (ns_sk.count / users|length * 100)|int if users else 0 %}
+
+      <tr style="{% if ns_sk.count == 0 and users %}border-left:3px solid #fca5a5;{% endif %}">
+        <td class="skill-col" title="{{ sk.name }}" style="font-size:.76rem;{% if ns_sk.count == 0 and users %}color:#9f1239;{% endif %}">
           {{ sk.name }}
+          {% if ns_sk.count == 0 and users %}<span class="ms-1" style="font-size:.6rem;color:#dc2626;" title="未申告">●</span>{% endif %}
         </td>
-        {% set lv_labels = {0:'-', 1:'入門', 2:'実務可', 3:'指導可', 4:'エキスパート'} %}
         {% for u in users %}
         {% set lv = level_map.get((u.id, sk.id), 0) %}
         <td class="lv-cell" style="background:
@@ -353,19 +403,10 @@
           <div style="font-size:.6rem;font-weight:500;line-height:1;margin-top:1px;opacity:.85;">{{ lv_labels[lv] if lv > 0 else '' }}</div>
         </td>
         {% endfor %}
-        {# スキル平均 #}
-        {% set ns_sk = namespace(sum=0, count=0) %}
-        {% for u in users %}
-          {% set lv = level_map.get((u.id, sk.id), 0) %}
-          {% if lv > 0 %}{% set ns_sk.sum = ns_sk.sum + lv %}{% set ns_sk.count = ns_sk.count + 1 %}{% endif %}
-        {% endfor %}
         <td class="text-center" style="font-weight:700;font-size:.72rem;background:#f8fafc;">
-          {% if ns_sk.count > 0 %}
-          <span style="color:#ea580c;">{{ (ns_sk.sum / ns_sk.count)|round(1) }}</span>
+          {% if ns_sk.count > 0 %}<span style="color:#ea580c;">{{ (ns_sk.sum / ns_sk.count)|round(1) }}</span>
           {% else %}<span class="text-muted">-</span>{% endif %}
         </td>
-        {# カバレッジ列 #}
-        {% set cov_pct = (ns_sk.count / users|length * 100)|int if users else 0 %}
         <td class="text-center" style="background:#f0f9ff;font-size:.72rem;">
           <div class="fw-bold" style="color:{% if cov_pct >= 80 %}#16a34a{% elif cov_pct >= 40 %}#d97706{% else %}#dc2626{% endif %};">
             {{ ns_sk.count }}/{{ users|length }}
@@ -375,6 +416,45 @@
           </div>
         </td>
       </tr>
+
+      {# カテゴリ集計用累計 #}
+      {% set ns_cat.sum = ns_cat.sum + ns_sk.sum %}
+      {% set ns_cat.count = ns_cat.count + ns_sk.count %}
+      {% set ns_cat.skill_n = ns_cat.skill_n + 1 %}
+
+      {# ── 最終スキル：最後のカテゴリ集計行 ── #}
+      {% if loop.last and ns_cat.name != "" %}
+      {% set cat_avg_val = (ns_cat.sum / ns_cat.count)|round(1) if ns_cat.count > 0 else 0 %}
+      <tr style="background:#fef9c3;border-top:1px solid #fde68a;border-bottom:2px solid #fde68a;">
+        <td class="skill-col" style="font-size:.72rem;color:#92400e;font-weight:700;font-style:italic;">
+          <i class="bi bi-bar-chart-fill me-1" style="color:#d97706;"></i>{{ ns_cat.name }} 平均
+        </td>
+        {% for u in users %}
+        {% set u_avg = cat_user_avg_id.get(ns_cat.name, {}).get(u.id, 0) %}
+        <td class="text-center" style="font-size:.72rem;font-weight:700;background:
+          {%- if u_avg >= 3 %}#fef08a;color:#a16207
+          {%- elif u_avg >= 2 %}#fef9c3;color:#a16207
+          {%- elif u_avg > 0 %}#fefce8;color:#a16207
+          {%- else %}#f8fafc;color:#cbd5e1
+          {%- endif %};">
+          {{ u_avg if u_avg > 0 else '-' }}
+        </td>
+        {% endfor %}
+        <td class="text-center" style="font-size:.72rem;font-weight:700;background:#fef9c3;color:#92400e;">
+          {{ cat_avg_val if ns_cat.count > 0 else '-' }}
+        </td>
+        {% set cat_cov = cat_coverage.get(ns_cat.name, {}) %}
+        <td class="text-center" style="background:#fef3c7;font-size:.72rem;">
+          <div class="fw-bold" style="color:{% if cat_cov.pct >= 80 %}#16a34a{% elif cat_cov.pct >= 40 %}#d97706{% else %}#dc2626{% endif %};">
+            {{ cat_cov.covered }}/{{ cat_cov.total }}
+          </div>
+          <div class="coverage-bar">
+            <div class="coverage-bar-inner" style="width:{{ cat_cov.pct }}%;background:{% if cat_cov.pct >= 80 %}#22c55e{% elif cat_cov.pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+
       {% endfor %}
 
       {# ════ ユーザー平均行（フッター） ════ #}
@@ -813,4 +893,90 @@ function copySummary() {
 </script>
 
 {% endif %}
+
+{# ══════════════ メンバー別強み・弱み分析 ══════════════ #}
+{% if member_analysis %}
+<div class="mt-4">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2" style="color:#f97316;"></i>メンバー別 強み・弱み分析</h5>
+    <span class="badge bg-light text-muted border" style="font-size:.72rem;">{{ member_analysis|length }}名</span>
+  </div>
+  <div class="row g-3">
+    {% for m in member_analysis %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100" style="border-radius:14px;border:1px solid #e2e8f0;">
+        <!-- ヘッダー -->
+        <div class="card-header d-flex align-items-center gap-3 py-2" style="background:#fff;border-bottom:2px solid #f97316;border-radius:14px 14px 0 0;">
+          {% if m.user.avatar_path %}
+          <img src="{{ m.user.avatar_path }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+          {% else %}
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;flex-shrink:0;">
+            {{ (m.user.display_name or m.user.username)[0].upper() }}
+          </div>
+          {% endif %}
+          <div style="flex:1;min-width:0;">
+            <div class="fw-bold text-truncate" style="font-size:.9rem;">{{ m.user.display_name or m.user.username }}</div>
+            <div class="text-muted" style="font-size:.72rem;">
+              申告 {{ m.declared }}/{{ m.total }}件 &nbsp;|&nbsp;
+              全体平均 <span class="fw-semibold" style="color:#f97316;">{{ m.overall_avg }}</span>
+            </div>
+          </div>
+          <!-- 全体レベルバッジ -->
+          <div class="text-center flex-shrink-0">
+            <div class="fw-bold" style="font-size:1.2rem;color:
+              {%- if m.overall_avg >= 3 %}#dc2626
+              {%- elif m.overall_avg >= 2 %}#f97316
+              {%- elif m.overall_avg >= 1 %}#fbbf24
+              {%- else %}#94a3b8
+              {%- endif %};">{{ m.overall_avg }}</div>
+            <div style="font-size:.6rem;color:#94a3b8;">Avg</div>
+          </div>
+        </div>
+        <div class="card-body py-2 px-3">
+          <!-- 強み -->
+          <div class="mb-2">
+            <div class="d-flex align-items-center gap-1 mb-1">
+              <i class="bi bi-trophy-fill" style="color:#f59e0b;font-size:.8rem;"></i>
+              <span class="fw-semibold" style="font-size:.76rem;color:#92400e;">強み</span>
+            </div>
+            {% if m.strong %}
+            <div class="d-flex flex-wrap gap-1">
+              {% for c in m.strong %}
+              <span class="badge d-flex align-items-center gap-1" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a;font-size:.7rem;border-radius:20px;padding:.25rem .6rem;">
+                {{ c.cat }}
+                <span style="background:#f59e0b;color:#fff;border-radius:10px;padding:.05rem .35rem;font-size:.65rem;">{{ c.avg }}</span>
+              </span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-muted" style="font-size:.74rem;">申告データなし</span>
+            {% endif %}
+          </div>
+          <!-- 弱み -->
+          <div>
+            <div class="d-flex align-items-center gap-1 mb-1">
+              <i class="bi bi-arrow-up-circle" style="color:#6366f1;font-size:.8rem;"></i>
+              <span class="fw-semibold" style="font-size:.76rem;color:#3730a3;">伸びしろ</span>
+            </div>
+            {% if m.weak %}
+            <div class="d-flex flex-wrap gap-1">
+              {% for c in m.weak %}
+              <span class="badge d-flex align-items-center gap-1" style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;font-size:.7rem;border-radius:20px;padding:.25rem .6rem;">
+                {{ c.cat }}
+                <span style="background:#6366f1;color:#fff;border-radius:10px;padding:.05rem .35rem;font-size:.65rem;">{{ c.avg }}</span>
+              </span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-muted" style="font-size:.74rem;">-</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

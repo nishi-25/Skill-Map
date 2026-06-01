@@ -492,6 +492,13 @@ def catalog_delete(skill_id: int, request: Request, db: Session = Depends(get_db
     user = auth.require_manager_or_admin(request, db)
     skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
     if skill:
+        # 関連データを明示的に削除（ORM cascade が効かないテーブルに対応）
+        db.query(models.UserSkillLevel).filter(models.UserSkillLevel.skill_id == skill_id).delete()
+        db.query(models.SkillLevelHistory).filter(models.SkillLevelHistory.skill_id == skill_id).delete()
+        db.query(models.SkillEvidence).filter(models.SkillEvidence.skill_id == skill_id).delete()
+        db.query(models.SkillGoal).filter(models.SkillGoal.skill_id == skill_id).delete()
+        # sub_skills は cascade="all, delete-orphan" で自動削除されるが念のため
+        db.query(models.SubSkill).filter(models.SubSkill.skill_id == skill_id).delete()
         db.delete(skill)
         db.commit()
     return RedirectResponse("/skills/catalog", status_code=303)
@@ -977,19 +984,62 @@ def skills_my(
     tier: str = "",
     group_id: int = 0,
     view: str = "",
+    view_as: int = 0,
     db: Session = Depends(get_db),
 ):
     user = auth.require_approved(request, db)
+
+    # ── 代理閲覧/編集: Admin は全員、Manager は自分の担当グループメンバー ──
+    target_user = user  # デフォルトは自分
+    editable_users: list = []  # 選択可能なユーザー一覧（Admin/Manager用）
+    if user.role == "admin":
+        editable_users = (
+            db.query(models.User)
+            .filter(models.User.is_approved == True, models.User.id != user.id,
+                    models.User.role == "user")
+            .order_by(models.User.display_name, models.User.username).all()
+        )
+        if view_as:
+            t = db.query(models.User).filter(models.User.id == view_as).first()
+            if t:
+                target_user = t
+    elif user.role == "manager":
+        # 自分が管理するグループのメンバーのみ
+        from sqlalchemy import text as _text_va
+        member_ids: set[int] = set()
+        for row in db.execute(
+            _text_va("SELECT DISTINCT gm.user_id FROM group_memberships gm "
+                     "JOIN group_managers mgr ON gm.group_id=mgr.group_id "
+                     "WHERE mgr.user_id=:uid"), {"uid": user.id}
+        ).fetchall():
+            member_ids.add(row[0])
+        for row in db.execute(
+            _text_va("SELECT DISTINCT gm.user_id FROM group_memberships gm "
+                     "JOIN groups g ON gm.group_id=g.id "
+                     "WHERE g.manager_id=:uid"), {"uid": user.id}
+        ).fetchall():
+            member_ids.add(row[0])
+        member_ids.discard(user.id)
+        if member_ids:
+            editable_users = (
+                db.query(models.User)
+                .filter(models.User.id.in_(member_ids), models.User.is_approved == True)
+                .order_by(models.User.display_name, models.User.username).all()
+            )
+        if view_as and view_as in member_ids:
+            t = db.query(models.User).filter(models.User.id == view_as).first()
+            if t:
+                target_user = t
 
     # カスタムティア名
     tier_names = models.get_tier_display_names(db)
     tier_order = ["basic", "intermediate", "advanced"]
 
-    # ユーザーの所属グループ
+    # 対象ユーザーの所属グループ
     my_groups = (
         db.query(models.Group)
         .join(models.GroupMembership)
-        .filter(models.GroupMembership.user_id == user.id)
+        .filter(models.GroupMembership.user_id == target_user.id)
         .order_by(models.Group.name)
         .all()
     )
@@ -997,11 +1047,10 @@ def skills_my(
     # グループでスキル絞込み
     group_skill_ids = None
     if group_id:
-        # 明示的なグループ選択
         sel_group = db.query(models.Group).filter(models.Group.id == group_id).first()
         if sel_group:
             group_skill_ids = _get_all_group_skill_ids(sel_group)
-    elif user.role == "user":
+    elif target_user.role == "user":
         # User ロールは所属グループのスキルのみ自動表示
         if my_groups:
             auto_ids: set[int] = set()
@@ -1009,7 +1058,6 @@ def skills_my(
                 auto_ids.update(_get_all_group_skill_ids(grp))
             group_skill_ids = auto_ids
         else:
-            # どのグループにも所属していない場合はスキルなし
             group_skill_ids = set()
 
     # 全カタログ取得（tierフィルタなし → 概要計算用）
@@ -1020,10 +1068,10 @@ def skills_my(
     if group_skill_ids is not None:
         all_catalog = [sk for sk in all_catalog if sk.id in group_skill_ids]
 
-    # 自分のスキルレベル（全ステータス：承認状況表示用）
+    # 対象ユーザーのスキルレベル（全ステータス）
     my_levels = (
         db.query(models.UserSkillLevel)
-        .filter(models.UserSkillLevel.user_id == user.id)
+        .filter(models.UserSkillLevel.user_id == target_user.id)
         .all()
     )
     # レベル表示・集計は承認済みのみ
@@ -1064,7 +1112,7 @@ def skills_my(
 
     memberships = (
         db.query(models.GroupMembership)
-        .filter(models.GroupMembership.user_id == user.id)
+        .filter(models.GroupMembership.user_id == target_user.id)
         .all()
     )
     if memberships:
@@ -1147,7 +1195,7 @@ def skills_my(
         done_records = (
             db.query(models.UserSubSkillLevel)
             .filter(
-                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.user_id == target_user.id,
                 models.UserSubSkillLevel.can_do == True,
             )
             .all()
@@ -1221,6 +1269,10 @@ def skills_my(
         "auto_level_map": auto_level_map,
         "skills_by_category": skills_by_category,
         "skill_holder_map": skill_holder_map,
+        # 代理閲覧/編集
+        "target_user": target_user,
+        "view_as": target_user.id if target_user.id != user.id else 0,
+        "editable_users": editable_users,
     })
 
 
@@ -1752,10 +1804,30 @@ def calc_level_from_ratio(done: int, total: int) -> int:
 
 
 @router.get("/api/skills/{skill_id}/panel")
-def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_db)):
-    """2ペインUI用：右ペインに必要なデータをJSONで返す"""
+def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, db: Session = Depends(get_db)):
+    """2ペインUI用：右ペインに必要なデータをJSONで返す。view_as で代理閲覧対応。"""
     from fastapi.responses import JSONResponse as _JSONResponse
     user = auth.require_approved(request, db)
+
+    # 代理閲覧権限チェック
+    panel_user = user
+    if view_as and view_as != user.id:
+        if user.role == "admin":
+            t = db.query(models.User).filter(models.User.id == view_as).first()
+            if t:
+                panel_user = t
+        elif user.role == "manager":
+            from sqlalchemy import text as _txt_p
+            rows = db.execute(
+                _txt_p("SELECT user_id FROM group_memberships WHERE group_id IN "
+                       "(SELECT group_id FROM group_managers WHERE user_id=:uid "
+                       "UNION SELECT id FROM groups WHERE manager_id=:uid)"), {"uid": user.id}
+            ).fetchall()
+            allowed = {r[0] for r in rows}
+            if view_as in allowed:
+                t = db.query(models.User).filter(models.User.id == view_as).first()
+                if t:
+                    panel_user = t
 
     skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
     if not skill:
@@ -1773,7 +1845,7 @@ def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_d
         done_ids = {
             r.sub_skill_id for r in
             db.query(models.UserSubSkillLevel).filter(
-                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.user_id == panel_user.id,
                 models.UserSubSkillLevel.sub_skill_id.in_([ss.id for ss in sub_skills]),
                 models.UserSubSkillLevel.can_do == True,
             ).all()
@@ -1782,7 +1854,7 @@ def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_d
     current_usl = (
         db.query(models.UserSkillLevel)
         .filter(
-            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.user_id == panel_user.id,
             models.UserSkillLevel.skill_id == skill_id,
         )
         .first()
@@ -1790,19 +1862,19 @@ def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_d
 
     calc_lv = calc_level_from_ratio(len(done_ids), len(sub_skills))
 
-    # グループマネージャー
+    # グループマネージャー（panel_userのグループから取得）
     from sqlalchemy import text as _text2
     mgr_ids: set[int] = set()
     for row in db.execute(
         _text2("SELECT DISTINCT gm.user_id FROM group_managers gm "
                "JOIN group_memberships gms ON gm.group_id = gms.group_id "
-               "WHERE gms.user_id = :uid"), {"uid": user.id}
+               "WHERE gms.user_id = :uid"), {"uid": panel_user.id}
     ).fetchall():
         mgr_ids.add(row[0])
     for row in db.execute(
         _text2("SELECT DISTINCT g.manager_id FROM groups g "
                "JOIN group_memberships gms ON g.id = gms.group_id "
-               "WHERE gms.user_id = :uid AND g.manager_id IS NOT NULL"), {"uid": user.id}
+               "WHERE gms.user_id = :uid AND g.manager_id IS NOT NULL"), {"uid": panel_user.id}
     ).fetchall():
         mgr_ids.add(row[0])
 
@@ -1819,9 +1891,10 @@ def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_d
 
     # 目標データ
     goal_obj = db.query(models.SkillGoal).filter(
-        models.SkillGoal.user_id == user.id,
+        models.SkillGoal.user_id == panel_user.id,
         models.SkillGoal.skill_id == skill_id,
     ).first()
+    is_proxy = panel_user.id != user.id
 
     return _JSONResponse({
         "skill": {
@@ -1849,6 +1922,9 @@ def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_d
         "level_colors": models.LEVEL_COLORS,
         "group_managers": managers,
         "is_auto_approve": user.role in ("admin", "manager"),
+        "is_proxy": is_proxy,
+        "proxy_user_id": panel_user.id if is_proxy else 0,
+        "proxy_user_name": (panel_user.display_name or panel_user.username) if is_proxy else "",
         "evidences": [
             {
                 "id": ev.id,
@@ -1859,7 +1935,7 @@ def skill_panel_api(skill_id: int, request: Request, db: Session = Depends(get_d
                 "created_at": ev.created_at.strftime("%Y-%m-%d") if ev.created_at else "",
             }
             for ev in db.query(models.SkillEvidence).filter(
-                models.SkillEvidence.user_id == user.id,
+                models.SkillEvidence.user_id == panel_user.id,
                 models.SkillEvidence.skill_id == skill_id,
             ).order_by(models.SkillEvidence.created_at.desc()).all()
         ],
@@ -1995,11 +2071,37 @@ def skill_declare_post(
     override_level: Optional[int] = Form(default=None),
     override_reason: str = Form(default=""),
     approver_id: Optional[int] = Form(default=None),
+    for_user_id: int = Form(default=0),
     db: Session = Depends(get_db),
 ):
-    """スキル申告フォーム送信処理。Admin/Manager は申告不可。"""
+    """スキル申告フォーム送信処理。Admin/Manager は代理申告のみ可。"""
     user = auth.require_approved(request, db)
-    if user.role in ("admin", "manager"):
+
+    # 代理申告モードの解決
+    declare_user = user  # 申告対象ユーザー
+    is_proxy = False
+    if for_user_id and for_user_id != user.id:
+        if user.role == "admin":
+            t = db.query(models.User).filter(models.User.id == for_user_id).first()
+            if t:
+                declare_user = t
+                is_proxy = True
+        elif user.role == "manager":
+            from sqlalchemy import text as _txt_dec
+            rows = db.execute(
+                _txt_dec("SELECT user_id FROM group_memberships WHERE group_id IN "
+                         "(SELECT group_id FROM group_managers WHERE user_id=:uid "
+                         "UNION SELECT id FROM groups WHERE manager_id=:uid)"), {"uid": user.id}
+            ).fetchall()
+            allowed = {r[0] for r in rows}
+            if for_user_id in allowed:
+                t = db.query(models.User).filter(models.User.id == for_user_id).first()
+                if t:
+                    declare_user = t
+                    is_proxy = True
+
+    # Admin/Manager 自身は代理申告のみ（自分自身への申告は不可）
+    if user.role in ("admin", "manager") and not is_proxy:
         return RedirectResponse("/skills/catalog", status_code=303)
 
     skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
@@ -2018,7 +2120,7 @@ def skill_declare_post(
         existing = (
             db.query(models.UserSubSkillLevel)
             .filter(
-                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.user_id == declare_user.id,
                 models.UserSubSkillLevel.sub_skill_id == ss.id,
             )
             .first()
@@ -2028,7 +2130,7 @@ def skill_declare_post(
             existing.can_do = can_do
         else:
             db.add(models.UserSubSkillLevel(
-                user_id=user.id,
+                user_id=declare_user.id,
                 sub_skill_id=ss.id,
                 can_do=can_do,
             ))
@@ -2041,20 +2143,19 @@ def skill_declare_post(
     # 3. override_level が指定されている場合は使用（reason必須チェック）
     if override_level is not None and override_level != auto_level:
         if not override_reason.strip():
-            # 理由なしの場合は自動計算レベルを使用
             override_level = None
 
     final_level = override_level if override_level is not None else auto_level
 
     # 4. UserSkillLevel を upsert
-    # Admin/Manager は自動承認
-    is_auto_approve = user.role in ("admin", "manager")
+    # 代理申告 or Admin/Manager は自動承認
+    is_auto_approve = is_proxy or user.role in ("admin", "manager")
     approval_status = "approved" if is_auto_approve else "pending"
 
     existing_usl = (
         db.query(models.UserSkillLevel)
         .filter(
-            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.user_id == declare_user.id,
             models.UserSkillLevel.skill_id == skill_id,
         )
         .first()
@@ -2070,7 +2171,7 @@ def skill_declare_post(
             existing_usl.approver_comment = "自動承認（サブスキル申告）"
     else:
         new_usl = models.UserSkillLevel(
-            user_id=user.id,
+            user_id=declare_user.id,
             skill_id=skill_id,
             level=final_level,
             approval_status=approval_status,
@@ -2079,10 +2180,10 @@ def skill_declare_post(
         )
         if is_auto_approve:
             new_usl.approved_at = func.now()
-            new_usl.approver_comment = "自動承認（サブスキル申告）"
+            new_usl.approver_comment = "自動承認（サブスキル申告）" if not is_proxy else f"代理申告（{user.display_name or user.username}）"
         db.add(new_usl)
 
-    # 承認者の設定（一般ユーザーのみ、グループマネージャーを指定する場合）
+    # 承認者の設定（一般ユーザーのみ）
     if not is_auto_approve and approver_id:
         valid_approver = db.query(models.User).filter(
             models.User.id == approver_id,
@@ -2094,9 +2195,10 @@ def skill_declare_post(
             else:
                 new_usl.approver_id = valid_approver.id
 
-    _award_badges(user.id, db)
+    _award_badges(declare_user.id, db)
     db.commit()
-    return RedirectResponse("/skills", status_code=303)
+    redirect_url = f"/skills?view_as={declare_user.id}" if is_proxy else "/skills"
+    return RedirectResponse(redirect_url, status_code=303)
 
 
 EVIDENCE_UPLOAD_DIR = "/app/data/uploads/evidence"
@@ -2345,7 +2447,9 @@ def skill_matrix(
     from collections import defaultdict
 
     # 1) カテゴリー別平均（レーダーチャート用）
-    cat_user_avg: dict[str, dict[str, float]] = {}  # {cat_name: {user_name: avg}}
+    cat_user_avg: dict[str, dict[str, float]] = {}  # {cat_name: {user_name: avg}} チャート用
+    cat_user_avg_id: dict[str, dict[int, float]] = {}  # {cat_name: {user_id: avg}} テンプレート用
+    cat_coverage: dict[str, dict] = {}  # {cat_name: {covered, total, pct}}
     cat_names_ordered = []
     for cat in categories:
         cat_skills = [sk for sk in skills if sk.category_id == cat.id]
@@ -2353,12 +2457,24 @@ def skill_matrix(
             continue
         cat_names_ordered.append(cat.name)
         cat_user_avg[cat.name] = {}
+        cat_user_avg_id[cat.name] = {}
         for u in users:
             vals = [level_map.get((u.id, sk.id), 0) for sk in cat_skills]
             filled = [v for v in vals if v > 0]
-            cat_user_avg[cat.name][u.display_name or u.username] = round(
-                sum(filled) / len(filled), 2
-            ) if filled else 0.0
+            avg_val = round(sum(filled) / len(filled), 2) if filled else 0.0
+            cat_user_avg[cat.name][u.display_name or u.username] = avg_val
+            cat_user_avg_id[cat.name][u.id] = avg_val
+        # カテゴリカバレッジ（申告者が1人以上いるスキル数）
+        covered = sum(
+            1 for sk in cat_skills
+            if any(level_map.get((u.id, sk.id), 0) > 0 for u in users)
+        )
+        total = len(cat_skills)
+        cat_coverage[cat.name] = {
+            "covered": covered,
+            "total": total,
+            "pct": int(covered / total * 100) if total else 0,
+        }
 
     # 2) レベル分布（ドーナツ用）
     level_dist = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
@@ -2402,6 +2518,37 @@ def skill_matrix(
         })
     user_avg_ranking.sort(key=lambda x: x["avg"], reverse=True)
 
+    # メンバー別強み・弱み分析
+    member_analysis = []
+    for u in users:
+        # カテゴリ別平均（申告済みスキルのみ）
+        cat_avgs = []
+        for cat_name, umap in cat_user_avg_id.items():
+            avg_val = umap.get(u.id, 0.0)
+            # そのカテゴリのスキル申告数も算出
+            cat_skills_local = [sk for sk in skills if (sk.category.name if sk.category else "未分類") == cat_name]
+            declared = sum(1 for sk in cat_skills_local if level_map.get((u.id, sk.id), 0) > 0)
+            if declared > 0:
+                cat_avgs.append({"cat": cat_name, "avg": avg_val, "declared": declared, "total": len(cat_skills_local)})
+
+        cat_avgs.sort(key=lambda x: x["avg"], reverse=True)
+        strong = cat_avgs[:3]
+        weak   = sorted([c for c in cat_avgs if c["avg"] < 2.0], key=lambda x: x["avg"])[:3]
+
+        # 全体申告数と平均
+        all_vals  = [level_map.get((u.id, sk.id), 0) for sk in skills]
+        all_filled = [v for v in all_vals if v > 0]
+        overall_avg = round(sum(all_filled) / len(all_filled), 2) if all_filled else 0.0
+
+        member_analysis.append({
+            "user":        u,
+            "overall_avg": overall_avg,
+            "declared":    len(all_filled),
+            "total":       len(skills),
+            "strong":      strong,
+            "weak":        weak,
+        })
+
     from config import get_config as _gcfg
     _cfg = _gcfg()
     return templates.TemplateResponse(request, "skill_matrix.html", {
@@ -2416,9 +2563,12 @@ def skill_matrix(
         # 分析データ
         "cat_names_ordered": cat_names_ordered,
         "cat_user_avg": cat_user_avg,
+        "cat_user_avg_id": cat_user_avg_id,
+        "cat_coverage": cat_coverage,
         "level_dist": level_dist,
         "growth_trend": growth_trend,
         "user_avg_ranking": user_avg_ranking,
+        "member_analysis": member_analysis,
         "ai_summary_enabled": _cfg.get("ai_summary_enabled", False),
     })
 
@@ -2727,12 +2877,27 @@ def skills_bulk_action(
                 if tag not in skill.tags:
                     skill.tags.append(tag)
     elif action == "delete":
-        # スキルと関連する申告データを削除
+        # 関連データを全て削除してからスキルを削除
+        sub_ids = [r[0] for r in db.query(models.SubSkill.id).filter(
+            models.SubSkill.skill_id.in_(skill_ids)).all()]
+        if sub_ids:
+            db.query(models.UserSubSkillLevel).filter(
+                models.UserSubSkillLevel.sub_skill_id.in_(sub_ids)
+            ).delete(synchronize_session=False)
+        db.query(models.SubSkill).filter(
+            models.SubSkill.skill_id.in_(skill_ids)
+        ).delete(synchronize_session=False)
         db.query(models.UserSkillLevel).filter(
             models.UserSkillLevel.skill_id.in_(skill_ids)
         ).delete(synchronize_session=False)
         db.query(models.SkillLevelHistory).filter(
             models.SkillLevelHistory.skill_id.in_(skill_ids)
+        ).delete(synchronize_session=False)
+        db.query(models.SkillEvidence).filter(
+            models.SkillEvidence.skill_id.in_(skill_ids)
+        ).delete(synchronize_session=False)
+        db.query(models.SkillGoal).filter(
+            models.SkillGoal.skill_id.in_(skill_ids)
         ).delete(synchronize_session=False)
         db.query(models.Skill).filter(
             models.Skill.id.in_(skill_ids)
@@ -3034,19 +3199,14 @@ async def bulk_import(
             added_skills += 1
 
     # ─ サブスキルのインポート ─
+    # skill_id_map に存在しないサブスキルは必ずスキップ（name フォールバックは削除）
+    # フォールバックを使うと別スキルへの誤挿入が発生するため
     for ss in data.get("sub_skills", []):
         ss_name = (ss.get("name") or "").strip()
         if not ss_name:
             continue
         old_skill_id = ss.get("skill_id", 0)
         new_skill_id = skill_id_map.get(old_skill_id)
-        if not new_skill_id:
-            # skill_name でも検索
-            sk_name = (ss.get("skill_name") or "").strip()
-            if sk_name:
-                found = db.query(models.Skill).filter(models.Skill.name == sk_name).first()
-                if found:
-                    new_skill_id = found.id
         if not new_skill_id:
             skipped_subs += 1
             continue

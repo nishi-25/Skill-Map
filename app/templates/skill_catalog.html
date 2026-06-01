@@ -345,6 +345,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
   function filterSkills() {
     const search = document.getElementById('skillSearch').value.toLowerCase();
@@ -608,7 +609,12 @@
       const row = document.getElementById('sub-skills-' + h);
       if (row) {
         row.style.display = '';
-        _initSortable(h);
+        // SortableJS がロード済みなら即時、未ロードなら load 後に初期化
+        if (typeof Sortable !== 'undefined') {
+          _initSortable(h);
+        } else {
+          window.addEventListener('load', function() { _initSortable(h); });
+        }
         row.scrollIntoView({behavior:'smooth', block:'center'});
       }
     }
@@ -658,6 +664,12 @@
           一括エクスポートで出力した JSON ファイルを読み込みます。<br>
           <strong>カテゴリ・スキルカタログ・サブスキル</strong>を一括でインポートします。<br>
           同名のカテゴリ・スキルは自動スキップされます。
+        </div>
+        <div class="alert alert-warning py-2 small mb-3" style="border-radius:10px;">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          <strong>注意：</strong>このインポートは<strong>新規追加のみ</strong>行います。<br>
+          既存データへの再インポートは推奨しません。UIで手動削除したサブスキルが<strong>復活する場合があります</strong>。<br>
+          移行・初期構築など <strong>空の環境へのインポート</strong> を想定した機能です。
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold small">JSONファイルを選択</label>
@@ -893,7 +905,6 @@ function openEditSubSkill(id, name, desc) {
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   .sortable-ghost { opacity: .4; background: #e0f2fe; border-radius: 6px; }
   .drag-handle:active { cursor: grabbing; }

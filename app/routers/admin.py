@@ -87,9 +87,29 @@ def change_role(
 def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
     current_user = auth.require_admin(request, db)
     target = db.query(models.User).filter(models.User.id == uid).first()
-    if target and target.id != current_user.id:
-        db.delete(target)
-        db.commit()
+    if not target or target.id == current_user.id:
+        return RedirectResponse("/admin/users", status_code=302)
+
+    # created_by が NOT NULL なテーブルは削除前に処理
+    # Ticket（TicketMessage も連鎖削除）
+    tickets = db.query(models.Ticket).filter(models.Ticket.created_by == uid).all()
+    for t in tickets:
+        db.query(models.TicketMessage).filter(models.TicketMessage.ticket_id == t.id).delete()
+        db.delete(t)
+    # Announcement
+    db.query(models.Announcement).filter(models.Announcement.created_by == uid).delete()
+    # EducationalLink
+    db.query(models.EducationalLink).filter(models.EducationalLink.created_by == uid).delete()
+    # AdminTodo（作成者のみ削除。担当者欄はNULLで可）
+    db.query(models.AdminTodo).filter(models.AdminTodo.created_by == uid).delete()
+    # approver_id が自分のUserSkillLevelは承認者を外す（NULLは可）
+    db.query(models.UserSkillLevel).filter(
+        models.UserSkillLevel.approver_id == uid
+    ).update({"approver_id": None})
+
+    db.flush()
+    db.delete(target)
+    db.commit()
     return RedirectResponse("/admin/users", status_code=302)
 
 
