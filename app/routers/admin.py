@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 
@@ -17,19 +17,9 @@ router = APIRouter(prefix="/admin")
 
 @router.get("", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
-    user = auth.require_admin(request, db)
-    user_count = db.query(models.User).count()
-    pending_count = db.query(models.User).filter(models.User.is_approved == False).count()
-    skill_count = db.query(models.Skill).count()
-    cat_count = db.query(models.Category).count()
-    users = db.query(models.User).order_by(models.User.created_at.desc()).all()
-    return templates.TemplateResponse(request, "admin/dashboard.html", {
-        "current_user": user,
-        "user_count": user_count, "pending_count": pending_count,
-        "skill_count": skill_count, "cat_count": cat_count,
-        "users": users,
-        "promo_video_exists": os.path.isfile(PROMO_VIDEO_PATH),
-    })
+    """管理パネルのトップは廃止し、ユーザー管理に統合"""
+    auth.require_admin(request, db)
+    return RedirectResponse("/admin/users", status_code=301)
 
 
 @router.get("/users", response_class=HTMLResponse)
@@ -37,7 +27,9 @@ def admin_users(request: Request, db: Session = Depends(get_db)):
     user = auth.require_admin(request, db)
     users = db.query(models.User).order_by(models.User.created_at.desc()).all()
     return templates.TemplateResponse(request, "admin/users.html", {
-        "current_user": user, "users": users
+        "current_user": user, "users": users,
+        "user_count": len(users),
+        "pending_count": sum(1 for u in users if not u.is_approved),
     })
 
 
@@ -106,6 +98,15 @@ def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
     db.query(models.UserSkillLevel).filter(
         models.UserSkillLevel.approver_id == uid
     ).update({"approver_id": None})
+
+    # 本人に紐づくレコードを削除
+    # （SQLiteはFK制約のON DELETE CASCADEを実行時に強制しないため、
+    #   ここで明示的に削除しないとIDが再利用された際に新規ユーザーへ
+    #   バッジ等が引き継がれてしまう）
+    db.query(models.UserBadge).filter(models.UserBadge.user_id == uid).delete()
+    db.query(models.UserSubSkillLevel).filter(models.UserSubSkillLevel.user_id == uid).delete()
+    db.query(models.SkillEvidence).filter(models.SkillEvidence.user_id == uid).delete()
+    db.query(models.SkillGoal).filter(models.SkillGoal.user_id == uid).delete()
 
     db.flush()
     db.delete(target)
@@ -245,16 +246,9 @@ def mail_test_compat(request: Request, test_email: str = Form(""), db: Session =
 
 @router.get("/settings/ai", response_class=HTMLResponse)
 def ai_settings_get(request: Request, db: Session = Depends(get_db)):
-    user = auth.require_admin(request, db)
-    cfg = get_config()
-    return templates.TemplateResponse(request, "admin/ai_settings.html", {
-        "current_user": user,
-        "ai_enabled":   cfg.get("ai_summary_enabled", False),
-        "ai_provider":  cfg.get("ai_provider", "anthropic"),
-        "local_llm_url": cfg.get("local_llm_url", ""),
-        "success": request.query_params.get("success"),
-        "error":   request.query_params.get("error"),
-    })
+    """AI設定はデータ管理ページに統合済み"""
+    auth.require_admin(request, db)
+    return RedirectResponse("/admin/settings/data", status_code=301)
 
 
 @router.post("/settings/ai")
@@ -271,7 +265,29 @@ def ai_settings_post(
         "ai_provider":        ai_provider.strip() or "anthropic",
         "local_llm_url":      local_llm_url.strip(),
     })
-    return RedirectResponse("/admin/settings/ai?success=AI設定を保存しました", status_code=302)
+    return RedirectResponse("/admin/settings/data?ai_success=AI設定を保存しました", status_code=302)
+
+
+# ══════════════════════════════════════════════════════════════
+# データ管理（カテゴリ・スキルカタログ・サブスキルの一括エクスポート/インポート）
+# ══════════════════════════════════════════════════════════════
+
+@router.get("/settings/data", response_class=HTMLResponse)
+def data_settings_get(request: Request, db: Session = Depends(get_db)):
+    user = auth.require_admin(request, db)
+    cfg = get_config()
+    return templates.TemplateResponse(request, "admin/data_settings.html", {
+        "current_user": user,
+        "category_count": db.query(models.Category).count(),
+        "skill_count": db.query(models.Skill).filter(models.Skill.is_archived == False).count(),
+        "sub_skill_count": db.query(models.SubSkill).count(),
+        "education_path_count": db.query(models.EducationalLink).filter(models.EducationalLink.skill_id.isnot(None)).count(),
+        "todo_count": db.query(models.AdminTodo).count(),
+        "promo_video_exists": os.path.isfile(PROMO_VIDEO_PATH),
+        "ai_enabled":   cfg.get("ai_summary_enabled", False),
+        "ai_provider":  cfg.get("ai_provider", "anthropic"),
+        "local_llm_url": cfg.get("local_llm_url", ""),
+    })
 
 
 # ══════════════════════════════════════════════════════════════
@@ -429,3 +445,78 @@ def admin_todo_delete(
         db.delete(todo)
         db.commit()
     return RedirectResponse("/admin/todos", status_code=303)
+
+
+@router.get("/todos/export")
+def admin_todos_export(request: Request, db: Session = Depends(get_db)):
+    """ToDoリストを1つのJSONファイルで一括エクスポート"""
+    from fastapi.responses import Response as _Response
+    import json as _json
+    from datetime import datetime as _dt
+    auth.require_admin(request, db)
+
+    todos = db.query(models.AdminTodo).order_by(
+        models.AdminTodo.status, models.AdminTodo.order_index, models.AdminTodo.id
+    ).all()
+
+    data = {
+        "exported_at": _dt.now().isoformat(),
+        "todos": [
+            {
+                "title": t.title,
+                "description": t.description or "",
+                "priority": t.priority,
+                "status": t.status,
+                "order_index": t.order_index,
+            }
+            for t in todos
+        ],
+    }
+
+    body = _json.dumps(data, ensure_ascii=False, indent=2)
+    filename = f"skillmap_todos_{_dt.now().strftime('%Y%m%d')}.json"
+    return _Response(
+        content=body.encode("utf-8"),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/todos/import")
+async def admin_todos_import(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """一括エクスポートJSONファイルからToDoリストを一括インポートする（同名タイトルは新規追加せずスキップ）"""
+    import json as _json
+    user = auth.require_admin(request, db)
+
+    content = await file.read()
+    try:
+        data = _json.loads(content.decode("utf-8-sig"))
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON の解析に失敗しました"}, status_code=400)
+
+    added = skipped = 0
+    for item in data.get("todos", []):
+        title = (item.get("title") or "").strip()
+        if not title:
+            continue
+        if db.query(models.AdminTodo).filter(models.AdminTodo.title == title).first():
+            skipped += 1
+            continue
+        status = item.get("status") or "pending"
+        max_order = db.query(models.AdminTodo).filter(models.AdminTodo.status == status).count()
+        db.add(models.AdminTodo(
+            title=title,
+            description=(item.get("description") or "").strip() or None,
+            priority=item.get("priority") or "medium",
+            status=status,
+            order_index=max_order,
+            created_by=user.id,
+        ))
+        added += 1
+
+    db.commit()
+    return JSONResponse({"ok": True, "added": added, "skipped": skipped})

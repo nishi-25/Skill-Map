@@ -325,6 +325,22 @@
   font-size: .9rem;
   pointer-events: none;
 }
+.search-box .search-clear {
+  position: absolute;
+  right: .6rem; top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: none;
+  font-size: .9rem;
+  padding: 2px 4px;
+  line-height: 1;
+}
+.search-box .search-clear:hover {
+  color: var(--text);
+}
 
 /* ── Radar / Chart Card ── */
 .chart-card {

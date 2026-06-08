@@ -802,7 +802,7 @@
         <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
           <div class="fw-bold fs-4" style="line-height:1;" data-counter="{{ total }}">0</div>
-          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.declared_skills">申告済みスキル</div>
+          <div class="text-muted" style="font-size:.78rem;" data-i18n="lbl.declared_skills">承認済みスキル</div>
         </div>
       </div>
       <div class="mt-2">
@@ -848,18 +848,6 @@
       </div>
     </div>
   </div>
-  {% if bus_factor_skills is defined and bus_factor_skills %}
-  <div class="col-6 col-md-3">
-    <div class="card border-warning h-100">
-      <div class="card-body text-center">
-        <i class="bi bi-exclamation-triangle-fill text-warning fs-2 mb-2"></i>
-        <div class="fw-bold fs-4 text-warning">{{ bus_factor_skills|length }}</div>
-        <div class="text-muted small">単一依存スキル</div>
-        <div class="text-muted" style="font-size:0.75rem;">習得者1人以下</div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
 </div>
 
 <!-- ティア別進捗 -->

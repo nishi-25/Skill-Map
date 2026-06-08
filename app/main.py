@@ -56,11 +56,21 @@ class PendingApprovalMiddleware(BaseHTTPMiddleware):
         request.state.pending_approval_count = 0
         request.state.pending_user_count = 0
         request.state.rejected_approval_count = 0
+        request.state.my_pending_count = 0
         db = database.SessionLocal()
         try:
             user = auth.get_current_user(request, db)
             if user and user.is_approved:
-                if user.role in ("admin", "manager"):
+                if user.role == "admin":
+                    # Admin は承認者の指定に関わらず、全ユーザーの保留中申請を承認できるため、
+                    # ナビゲーションのバッジ／強調表示も全件数で表示する（/approvals の表示と一致させる）
+                    count = (
+                        db.query(models.UserSkillLevel)
+                        .filter(models.UserSkillLevel.approval_status == "pending")
+                        .count()
+                    )
+                    request.state.pending_approval_count = count
+                elif user.role == "manager":
                     count = (
                         db.query(models.UserSkillLevel)
                         .filter(
@@ -71,12 +81,20 @@ class PendingApprovalMiddleware(BaseHTTPMiddleware):
                     )
                     request.state.pending_approval_count = count
                 else:
-                    # 一般ユーザー：自分の差し戻し件数
+                    # 一般ユーザー：自分の差し戻し件数・申請中件数
                     request.state.rejected_approval_count = (
                         db.query(models.UserSkillLevel)
                         .filter(
                             models.UserSkillLevel.user_id == user.id,
                             models.UserSkillLevel.approval_status == "rejected",
+                        )
+                        .count()
+                    )
+                    request.state.my_pending_count = (
+                        db.query(models.UserSkillLevel)
+                        .filter(
+                            models.UserSkillLevel.user_id == user.id,
+                            models.UserSkillLevel.approval_status == "pending",
                         )
                         .count()
                     )
@@ -151,6 +169,19 @@ async def setup_post(
             "error": "そのユーザー名は既に使用されています"
         })
 
+    # カテゴリ・スキルカタログ・サブスキルの初期データインポート（任意）
+    catalog_import_data = None
+    catalog_import_file = form.get("catalog_import_file")
+    if catalog_import_file is not None and getattr(catalog_import_file, "filename", ""):
+        import json as _json
+        content = await catalog_import_file.read()
+        try:
+            catalog_import_data = _json.loads(content.decode("utf-8-sig"))
+        except Exception:
+            return templates.TemplateResponse(request, "setup.html", {
+                "error": "カタログのインポートファイルの読み込みに失敗しました（一括エクスポートのJSON形式を確認してください）"
+            })
+
     admin = models.User(
         username=username,
         email=email or None,
@@ -179,6 +210,10 @@ async def setup_post(
                 db.add(models.AppSetting(key=key, value=val))
 
     db.commit()
+
+    if catalog_import_data is not None:
+        skills_router._apply_bulk_import(catalog_import_data, db)
+
     save_config({"setup_complete": True})
     return RedirectResponse("/login?msg=setup_done", status_code=303)
 
@@ -216,14 +251,27 @@ def _startup():
         _migrate_admin_todos_table()
         # suppress_ann_popup は冒頭で実行済み
         _migrate_categories(db)
-        _seed_catalog(db)
         _sync_tier_names(db)
     finally:
         db.close()
 
 
 def _migrate_categories(db):
-    """カテゴリ名の改訂・新設・統合を既存DBに適用する（冪等）"""
+    """カテゴリ名の改訂・新設・統合を既存DBに適用する（一度だけ実行・冪等）"""
+    _MIGRATION_KEY = "category_migration_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
+    # 新規インストール（カテゴリが1件も無い）の場合は移行対象データが無いため、
+    # フラグだけ立てて以降このマイグレーションを実行しないようにする。
+    # ここでスキップしないと _get_or_create() が新規カテゴリを作成したり
+    # サブスキルのシードが走ったりして、まっさらな環境にもデフォルトの
+    # カテゴリ・スキルが投入されてしまう
+    if db.query(models.Category).count() == 0:
+        db.add(models.AppSetting(key=_MIGRATION_KEY, value="skipped_fresh_install"))
+        db.commit()
+        return
+
     from sqlalchemy.orm import Session as _Session
 
     def _get_or_create(name: str, color: str) -> models.Category:
@@ -357,7 +405,7 @@ def _migrate_categories(db):
 
     # 注意: 起動時のスキル自動追加はここでは行わない
     # DB が正（UIでの変更・削除を保持するため）
-    # 新規インストール時のみ _seed_catalog() が _SEED_SKILLS を使用する
+    # 新規インストール時もカテゴリ・スキルカタログは投入しない（管理画面から作成する）
 
     # ── Git / GitHub 基礎サブスキルのシード ─────────────────
     git_skill = db.query(models.Skill).filter(models.Skill.name == "Git / GitHub").first()
@@ -561,6 +609,7 @@ def _migrate_categories(db):
         ("アプリの共有・展開",            "ユーザー・グループへアプリを共有しTeamsタブとして公開する"),
     ])
 
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
     db.commit()
 
 
@@ -787,204 +836,6 @@ def _migrate_tag_archive():
     if "is_archived" not in cols:
         with database.engine.begin() as conn:
             conn.execute(text("ALTER TABLE skills ADD COLUMN is_archived BOOLEAN DEFAULT 0 NOT NULL"))
-
-
-# 車両開発・HILS向けスキルカタログのシードデータ
-_SEED_CATEGORIES = [
-    {"name": "HILS基盤・構築",              "color": "#dc2626"},
-    {"name": "HILSプラットフォームツール",   "color": "#2563eb"},
-    {"name": "計測・診断ツール",             "color": "#0891b2"},
-    {"name": "Simulinkモデル開発",           "color": "#f97316"},
-    {"name": "車載通信・診断",               "color": "#9333ea"},
-    {"name": "制御・パワトレ知識",           "color": "#374151"},
-    {"name": "ハードウェア・W/H",            "color": "#d97706"},
-    {"name": "ソフトウェアテスト",           "color": "#7c3aed"},
-    {"name": "テスト自動化",                 "color": "#059669"},
-    {"name": "プログラミング",               "color": "#6366f1"},
-    {"name": "DevOps・開発基盤",             "color": "#0f766e"},
-    {"name": "品質・プロセス管理",           "color": "#be185d"},
-]
-
-# _SEED_SKILLS はアプリが空の状態で初回起動した場合のみ使用される。
-# 既存DBには影響しない（DBが正）。
-# このリストは現在の本番DBスナップショット（2026-05-30）と一致している。
-_SEED_SKILLS = [
-    # ── HILS基盤・構築 ──────────────────────────────────────
-    {"name": "HILS基本操作",            "cat": "HILS基盤・構築", "tier": "basic",        "desc": "HILSの電源投入・基本操作・ステータス確認"},
-    {"name": "HILS構成理解",            "cat": "HILS基盤・構築", "tier": "basic",        "desc": "HILSシステム全体構成（HW/SW/モデル）の理解"},
-    {"name": "HILSキャリブレーション",  "cat": "HILS基盤・構築", "tier": "basic",        "desc": "センサ・アクチュエータの校正・調整手順"},
-    {"name": "HILS障害切り分け",        "cat": "HILS基盤・構築", "tier": "intermediate", "desc": "HW/SW/モデル起因の問題を切り分け・原因特定"},
-    {"name": "HILSシステム設計",        "cat": "HILS基盤・構築", "tier": "intermediate", "desc": "要件からHILS全体構成の設計・機器選定"},
-    {"name": "HILS環境整備・保守",      "cat": "HILS基盤・構築", "tier": "advanced",     "desc": "HILSラック整備・定期メンテナンス・信頼性確保"},
-    {"name": "HILS仕様書作成",          "cat": "HILS基盤・構築", "tier": "advanced",     "desc": "HILS環境の構成・I/O設定・通信設定・信号定義を記述した仕様書を作成しチーム間で共有・管理する"},
-
-    # ── HILSプラットフォームツール ──────────────────────────
-    {"name": "ControlDesk 基本操作",    "cat": "HILSプラットフォームツール", "tier": "basic",        "desc": "レイアウト作成・変数モニタリング・データ記録"},
-    {"name": "SCALEXIO シミュレータ設定","cat": "HILSプラットフォームツール", "tier": "basic",        "desc": "SCALEXIOの入出力チャンネル・通信ボード・電源構成をConfigurationDeskで設定しシミュレータを構築する"},
-    {"name": "ConfigurationDesk",       "cat": "HILSプラットフォームツール", "tier": "basic",        "desc": "I/O・通信設定、ハードウェアコンフィグレーション"},
-    {"name": "CANMM",                   "cat": "HILSプラットフォームツール", "tier": "basic",        "desc": "dSPACE CAN MultiMessage ConfiguratorでCANバスメッセージ・信号をHILS環境向けに設定しCANノードをシミュレートする"},
-    {"name": "LINMM",                   "cat": "HILSプラットフォームツール", "tier": "basic",        "desc": "dSPACE LIN MultiMessage ConfiguratorでLINバスのマスタ/スレーブスケジュール・信号をHILS環境向けに設定する"},
-    {"name": "BusManager",              "cat": "HILSプラットフォームツール", "tier": "intermediate", "desc": "dSPACE BusManagerでCAN/LIN等の複数バス通信を一元管理し、ボードへの割り当て・ネットワーク構成を統合設定する"},
-    {"name": "AURELION",                "cat": "HILSプラットフォームツール", "tier": "intermediate", "desc": "dSPACE AURELIONを用いた自動運転・ADAS向けセンサモデルの統合・シナリオ設定・HILSテスト実行"},
-    {"name": "ControlDesk Automation",  "cat": "HILSプラットフォームツール", "tier": "intermediate", "desc": "ControlDesk Automation APIをPythonから呼び出して計測・変数操作・レコーダー制御を自動化し、計測データの処理・エクスポート・レイアウト制御を含むワークフローを構築する"},
-    {"name": "ModelDesk",               "cat": "HILSプラットフォームツール", "tier": "intermediate", "desc": "車両モデル・ドライバモデルの設定・シナリオ実行"},
-    {"name": "VEOS（仮想ECU）",         "cat": "HILSプラットフォームツール", "tier": "advanced",     "desc": "実機なしでECUソフトウェアをPCで実行するSIL環境をVEOSで構築し、HILSテスト前の初期検証を行う"},
-
-    # ── リプロ・計測ツール ────────────────────────────────────
-    {"name": "CAN計測インタフェース（Vector VN / PCAN）", "cat": "リプロ・計測ツール", "tier": "basic", "desc": "Vector VNシリーズ・PCAN等のCANインタフェース機器をPCに接続し通信チャンネルを設定・管理する"},
-    {"name": "オシロスコープ基礎",              "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "オシロスコープでプローブを接続し波形観測・トリガ設定・カーソル計測で信号の電気特性を確認する"},
-    {"name": "CANoe 基礎",                      "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "基本操作・ログ取得・DBC読み込み・信号モニタリングでCAN通信の観測・記録を行う"},
-    {"name": "GTS",     "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "GTSでダイアグ診断・ソフト品番読出・強制駆動・任意CANメッセージ送受信を行う"},
-    {"name": "INCA",    "cat": "リプロ・計測ツール", "tier": "intermediate", "desc": "INCAでECUに接続し計測変数設定・データ取得・キャリブレーション設計・A2L/HEX管理・最適化まで実施する"},
-    {"name": "KNOWTON", "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "KNOWTONでECUのリプロ・ソフト品番読出・ダイアグ診断・任意CANメッセージ送受信を行う"},
-    {"name": "Panel4",  "cat": "リプロ・計測ツール", "tier": "intermediate", "desc": "Panel4でECU・AI・AIO・CANモジュールを使用した計測設定・データ記録から自動計測・条件トリガ記録まで実施する"},
-    {"name": "TS-Writer基礎",                   "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "TS-WriterでECUのリプロ・強制書き換え・ダイアグ診断（SID/DID操作）を実施する"},
-    {"name": "グラフテック 温度監視",           "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "グラフテック製データロガーでチャンネルを設定し温度等のアナログ値を記録・アラート管理・データ出力する"},
-    {"name": "定電圧電源",                      "cat": "リプロ・計測ツール", "tier": "basic",        "desc": "定電圧電源をECU電源供給やバッテリ模擬に使用し、出力電圧・電流設定・過電流保護の操作を行う"},
-    {"name": "VISA規格による自動操作",          "cat": "リプロ・計測ツール", "tier": "intermediate", "desc": "NI-VISA等のVISA APIでオシロスコープ・電源・計測器をPythonから制御しテスト計測を自動化する"},
-    {"name": "CANoe 通信解析・シミュレーション","cat": "リプロ・計測ツール", "tier": "intermediate", "desc": "CANoeで通信シミュレーション・診断通信・CAPLスクリプトを活用し高度な通信解析を行う"},
-    {"name": "CAPL開発",                        "cat": "リプロ・計測ツール", "tier": "intermediate", "desc": "CANoe用スクリプト言語CAPLでノードシミュレーション・診断自動化・テストシーケンスを実装する"},
-
-    # ── Simulinkモデル開発 ───────────────────────────────────
-    {"name": "MATLAB 基礎",             "cat": "Simulinkモデル開発", "tier": "basic",        "desc": "MATLAB Script・数値計算・基本データ操作・グラフ描画"},
-    {"name": "Simulink 基礎",           "cat": "Simulinkモデル開発", "tier": "basic",        "desc": "基本ブロック操作・信号接続・シミュレーション実行"},
-    {"name": "Stateflow",               "cat": "Simulinkモデル開発", "tier": "basic",        "desc": "状態遷移・フローチャート設計・イベント処理"},
-    {"name": "プラントモデル開発",      "cat": "Simulinkモデル開発", "tier": "basic",        "desc": "車両・アクチュエータ・センサの物理モデル開発"},
-    {"name": "S-Function 開発",         "cat": "Simulinkモデル開発", "tier": "intermediate", "desc": "カスタムブロック（C / MATLAB S-Function）開発"},
-    {"name": "モデル結合・I/F設計",     "cat": "Simulinkモデル開発", "tier": "intermediate", "desc": "複数モデルの統合・信号インタフェース（Bus/Mux/Constant等）設計・検証"},
-
-    # ── 車載通信・診断 ────────────────────────────────────────
-    {"name": "CAN FD通信",              "cat": "車載通信・診断", "tier": "basic",        "desc": "CAN FDのフレーム構造・ビットレート切替・CAN比較"},
-    {"name": "CAN通信",                 "cat": "車載通信・診断", "tier": "basic",        "desc": "CANプロトコル・DBC・メッセージ・信号定義の理解"},
-    {"name": "CXPI通信",                "cat": "車載通信・診断", "tier": "basic",        "desc": "CXPIプロトコル・ボデー系ネットワーク・LIN後継の基礎"},
-    {"name": "DBC / CANdb++ 管理",      "cat": "車載通信・診断", "tier": "basic",        "desc": "CAN信号定義ファイルの作成・編集・バージョン管理"},
-    {"name": "LIN通信",                 "cat": "車載通信・診断", "tier": "basic",        "desc": "LINプロトコル・マスタ/スレーブ・スケジュール表"},
-    {"name": "SENT通信",                "cat": "車載通信・診断", "tier": "basic",        "desc": "SENTプロトコル・センサ値伝送・ニブル列の読み方"},
-    {"name": "XCP / A2Lプロトコル",    "cat": "車載通信・診断", "tier": "basic",        "desc": "キャリブレーション通信プロトコル・A2LファイルとINCAの連携"},
-    {"name": "OBD診断（ISO 15765）",    "cat": "車載通信・診断", "tier": "intermediate", "desc": "PID読み出し・エミッション診断・OBD-IIフレーム構造"},
-    {"name": "UDS診断（ISO 14229）",    "cat": "車載通信・診断", "tier": "intermediate", "desc": "SID/DIDの体系・診断サービス要求・レスポンス解釈"},
-    {"name": "車載Ethernet",            "cat": "車載通信・診断", "tier": "intermediate", "desc": "100BASE-T1・DoIP・AVB/TSN・車載ネットワーク設計"},
-    {"name": "診断通信テスト設計",      "cat": "車載通信・診断", "tier": "advanced",     "desc": "CANoeを用いた診断シーケンス設計・異常系テスト・DoIPテスト"},
-
-    # ── 制御・パワトレ知識 ───────────────────────────────────
-    {"name": "ECU基礎知識",             "cat": "制御・パワトレ知識", "tier": "basic",        "desc": "ECUの役割・入出力・ソフトウェア構成の基本"},
-    {"name": "EFI制御知識",             "cat": "制御・パワトレ知識", "tier": "basic",        "desc": "エンジン制御（燃料噴射・点火・空燃比）の基礎知識"},
-    {"name": "車両基礎知識",            "cat": "制御・パワトレ知識", "tier": "basic",        "desc": "車両系統（パワトレ・シャシ・ボデー）の基本的な理解"},
-    {"name": "AUTOSAR知識",             "cat": "制御・パワトレ知識", "tier": "intermediate", "desc": "AUTOSARアーキテクチャ・SWC・RTE・BSWの理解"},
-    {"name": "HEV/BEV制御知識",         "cat": "制御・パワトレ知識", "tier": "intermediate", "desc": "ハイブリッド・EV制御（モータ・バッテリ・回生）の理解"},
-    {"name": "レーン制御・ADAS知識",    "cat": "制御・パワトレ知識", "tier": "intermediate", "desc": "LKAS/EPS系ECUの制御概要・車線維持・操舵制御のテスト観点"},
-    {"name": "機能安全（ISO 26262）",   "cat": "制御・パワトレ知識", "tier": "intermediate", "desc": "ASIL分類・安全要求・ハザード分析の概要理解（知識レベル）"},
-
-    # ── ハードウェア・W/H ────────────────────────────────────
-    {"name": "ECU接続・結線",           "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "ECUコネクタへの配線接続・導通確認・ピンアサイン"},
-    {"name": "I/F設計",                 "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "インターフェース設計ができる"},
-    {"name": "I/O設計",                 "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "In・Outの設計ができる"},
-    {"name": "W/H基礎知識",             "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "ワイヤハーネスの基本構成・端子・コネクタ種類"},
-    {"name": "W/H設計",                 "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "HILS用ハーネス設計・仕様書作成・製作指示"},
-    {"name": "回路図・配線図読解",      "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "電気回路図・車両配線図の読み方・記号理解"},
-    {"name": "通信設計",                "cat": "ハードウェア・W/H", "tier": "basic",        "desc": "終端抵抗を理解した通信設計ができる"},
-    {"name": "HILSラック組立・配線",    "cat": "ハードウェア・W/H", "tier": "intermediate", "desc": "dSPACEボード・ECU・電源のラック組み立て・配線"},
-    {"name": "電源設計",                "cat": "ハードウェア・W/H", "tier": "intermediate", "desc": "電源要件定義・回路設計・保護回路・ノイズ対策"},
-    {"name": "HILS筐体・構成設計",      "cat": "ハードウェア・W/H", "tier": "advanced",     "desc": "HILSシステム全体のHW構成設計・機器選定・仕様策定"},
-    {"name": "故障注入回路設計（FIU）", "cat": "ハードウェア・W/H", "tier": "advanced",     "desc": "故障注入ユニットの回路設計・断線/短絡/電圧異常の再現回路構築"},
-
-    # ── ソフトウェアテスト ───────────────────────────────────
-    {"name": "テストケース作成",        "cat": "ソフトウェアテスト", "tier": "basic",        "desc": "同値分割・境界値・状態遷移・デシジョンテーブル活用"},
-    {"name": "テスト仕様書読解",        "cat": "ソフトウェアテスト", "tier": "basic",        "desc": "テスト仕様書の内容理解・テスト項目把握"},
-    {"name": "テスト実行・記録",        "cat": "ソフトウェアテスト", "tier": "basic",        "desc": "手順に従ったテスト実行・結果記録・エビデンス取得"},
-    {"name": "テスト結果解析",          "cat": "ソフトウェアテスト", "tier": "basic",        "desc": "波形・ログ解析・NG原因の特定・レポート作成"},
-    {"name": "テスト分析",              "cat": "ソフトウェアテスト", "tier": "intermediate", "desc": "要求仕様・設計書からテスト観点を洗い出しリスクを考慮したテスト分析を行う"},
-    {"name": "テスト設計",              "cat": "ソフトウェアテスト", "tier": "intermediate", "desc": "同値分割・境界値・状態遷移・デシジョンテーブル等の技法でテストケースを設計する"},
-    {"name": "回帰テスト設計",          "cat": "ソフトウェアテスト", "tier": "intermediate", "desc": "変更影響範囲の特定・効率的な回帰テスト設計"},
-    {"name": "網羅率分析・管理",        "cat": "ソフトウェアテスト", "tier": "intermediate", "desc": "C0/C1カバレッジ分析・未検証部位の特定と対策"},
-    {"name": "テストデータ管理",        "cat": "ソフトウェアテスト", "tier": "intermediate", "desc": "入力信号・刺激パターン・期待値を定義したテストデータを作成・バージョン管理し再利用性を高める"},
-    {"name": "テスト戦略策定",          "cat": "ソフトウェアテスト", "tier": "advanced",     "desc": "プロジェクト全体のテスト方針・スコープ・優先度・リスク評価の設計"},
-
-    # ── テスト自動化 ─────────────────────────────────────────
-    {"name": "AutomationDesk",           "cat": "テスト自動化", "tier": "intermediate", "desc": "AutomationDeskでHILSテストシーケンスを作成・自動化し外部ツールと連携するスキル"},
-    {"name": "ecu.test",                "cat": "テスト自動化", "tier": "intermediate", "desc": "ecu.testでHILSテストケースを作成・実行し結果管理・自動化まで行うスキル"},
-    {"name": "Pythonによるテスト自動化", "cat": "テスト自動化", "tier": "intermediate", "desc": "Pythonスクリプトでecu.test/AutomationDesk・計測器を制御しテストシーケンス・結果収集を自動化する"},
-    {"name": "テスト自動化設計",        "cat": "テスト自動化", "tier": "advanced",     "desc": "テストフレームワーク設計・自動化戦略の立案・実装"},
-
-    # ── プログラミング ───────────────────────────────────────
-    {"name": "C++ 基礎",                "cat": "プログラミング", "tier": "basic",        "desc": "クラス・継承・STL・組込みC++"},
-    {"name": "C言語 基礎",              "cat": "プログラミング", "tier": "basic",        "desc": "変数・ポインタ・構造体・組込み向けC言語基礎"},
-    {"name": "Python 基礎",             "cat": "プログラミング", "tier": "basic",        "desc": "変数・制御文・関数・ファイル操作・基本ライブラリ"},
-    {"name": "Python 応用",             "cat": "プログラミング", "tier": "basic",        "desc": "クラス・外部ライブラリ（pandas/numpy等）・データ処理"},
-    {"name": "データ可視化・BI（Power BI）",    "cat": "プログラミング", "tier": "basic",        "desc": "データをPower BIで分析・可視化しレポート・ダッシュボードを作成するスキル"},
-    {"name": "ローコードアプリ開発（Power Apps）","cat": "プログラミング", "tier": "basic",        "desc": "Power Appsでローコードビジネスアプリを開発するスキル"},
-    {"name": "生成AI活用",              "cat": "プログラミング", "tier": "basic",        "desc": "GitHub Copilot等による開発補助・プロンプト設計・活用ノウハウ"},
-    {"name": "GUI開発（Python）",       "cat": "プログラミング", "tier": "intermediate", "desc": "PyQt / Tkinter・デスクトップアプリ設計・開発"},
-    {"name": "Webアプリ開発",           "cat": "プログラミング", "tier": "intermediate", "desc": "FastAPI / Flask・REST API設計・フロントエンド連携"},
-    {"name": "データ解析・可視化（Python）","cat": "プログラミング", "tier": "intermediate", "desc": "pandas/matplotlib・測定データ集計・グラフ可視化"},
-
-    # ── DevOps・開発基盤 ─────────────────────────────────────
-    {"name": "Docker",                   "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "Dockerfile・イメージ・コンテナ操作・Docker Compose・ネットワーク・ボリューム・マルチステージビルドまでコンテナ技術を実務で活用する"},
-    {"name": "Git / GitHub基礎",        "cat": "DevOps・開発基盤", "tier": "basic",        "desc": "バージョン管理・ブランチ・コミット・マージ・PR・Issue・コードレビュー"},
-    {"name": "コマンドライン操作",      "cat": "DevOps・開発基盤", "tier": "basic",        "desc": "Linux bash / Windows PowerShell・コマンドプロンプト共通の操作。ls/dir・ping・grep・find等のコマンド活用"},
-    {"name": "WSL（Windows Subsystem for Linux）", "cat": "DevOps・開発基盤", "tier": "basic", "desc": "Windows上でLinux環境を構築しDocker・シェルスクリプト・Linux系ツールを実行する"},
-    {"name": "ネットワーク基礎",        "cat": "DevOps・開発基盤", "tier": "basic",        "desc": "IP・DNS・ルーティング・VLANなど複数PC接続環境の知識"},
-    {"name": "業務フロー自動化（Power Automate）","cat": "品質・プロセス管理", "tier": "basic",        "desc": "業務フローをPower Automateで自動化するスキル"},
-    {"name": "CI/CDパイプライン設計",   "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "複数ツール・ステージを組み合わせたテスト・ビルド・デプロイ・結果通知の自動化パイプラインを設計・構築する"},
-    {"name": "Git / GitHub 応用",       "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "ブランチ戦略・履歴操作・チーム運用など中級以上のGit/GitHub活用"},
-    {"name": "GitHub Actions",          "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "ワークフローYAMLを作成してCI/CDパイプラインを構築し、テスト自動化・ビルド・通知連携を実現する"},
-    {"name": "JFrog Artifactory",       "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "ビルド成果物（バイナリ・Dockerイメージ等）をArtifactoryで管理し、CI/CDパイプラインと連携する"},
-    {"name": "社内ツール・アプリ企画・設計","cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "業務課題を整理し効率化WebアプリやGUIツールの要件定義・設計・開発・運用までを担う"},
-    {"name": "Kubernetes",              "cat": "DevOps・開発基盤", "tier": "advanced",     "desc": "Pod・Service・Deployment・Helm・HPA・RBAC・Ingress等を活用したコンテナアプリの構築・運用・トラブルシュート"},
-    {"name": "AWS",                     "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "AWSを用いたクラウド基盤の構築・運用・CI/CD連携スキル"},
-    {"name": "Azure",                   "cat": "DevOps・開発基盤", "tier": "intermediate", "desc": "Azureを用いたクラウド基盤の構築・運用・DevOps連携スキル"},
-
-    # ── 品質・プロセス管理 ───────────────────────────────────
-    {"name": "スケジュール管理",        "cat": "品質・プロセス管理", "tier": "basic",        "desc": "WBSを作成してマイルストーンを設定し、遅延リスクを早期検知して関係者に共有・調整する"},
-    {"name": "タスク管理・進捗報告",    "cat": "品質・プロセス管理", "tier": "basic",        "desc": "担当タスクの優先度付け・期限管理を行い定例会議で的確に進捗・課題を報告する"},
-    {"name": "チームWiki・ナレッジ管理（Confluence）","cat": "品質・プロセス管理", "tier": "basic", "desc": "Confluenceでスペース・ページ・テンプレートを活用しチームの知識・設計情報・議事録を一元管理する"},
-    {"name": "テストレポート作成",      "cat": "品質・プロセス管理", "tier": "basic",        "desc": "テスト結果を集計・分析し品質評価・未完了事項・リリース判定を記述したレポートを作成する"},
-    {"name": "テスト計画策定",          "cat": "品質・プロセス管理", "tier": "basic",        "desc": "テスト方針・スコープ・スケジュール・リソースを計画しステークホルダーと合意する"},
-    {"name": "ドキュメント・ファイル管理（SharePoint）","cat": "品質・プロセス管理", "tier": "basic", "desc": "SharePointでチームサイト・ドキュメントライブラリ・リスト・権限管理を行い組織のファイル基盤を運用する"},
-    {"name": "ビジネスチャット（Slack）","cat": "品質・プロセス管理", "tier": "basic",        "desc": "Slackでチャンネル・スレッド・ワークフロー・Webhook通知・外部アプリ連携を活用してチームコミュニケーションを行う"},
-    {"name": "ビジネスチャット（Teams）","cat": "品質・プロセス管理", "tier": "basic",        "desc": "Microsoft Teamsでチャンネル・会議・ファイル共有・Webhook通知を活用してチームコミュニケーションを行う"},
-    {"name": "不具合管理",              "cat": "品質・プロセス管理", "tier": "basic",        "desc": "検出されたバグを重要度・再現条件とともにトラッキングし、修正確認・クローズまで管理する"},
-    {"name": "技術ドキュメント作成",    "cat": "品質・プロセス管理", "tier": "basic",        "desc": "議事録・仕様書・手順書・技術メモをWord・Markdown・図表を活用して分かりやすく作成する"},
-    {"name": "技術レビュー実施",        "cat": "品質・プロセス管理", "tier": "basic",        "desc": "設計書・コード・テスト仕様に対して観点を持ちレビューし、建設的なフィードバックを提供する"},
-    {"name": "課題追跡・プロジェクト管理（JIRA）","cat": "品質・プロセス管理", "tier": "basic", "desc": "JIRAでIssue管理・スプリント計画・ボード運用・ダッシュボードを活用しチームのプロジェクトを管理する"},
-    {"name": "静的解析・QAC活用",       "cat": "品質・プロセス管理", "tier": "basic",        "desc": "QAC等の静的解析ツールでコーディング規約違反・未使用変数・危険な記述を検出し対応する"},
-    {"name": "QMSプロセス理解",         "cat": "品質・プロセス管理", "tier": "intermediate", "desc": "品質マネジメントシステムのプロセス・手順を理解し、規定に準拠した活動と監査対応を行う"},
-    {"name": "チームリード",            "cat": "品質・プロセス管理", "tier": "intermediate", "desc": "メンバーへのタスク割当・進捗フォロー・育成を行い技術的な意思決定とステークホルダー調整を担う"},
-    {"name": "品質指標管理",            "cat": "品質・プロセス管理", "tier": "intermediate", "desc": "KPI（バグ検出数・カバレッジ・テスト消化率等）を設定・収集し傾向を分析して改善活動につなげる"},
-    {"name": "ASPICE",                  "cat": "品質・プロセス管理", "tier": "advanced",     "desc": "Automotive SPICEのプロセスアセスメントモデルを理解し、組織のプロセス評価・改善施策を立案する"},
-    {"name": "プロセス改善",            "cat": "品質・プロセス管理", "tier": "advanced",     "desc": "課題を構造的に分析して改善策を立案・実施し、KPIで効果を測定して横展開する"},
-]
-
-
-def _seed_catalog(db):
-    """カテゴリーとスキルカタログが空の場合のみシードデータを投入する"""
-    if db.query(models.Skill).count() > 0:
-        return
-    _do_seed(db)
-
-
-def _do_seed(db):
-    """シードデータを投入する（強制実行用）"""
-    cat_map: dict[str, int] = {}
-    for c in _SEED_CATEGORIES:
-        existing = db.query(models.Category).filter(models.Category.name == c["name"]).first()
-        if not existing:
-            obj = models.Category(name=c["name"], color=c["color"])
-            db.add(obj)
-            db.flush()
-            cat_map[c["name"]] = obj.id
-        else:
-            cat_map[c["name"]] = existing.id
-
-    for s in _SEED_SKILLS:
-        db.add(models.Skill(
-            name=s["name"],
-            description=s["desc"],
-            category_id=cat_map.get(s["cat"]),
-            tier=s["tier"],
-        ))
-    db.commit()
-    logger.info("スキルカタログのシードデータを投入しました")
 
 
 # ─── ルート ──────────────────────────────────────────────────────
@@ -2176,17 +2027,11 @@ async def upload_promo_video(
     # mp4 のみ許可
     ext = os.path.splitext(video.filename or "")[1].lower()
     if ext not in (".mp4", ".webm", ".mov"):
-        return templates.TemplateResponse(request, "admin/dashboard.html", {
-            "current_user": user,
-            "promo_error": "対応形式: .mp4 .webm .mov",
-        })
+        return RedirectResponse("/admin/settings/data?promo_error=対応形式: .mp4 .webm .mov", status_code=303)
 
     contents = await video.read()
     if len(contents) > 500 * 1024 * 1024:  # 500MB 上限
-        return templates.TemplateResponse(request, "admin/dashboard.html", {
-            "current_user": user,
-            "promo_error": "ファイルサイズは500MB以下にしてください",
-        })
+        return RedirectResponse("/admin/settings/data?promo_error=ファイルサイズは500MB以下にしてください", status_code=303)
 
     save_path = os.path.join("data", f"promo{ext}")
     # 既存の旧ファイルを削除
@@ -2203,7 +2048,7 @@ async def upload_promo_video(
             os.remove(PROMO_VIDEO_PATH)
         os.rename(save_path, PROMO_VIDEO_PATH)
 
-    return RedirectResponse("/admin?promo_uploaded=1", status_code=303)
+    return RedirectResponse("/admin/settings/data?promo_uploaded=1", status_code=303)
 
 
 @app.post("/admin/delete-promo-video")
@@ -2214,7 +2059,7 @@ def delete_promo_video(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403)
     if os.path.isfile(PROMO_VIDEO_PATH):
         os.remove(PROMO_VIDEO_PATH)
-    return RedirectResponse("/admin", status_code=303)
+    return RedirectResponse("/admin/settings/data", status_code=303)
 
 
 # ─── デモページ（認証不要） ──────────────────────────────────────

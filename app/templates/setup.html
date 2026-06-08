@@ -40,7 +40,7 @@
   </div>
   {% endif %}
 
-  <form method="post" action="/setup">
+  <form method="post" action="/setup" enctype="multipart/form-data">
     <!-- Step 1: 管理者アカウント -->
     <div class="step-section">
       <h6><span class="step-badge me-2">1</span>管理者アカウント</h6>
@@ -104,6 +104,19 @@
             <input type="url" name="app_url" class="form-control form-control-sm" value="http://localhost:8190">
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Step 3: 初期データのインポート -->
+    <div class="step-section">
+      <h6><span class="step-badge me-2">3</span>カタログの初期データ <span class="text-muted fw-normal" style="font-size:.72rem;">（任意・後から管理者設定で再インポート可）</span></h6>
+      <p class="text-muted small mb-2">
+        カテゴリ・スキルカタログ・サブスキルをまとめたJSONファイル（一括エクスポート形式）を読み込み、初期データとして登録できます。
+      </p>
+      <div class="mb-0">
+        <label class="form-label small fw-semibold">JSONファイルを選択</label>
+        <input type="file" name="catalog_import_file" class="form-control form-control-sm"
+               accept=".json" style="border-radius:10px;">
       </div>
     </div>
 

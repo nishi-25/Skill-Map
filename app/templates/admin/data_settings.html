@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+{% block title %}データ管理 - 管理パネル{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-database me-2" style="color:#f97316;"></i>データ管理</h1>
+  <p class="text-muted mb-0 small">スキルカタログ・学習パス・ToDoリストをそれぞれエクスポート / インポートできます（セクションごとに対象が異なります）</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3" style="color:#8b5cf6;">{{ category_count }}</div>
+      <div class="text-muted small">カテゴリー</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3 text-success">{{ skill_count }}</div>
+      <div class="text-muted small">スキルカタログ</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3" style="color:#f97316;">{{ sub_skill_count }}</div>
+      <div class="text-muted small">サブスキル</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #2563eb;">
+    <i class="bi bi-box-arrow-down me-2" style="color:#2563eb;"></i>スキルカタログのエクスポート
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      カテゴリ・スキルカタログ・サブスキルを1つのJSONファイルにまとめてダウンロードします。<br>
+      バックアップや他環境への移行・このページのインポートにそのまま使用できます。
+    </p>
+    <a href="/skills/bulk-export" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-download me-1"></i>JSONをエクスポート
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #22c55e;">
+    <i class="bi bi-box-arrow-in-down me-2" style="color:#22c55e;"></i>スキルカタログのインポート
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info py-2 small mb-3" style="border-radius:10px;">
+      <i class="bi bi-info-circle me-1"></i>
+      エクスポートで出力した JSON ファイルを読み込みます。<br>
+      <strong>カテゴリ・スキルカタログ・サブスキル</strong>を一括でインポートします。
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold small">インポート方法</label>
+      <div class="d-flex flex-column gap-2">
+        <label class="d-flex align-items-start gap-2 p-2 rounded-3 border" style="cursor:pointer;" id="modeCardAdd" onclick="document.getElementById('modeRadioAdd').click()">
+          <input type="radio" id="modeRadioAdd" name="dataImportMode" value="add" class="mt-1" checked onchange="onImportModeChange()">
+          <div>
+            <div class="fw-semibold small">既存データに追加する</div>
+            <div class="text-muted" style="font-size:.78rem;">
+              同名のカテゴリ・スキルは自動スキップされ、新規分のみ追加されます。<br>
+              既存データへの再インポートは推奨しません（UIで手動削除したサブスキルが復活する場合があります）。移行・初期構築など空の環境へのインポートを想定しています。
+            </div>
+          </div>
+        </label>
+        <label class="d-flex align-items-start gap-2 p-2 rounded-3 border" style="cursor:pointer;" id="modeCardReplace" onclick="document.getElementById('modeRadioReplace').click()">
+          <input type="radio" id="modeRadioReplace" name="dataImportMode" value="replace_all" class="mt-1" onchange="onImportModeChange()">
+          <div>
+            <div class="fw-semibold small text-danger">既存のスキルをすべて削除してインポートする</div>
+            <div class="text-muted" style="font-size:.78rem;">
+              既存の<strong>カテゴリ・スキルカタログ・サブスキル</strong>と、それに紐づく<strong>ユーザーの申告レベル・エビデンス・目標</strong>などを<strong>すべて削除</strong>してから、JSONの内容でカタログを再構築します。<br>
+              <span class="text-danger">この操作は取り消せません。</span>
+            </div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div id="replaceAllWarning" class="alert alert-danger py-2 small mb-3" style="border-radius:10px;display:none;">
+      <i class="bi bi-exclamation-octagon-fill me-1"></i>
+      <strong>「全削除してインポート」を選択すると、既存のスキルカタログとユーザーの申告データが完全に失われます。</strong><br>
+      実行前に上の「エクスポート」でバックアップを取ることを強く推奨します。
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold small">JSONファイルを選択</label>
+      <input type="file" id="dataImportFile" class="form-control" accept=".json" style="border-radius:10px;max-width:420px;">
+    </div>
+    <button type="button" class="btn btn-success btn-sm" id="dataImportBtn" onclick="doDataImport()" style="border-radius:20px;">
+      <i class="bi bi-upload me-1"></i>インポート実行
+    </button>
+    <div id="dataImportResult" class="mt-3" style="display:none;"></div>
+  </div>
+</div>
+
+<hr class="my-4">
+
+<div class="page-header">
+  <h2 class="h5 mb-1"><i class="bi bi-signpost-split-fill me-2" style="color:#14b8a6;"></i>学習パス</h2>
+  <p class="text-muted mb-0 small">スキルに紐づく学習パス（ステップ）をまとめてエクスポート / インポートします</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3" style="color:#14b8a6;">{{ education_path_count }}</div>
+      <div class="text-muted small">学習パスステップ</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #2563eb;">
+    <i class="bi bi-box-arrow-down me-2" style="color:#2563eb;"></i>学習パスのエクスポート
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      各スキルに紐づく学習パスのステップ（対象スキル名・タイトル・URL・説明・順序）を1つのJSONファイルにまとめてダウンロードします。
+    </p>
+    <a href="/education/paths/export" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-download me-1"></i>JSONをエクスポート
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #22c55e;">
+    <i class="bi bi-box-arrow-in-down me-2" style="color:#22c55e;"></i>学習パスのインポート
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info py-2 small mb-3" style="border-radius:10px;">
+      <i class="bi bi-info-circle me-1"></i>
+      エクスポートで出力した JSON ファイルを読み込みます。<br>
+      <strong>スキル名</strong>で照合してステップを追加します（同名スキルが存在しない場合はスキップされます）。同じスキル×タイトルの組み合わせは自動スキップされ、新規分のみ追加されます。
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold small">JSONファイルを選択</label>
+      <input type="file" id="eduPathImportFile" class="form-control" accept=".json" style="border-radius:10px;max-width:420px;">
+    </div>
+    <button type="button" class="btn btn-success btn-sm" id="eduPathImportBtn" onclick="doEducationPathImport()" style="border-radius:20px;">
+      <i class="bi bi-upload me-1"></i>インポート実行
+    </button>
+    <div id="eduPathImportResult" class="mt-3" style="display:none;"></div>
+  </div>
+</div>
+
+<hr class="my-4">
+
+<div class="page-header">
+  <h2 class="h5 mb-1"><i class="bi bi-check2-square me-2" style="color:#0ea5e9;"></i>ToDoリスト</h2>
+  <p class="text-muted mb-0 small">管理パネルのToDoリストをまとめてエクスポート / インポートします</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3" style="color:#0ea5e9;">{{ todo_count }}</div>
+      <div class="text-muted small">ToDoタスク</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #2563eb;">
+    <i class="bi bi-box-arrow-down me-2" style="color:#2563eb;"></i>ToDoリストのエクスポート
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      ToDoリストの全タスク（タイトル・説明・優先度・ステータス）を1つのJSONファイルにまとめてダウンロードします。
+    </p>
+    <a href="/admin/todos/export" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+      <i class="bi bi-download me-1"></i>JSONをエクスポート
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #22c55e;">
+    <i class="bi bi-box-arrow-in-down me-2" style="color:#22c55e;"></i>ToDoリストのインポート
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info py-2 small mb-3" style="border-radius:10px;">
+      <i class="bi bi-info-circle me-1"></i>
+      エクスポートで出力した JSON ファイルを読み込みます。<br>
+      同じタイトルのタスクは自動スキップされ、新規分のみ追加されます。
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold small">JSONファイルを選択</label>
+      <input type="file" id="todoImportFile" class="form-control" accept=".json" style="border-radius:10px;max-width:420px;">
+    </div>
+    <button type="button" class="btn btn-success btn-sm" id="todoImportBtn" onclick="doTodoImport()" style="border-radius:20px;">
+      <i class="bi bi-upload me-1"></i>インポート実行
+    </button>
+    <div id="todoImportResult" class="mt-3" style="display:none;"></div>
+  </div>
+</div>
+
+<hr class="my-4">
+
+<div class="page-header">
+  <h2 class="h5 mb-1"><i class="bi bi-play-circle-fill me-2" style="color:#f97316;"></i>プロモーション動画管理</h2>
+  <p class="text-muted mb-0 small">ログイン画面に表示するプロモーション動画をアップロード / 削除します</p>
+</div>
+
+{% if request.query_params.get('promo_uploaded') %}
+<div class="alert alert-success py-2 small mb-3" style="border-radius:10px;">
+  <i class="bi bi-check-circle-fill me-1"></i>プロモーション動画をアップロードしました。
+</div>
+{% endif %}
+{% if request.query_params.get('promo_error') %}
+<div class="alert alert-danger py-2 small mb-3" style="border-radius:10px;">
+  <i class="bi bi-x-circle me-1"></i>{{ request.query_params.get('promo_error') }}
+</div>
+{% endif %}
+
+<div class="card mb-4">
+  <div class="card-header fw-bold" style="border-bottom:2px solid #f97316;">
+    <i class="bi bi-play-circle-fill me-2" style="color:#f97316;"></i>プロモーション動画
+  </div>
+  <div class="card-body">
+    {% if promo_video_exists %}
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:.5rem 1rem;font-size:.85rem;color:#166534;">
+        <i class="bi bi-check-circle-fill me-1"></i>動画が登録済みです
+      </div>
+      <video controls style="max-width:280px;border-radius:8px;max-height:160px;" preload="metadata">
+        <source src="/promo-video" type="video/mp4">
+      </video>
+      <form method="post" action="/admin/delete-promo-video"
+            onsubmit="return confirm('プロモーション動画を削除しますか？')">
+        <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:20px;">
+          <i class="bi bi-trash me-1"></i>動画を削除
+        </button>
+      </form>
+    </div>
+    <hr class="my-3">
+    {% endif %}
+    <form method="post" action="/admin/upload-promo-video" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">
+          {{ '動画を差し替える' if promo_video_exists else 'プロモーション動画をアップロード' }}
+        </label>
+        <input type="file" name="video" class="form-control" accept=".mp4,.webm,.mov"
+               style="border-radius:10px;" required>
+        <div class="form-text">対応形式: .mp4 .webm .mov（最大500MB）。ログイン画面に「動画を見る」ボタンが表示されます。</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;">
+        <i class="bi bi-cloud-upload me-1"></i>アップロード
+      </button>
+    </form>
+  </div>
+</div>
+
+<hr class="my-4">
+
+<div class="page-header">
+  <h2 class="h5 mb-1"><span style="font-size:1.1rem;">✨</span> <span style="margin-left:.3rem;">AI機能設定</span></h2>
+  <p class="text-muted mb-0 small">AIスキル要約機能のプロバイダーと有効/無効を設定します</p>
+</div>
+
+{% if request.query_params.get('ai_success') %}
+<div class="alert alert-success d-flex align-items-center mb-3">
+  <i class="bi bi-check-circle-fill me-2"></i>{{ request.query_params.get('ai_success') }}
+</div>
+{% endif %}
+{% if request.query_params.get('ai_error') %}
+<div class="alert alert-danger d-flex align-items-center mb-3">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ request.query_params.get('ai_error') }}
+</div>
+{% endif %}
+
+<form method="post" action="/admin/settings/ai">
+  <div class="card mb-4">
+    <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #a78bfa;">
+      <i class="bi bi-toggles me-2" style="color:#a78bfa;"></i>AI要約機能
+    </div>
+    <div class="card-body">
+
+      <!-- ON/OFF トグル -->
+      <div class="d-flex align-items-center justify-content-between py-3"
+           style="border-bottom:1px solid #f1f5f9;">
+        <div>
+          <div class="fw-semibold">AI スキル要約を有効にする</div>
+          <div class="text-muted small mt-1">
+            スキルマトリクスの ✨ ボタンで、ユーザーのスキルを AI が自動要約します。<br>
+            無効の場合はボタンが非表示になります。
+          </div>
+        </div>
+        <div class="form-check form-switch mb-0 ms-4">
+          <input class="form-check-input" type="checkbox" id="ai_enabled" name="ai_enabled"
+                 style="width:2.5em;height:1.3em;cursor:pointer;"
+                 {% if ai_enabled %}checked{% endif %}
+                 onchange="toggleProviderSection(this.checked)">
+        </div>
+      </div>
+
+      <!-- プロバイダー選択 -->
+      <div id="providerSection" class="mt-3" style="{% if not ai_enabled %}opacity:.5;pointer-events:none;{% endif %}">
+        <label class="form-label fw-semibold small">LLM プロバイダー</label>
+        <div class="d-flex flex-column gap-2">
+
+          <label class="d-flex align-items-start gap-3 p-3 rounded-3 border"
+                 style="cursor:pointer;{% if ai_provider == 'anthropic' %}border-color:#a78bfa!important;background:#faf5ff;{% endif %}"
+                 id="card-anthropic" onclick="selectProvider('anthropic')">
+            <input type="radio" name="ai_provider" value="anthropic" class="mt-1"
+                   {% if ai_provider == 'anthropic' %}checked{% endif %}>
+            <div>
+              <div class="fw-semibold">Anthropic Claude <span class="badge bg-success ms-1" style="font-size:.65rem;">利用可能</span></div>
+              <div class="text-muted small">Claude Haiku を使用。<code>ANTHROPIC_API_KEY</code> 環境変数が必要です。</div>
+            </div>
+          </label>
+
+          <label class="d-flex align-items-start gap-3 p-3 rounded-3 border"
+                 style="cursor:pointer;{% if ai_provider == 'local' %}border-color:#a78bfa!important;background:#faf5ff;{% endif %}"
+                 id="card-local" onclick="selectProvider('local')">
+            <input type="radio" name="ai_provider" value="local" class="mt-1"
+                   {% if ai_provider == 'local' %}checked{% endif %}>
+            <div style="flex:1;">
+              <div class="fw-semibold">ローカル LLM <span class="badge bg-secondary ms-1" style="font-size:.65rem;">将来対応予定</span></div>
+              <div class="text-muted small mb-2">Ollama 等の OpenAI 互換 API エンドポイントを指定します。</div>
+              <div id="localUrlField" style="{% if ai_provider != 'local' %}display:none;{% endif %}">
+                <input type="url" name="local_llm_url" class="form-control form-control-sm"
+                       placeholder="http://localhost:11434/v1"
+                       value="{{ local_llm_url }}"
+                       style="border-radius:8px;max-width:320px;">
+              </div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 mb-4">
+    <button type="submit" class="btn btn-primary" style="border-radius:20px;">
+      <i class="bi bi-save me-1"></i>AI設定を保存
+    </button>
+  </div>
+</form>
+
+<script>
+function onImportModeChange() {
+  const mode = document.querySelector('input[name="dataImportMode"]:checked').value;
+  const cardAdd     = document.getElementById('modeCardAdd');
+  const cardReplace = document.getElementById('modeCardReplace');
+  cardAdd.style.borderColor     = mode === 'add' ? '#22c55e' : '';
+  cardAdd.style.background      = mode === 'add' ? '#f0fdf4' : '';
+  cardReplace.style.borderColor = mode === 'replace_all' ? '#ef4444' : '';
+  cardReplace.style.background  = mode === 'replace_all' ? '#fef2f2' : '';
+  document.getElementById('replaceAllWarning').style.display = mode === 'replace_all' ? '' : 'none';
+}
+onImportModeChange();
+
+async function doDataImport() {
+  const fileInput = document.getElementById('dataImportFile');
+  const resultEl  = document.getElementById('dataImportResult');
+  const btn       = document.getElementById('dataImportBtn');
+  const mode      = document.querySelector('input[name="dataImportMode"]:checked').value;
+  if (!fileInput.files.length) {
+    alert('ファイルを選択してください');
+    return;
+  }
+  if (mode === 'replace_all') {
+    if (!confirm('既存のスキルカタログ（カテゴリ・スキル・サブスキル）と、それに紐づくユーザーの申告データをすべて削除してからインポートします。\nこの操作は取り消せません。本当に実行しますか？')) {
+      return;
+    }
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
+  resultEl.style.display = '';
+  resultEl.innerHTML = '<div class="text-muted small">インポート中...</div>';
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  fd.append('mode', mode);
+  try {
+    const res  = await fetch('/skills/bulk-import', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      const modeLabel = data.mode === 'replace_all' ? '（既存データを全削除して再構築）' : '（既存データに追加）';
+      resultEl.innerHTML = `
+        <div class="alert alert-success py-2 small" style="border-radius:10px;">
+          <i class="bi bi-check-circle me-1"></i>インポート完了 ${modeLabel}<br>
+          カテゴリ: <strong>${data.added_categories}</strong>件追加 / ${data.skipped_categories}件スキップ<br>
+          スキル: <strong>${data.added_skills}</strong>件追加 / ${data.skipped_skills}件スキップ<br>
+          サブスキル: <strong>${data.added_sub_skills}</strong>件追加 / ${data.skipped_sub_skills}件スキップ
+        </div>`;
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
+        <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">通信エラーが発生しました</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
+}
+
+async function doTodoImport() {
+  const fileInput = document.getElementById('todoImportFile');
+  const resultEl  = document.getElementById('todoImportResult');
+  const btn       = document.getElementById('todoImportBtn');
+  if (!fileInput.files.length) {
+    alert('ファイルを選択してください');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
+  resultEl.style.display = '';
+  resultEl.innerHTML = '<div class="text-muted small">インポート中...</div>';
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  try {
+    const res  = await fetch('/admin/todos/import', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      resultEl.innerHTML = `
+        <div class="alert alert-success py-2 small" style="border-radius:10px;">
+          <i class="bi bi-check-circle me-1"></i>インポート完了<br>
+          ToDo: <strong>${data.added}</strong>件追加 / ${data.skipped}件スキップ
+        </div>`;
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
+        <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">通信エラーが発生しました</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
+}
+
+async function doEducationPathImport() {
+  const fileInput = document.getElementById('eduPathImportFile');
+  const resultEl  = document.getElementById('eduPathImportResult');
+  const btn       = document.getElementById('eduPathImportBtn');
+  if (!fileInput.files.length) {
+    alert('ファイルを選択してください');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
+  resultEl.style.display = '';
+  resultEl.innerHTML = '<div class="text-muted small">インポート中...</div>';
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  try {
+    const res  = await fetch('/education/paths/import', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      resultEl.innerHTML = `
+        <div class="alert alert-success py-2 small" style="border-radius:10px;">
+          <i class="bi bi-check-circle me-1"></i>インポート完了<br>
+          学習パス: <strong>${data.added}</strong>件追加 / ${data.skipped}件スキップ（重複） / ${data.skipped_no_skill}件スキップ（対象スキルが見つからない）
+        </div>`;
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
+        <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">通信エラーが発生しました</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
+}
+
+function toggleProviderSection(enabled) {
+  const sec = document.getElementById('providerSection');
+  sec.style.opacity        = enabled ? '1' : '.5';
+  sec.style.pointerEvents  = enabled ? '' : 'none';
+}
+
+function selectProvider(val) {
+  document.querySelectorAll('[id^="card-"]').forEach(el => {
+    el.style.borderColor = '';
+    el.style.background  = '';
+  });
+  const card = document.getElementById('card-' + val);
+  if (card) {
+    card.style.borderColor = '#a78bfa';
+    card.style.background  = '#faf5ff';
+  }
+  const localField = document.getElementById('localUrlField');
+  if (localField) localField.style.display = val === 'local' ? '' : 'none';
+}
+</script>
+{% endblock %}

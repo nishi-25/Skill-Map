@@ -9,6 +9,21 @@
   </div>
 </div>
 
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fw-bold fs-3 text-primary">{{ user_count }}</div>
+      <div class="text-muted small">全ユーザー</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center" style="{% if pending_count %}border-left:3px solid #f59e0b;{% endif %}">
+      <div class="fw-bold fs-3 text-warning">{{ pending_count }}</div>
+      <div class="text-muted small">承認待ち</div>
+    </div>
+  </div>
+</div>
+
 {% if request.query_params.get('temp_pw_user') and request.query_params.get('temp_pw') %}
 <div class="alert d-flex align-items-start gap-3 mb-3"
      style="background:#fefce8;border:1.5px solid #fde047;border-left:5px solid #f59e0b;border-radius:12px;">

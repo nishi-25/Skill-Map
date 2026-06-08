@@ -116,6 +116,45 @@
 
 </div>
 
+<!-- ═══════ おすすめスキル ═══════ -->
+{% if recommended_skills %}
+<div class="mb-4">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <i class="bi bi-stars" style="color:#f97316;"></i>
+    <span class="fw-semibold small">おすすめスキル</span>
+    <span class="text-muted" style="font-size:.72rem;">グループでよく申告されている・あなたの得意分野に関連するスキル</span>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% for rec in recommended_skills %}
+    {% set sk = rec.skill %}
+    <button type="button"
+            class="btn btn-sm text-start recommend-chip"
+            data-skill-id="{{ sk.id }}"
+            style="border-radius:14px;border:1px solid #e2e8f0;background:#fff;padding:.5rem .9rem;min-width:160px;"
+            onclick="selectFromSearch({{ sk.id }})"
+            onmouseenter="this.style.borderColor='#fb923c';this.style.boxShadow='0 4px 14px rgba(249,115,22,.12)'"
+            onmouseleave="this.style.borderColor='#e2e8f0';this.style.boxShadow=''">
+      <div class="fw-semibold text-truncate" style="font-size:.82rem;max-width:220px;color:#431407;">
+        <i class="bi bi-plus-circle text-primary me-1"></i>{{ sk.name }}
+      </div>
+      <div class="d-flex flex-wrap gap-1 mt-1">
+        {% if rec.group_count > 0 %}
+        <span class="badge bg-light text-muted" style="font-size:.6rem;border-radius:8px;font-weight:500;">
+          <i class="bi bi-people-fill me-1"></i>グループで{{ rec.group_count }}人が取得
+        </span>
+        {% endif %}
+        {% if rec.related %}
+        <span class="badge bg-light text-muted" style="font-size:.6rem;border-radius:8px;font-weight:500;">
+          <i class="bi bi-link-45deg me-1"></i>得意分野に関連
+        </span>
+        {% endif %}
+      </div>
+    </button>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- ═══════ グループフィルタ ═══════ -->
 {% if my_groups %}
 <div class="mb-3">
@@ -395,6 +434,15 @@
   }
   .rp-sub-grid .sub-item:has(input:checked) .sub-name { color: #15803d; font-weight: 700; }
   .rp-sub-grid .sub-item:has(input:checked) .sub-desc { color: #4ade80; }
+  .rp-sub-grid .sub-item:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: .6;
+  }
+  .rp-sub-grid .sub-item:has(input:disabled):hover {
+    background: white;
+    border-color: #f1f5f9;
+    box-shadow: none;
+  }
   .rp-sub-grid .sub-item input[type=checkbox] {
     flex-shrink: 0;
     width: 1.25em;
@@ -455,11 +503,35 @@
         <input type="text" id="skillSearchLeft" class="form-control form-control-sm"
                placeholder="スキルを検索..." oninput="filterLeft()" style="padding-left:2rem;">
       </div>
-      <div class="d-flex gap-1 flex-wrap">
-        <span class="tier-chip active" data-tier="" onclick="filterTierLeft(this,'')">全て</span>
-        {% for tk in tier_order %}
-        <span class="tier-chip" data-tier="{{ tk }}" onclick="filterTierLeft(this,'{{ tk }}')">{{ TIER_NAMES[tk] }}</span>
-        {% endfor %}
+      <div class="d-flex gap-1 flex-wrap align-items-center justify-content-between">
+        <div class="d-flex gap-1 flex-wrap">
+          <span class="tier-chip active" data-tier="" onclick="filterTierLeft(this,'')">全て</span>
+          {% for tk in tier_order %}
+          <span class="tier-chip" data-tier="{{ tk }}" onclick="filterTierLeft(this,'{{ tk }}')">{{ TIER_NAMES[tk] }}</span>
+          {% endfor %}
+        </div>
+        {% if current_user.role == 'user' or view_as %}
+        <button type="button" id="bulkModeToggleBtn" class="btn btn-sm btn-outline-secondary"
+                style="border-radius:20px;font-size:.7rem;white-space:nowrap;" onclick="toggleBulkMode()">
+          <i class="bi bi-check2-square me-1"></i>複数選択
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 複数選択バー（複数選択モード時のみ表示） -->
+    <div id="bulkActionBar" class="px-3 py-2 border-bottom" style="display:none;background:#fff7ed;">
+      <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+        <span class="small fw-semibold" style="color:#c2410c;">
+          <span id="bulkSelectedCount">0</span>件選択中
+          <span class="text-muted fw-normal" style="font-size:.7rem;">（2件以上で一括申告できます）</span>
+        </span>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.72rem;" onclick="clearBulkSelection()">選択解除</button>
+          <button type="button" id="bulkStartBtn" class="btn btn-sm btn-primary" style="border-radius:20px;font-size:.72rem;" onclick="startBulkDeclare()" disabled>
+            <i class="bi bi-send-fill me-1"></i>まとめて申告する
+          </button>
+        </div>
       </div>
     </div>
 
@@ -499,8 +571,11 @@
              data-tier="{{ sk.tier }}"
              data-name="{{ sk.name | lower }}"
              data-cat="{{ cat_id }}"
-             onclick="selectSkill({{ sk.id }}, this)"
+             onclick="onSkillRowClick(event, {{ sk.id }}, this)"
              style="padding-left:1.5rem!important;">
+          <input type="checkbox" class="form-check-input bulk-select-check flex-shrink-0"
+                 data-skill-id="{{ sk.id }}" style="display:none;"
+                 onclick="event.stopPropagation();updateBulkSelectedCount();">
           <div style="flex:1;min-width:0;">
             <div class="fw-semibold text-truncate" style="font-size:.84rem;">{{ sk.name }}</div>
             <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
@@ -1116,6 +1191,10 @@
     }
   });
 
+  document.addEventListener('DOMContentLoaded', () => {
+    resumeBulkQueueOnLoad();
+  });
+
   /* ── クライアントサイド検索（カテゴリ別リスト対応） ── */
   const searchElNew = document.getElementById('skillSearch');
   if (searchElNew) {
@@ -1296,6 +1375,176 @@
     }, 300);
   }
 
+  // ── 複数選択 / 一括申告ウィザード ──────────────────────────
+  let _bulkMode = false;
+  const BULK_QUEUE_KEY      = 'skillmap_bulk_queue';
+  const BULK_CURRENT_KEY    = 'skillmap_bulk_current';
+  const BULK_TOTAL_KEY      = 'skillmap_bulk_total';
+  const BULK_SUBMITTING_KEY = 'skillmap_bulk_submitting';
+
+  // クリック時：複数選択モードならチェックを切り替え、通常モードなら右ペインを開く
+  function onSkillRowClick(ev, skillId, el) {
+    if (_bulkMode) {
+      const cb = el.querySelector('.bulk-select-check');
+      if (cb) { cb.checked = !cb.checked; updateBulkSelectedCount(); }
+      return;
+    }
+    selectSkill(skillId, el);
+  }
+
+  function toggleBulkMode() {
+    _bulkMode = !_bulkMode;
+    const btn = document.getElementById('bulkModeToggleBtn');
+    document.querySelectorAll('.bulk-select-check').forEach(cb => {
+      cb.style.display = _bulkMode ? '' : 'none';
+      if (!_bulkMode) cb.checked = false;
+    });
+    const bar = document.getElementById('bulkActionBar');
+    if (bar) bar.style.display = _bulkMode ? '' : 'none';
+    if (btn) {
+      btn.classList.toggle('btn-outline-secondary', !_bulkMode);
+      btn.classList.toggle('btn-primary', _bulkMode);
+      btn.innerHTML = _bulkMode
+        ? '<i class="bi bi-x-lg me-1"></i>複数選択を終了'
+        : '<i class="bi bi-check2-square me-1"></i>複数選択';
+    }
+    if (_bulkMode) closeRightPane();
+    updateBulkSelectedCount();
+  }
+
+  function updateBulkSelectedCount() {
+    const n = document.querySelectorAll('.bulk-select-check:checked').length;
+    const countEl = document.getElementById('bulkSelectedCount');
+    if (countEl) countEl.textContent = n;
+    const btn = document.getElementById('bulkStartBtn');
+    if (btn) btn.disabled = n < 2;
+  }
+
+  function clearBulkSelection() {
+    document.querySelectorAll('.bulk-select-check').forEach(cb => { cb.checked = false; });
+    updateBulkSelectedCount();
+  }
+
+  function startBulkDeclare() {
+    const ids = [...document.querySelectorAll('.bulk-select-check:checked')]
+      .map(cb => parseInt(cb.dataset.skillId, 10));
+    if (ids.length < 2) return;
+    sessionStorage.setItem(BULK_QUEUE_KEY, JSON.stringify(ids));
+    sessionStorage.setItem(BULK_TOTAL_KEY, String(ids.length));
+    sessionStorage.removeItem(BULK_CURRENT_KEY);
+    sessionStorage.removeItem(BULK_SUBMITTING_KEY);
+    if (_bulkMode) toggleBulkMode();
+    advanceBulkQueue();
+  }
+
+  function getBulkQueue() {
+    try {
+      const raw = sessionStorage.getItem(BULK_QUEUE_KEY);
+      const q = raw ? JSON.parse(raw) : null;
+      return Array.isArray(q) ? q : null;
+    } catch (e) { return null; }
+  }
+
+  function clearBulkQueue() {
+    sessionStorage.removeItem(BULK_QUEUE_KEY);
+    sessionStorage.removeItem(BULK_CURRENT_KEY);
+    sessionStorage.removeItem(BULK_TOTAL_KEY);
+    sessionStorage.removeItem(BULK_SUBMITTING_KEY);
+    const banner = document.getElementById('bulkWizardBanner');
+    if (banner) banner.remove();
+  }
+
+  // キューの先頭を開いて進捗バナーを表示する
+  function advanceBulkQueue() {
+    const queue = getBulkQueue();
+    if (!queue || queue.length === 0) {
+      const had = !!queue;
+      clearBulkQueue();
+      if (had) showToast('一括申告が完了しました', 'success');
+      return;
+    }
+    const nextId = queue[0];
+    sessionStorage.setItem(BULK_CURRENT_KEY, String(nextId));
+    renderBulkWizardBanner();
+    setTimeout(() => selectFromSearch(nextId), 80);
+  }
+
+  // 現在表示中のスキルをスキップしてキューを進める（申告は行わない）
+  function skipBulkCurrent() {
+    let queue = getBulkQueue();
+    if (!queue) return;
+    const current = parseInt(sessionStorage.getItem(BULK_CURRENT_KEY) || '0', 10);
+    queue = queue.filter(id => id !== current);
+    sessionStorage.setItem(BULK_QUEUE_KEY, JSON.stringify(queue));
+    sessionStorage.removeItem(BULK_CURRENT_KEY);
+    advanceBulkQueue();
+  }
+
+  function cancelBulkQueue() {
+    if (!confirm('一括申告を中止しますか？（ここまでに送信した申告は取り消されません）')) return;
+    clearBulkQueue();
+    closeRightPane();
+  }
+
+  function renderBulkWizardBanner() {
+    const queue = getBulkQueue();
+    const total = parseInt(sessionStorage.getItem(BULK_TOTAL_KEY) || '0', 10);
+    let banner = document.getElementById('bulkWizardBanner');
+
+    if (!queue || queue.length === 0 || !total) {
+      if (banner) banner.remove();
+      return;
+    }
+
+    const currentId = parseInt(sessionStorage.getItem(BULK_CURRENT_KEY) || String(queue[0]), 10);
+    const idx = (total - queue.length) + 1;
+    const item = document.querySelector('.skill-left-item[data-skill-id="' + currentId + '"] .fw-semibold');
+    const skillName = item ? item.textContent.trim() : '';
+
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'bulkWizardBanner';
+      const wrapper = document.getElementById('twoPaneWrapper');
+      wrapper.parentNode.insertBefore(banner, wrapper);
+    }
+    banner.className = 'd-flex align-items-center justify-content-between gap-2 flex-wrap mb-2 py-2 px-3';
+    banner.style.cssText = 'border-radius:12px;background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1px solid #fed7aa;animation:fadeInUp .25s ease-out;';
+    banner.innerHTML = `
+      <div class="d-flex align-items-center gap-2" style="min-width:0;">
+        <i class="bi bi-collection-fill" style="color:#f97316;"></i>
+        <span class="small fw-bold" style="color:#c2410c;white-space:nowrap;">一括申告中（${idx}/${total}）</span>
+        <span class="small text-truncate" style="color:#7c2d12;">${escH(skillName)}</span>
+      </div>
+      <div class="d-flex gap-2 flex-shrink-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.72rem;" onclick="skipBulkCurrent()">
+          <i class="bi bi-skip-forward me-1"></i>スキップして次へ
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:20px;font-size:.72rem;" onclick="cancelBulkQueue()">
+          <i class="bi bi-x-lg me-1"></i>中止
+        </button>
+      </div>`;
+  }
+
+  // ページ読込時：進行中の一括申告キューがあれば再開する
+  function resumeBulkQueueOnLoad() {
+    const queue = getBulkQueue();
+    if (!queue) return;
+    if (sessionStorage.getItem(BULK_SUBMITTING_KEY) === '1') {
+      // 直前に「申告する」を押して遷移してきた → 該当スキルをキューから外して次へ
+      sessionStorage.removeItem(BULK_SUBMITTING_KEY);
+      const current = parseInt(sessionStorage.getItem(BULK_CURRENT_KEY) || '0', 10);
+      const remaining = queue.filter(id => id !== current);
+      sessionStorage.setItem(BULK_QUEUE_KEY, JSON.stringify(remaining));
+      sessionStorage.removeItem(BULK_CURRENT_KEY);
+      advanceBulkQueue();
+    } else {
+      // 通常の再読込／再訪問 → 表示を再開するのみ（キューは消費しない）
+      renderBulkWizardBanner();
+      const current = sessionStorage.getItem(BULK_CURRENT_KEY);
+      if (current) setTimeout(() => selectFromSearch(parseInt(current, 10)), 80);
+    }
+  }
+
   // 検索ボックス外クリックでドロップダウンを閉じる
   document.addEventListener('click', function(e) {
     const sb = document.getElementById('globalSearchResults');
@@ -1456,6 +1705,7 @@
     // 現在のステータス
     const stColors = {approved:'success',pending:'warning',rejected:'danger'};
     const stLabels = {approved:'承認済',pending:'申請中',rejected:'却下'};
+    const isPending = data.current_status === 'pending';
     const currentInfo = data.current_status ? `
       <div class="text-muted mt-2" style="font-size:.73rem;">
         現在の申告:
@@ -1463,13 +1713,26 @@
         <span class="badge bg-${stColors[data.current_status]||'secondary'}">${stLabels[data.current_status]||''}</span>
       </div>` : '';
 
+    // 承認待ち中は「申請済み（チェック済み）」のサブスキルだけ変更不可にし、
+    // 未チェックのサブスキルは引き続き選択できるようにする（追加の進捗を記録できるように）
+    const pendingNotice = isPending ? `
+      <div class="d-flex align-items-start gap-2 mb-2 px-3 py-2 rounded-3" style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:.78rem;">
+        <i class="bi bi-hourglass-split flex-shrink-0 mt-1"></i>
+        <div>
+          <span class="fw-bold">このスキルは現在「申告中（承認待ち）」です。</span><br>
+          申請済みのサブスキルの選択は変更できません。新しくできるようになったサブスキルは追加でチェックできます。
+        </div>
+      </div>` : '';
+
     const total = data.sub_skills.length;
     const subsGrid = total === 0
       ? '<div class="text-muted small py-4 text-center"><i class="bi bi-inbox mb-2 d-block fs-4"></i>サブスキルが登録されていません</div>'
-      : data.sub_skills.map((ss, i) => `
-          <label class="sub-item" style="animation-delay:${i * 0.02}s;">
+      : data.sub_skills.map((ss, i) => {
+          const locked = isPending && ss.done;
+          return `
+          <label class="sub-item" style="animation-delay:${i * 0.02}s;${locked ? 'cursor:not-allowed;' : ''}">
             <input type="checkbox" class="rp-sub-check"
-                   value="${ss.id}" ${ss.done ? 'checked' : ''}
+                   value="${ss.id}" ${ss.done ? 'checked' : ''} ${locked ? 'disabled' : ''}
                    onchange="recalcRp(${total})">
             <div style="flex:1;min-width:0;">
               <div class="d-flex align-items-baseline gap-2">
@@ -1480,7 +1743,8 @@
             </div>
             <i class="bi ${ss.done ? 'bi-check-circle-fill' : 'bi-circle'} flex-shrink-0"
                style="font-size:1rem;color:${ss.done ? '#22c55e' : '#e2e8f0'};transition:color .15s;pointer-events:none;"></i>
-          </label>`).join('');
+          </label>`;
+        }).join('');
 
     return `
     <!-- ① ヘッダー（コンパクト） -->
@@ -1508,6 +1772,7 @@
 
     <!-- ② サブスキル一覧（flex:1で残り全スペース・スクロール可） -->
     <div class="rp-sub-scroll">
+      ${pendingNotice}
       <div class="rp-sub-grid">${subsGrid}</div>
     </div>
 
@@ -1571,7 +1836,7 @@
                           : `<i class="bi bi-sticky text-warning flex-shrink-0"></i>
                              <span class="text-muted flex-grow-1">${escH(ev.title||txt)}</span>`;
                       })();
-                return `<div class="d-flex align-items-center gap-1 mb-1 px-2 py-1 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.76rem;">
+                return `<div class="d-flex align-items-center gap-1 mb-1 px-2 py-1 rounded" data-evidence-id="${ev.id}" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.76rem;">
                   ${label}
                   <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-1 flex-shrink-0" style="font-size:.7rem;"
                           onclick="deleteRpEvidence(${ev.id},${sk.id})">&times;</button>
@@ -1655,7 +1920,7 @@
   }
 
   function checkAllRp(checked, total) {
-    document.querySelectorAll('.rp-sub-check').forEach(cb => { cb.checked = checked; });
+    document.querySelectorAll('.rp-sub-check').forEach(cb => { if (!cb.disabled) cb.checked = checked; });
     recalcRp(total);
   }
 
@@ -1730,47 +1995,135 @@
     });
   }
 
+  // 新規エビデンスのHTML片を組み立てる（サーバー側の一覧描画と同じ見た目）
+  function buildRpEvidenceLabel(ev) {
+    if (ev.evidence_type === 'url') {
+      return `<i class="bi bi-link-45deg text-primary flex-shrink-0"></i>
+              <a href="${escH(ev.content)}" target="_blank" rel="noopener"
+                 class="text-truncate flex-grow-1" style="max-width:140px;" title="${escH(ev.content)}">
+                ${escH(ev.title || ev.content)}
+              </a>
+              <i class="bi bi-box-arrow-up-right text-muted" style="font-size:.6rem;"></i>`;
+    }
+    if (ev.evidence_type === 'file') {
+      return `<i class="bi bi-file-earmark-arrow-down text-success flex-shrink-0"></i>
+              <a href="${ev.download_url}"
+                 class="text-truncate flex-grow-1 text-success" style="max-width:140px;" title="${escH(ev.original_filename || ev.title || 'ファイル')}">
+                ${escH(ev.original_filename || ev.title || 'ファイル')}
+              </a>`;
+    }
+    const txt = ev.content || '';
+    const escTxt = escH(txt).replace(/'/g, "\\'");
+    if (txt.length > 30) {
+      return `<i class="bi bi-sticky text-warning flex-shrink-0"></i>
+              <span class="text-truncate flex-grow-1 text-muted" style="max-width:120px;cursor:pointer;"
+                    onclick="showMemoPopup('${escH(ev.title || 'メモ')}','${escTxt}')"
+                    title="クリックで全文表示">${escH(ev.title || (txt.substring(0, 28) + '…'))}</span>
+              <i class="bi bi-arrows-expand text-muted" style="font-size:.6rem;cursor:pointer;"
+                 onclick="showMemoPopup('${escH(ev.title || 'メモ')}','${escTxt}')" title="全文表示"></i>`;
+    }
+    return `<i class="bi bi-sticky text-warning flex-shrink-0"></i>
+            <span class="text-muted flex-grow-1">${escH(ev.title || txt)}</span>`;
+  }
+
+  // 一覧へ1件分のDOMを追加（パネル全体は再構築しない＝チェック状態を保持したまま続けて追加できる）
+  function appendRpEvidenceItem(skillId, ev) {
+    const list = document.getElementById('rp-ev-list-' + skillId);
+    if (!list) return;
+    const item = document.createElement('div');
+    item.className = 'd-flex align-items-center gap-1 mb-1 px-2 py-1 rounded badge-pop';
+    item.style.cssText = 'background:#f8fafc;border:1px solid #e2e8f0;font-size:.76rem;';
+    item.dataset.evidenceId = ev.id;
+    item.innerHTML = buildRpEvidenceLabel(ev)
+      + `<button type="button" class="btn btn-link btn-sm text-danger p-0 ms-1 flex-shrink-0" style="font-size:.7rem;"
+                 onclick="deleteRpEvidence(${ev.id},${skillId})">&times;</button>`;
+    list.appendChild(item);
+  }
+
+  function rpEvidenceNotice(skillId, message, isError) {
+    const formEl = document.getElementById('rp-ev-form-' + skillId);
+    if (!formEl) return;
+    let n = formEl.querySelector('.rp-ev-notice');
+    if (!n) {
+      n = document.createElement('div');
+      n.className = 'rp-ev-notice small mt-1';
+      formEl.appendChild(n);
+    }
+    n.textContent = message;
+    n.style.color = isError ? '#dc2626' : '#16a34a';
+    if (n._t) clearTimeout(n._t);
+    if (!isError) n._t = setTimeout(() => { n.textContent = ''; }, 2200);
+  }
+
+  // 続けて複数件を入力できるよう、送信成功時はパネルを再構築せずその場に追記する
   async function addRpEvidence(type, skillId) {
     const fd = new FormData();
     fd.append('evidence_type', type);
 
     if (type === 'url') {
-      const title   = document.getElementById('rp-ev-url-title-' + skillId)?.value.trim() || '';
-      const content = document.getElementById('rp-ev-url-content-' + skillId)?.value.trim() || '';
+      const titleEl = document.getElementById('rp-ev-url-title-' + skillId);
+      const contentEl = document.getElementById('rp-ev-url-content-' + skillId);
+      const content = contentEl?.value.trim() || '';
       if (!content) { alert('URLを入力してください'); return; }
-      fd.append('title', title); fd.append('content', content);
+      fd.append('title', titleEl?.value.trim() || ''); fd.append('content', content);
     } else if (type === 'file') {
       const fileEl = document.getElementById('rp-ev-file-' + skillId);
       if (!fileEl?.files.length) { alert('ファイルを選択してください'); return; }
       fd.append('upload_file', fileEl.files[0]);
     } else {
-      const title   = document.getElementById('rp-ev-note-title-' + skillId)?.value.trim() || '';
-      const content = document.getElementById('rp-ev-note-content-' + skillId)?.value.trim() || '';
+      const titleEl = document.getElementById('rp-ev-note-title-' + skillId);
+      const contentEl = document.getElementById('rp-ev-note-content-' + skillId);
+      const content = contentEl?.value.trim() || '';
       if (!content) { alert('メモ内容を入力してください'); return; }
-      fd.append('title', title); fd.append('content', content);
+      fd.append('title', titleEl?.value.trim() || ''); fd.append('content', content);
     }
 
-    const res  = await fetch('/skills/' + skillId + '/evidence/add', { method: 'POST', body: fd });
-    if (res.redirected || res.ok) {
-      // reload panel data
-      const pRes  = await fetch('/api/skills/' + skillId + '/panel');
-      const pData = await pRes.json();
-      openRightPane(buildRightPane(pData));
-      setTimeout(() => recalcRp(pData.sub_skills.length), 50);
+    let res;
+    try {
+      res = await fetch('/skills/' + skillId + '/evidence/add', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd,
+      });
+    } catch (e) {
+      alert('通信エラーが発生しました');
+      return;
+    }
+    let payload = null;
+    try { payload = await res.json(); } catch (e) { /* no body */ }
+
+    if (res.ok && payload && payload.success) {
+      appendRpEvidenceItem(skillId, payload.evidence);
+      // 入力欄だけクリアし、フォームは開いたまま次を入力できるようにする
+      if (type === 'url') {
+        document.getElementById('rp-ev-url-title-' + skillId).value = '';
+        document.getElementById('rp-ev-url-content-' + skillId).value = '';
+        document.getElementById('rp-ev-url-content-' + skillId).focus();
+      } else if (type === 'file') {
+        document.getElementById('rp-ev-file-' + skillId).value = '';
+      } else {
+        document.getElementById('rp-ev-note-title-' + skillId).value = '';
+        document.getElementById('rp-ev-note-content-' + skillId).value = '';
+        document.getElementById('rp-ev-note-content-' + skillId).focus();
+      }
+      rpEvidenceNotice(skillId, '追加しました。続けて追加できます。', false);
     } else {
-      alert('エビデンスの追加に失敗しました');
+      rpEvidenceNotice(skillId, (payload && payload.error) || 'エビデンスの追加に失敗しました', true);
     }
   }
 
   async function deleteRpEvidence(evidenceId, skillId) {
     if (!confirm('このエビデンスを削除しますか？')) return;
     const fd = new FormData();
-    const res = await fetch('/skills/evidence/' + evidenceId + '/delete', { method: 'POST', body: fd });
+    const res = await fetch('/skills/evidence/' + evidenceId + '/delete', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd,
+    });
     if (res.ok || res.redirected) {
-      const pRes  = await fetch('/api/skills/' + skillId + '/panel');
-      const pData = await pRes.json();
-      openRightPane(buildRightPane(pData));
-      setTimeout(() => recalcRp(pData.sub_skills.length), 50);
+      const list = document.getElementById('rp-ev-list-' + skillId);
+      const item = list?.querySelector('[data-evidence-id="' + evidenceId + '"]');
+      if (item) item.remove();
     }
   }
 
@@ -1794,6 +2147,15 @@
 
     const apr = document.getElementById('rp-approver');
     if (apr && apr.value) { const i=document.createElement('input'); i.type='hidden'; i.name='approver_id'; i.value=apr.value; form.appendChild(i); }
+
+    // 一括申告中で、表示中のスキルがキューの先頭なら、遷移後に自動で次へ進めるフラグを立てる
+    const bq = getBulkQueue();
+    if (bq) {
+      const current = parseInt(sessionStorage.getItem(BULK_CURRENT_KEY) || '0', 10);
+      if (current === skillId) {
+        sessionStorage.setItem(BULK_SUBMITTING_KEY, '1');
+      }
+    }
 
     form.submit();
   }

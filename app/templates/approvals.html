@@ -54,6 +54,30 @@
   </div>
 </div>
 
+<!-- 申請中サブスキル確認モーダル -->
+<div class="modal fade" id="subSkillModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold mb-0">
+          <i class="bi bi-list-check me-2" style="color:#f97316;"></i>申請中のサブスキル
+          <span id="subSkillHeaderInfo" class="text-muted fw-normal ms-1" style="font-size:.85rem;"></span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="subSkillLoading" class="text-center text-muted py-4">
+          <span class="spinner-border spinner-border-sm me-2"></span>読み込み中...
+        </div>
+        <div id="subSkillList" style="display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- フィルターバー -->
 <div class="card mb-3">
   <div class="card-body py-2">
@@ -130,7 +154,12 @@
                 <span class="fw-semibold">{{ rec.user.display_name or rec.user.username }}</span>
               </div>
             </td>
-            <td class="fw-semibold">{{ rec.skill.name }}</td>
+            <td class="fw-semibold">
+              <span role="button" class="text-decoration-underline" style="cursor:pointer;color:inherit;text-decoration-style:dotted;"
+                    onclick="showSubSkills({{ rec.id }}, '{{ rec.skill.name }}', '{{ rec.user.display_name or rec.user.username }}')"
+                    title="クリックして申請中のサブスキルを見る">{{ rec.skill.name }}</span>
+              <i class="bi bi-list-check text-muted ms-1" style="font-size:.7rem;"></i>
+            </td>
             <td>
               {% if rec.skill.category %}
               <span class="badge" style="background:{{ rec.skill.category.color }};font-size:.7rem;">{{ rec.skill.category.name }}</span>
@@ -419,6 +448,43 @@ document.addEventListener('DOMContentLoaded', () => {
     new bootstrap.Tooltip(el, { trigger: 'hover' });
   });
 });
+
+/* ── 申請中サブスキルの確認 ── */
+async function showSubSkills(recordId, skillName, userName) {
+  document.getElementById('subSkillHeaderInfo').textContent = `${userName} さん / ${skillName}`;
+  document.getElementById('subSkillLoading').style.display = '';
+  document.getElementById('subSkillLoading').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>読み込み中...';
+  document.getElementById('subSkillList').style.display = 'none';
+  new bootstrap.Modal(document.getElementById('subSkillModal')).show();
+
+  try {
+    const res = await fetch('/api/approvals/' + recordId + '/sub-skills');
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+    const listEl = document.getElementById('subSkillList');
+
+    if (!data.sub_skills || data.sub_skills.length === 0) {
+      listEl.innerHTML = '<div class="text-muted small text-center py-3">このスキルにはサブスキルが登録されていません</div>';
+    } else {
+      const doneCount = data.sub_skills.filter(ss => ss.done).length;
+      listEl.innerHTML = `
+        <div class="small text-muted mb-2">
+          チェック済み: <span class="fw-bold text-success">${doneCount}</span> / ${data.sub_skills.length}
+        </div>
+        ${data.sub_skills.map(ss => `
+          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 rounded-3"
+               style="background:${ss.done ? '#f0fdf4' : '#f8fafc'};border:1px solid ${ss.done ? '#bbf7d0' : '#e2e8f0'};font-size:.82rem;">
+            <i class="bi ${ss.done ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'}"></i>
+            <span class="${ss.done ? '' : 'text-muted'}">${escHtml(ss.name)}</span>
+          </div>`).join('')}`;
+    }
+
+    document.getElementById('subSkillLoading').style.display = 'none';
+    listEl.style.display = '';
+  } catch {
+    document.getElementById('subSkillLoading').innerHTML = '<span class="text-danger small">読み込みに失敗しました</span>';
+  }
+}
 
 /* ── 承認編集 ── */
 function openEditModal(recordId, level, comment) {

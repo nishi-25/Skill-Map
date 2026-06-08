@@ -19,28 +19,6 @@
         <i class="bi bi-list-ul"></i>
       </button>
     </div>
-    <!-- エクスポートボタン（カスタムポップアップ：overflow に依存しない） -->
-    <div style="position:relative;">
-      <button class="btn btn-outline-secondary btn-sm" style="border-radius:20px;"
-              onclick="toggleCatExport(this)" type="button">
-        <i class="bi bi-download me-1"></i>エクスポート
-      </button>
-    </div>
-    <!-- ポップアップメニュー（body 直下相当・fixed 配置で overflow 回避） -->
-    <div id="catExportPopup"
-         style="display:none;position:fixed;z-index:9999;
-                background:#fff;border:1px solid #e2e8f0;border-radius:12px;
-                box-shadow:0 6px 20px rgba(0,0,0,.15);padding:.3rem 0;min-width:148px;">
-      <a href="/categories/export/csv"      class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a>
-      <a href="/categories/export/excel"    class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a>
-      <a href="/categories/export/json"     class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-json me-2 text-warning"></i>JSON</a>
-      <a href="/categories/export/markdown" class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-markdown me-2 text-primary"></i>Markdown</a>
-    </div>
-    <!-- インポート -->
-    <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius:20px;"
-            data-bs-toggle="modal" data-bs-target="#catImportModal">
-      <i class="bi bi-upload me-1"></i>インポート
-    </button>
     <a href="/categories/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
       <i class="bi bi-plus-lg me-1"></i>新規追加
     </a>
@@ -71,45 +49,6 @@
   </div>
   <div id="catHiddenInputs"></div>
 </form>
-
-<!-- カテゴリー インポートモーダル -->
-<div class="modal fade" id="catImportModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
-    <div class="modal-content" style="border-radius:16px;border:none;">
-      <div class="modal-header" style="border-bottom:2px solid #f97316;">
-        <h6 class="modal-title fw-bold"><i class="bi bi-upload me-2" style="color:#f97316;"></i>カテゴリー インポート</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-light border py-2 small mb-3" style="border-radius:10px;">
-          <b>対応形式:</b> CSV / Excel / JSON / Markdown<br>
-          <b>CSVヘッダー:</b> <code>name, color, description</code><br>
-          同名カテゴリーは自動スキップされます。
-        </div>
-        <!-- テンプレートDL -->
-        <div class="d-flex gap-2 flex-wrap mb-3">
-          <span class="text-muted small align-self-center">テンプレート:</span>
-          <a href="/categories/export/csv"      class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
-          <a href="/categories/export/excel"    class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
-          <a href="/categories/export/json"     class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-json me-1"></i>JSON</a>
-          <a href="/categories/export/markdown" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-markdown me-1"></i>Markdown</a>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold small">ファイルを選択</label>
-          <input type="file" class="form-control" id="catImportFile"
-                 accept=".csv,.xlsx,.xls,.json,.md,.markdown" style="border-radius:10px;">
-        </div>
-        <div id="catImportResult" style="display:none;"></div>
-      </div>
-      <div class="modal-footer" style="border-top:none;">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
-        <button type="button" class="btn btn-primary btn-sm" id="catImportBtn" onclick="doCatImport()" style="border-radius:20px;">
-          <i class="bi bi-upload me-1"></i>インポート実行
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
 {% if categories %}
 
@@ -331,32 +270,6 @@ function confirmCatBulk() {
   return confirm(`選択した ${n} 件のカテゴリーを削除しますか？\n紐づくスキルは「未分類」になります。`);
 }
 
-/* ─ エクスポートポップアップ
-   stacking context 問題を回避するため <body> 直下に移動してから表示 ─ */
-document.addEventListener('DOMContentLoaded', function() {
-  const popup = document.getElementById('catExportPopup');
-  if (popup && popup.parentNode !== document.body) {
-    document.body.appendChild(popup);
-  }
-});
-
-function toggleCatExport(btn) {
-  const popup = document.getElementById('catExportPopup');
-  if (!popup) return;
-  if (popup.style.display === 'block') { popup.style.display = 'none'; return; }
-  const rect = btn.getBoundingClientRect();
-  popup.style.display = 'block';
-  const pw = popup.offsetWidth || 150;
-  popup.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
-  popup.style.left = Math.max(8, rect.right - pw + window.scrollX) + 'px';
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('#catExportPopup') && !e.target.closest('[onclick*="toggleCatExport"]')) {
-    const p = document.getElementById('catExportPopup');
-    if (p) p.style.display = 'none';
-  }
-});
-
 function switchCatView(mode) {
   const isCard = mode === 'card';
   document.getElementById('catCardView').style.display = isCard ? '' : 'none';
@@ -369,36 +282,5 @@ function switchCatView(mode) {
   const saved = localStorage.getItem('catView');
   if (saved) switchCatView(saved);
 })();
-
-async function doCatImport() {
-  const file = document.getElementById('catImportFile').files[0];
-  if (!file) { showToast('ファイルを選択してください', 'error'); return; }
-  const btn = document.getElementById('catImportBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
-  const fd = new FormData();
-  fd.append('file', file);
-  const res  = await fetch('/categories/import', { method: 'POST', body: fd });
-  const data = await res.json();
-  btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
-  const resultEl = document.getElementById('catImportResult');
-  resultEl.style.display = '';
-  if (data.ok) {
-    const skip = data.skipped ? `（${data.skipped}件スキップ）` : '';
-    let html = `<div class="alert alert-success py-2 small" style="border-radius:10px;">
-      <i class="bi bi-check-circle me-1"></i><strong>${data.added} 件</strong>のカテゴリーを追加しました ${skip}
-    </div>`;
-    if (data.errors && data.errors.length > 0) {
-      html += `<div class="alert alert-warning py-2 small" style="border-radius:10px;max-height:120px;overflow-y:auto;">
-        ${data.errors.map(e => `<div>${e}</div>`).join('')}
-      </div>`;
-    }
-    resultEl.innerHTML = html;
-    if (data.added > 0) setTimeout(() => location.reload(), 1500);
-  } else {
-    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">${data.error}</div>`;
-  }
-}
 </script>
 {% endblock %}

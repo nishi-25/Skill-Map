@@ -95,6 +95,10 @@
     }
     .nav-link-item:hover { background: rgba(255,255,255,.07); color: #fff; transform: translateX(3px); }
     .nav-link-item.active { background: rgba(249,115,22,.25); color: #fdba74; }
+    .nav-link-item.nav-alert { background: rgba(239,68,68,.16); color: #fca5a5; }
+    .nav-link-item.nav-alert:hover { background: rgba(239,68,68,.26); color: #fecaca; }
+    .nav-link-item.nav-alert .nav-icon { color: #f87171; }
+    .nav-link-item.nav-alert.active { background: rgba(239,68,68,.3); color: #fecaca; }
     .nav-link-item .nav-icon { font-size: 1.05rem; min-width: 20px; text-align: center; transition: transform .2s; }
     .nav-link-item:hover .nav-icon { transform: scale(1.15); }
     .nav-link-item .nav-text { transition: opacity var(--transition); }
@@ -419,55 +423,42 @@
     <a id="navDashboard" href="/dashboard" class="nav-link-item {% if request.url.path == '/dashboard' %}active{% endif %}" data-label="ダッシュボード">
       <i class="bi bi-speedometer2 nav-icon"></i><span class="nav-text" data-i18n="nav.dashboard">ダッシュボード</span>
     </a>
-    {% if not current_user or current_user.role == 'user' %}
     <a id="navSkills" href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}" data-label="スキルマップ">
       <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text" data-i18n="nav.skills">スキルマップ</span>
-    </a>
-    <a id="navMyApprovals" href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}" data-label="自分の申請状況">
-      <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
-      {% if request.state.rejected_approval_count is defined and request.state.rejected_approval_count > 0 %}
-      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.rejected_approval_count }}</span>
-      {% endif %}
     </a>
     <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
       <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
     </a>
-    <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
-      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
-    </a>
-    {% endif %}
 
-    {% if current_user and current_user.role in ('admin', 'manager') %}
     <div class="nav-label" data-i18n="section.approval">承認</div>
-    <a id="navApprovals" href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}" data-label="承認依頼">
+    {% if current_user and current_user.role in ('admin', 'manager') %}
+    <a id="navApprovals" href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}{% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %} nav-alert{% endif %}" data-label="承認依頼">
       <i class="bi bi-check2-square nav-icon"></i><span class="nav-text" data-i18n="nav.approvals">承認依頼</span>
       {% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %}
       <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_approval_count }}</span>
       {% endif %}
     </a>
     {% endif %}
-
-    {% if current_user and current_user.role in ('admin', 'manager') %}
-    <!-- Manager/Admin の自分のスキル管理 -->
-    <a href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}" data-label="スキルマップ">
-      <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text" data-i18n="nav.skills">スキルマップ</span>
-    </a>
-    <a href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}" data-label="自分の申請状況">
+    <a id="navMyApprovals" href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}{% if request.state.my_pending_count is defined and request.state.my_pending_count > 0 %} nav-alert{% endif %}" data-label="自分の申請状況">
       <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
+      {% if request.state.my_pending_count is defined and request.state.my_pending_count > 0 %}
+      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.my_pending_count }}</span>
+      {% elif request.state.rejected_approval_count is defined and request.state.rejected_approval_count > 0 %}
+      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.rejected_approval_count }}</span>
+      {% endif %}
     </a>
-    <a href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
-      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
-    </a>
-    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
-      <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
-    </a>
-    {% endif %}
 
-    {% if current_user and current_user.role in ('admin', 'manager') %}
     <div class="nav-label" data-i18n="section.analytics">分析</div>
+    {% if current_user and current_user.role in ('admin', 'manager') %}
     <a id="navMatrix" href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}" data-label="スキルマトリクス">
       <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
     </a>
+    {% endif %}
+    <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
+      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
+    </a>
+
+    {% if current_user and current_user.role in ('admin', 'manager') %}
     <div class="nav-label" data-i18n="section.catalog">カタログ管理</div>
     <a id="navCatalog" href="/skills/catalog" class="nav-link-item {% if '/skills/catalog' in request.url.path %}active{% endif %}" data-label="スキルカタログ">
       <i class="bi bi-collection nav-icon"></i><span class="nav-text" data-i18n="nav.catalog">スキルカタログ</span>
@@ -483,9 +474,6 @@
 
     {% if current_user and current_user.role == 'admin' %}
     <div class="nav-label" data-i18n="section.admin">管理</div>
-    <a id="navAdmin" href="/admin" class="nav-link-item {% if request.url.path == '/admin' %}active{% endif %}" data-label="管理パネル">
-      <i class="bi bi-shield-check nav-icon"></i><span class="nav-text" data-i18n="nav.admin">管理パネル</span>
-    </a>
     <a id="navUsers" href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}" data-label="ユーザー管理">
       <i class="bi bi-people nav-icon"></i><span class="nav-text" data-i18n="nav.users">ユーザー管理</span>
       {% if request.state.pending_user_count is defined and request.state.pending_user_count > 0 %}
@@ -495,8 +483,8 @@
     <a id="navNotify" href="/admin/settings/notifications" class="nav-link-item {% if '/admin/settings/notifications' in request.url.path or '/admin/settings/mail' in request.url.path %}active{% endif %}" data-label="通知設定">
       <i class="bi bi-bell nav-icon"></i><span class="nav-text">通知設定</span>
     </a>
-    <a href="/admin/settings/ai" class="nav-link-item {% if '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="AI設定">
-      <i class="bi bi-stars nav-icon"></i><span class="nav-text">AI設定</span>
+    <a id="navData" href="/admin/settings/data" class="nav-link-item {% if '/admin/settings/data' in request.url.path or '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="データ管理">
+      <i class="bi bi-database nav-icon"></i><span class="nav-text">データ管理</span>
     </a>
     <a id="navTodos" href="/admin/todos" class="nav-link-item {% if '/admin/todos' in request.url.path %}active{% endif %}" data-label="ToDoリスト">
       <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">ToDoリスト</span>
@@ -1465,7 +1453,7 @@ window.openNewTicket = function() {
       'lbl.language':     '言語 / Language',
       /* ─ ダッシュボード追加 ─ */
       'lbl.skill_total':  '総申告スキル',
-      'lbl.declared_skills': '申告済みスキル',
+      'lbl.declared_skills': '承認済みスキル',
       'lbl.top_level':    '最高レベル',
       'lbl.member_ranking': 'メンバーランキング',
       'lbl.group_skills': 'グループ別スキル状況',
@@ -1598,7 +1586,7 @@ window.openNewTicket = function() {
       'lbl.language':     'Language',
       /* ─ Dashboard ─ */
       'lbl.skill_total':  'Total Skills',
-      'lbl.declared_skills': 'Declared Skills',
+      'lbl.declared_skills': 'Approved Skills',
       'lbl.top_level':    'Top Level',
       'lbl.member_ranking': 'Member Ranking',
       'lbl.group_skills': 'Skills by Group',
@@ -1801,7 +1789,7 @@ window.openNewTicket = function() {
 
     { el: '#navCatalog', pos: 'right', icon: 'bi-collection',
       title: '④ スキルカタログ管理',
-      body: 'Managerが担当グループに割り当てたスキルのみ表示されます。\nCSV・Excel・Markdown・JSON のインポートで一括登録も可能です。' },
+      body: 'Managerが担当グループに割り当てたスキルのみ表示されます。\nスキルの追加・編集・ティア変更などを行えます。' },
 
     { el: '#navGroups', pos: 'right', icon: 'bi-people-fill',
       title: '⑤ グループ管理',
@@ -1843,7 +1831,7 @@ window.openNewTicket = function() {
 
     { el: '#navCatalog', pos: 'right', icon: 'bi-collection',
       title: '④ スキルカタログ管理',
-      body: '全スキルを管理します。CSV/Excel/Markdown/JSON でのインポート、ティア・カテゴリーの変更、アーカイブが可能です。\n「カタログを初期化」でデフォルトに戻せます。' },
+      body: '全スキルを管理します。スキルの追加・編集、ティア・カテゴリーの変更、アーカイブが可能です。\nまとめてのインポート/エクスポートは管理者設定の「データ管理」から行えます。' },
 
     { el: '#navGroups', pos: 'right', icon: 'bi-people-fill',
       title: '⑤ グループ管理',
@@ -1853,20 +1841,16 @@ window.openNewTicket = function() {
       title: '⑥ 教育リソース管理',
       body: '学習リソースのリンクを追加・編集・削除できます。\nカテゴリーとスキルに紐づけてメンバーが見つけやすくしましょう。' },
 
-    { el: '#navAdmin', pos: 'right', icon: 'bi-shield-check',
-      title: '⑦ 管理パネル',
-      body: 'システム全体の状況確認ができます。新規登録ユーザーの承認もここから行えます。' },
-
     { el: '#navUsers', pos: 'right', icon: 'bi-people',
-      title: '⑧ ユーザー管理',
+      title: '⑦ ユーザー管理',
       body: 'ユーザーの承認・ロール変更（user/manager/admin）・パスワードリセット・アカウント削除を行います。\n新規登録ユーザーは承認するまでログインできません。' },
 
     { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
-      title: '⑨ 問い合わせ・要望対応',
+      title: '⑧ 問い合わせ・要望対応',
       body: '未対応・対応中のチケットがある間は赤く表示されます。\nステータスを「解決済み」か「クローズ」にするとアラートが解除されます。' },
 
-    { el: '#navMail', pos: 'right', icon: 'bi-envelope-at',
-      title: '⑩ メール設定',
+    { el: '#navNotify', pos: 'right', icon: 'bi-envelope-at',
+      title: '⑨ 通知設定',
       body: 'SMTPサーバーの設定を行います。設定するとスキル承認通知・パスワードリセットメールが送信されます。\n「テスト送信」で動作確認できます。' },
 
     { el: '#navQuickStart', pos: 'right', icon: 'bi-play-circle-fill',

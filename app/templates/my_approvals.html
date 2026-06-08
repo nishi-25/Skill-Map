@@ -85,7 +85,10 @@
               {% if rec.approval_status == 'rejected' %}
               <i class="bi bi-exclamation-circle-fill me-1" style="color:#ef4444;font-size:.8rem;"></i>
               {% endif %}
-              {{ rec.skill.name }}
+              <span role="button" class="text-decoration-underline" style="cursor:pointer;color:inherit;text-decoration-style:dotted;"
+                    onclick="showSkillDetail({{ rec.skill_id }}, '{{ rec.skill.name }}')"
+                    title="クリックして申請したサブスキル・エビデンスを見る">{{ rec.skill.name }}</span>
+              <i class="bi bi-chevron-right text-muted ms-1" style="font-size:.6rem;"></i>
             </td>
             <td>
               {% if rec.skill.category %}
@@ -113,13 +116,19 @@
             </td>
             <td class="text-center">
               {% if rec.approval_status == 'pending' %}
-              <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.75rem;"
-                      onclick="withdrawApproval({{ rec.id }})">
-                <i class="bi bi-x-circle me-1"></i>取り下げ
-              </button>
+              <div class="d-flex gap-1 justify-content-center">
+                <button class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.75rem;"
+                        onclick="openApprovalModal('edit', {{ rec.skill_id }}, '{{ rec.skill.name }}', {{ rec.level }}, {{ rec.approver_id or 'null' }})">
+                  <i class="bi bi-pencil-square me-1"></i>編集
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.75rem;"
+                        onclick="withdrawApproval({{ rec.id }})">
+                  <i class="bi bi-x-circle me-1"></i>取り下げ
+                </button>
+              </div>
               {% elif rec.approval_status == 'rejected' %}
               <button class="btn btn-sm btn-danger" style="border-radius:20px;font-size:.75rem;"
-                      onclick="openReapplyModal({{ rec.skill_id }}, '{{ rec.skill.name }}', {{ rec.level }})">
+                      onclick="openApprovalModal('reapply', {{ rec.skill_id }}, '{{ rec.skill.name }}', {{ rec.level }}, null)">
                 <i class="bi bi-arrow-repeat me-1"></i>再申請
               </button>
               {% else %}
@@ -143,13 +152,13 @@
   </div>
 </div>
 
-<!-- 再申請モーダル -->
+<!-- 申請編集／再申請モーダル（共通） -->
 <div class="modal fade" id="reapplyModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px;border:none;">
-      <div class="modal-header" style="border-bottom:2px solid #ef4444;">
+      <div class="modal-header" id="reapplyModalHeader" style="border-bottom:2px solid #ef4444;">
         <h6 class="modal-title fw-bold">
-          <i class="bi bi-arrow-repeat me-2 text-danger"></i>再申請
+          <i id="reapplyModalIcon" class="bi bi-arrow-repeat me-2" style="color:#ef4444;"></i><span id="reapplyModalTitle">再申請</span>
           <span id="reapplySkillName" class="text-muted fw-normal ms-1" style="font-size:.85rem;"></span>
         </h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -184,17 +193,79 @@
     </div>
   </div>
 </div>
+
+<!-- 申請詳細（サブスキル・エビデンス）モーダル -->
+<div class="modal fade" id="skillDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold mb-0">
+          <i class="bi bi-card-checklist me-2" style="color:#f97316;"></i>申請内容の詳細
+          <span id="detailSkillName" class="text-muted fw-normal ms-1" style="font-size:.85rem;"></span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detailLoading" class="text-center text-muted py-4">
+          <span class="spinner-border spinner-border-sm me-2"></span>読み込み中...
+        </div>
+        <div id="detailContent" style="display:none;">
+          <div class="mb-3">
+            <div class="small fw-semibold mb-2" style="color:#475569;">
+              <i class="bi bi-list-check me-1 text-primary"></i>申請したサブスキル
+            </div>
+            <div id="detailSubSkills"></div>
+          </div>
+          <div>
+            <div class="small fw-semibold mb-2" style="color:#475569;">
+              <i class="bi bi-paperclip me-1 text-primary"></i>提出したエビデンス
+            </div>
+            <div id="detailEvidences"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 let _reapplySkillId = null;
+let _approvalModalMode = 'reapply'; // 'edit'（申請中の編集）または 'reapply'（差し戻しの再申請）
 
-function openReapplyModal(skillId, skillName, currentLevel) {
+// 申請中の編集／差し戻しの再申請の両方をこの共通モーダルで扱う
+function openApprovalModal(mode, skillId, skillName, currentLevel, currentApproverId) {
   _reapplySkillId = skillId;
+  _approvalModalMode = mode;
+
+  const titleEl  = document.getElementById('reapplyModalTitle');
+  const iconEl   = document.getElementById('reapplyModalIcon');
+  const headerEl = document.getElementById('reapplyModalHeader');
+  const btnEl    = document.getElementById('reapplySubmitBtn');
+
+  if (mode === 'edit') {
+    titleEl.textContent = '申請内容を編集';
+    iconEl.className = 'bi bi-pencil-square me-2';
+    iconEl.style.color = '#f97316';
+    headerEl.style.borderBottomColor = '#f97316';
+    btnEl.className = 'btn btn-primary btn-sm';
+    btnEl.innerHTML = '<i class="bi bi-save me-1"></i>更新する';
+  } else {
+    titleEl.textContent = '再申請';
+    iconEl.className = 'bi bi-arrow-repeat me-2';
+    iconEl.style.color = '#ef4444';
+    headerEl.style.borderBottomColor = '#ef4444';
+    btnEl.className = 'btn btn-danger btn-sm';
+    btnEl.innerHTML = '<i class="bi bi-send me-1"></i>再申請する';
+  }
+
   document.getElementById('reapplySkillName').textContent = skillName;
   document.getElementById('reapplyLevel').value = currentLevel || 1;
-  document.getElementById('reapplyApprover').value = '';
+  document.getElementById('reapplyApprover').value = currentApproverId || '';
   new bootstrap.Modal(document.getElementById('reapplyModal')).show();
 }
 
@@ -207,20 +278,77 @@ async function submitReapply() {
   const fd = new FormData();
   fd.append('level', level);
   fd.append('approver_id', approverId);
+  const isEdit = _approvalModalMode === 'edit';
   try {
     const res = await fetch('/api/skills/' + _reapplySkillId + '/level', { method: 'POST', body: fd });
     const data = await res.json();
     if (data.ok) {
       bootstrap.Modal.getInstance(document.getElementById('reapplyModal')).hide();
-      showToast('再申請しました（承認待ち）', 'success');
+      showToast(isEdit ? '申請内容を更新しました（承認待ち）' : '再申請しました（承認待ち）', 'success');
       setTimeout(() => location.reload(), 600);
     } else {
-      showToast(data.error || '再申請に失敗しました', 'error');
+      showToast(data.error || (isEdit ? '更新に失敗しました' : '再申請に失敗しました'), 'error');
       btn.disabled = false;
     }
   } catch {
-    showToast('再申請に失敗しました', 'error');
+    showToast(isEdit ? '更新に失敗しました' : '再申請に失敗しました', 'error');
     btn.disabled = false;
+  }
+}
+
+// 申請したスキルをクリック → サブスキルの選択状況とエビデンスをモーダルで表示
+async function showSkillDetail(skillId, skillName) {
+  document.getElementById('detailSkillName').textContent = skillName;
+  document.getElementById('detailLoading').style.display = '';
+  document.getElementById('detailLoading').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>読み込み中...';
+  document.getElementById('detailContent').style.display = 'none';
+  new bootstrap.Modal(document.getElementById('skillDetailModal')).show();
+
+  try {
+    const res = await fetch('/api/my-skills/' + skillId + '/detail');
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+
+    const subEl = document.getElementById('detailSubSkills');
+    if (!data.sub_skills || data.sub_skills.length === 0) {
+      subEl.innerHTML = '<div class="text-muted small">サブスキルが登録されていません</div>';
+    } else {
+      subEl.innerHTML = data.sub_skills.map(ss => `
+        <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 rounded-3"
+             style="background:${ss.done ? '#f0fdf4' : '#f8fafc'};border:1px solid ${ss.done ? '#bbf7d0' : '#e2e8f0'};font-size:.82rem;">
+          <i class="bi ${ss.done ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'}"></i>
+          <span class="${ss.done ? '' : 'text-muted'}">${escHtml(ss.name)}</span>
+        </div>`).join('');
+    }
+
+    const evEl = document.getElementById('detailEvidences');
+    if (!data.evidences || data.evidences.length === 0) {
+      evEl.innerHTML = '<div class="text-muted small">提出されたエビデンスはありません</div>';
+    } else {
+      evEl.innerHTML = data.evidences.map(ev => {
+        let inner;
+        if (ev.evidence_type === 'url') {
+          inner = `<i class="bi bi-link-45deg text-primary flex-shrink-0"></i>
+            <a href="${escHtml(ev.content)}" target="_blank" rel="noopener" class="text-truncate flex-grow-1" title="${escHtml(ev.content)}">${escHtml(ev.title || ev.content)}</a>
+            <i class="bi bi-box-arrow-up-right text-muted" style="font-size:.65rem;"></i>`;
+        } else if (ev.evidence_type === 'file') {
+          inner = `<i class="bi bi-file-earmark-arrow-down text-success flex-shrink-0"></i>
+            <a href="/skills/evidence/${ev.id}/download" class="text-truncate flex-grow-1 text-success" title="${escHtml(ev.original_filename || ev.title || 'ファイル')}">${escHtml(ev.original_filename || ev.title || 'ファイル')}</a>`;
+        } else {
+          inner = `<i class="bi bi-sticky text-warning flex-shrink-0"></i>
+            <span class="text-muted flex-grow-1 text-truncate" title="${escHtml(ev.content || ev.title)}">${escHtml(ev.title || ev.content)}</span>`;
+        }
+        return `<div class="d-flex align-items-center gap-2 mb-1 px-2 py-2 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.82rem;">
+          ${inner}
+          <span class="text-muted ms-auto flex-shrink-0" style="font-size:.7rem;">${escHtml(ev.created_at)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('detailLoading').style.display = 'none';
+    document.getElementById('detailContent').style.display = '';
+  } catch {
+    document.getElementById('detailLoading').innerHTML = '<span class="text-danger small">読み込みに失敗しました</span>';
   }
 }
 

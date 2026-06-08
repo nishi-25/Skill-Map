@@ -11,34 +11,6 @@
     <a href="/skills/tier-settings" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
       <i class="bi bi-sliders me-1"></i>ティア名設定
     </a>
-    <!-- エクスポートボタン（カスタムポップアップ） -->
-    <div style="position:relative;">
-      <button class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;"
-              onclick="toggleSkillExport(this)" type="button">
-        <i class="bi bi-download me-1"></i>エクスポート
-      </button>
-    </div>
-    <div id="skillExportPopup"
-         style="display:none;position:fixed;z-index:9999;
-                background:#fff;border:1px solid #e2e8f0;border-radius:12px;
-                box-shadow:0 6px 20px rgba(0,0,0,.15);padding:.3rem 0;min-width:200px;">
-      <div class="px-3 py-1 text-muted" style="font-size:.72rem;font-weight:600;border-bottom:1px solid #f1f5f9;">スキルのみ</div>
-      <a href="/skills/catalog/export/csv"      class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-csv me-2 text-success"></i>CSV</a>
-      <a href="/skills/catalog/export/excel"    class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a>
-      <a href="/skills/catalog/export/json"     class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-filetype-json me-2 text-warning"></i>JSON</a>
-      <a href="/skills/catalog/export/markdown" class="dropdown-item py-2 px-3" style="font-size:.88rem;"><i class="bi bi-markdown me-2 text-primary"></i>Markdown</a>
-      <div class="px-3 py-1 text-muted mt-1" style="font-size:.72rem;font-weight:600;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;">一括（カテゴリ+スキル+サブスキル）</div>
-      <a href="/skills/bulk-export" class="dropdown-item py-2 px-3" style="font-size:.88rem;">
-        <i class="bi bi-box-arrow-down me-2 text-primary"></i>一括エクスポート（JSON）
-      </a>
-    </div>
-    <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;" data-bs-toggle="modal" data-bs-target="#importModal">
-      <i class="bi bi-upload me-1"></i>インポート
-    </button>
-    <!-- 一括インポートボタン -->
-    <button type="button" class="btn btn-outline-success btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;" data-bs-toggle="modal" data-bs-target="#bulkImportModal">
-      <i class="bi bi-box-arrow-in-down me-1"></i>一括インポート
-    </button>
     <a href="/skills/catalog/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
       <i class="bi bi-plus-lg me-1"></i>スキルを追加
     </a>
@@ -75,7 +47,8 @@
       <div class="search-box">
         <i class="bi bi-search search-icon"></i>
         <input type="text" id="skillSearch" class="form-control form-control-sm"
-               placeholder="スキル名・説明で検索..." oninput="filterSkills()" style="padding-left:2rem;">
+               placeholder="スキル名・説明で検索..." oninput="filterSkills()" style="padding-left:2rem;padding-right:2.2rem;">
+        <button type="button" class="search-clear" id="skillSearchClear" onclick="clearSkillSearch()"><i class="bi bi-x-lg"></i></button>
       </div>
     </div>
     <!-- クライアントサイドフィルター + ソート -->
@@ -176,7 +149,7 @@
 {% if skills %}
 <div class="card">
   <div class="table-responsive">
-    <table class="table table-skill align-middle mb-0" style="font-size:.88rem;">
+    <table class="table table-skill align-middle mb-0" style="font-size:.88rem;table-layout:fixed;">
       <thead class="table-light">
         <tr>
           <th style="width:2%;"><input type="checkbox" id="selectAll" class="form-check-input" onclick="toggleAll(this)"></th>
@@ -240,7 +213,12 @@
               {{ SKILL_TIERS[s.tier] }}
             </span>
           </td>
-          <td class="text-muted hide-mobile" style="font-size:.82rem;">{{ s.description or '-' }}</td>
+          <td class="text-muted hide-mobile" style="font-size:.82rem;overflow:hidden;">
+            {% if s.description %}
+            <span class="skill-desc-trunc" data-bs-toggle="tooltip" data-bs-placement="top"
+                  title="{{ s.description }}">{{ s.description }}</span>
+            {% else %}-{% endif %}
+          </td>
           <td class="text-center">
             {% set count = s.user_levels | selectattr('level', 'gt', 0) | list | length %}
             <span class="badge bg-light text-dark" style="font-size:.78rem;">{{ count }}</span>
@@ -286,10 +264,11 @@
               <li class="d-flex align-items-center gap-2 py-1 border-bottom border-light" data-sub-id="{{ ss.id }}">
                 <i class="bi bi-grip-vertical drag-handle text-muted"
                    style="cursor:grab;font-size:.9rem;flex-shrink:0;" title="ドラッグで並び替え"></i>
-                <div style="flex:1;">
-                  <span class="fw-semibold">{{ ss.name }}</span>
+                <div class="d-flex align-items-baseline" style="flex:1;min-width:0;gap:.5rem;">
+                  <span class="fw-semibold flex-shrink-0">{{ ss.name }}</span>
                   {% if ss.description %}
-                  <span class="text-muted ms-2" style="font-size:.78rem;">{{ ss.description }}</span>
+                  <span class="text-muted skill-desc-trunc" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="{{ ss.description }}" style="font-size:.78rem;flex:1;min-width:0;">{{ ss.description }}</span>
                   {% endif %}
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
@@ -347,8 +326,18 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+  function clearSkillSearch() {
+    const input = document.getElementById('skillSearch');
+    input.value = '';
+    filterSkills();
+    input.focus();
+  }
+
   function filterSkills() {
-    const search = document.getElementById('skillSearch').value.toLowerCase();
+    const searchRaw = document.getElementById('skillSearch').value;
+    const search = searchRaw.toLowerCase();
+    const clearBtn = document.getElementById('skillSearchClear');
+    if (clearBtn) clearBtn.style.display = searchRaw ? 'block' : 'none';
     const catFilter = document.getElementById('filterCategory').value;
     const tierFilter = document.getElementById('filterTier').value;
     const archivedFilter = document.getElementById('filterArchived').value;
@@ -396,28 +385,6 @@
   }
 
   /* ══ 一括操作 ══════════════════════════════════════════════ */
-  /* ─ エクスポートポップアップ（body移動で stacking context 回避） ─ */
-  document.addEventListener('DOMContentLoaded', function() {
-    const p = document.getElementById('skillExportPopup');
-    if (p && p.parentNode !== document.body) document.body.appendChild(p);
-  });
-  function toggleSkillExport(btn) {
-    const popup = document.getElementById('skillExportPopup');
-    if (!popup) return;
-    if (popup.style.display === 'block') { popup.style.display = 'none'; return; }
-    const rect = btn.getBoundingClientRect();
-    popup.style.display = 'block';
-    const pw = popup.offsetWidth || 150;
-    popup.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
-    popup.style.left = Math.max(8, rect.right - pw + window.scrollX) + 'px';
-  }
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#skillExportPopup') && !e.target.closest('[onclick*="toggleSkillExport"]')) {
-      const p = document.getElementById('skillExportPopup');
-      if (p) p.style.display = 'none';
-    }
-  });
-
   function toggleBulkOptions() {
     const action = document.getElementById('bulkActionSelect').value;
     document.getElementById('bulkCategorySelect').style.display = action === 'change_category' ? '' : 'none';
@@ -570,6 +537,9 @@
 
   document.addEventListener('DOMContentLoaded', function() {
     _renderSortChips();
+    document.querySelectorAll('.skill-desc-trunc[data-bs-toggle="tooltip"]').forEach(function(el) {
+      new bootstrap.Tooltip(el, { trigger: 'hover focus', customClass: 'desc-tooltip' });
+    });
   });
 
   function toggleSubSkills(skillId) {
@@ -648,227 +618,6 @@
   }
 </script>
 
-<!-- 一括インポートモーダル -->
-<div class="modal fade" id="bulkImportModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius:16px;border:none;">
-      <div class="modal-header" style="border-bottom:2px solid #22c55e;">
-        <h6 class="modal-title fw-bold">
-          <i class="bi bi-box-arrow-in-down me-2" style="color:#22c55e;"></i>一括インポート
-        </h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-info py-2 small mb-3" style="border-radius:10px;">
-          <i class="bi bi-info-circle me-1"></i>
-          一括エクスポートで出力した JSON ファイルを読み込みます。<br>
-          <strong>カテゴリ・スキルカタログ・サブスキル</strong>を一括でインポートします。<br>
-          同名のカテゴリ・スキルは自動スキップされます。
-        </div>
-        <div class="alert alert-warning py-2 small mb-3" style="border-radius:10px;">
-          <i class="bi bi-exclamation-triangle me-1"></i>
-          <strong>注意：</strong>このインポートは<strong>新規追加のみ</strong>行います。<br>
-          既存データへの再インポートは推奨しません。UIで手動削除したサブスキルが<strong>復活する場合があります</strong>。<br>
-          移行・初期構築など <strong>空の環境へのインポート</strong> を想定した機能です。
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold small">JSONファイルを選択</label>
-          <input type="file" id="bulkImportFile" class="form-control" accept=".json" style="border-radius:10px;">
-        </div>
-        <div id="bulkImportResult" style="display:none;"></div>
-      </div>
-      <div class="modal-footer" style="border-top:none;">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
-        <button type="button" class="btn btn-success btn-sm" id="bulkImportBtn" onclick="doBulkImport()" style="border-radius:20px;">
-          <i class="bi bi-upload me-1"></i>一括インポート実行
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- インポートモーダル（CSV / Excel / Markdown / JSON 対応） -->
-<div class="modal fade" id="importModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="border-radius:16px;border:none;">
-      <div class="modal-header" style="border-bottom:2px solid #f97316;">
-        <h6 class="modal-title fw-bold">
-          <i class="bi bi-upload me-2" style="color:#f97316;"></i>カタログ一括インポート
-        </h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-
-        <!-- 形式タブ -->
-        <ul class="nav nav-pills mb-3 gap-1" id="importFormatTab">
-          {% for fmt, label, icon in [('csv','CSV','bi-filetype-csv'),('excel','Excel','bi-file-earmark-excel'),('markdown','Markdown','bi-markdown'),('json','JSON','bi-filetype-json')] %}
-          <li class="nav-item">
-            <button class="nav-link {% if loop.first %}active{% endif %} btn btn-sm"
-                    style="border-radius:20px;font-size:.82rem;"
-                    onclick="switchFormat('{{ fmt }}')" id="tab-{{ fmt }}">
-              <i class="bi {{ icon }} me-1"></i>{{ label }}
-            </button>
-          </li>
-          {% endfor %}
-        </ul>
-
-        <!-- 形式別説明 -->
-        <div id="desc-csv" class="fmt-desc">
-          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
-            <b>ヘッダー（1行目）:</b> <code>category_name, category_color, skill_name, tier, description</code><br>
-            <b>tier の値:</b> <code>basic / intermediate / advanced</code><br>
-            カテゴリが未登録の場合は自動作成されます。UTF-8 または Shift-JIS に対応。
-          </div>
-        </div>
-        <div id="desc-excel" class="fmt-desc" style="display:none;">
-          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
-            <b>シート名:</b> <code>スキル</code>（または最初のシート）<br>
-            <b>列:</b> <code>category_name, category_color, skill_name, tier, description</code><br>
-            テンプレートをダウンロードして編集するのが最も簡単です。
-          </div>
-        </div>
-        <div id="desc-markdown" class="fmt-desc" style="display:none;">
-          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;font-family:monospace;">
-            <b>## カテゴリ名 #カラー(16進)</b><br>
-            <b>### tier名</b> （basic / intermediate / advanced）<br>
-            <b>- スキル名: 説明文</b>
-          </div>
-        </div>
-        <div id="desc-json" class="fmt-desc" style="display:none;">
-          <div class="alert alert-light border py-2 small mb-2" style="border-radius:10px;">
-            <code>[{"category":"カテゴリ名","color":"#色","skills":[{"name":"スキル名","tier":"basic","description":"説明"}]}]</code>
-          </div>
-        </div>
-
-        <!-- テンプレートダウンロード -->
-        <div class="d-flex gap-2 flex-wrap mb-3">
-          <span class="text-muted small align-self-center">テンプレート:</span>
-          <a href="/skills/catalog/template/csv"      class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
-          <a href="/skills/catalog/template/excel"    class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
-          <a href="/skills/catalog/template/markdown" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-markdown me-1"></i>Markdown</a>
-          <a href="/skills/catalog/template/json"     class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;"><i class="bi bi-filetype-json me-1"></i>JSON</a>
-        </div>
-
-        <!-- ファイル選択 -->
-        <div class="mb-3">
-          <label class="form-label fw-semibold small">ファイルを選択</label>
-          <input type="file" class="form-control" id="importFile"
-                 accept=".csv,.xlsx,.xls,.md,.markdown,.json"
-                 style="border-radius:10px;">
-          <div class="form-text">対応形式: .csv .xlsx .md .json</div>
-        </div>
-
-        <div id="importResult" style="display:none;"></div>
-      </div>
-      <div class="modal-footer" style="border-top:none;">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
-        <button type="button" class="btn btn-primary btn-sm" id="importBtn" onclick="doImport()" style="border-radius:20px;">
-          <i class="bi bi-upload me-1"></i>インポート実行
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-function switchFormat(fmt) {
-  document.querySelectorAll('.fmt-desc').forEach(d => d.style.display = 'none');
-  document.querySelectorAll('[id^="tab-"]').forEach(b => b.classList.remove('active'));
-  document.getElementById('desc-' + fmt).style.display = '';
-  document.getElementById('tab-' + fmt).classList.add('active');
-  // ファイル入力の accept を切り替え
-  const accepts = {csv:'.csv', excel:'.xlsx,.xls', markdown:'.md,.markdown', json:'.json'};
-  document.getElementById('importFile').accept = accepts[fmt] || '*';
-}
-
-async function doImport() {
-  const file = document.getElementById('importFile').files[0];
-  if (!file) { showToast('ファイルを選択してください', 'error'); return; }
-
-  const btn = document.getElementById('importBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
-
-  const fd = new FormData();
-  fd.append('file', file);
-  let data;
-  try {
-    const res = await fetch('/skills/catalog/import', { method: 'POST', body: fd });
-    data = await res.json();
-  } catch (err) {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
-    const resultEl = document.getElementById('importResult');
-    resultEl.style.display = '';
-    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
-      <i class="bi bi-x-circle me-1"></i>インポートに失敗しました（サーバーエラー）</div>`;
-    return;
-  }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-upload me-1"></i>インポート実行';
-
-  const resultEl = document.getElementById('importResult');
-  resultEl.style.display = '';
-  if (data.ok) {
-    const skipped = data.skipped ? `（${data.skipped}件スキップ）` : '';
-    let html = `<div class="alert alert-success py-2 small" style="border-radius:10px;">
-      <i class="bi bi-check-circle me-1"></i>
-      <strong>${data.added} 件</strong>のスキルを追加しました ${skipped}
-    </div>`;
-    if (data.errors && data.errors.length > 0) {
-      html += `<div class="alert alert-warning py-2 small" style="border-radius:10px;max-height:140px;overflow-y:auto;">
-        <b><i class="bi bi-exclamation-triangle me-1"></i>${data.errors.length}件の警告</b><br>
-        ${data.errors.map(e => `<div>${e}</div>`).join('')}
-      </div>`;
-    }
-    resultEl.innerHTML = html;
-    if (data.added > 0) setTimeout(() => location.reload(), 2000);
-  } else {
-    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
-      <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}
-    </div>`;
-  }
-}
-
-async function doBulkImport() {
-  const fileInput = document.getElementById('bulkImportFile');
-  const resultEl  = document.getElementById('bulkImportResult');
-  const btn       = document.getElementById('bulkImportBtn');
-  if (!fileInput.files.length) {
-    alert('ファイルを選択してください');
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
-  resultEl.style.display = '';
-  resultEl.innerHTML = '<div class="text-muted small">インポート中...</div>';
-
-  const fd = new FormData();
-  fd.append('file', fileInput.files[0]);
-  try {
-    const res  = await fetch('/skills/bulk-import', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.ok) {
-      resultEl.innerHTML = `
-        <div class="alert alert-success py-2 small" style="border-radius:10px;">
-          <i class="bi bi-check-circle me-1"></i>一括インポート完了<br>
-          カテゴリ: <strong>${data.added_categories}</strong>件追加 / ${data.skipped_categories}件スキップ<br>
-          スキル: <strong>${data.added_skills}</strong>件追加 / ${data.skipped_skills}件スキップ<br>
-          サブスキル: <strong>${data.added_sub_skills}</strong>件追加 / ${data.skipped_sub_skills}件スキップ
-        </div>`;
-      setTimeout(() => location.reload(), 2000);
-    } else {
-      resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">
-        <i class="bi bi-x-circle me-1"></i>${data.error || 'インポートに失敗しました'}</div>`;
-    }
-  } catch(e) {
-    resultEl.innerHTML = `<div class="alert alert-danger py-2 small" style="border-radius:10px;">通信エラーが発生しました</div>`;
-  }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-upload me-1"></i>一括インポート実行';
-}
-</script>
-
 <!-- サブスキル編集モーダル -->
 <div class="modal fade" id="editSubSkillModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -908,5 +657,20 @@ function openEditSubSkill(id, name, desc) {
 <style>
   .sortable-ghost { opacity: .4; background: #e0f2fe; border-radius: 6px; }
   .drag-handle:active { cursor: grabbing; }
+  .skill-desc-trunc {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+    border-bottom: 1px dotted #94a3b8;
+  }
+  .desc-tooltip .tooltip-inner {
+    max-width: 340px;
+    text-align: left;
+    white-space: normal;
+    line-height: 1.5;
+  }
 </style>
 {% endblock %}

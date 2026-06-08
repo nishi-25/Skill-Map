@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 import models
@@ -323,3 +323,105 @@ async def education_path_reorder(
         link.step_order = step_order or None
         db.commit()
     return RedirectResponse(f"/education/path/{skill_id}", status_code=303)
+
+
+# ── 学習パス 一括エクスポート / インポート（データ管理ページ用） ──────────────
+
+@router.get("/education/paths/export")
+def education_paths_export(request: Request, db: Session = Depends(get_db)):
+    """スキルに紐づく学習パス（ステップ）を1つのJSONファイルで一括エクスポート"""
+    from fastapi.responses import Response as _Response
+    import json as _json
+    from datetime import datetime as _dt
+    auth.require_admin(request, db)
+
+    links = (
+        db.query(models.EducationalLink)
+        .filter(models.EducationalLink.skill_id.isnot(None))
+        .order_by(models.EducationalLink.skill_id, models.EducationalLink.step_order)
+        .all()
+    )
+
+    data = {
+        "exported_at": _dt.now().isoformat(),
+        "education_paths": [
+            {
+                "skill_name": lk.skill.name,
+                "title": lk.title,
+                "url": lk.url,
+                "description": lk.description or "",
+                "step_order": lk.step_order,
+            }
+            for lk in links if lk.skill is not None
+        ],
+    }
+
+    body = _json.dumps(data, ensure_ascii=False, indent=2)
+    filename = f"skillmap_education_paths_{_dt.now().strftime('%Y%m%d')}.json"
+    return _Response(
+        content=body.encode("utf-8"),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/education/paths/import")
+async def education_paths_import(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """一括エクスポートJSONファイルから学習パスを一括インポートする
+    （スキル名で照合し、同じスキル×タイトルの組み合わせは新規追加せずスキップ）"""
+    import json as _json
+    user = auth.require_admin(request, db)
+
+    content = await file.read()
+    try:
+        data = _json.loads(content.decode("utf-8-sig"))
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON の解析に失敗しました"}, status_code=400)
+
+    added = skipped = skipped_no_skill = 0
+    for item in data.get("education_paths", []):
+        title = (item.get("title") or "").strip()
+        url = (item.get("url") or "").strip()
+        skill_name = (item.get("skill_name") or "").strip()
+        if not title or not url or not skill_name:
+            continue
+
+        skill = db.query(models.Skill).filter(models.Skill.name == skill_name).first()
+        if not skill:
+            skipped_no_skill += 1
+            continue
+
+        existing = (
+            db.query(models.EducationalLink)
+            .filter(
+                models.EducationalLink.skill_id == skill.id,
+                models.EducationalLink.title == title,
+            )
+            .first()
+        )
+        if existing:
+            skipped += 1
+            continue
+
+        db.add(models.EducationalLink(
+            title=title,
+            url=url,
+            description=(item.get("description") or "").strip() or None,
+            category_id=skill.category_id,
+            skill_id=skill.id,
+            step_order=item.get("step_order"),
+            created_by=user.id,
+        ))
+        added += 1
+
+    db.commit()
+    return JSONResponse({
+        "ok": True,
+        "added": added,
+        "skipped": skipped,
+        "skipped_no_skill": skipped_no_skill,
+    })

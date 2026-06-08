@@ -450,9 +450,10 @@ def group_detail(
 
     categories = db.query(models.Category).order_by(models.Category.name).all()
 
-    # 追加できるユーザー（既にメンバーでない承認済みユーザー・全ロール対象）
+    # 追加できるユーザー（既にメンバーでない承認済みのManager権限ユーザーのみ。adminや一般ユーザーは候補に出さない）
     addable = db.query(models.User).filter(
         models.User.is_approved == True,
+        models.User.role == "manager",
         ~models.User.id.in_(member_ids),
     ).order_by(models.User.display_name, models.User.username).all() \
     if _can_manage_group(user, group) else []

@@ -149,186 +149,6 @@ def categories_bulk_delete(
 
 
 # ════════════════════════════════════════════════════════════════
-# カテゴリー エクスポート / インポート
-# ════════════════════════════════════════════════════════════════
-
-_CAT_SAMPLE = [
-    {"name": "HILS基盤・構築",             "color": "#dc2626", "description": ""},
-    {"name": "HILSプラットフォームツール",  "color": "#2563eb", "description": ""},
-    {"name": "計測・診断ツール",            "color": "#0891b2", "description": ""},
-    {"name": "テスト自動化",               "color": "#059669", "description": ""},
-]
-
-
-@router.get("/categories/export/{fmt}")
-def categories_export(fmt: str, request: Request, db: Session = Depends(get_db)):
-    """カテゴリーを CSV / Excel / JSON / Markdown でエクスポート"""
-    from fastapi.responses import StreamingResponse, Response
-    user = auth.require_manager_or_admin(request, db)
-    cats = db.query(models.Category).order_by(models.Category.name).all()
-
-    if fmt == "csv":
-        lines = ["name,color,description"]
-        for c in cats:
-            desc = (c.description or "").replace(",", "、")
-            lines.append(f'{c.name},{c.color},{desc}')
-        body = "﻿" + "\n".join(lines) + "\n"
-        return Response(content=body.encode("utf-8"),
-                        media_type="text/csv; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=categories.csv"})
-
-    elif fmt == "excel":
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-        wb = openpyxl.Workbook()
-        ws = wb.active; ws.title = "カテゴリー"
-        headers = ["name", "color", "description"]
-        headers_ja = ["カテゴリー名", "カラー(16進)", "説明"]
-        hfill = PatternFill("solid", fgColor="F97316")
-        hfont = Font(bold=True, color="FFFFFF")
-        for ci, (h, hj) in enumerate(zip(headers, headers_ja), 1):
-            c = ws.cell(row=1, column=ci, value=h)
-            c.font = hfill_ = hfont; c.fill = hfill; c.alignment = Alignment(horizontal="center")
-            ws.cell(row=2, column=ci, value=f"({hj})")
-        ws.column_dimensions["A"].width = 26
-        ws.column_dimensions["B"].width = 14
-        ws.column_dimensions["C"].width = 36
-        for ri, c in enumerate(cats, start=3):
-            ws.cell(row=ri, column=1, value=c.name)
-            ws.cell(row=ri, column=2, value=c.color)
-            ws.cell(row=ri, column=3, value=c.description or "")
-        buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-        return StreamingResponse(buf,
-                                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                 headers={"Content-Disposition": "attachment; filename=categories.xlsx"})
-
-    elif fmt == "json":
-        data = [{"name": c.name, "color": c.color, "description": c.description or ""} for c in cats]
-        body = _json.dumps(data, ensure_ascii=False, indent=2)
-        return Response(content=body.encode("utf-8"),
-                        media_type="application/json; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=categories.json"})
-
-    elif fmt == "markdown":
-        lines = ["# カテゴリー一覧\n",
-                 "<!-- 書式: | name | color(16進) | description | -->",
-                 "",
-                 "| カテゴリー名 | カラー | 説明 |",
-                 "|------------|--------|------|"]
-        for c in cats:
-            lines.append(f"| {c.name} | {c.color} | {c.description or ''} |")
-        lines.append("")
-        body = "\n".join(lines)
-        return Response(content=body.encode("utf-8"),
-                        media_type="text/markdown; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=categories.md"})
-
-    else:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail=f"不明な形式: {fmt}")
-
-
-@router.post("/categories/import")
-async def categories_import(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-):
-    """CSV / Excel / JSON / Markdown からカテゴリーを一括インポート"""
-    user = auth.require_manager_or_admin(request, db)
-    content  = await file.read()
-    filename = (file.filename or "").lower()
-
-    records = []
-    errors  = []
-
-    if filename.endswith(".csv"):
-        try:
-            text = content.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            text = content.decode("cp932", errors="replace")
-        reader = csv.DictReader(io.StringIO(text))
-        for i, row in enumerate(reader, start=2):
-            name  = (row.get("name") or row.get("カテゴリー名") or "").strip()
-            color = (row.get("color") or row.get("カラー") or "#f97316").strip()
-            desc  = (row.get("description") or row.get("説明") or "").strip()
-            if not name: errors.append(f"行{i}: カテゴリー名が空です"); continue
-            records.append({"name": name, "color": color, "description": desc})
-
-    elif filename.endswith((".xlsx", ".xls")):
-        import openpyxl
-        try:
-            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-        except Exception as e:
-            return JSONResponse({"ok": False, "error": f"Excelファイルの読み込みに失敗: {e}"}, status_code=400)
-        ws = wb["カテゴリー"] if "カテゴリー" in wb.sheetnames else wb.active
-        headers = [str(c.value).strip() if c.value else "" for c in next(ws.iter_rows(min_row=1, max_row=1))]
-        col = {h: i for i, h in enumerate(headers)}
-        def gv(row, *keys):
-            for k in keys:
-                if k in col and row[col[k]].value is not None:
-                    return str(row[col[k]].value).strip()
-            return ""
-        for i, row in enumerate(ws.iter_rows(min_row=3, values_only=False), start=3):
-            row = list(row)
-            if not any(c.value for c in row): continue
-            name  = gv(row, "name", "カテゴリー名")
-            color = gv(row, "color", "カラー") or "#f97316"
-            desc  = gv(row, "description", "説明")
-            if not name: errors.append(f"行{i}: カテゴリー名が空です"); continue
-            records.append({"name": name, "color": color, "description": desc})
-
-    elif filename.endswith(".json"):
-        import json as _json2
-        try:
-            data = _json2.loads(content.decode("utf-8-sig"))
-        except Exception as e:
-            return JSONResponse({"ok": False, "error": f"JSON解析エラー: {e}"}, status_code=400)
-        if not isinstance(data, list):
-            return JSONResponse({"ok": False, "error": "JSONはリスト形式にしてください"}, status_code=400)
-        for i, item in enumerate(data):
-            name  = str(item.get("name") or "").strip()
-            color = str(item.get("color") or "#f97316").strip()
-            desc  = str(item.get("description") or "").strip()
-            if not name: errors.append(f"item[{i}]: カテゴリー名が空です"); continue
-            records.append({"name": name, "color": color, "description": desc})
-
-    elif filename.endswith((".md", ".markdown")):
-        try:
-            text = content.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            text = content.decode("cp932", errors="replace")
-        for line in text.splitlines():
-            line = line.strip()
-            if not line.startswith("|") or "カテゴリー名" in line or "---" in line: continue
-            parts = [p.strip() for p in line.strip("|").split("|")]
-            if len(parts) < 2: continue
-            name  = parts[0].strip()
-            color = parts[1].strip() if len(parts) > 1 else "#f97316"
-            desc  = parts[2].strip() if len(parts) > 2 else ""
-            if not name or name == "カテゴリー名": continue
-            records.append({"name": name, "color": color or "#f97316", "description": desc})
-    else:
-        return JSONResponse({"ok": False, "error": "対応形式: .csv .xlsx .md .json"}, status_code=400)
-
-    added = skipped = 0
-    for r in records:
-        existing = db.query(models.Category).filter(models.Category.name == r["name"]).first()
-        if existing:
-            errors.append(f"'{r['name']}' は既に存在します（スキップ）")
-            skipped += 1
-            continue
-        db.add(models.Category(
-            name=r["name"], color=r["color"],
-            description=r["description"] or None,
-            created_by=user.id,
-        ))
-        added += 1
-    db.commit()
-    return JSONResponse({"ok": True, "added": added, "skipped": skipped, "errors": errors})
-
-
-# ════════════════════════════════════════════════════════════════
 # スキルカタログ管理（Admin / Manager のみ）
 # ════════════════════════════════════════════════════════════════
 
@@ -502,418 +322,6 @@ def catalog_delete(skill_id: int, request: Request, db: Session = Depends(get_db
         db.delete(skill)
         db.commit()
     return RedirectResponse("/skills/catalog", status_code=303)
-
-
-# ────────────────────────────────────────────────────────────────
-# インポート共通ヘルパー
-# ────────────────────────────────────────────────────────────────
-_VALID_TIERS = {"basic", "intermediate", "advanced"}
-
-_SAMPLE_RECORDS = [
-    {"category": "HILS基盤・構築",            "color": "#dc2626", "name": "HILS基本操作",       "tier": "beginner",     "description": "HILSの電源投入・基本操作・ステータス確認"},
-    {"category": "HILSプラットフォームツール", "color": "#2563eb", "name": "ControlDesk 基本操作","tier": "beginner",    "description": "レイアウト作成・変数モニタリング・データ記録"},
-    {"category": "計測・診断ツール",           "color": "#0891b2", "name": "CANoe 基礎",          "tier": "basic",        "description": "基本操作・ログ取得・DBC読み込み・信号モニタリング"},
-    {"category": "テスト自動化",              "color": "#059669", "name": "ecu.test 基礎",        "tier": "basic",        "description": "テストケース作成・実行・レポート出力・基本設定"},
-]
-
-
-def _parse_csv_bytes(content: bytes) -> tuple[list, list]:
-    try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        text = content.decode("cp932", errors="replace")
-    reader = csv.DictReader(io.StringIO(text))
-    records, errors = [], []
-    for i, row in enumerate(reader, start=2):
-        name     = (row.get("skill_name") or row.get("name") or row.get("スキル名") or "").strip()
-        category = (row.get("category_name") or row.get("category") or row.get("カテゴリ名") or row.get("カテゴリー") or "").strip()
-        color    = (row.get("category_color") or row.get("color") or row.get("カラー") or "#f97316").strip()
-        tier     = (row.get("tier") or row.get("ティア") or "basic").strip()
-        desc     = (row.get("description") or row.get("説明") or "").strip()
-        if not name:
-            errors.append(f"行{i}: スキル名が空です"); continue
-        if tier not in _VALID_TIERS:
-            errors.append(f"行{i}: 無効なティア '{tier}'"); continue
-        records.append({"category": category, "color": color, "name": name, "tier": tier, "description": desc})
-    return records, errors
-
-
-def _parse_excel_bytes(content: bytes) -> tuple[list, list]:
-    import openpyxl
-    import openpyxl.utils.exceptions
-    records, errors = [], []
-    try:
-        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-    except Exception as e:
-        return [], [f"Excelファイルの読み込みに失敗しました: {e}"]
-
-    # シート「スキル」か最初のシートを使用
-    ws = wb["スキル"] if "スキル" in wb.sheetnames else wb.active
-    headers = [str(c.value).strip() if c.value else "" for c in next(ws.iter_rows(min_row=1, max_row=1))]
-    col = {h: i for i, h in enumerate(headers)}
-
-    def get(row, *keys):
-        for k in keys:
-            if k in col and row[col[k]].value is not None:
-                return str(row[col[k]].value).strip()
-        return ""
-
-    # テンプレートは行1=英語ヘッダー・行2=日本語説明・行3以降=データ
-    # 行2の日本語説明行をスキップするため min_row=3 から開始
-    for i, row in enumerate(ws.iter_rows(min_row=3, values_only=False), start=3):
-        row = list(row)
-        if not any(c.value for c in row):
-            continue
-        name     = get(row, "skill_name", "スキル名", "name")
-        category = get(row, "category_name", "カテゴリ名", "category", "カテゴリー")
-        color    = get(row, "category_color", "カラー", "color") or "#f97316"
-        tier     = get(row, "tier", "ティア") or "basic"
-        desc     = get(row, "description", "説明")
-        if not name:
-            errors.append(f"行{i}: スキル名が空です"); continue
-        if tier not in _VALID_TIERS:
-            errors.append(f"行{i}: 無効なティア '{tier}'"); continue
-        records.append({"category": category, "color": color, "name": name, "tier": tier, "description": desc})
-    return records, errors
-
-
-def _parse_markdown_bytes(content: bytes) -> tuple[list, list]:
-    try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        text = content.decode("cp932", errors="replace")
-    records, errors = [], []
-    current_cat, current_color, current_tier = "", "#f97316", "basic"
-    tier_map = {"basic": "basic",       "ベーシック": "basic",   "基礎": "basic",
-                "intermediate": "intermediate", "中級": "intermediate",
-                "advanced": "advanced", "上級": "advanced"}
-    for line_no, line in enumerate(text.splitlines(), start=1):
-        line = line.rstrip()
-        if line.startswith("## "):          # カテゴリ
-            parts = line[3:].strip().split()
-            current_color = parts[-1] if parts and parts[-1].startswith("#") else "#f97316"
-            current_cat   = " ".join(p for p in parts if not p.startswith("#"))
-        elif line.startswith("### "):       # ティア
-            t = line[4:].strip()
-            current_tier = tier_map.get(t, t.lower())
-            if current_tier not in _VALID_TIERS:
-                errors.append(f"行{line_no}: 不明なティア '{t}'（スキップ）"); current_tier = "basic"
-        elif line.startswith("- "):         # スキル
-            body = line[2:].strip()
-            if ":" in body:
-                name, desc = body.split(":", 1)
-            else:
-                name, desc = body, ""
-            name = name.strip(); desc = desc.strip()
-            if not name:
-                errors.append(f"行{line_no}: スキル名が空です"); continue
-            records.append({"category": current_cat, "color": current_color,
-                            "name": name, "tier": current_tier, "description": desc})
-    return records, errors
-
-
-def _parse_json_bytes(content: bytes) -> tuple[list, list]:
-    import json
-    records, errors = [], []
-    try:
-        data = json.loads(content.decode("utf-8-sig"))
-    except Exception as e:
-        return [], [f"JSON解析エラー: {e}"]
-    if not isinstance(data, list):
-        return [], ["JSONはリスト形式（[...]）にしてください"]
-    for ci, cat_obj in enumerate(data):
-        cat_name  = str(cat_obj.get("category") or cat_obj.get("カテゴリ名") or "").strip()
-        cat_color = str(cat_obj.get("color") or cat_obj.get("カラー") or "#f97316").strip()
-        skills = cat_obj.get("skills") or []
-        if not isinstance(skills, list):
-            errors.append(f"カテゴリ[{ci}]: skills はリストにしてください"); continue
-        for si, sk in enumerate(skills):
-            name = str(sk.get("name") or sk.get("スキル名") or "").strip()
-            tier = str(sk.get("tier") or sk.get("ティア") or "basic").strip()
-            desc = str(sk.get("description") or sk.get("説明") or "").strip()
-            if not name:
-                errors.append(f"カテゴリ[{ci}]スキル[{si}]: スキル名が空です"); continue
-            if tier not in _VALID_TIERS:
-                errors.append(f"'{name}': 無効なティア '{tier}'"); continue
-            records.append({"category": cat_name, "color": cat_color,
-                            "name": name, "tier": tier, "description": desc})
-    return records, errors
-
-
-def _apply_records(records: list, user, db) -> tuple[int, int, list]:
-    """records を DB に登録し (added, skipped, errors) を返す"""
-    added = skipped = 0
-    errors = []
-    cat_cache: dict[str, models.Category] = {}
-
-    for r in records:
-        cat_name = r["category"]
-        cat_obj  = None
-        if cat_name:
-            if cat_name in cat_cache:
-                cat_obj = cat_cache[cat_name]
-            else:
-                cat_obj = db.query(models.Category).filter(models.Category.name == cat_name).first()
-                if not cat_obj:
-                    cat_obj = models.Category(name=cat_name, color=r["color"], created_by=user.id)
-                    db.add(cat_obj); db.flush()
-                cat_cache[cat_name] = cat_obj
-
-        if db.query(models.Skill).filter(models.Skill.name == r["name"]).first():
-            errors.append(f"'{r['name']}' は既に存在するためスキップ")
-            skipped += 1
-            continue
-
-        db.add(models.Skill(
-            name=r["name"],
-            description=r["description"] or None,
-            category_id=cat_obj.id if cat_obj else None,
-            tier=r["tier"],
-            created_by=user.id,
-        ))
-        added += 1
-
-    db.commit()
-    return added, skipped, errors
-
-
-# ────────────────────────────────────────────────────────────────
-# インポートエンドポイント
-# ────────────────────────────────────────────────────────────────
-@router.post("/skills/catalog/import")
-async def catalog_import(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-):
-    """CSV / Excel / Markdown / JSON からカテゴリ＋スキルを一括登録"""
-    user = auth.require_manager_or_admin(request, db)
-    content  = await file.read()
-    filename = (file.filename or "").lower()
-
-    if filename.endswith(".csv"):
-        records, errors = _parse_csv_bytes(content)
-    elif filename.endswith((".xlsx", ".xls")):
-        records, errors = _parse_excel_bytes(content)
-    elif filename.endswith((".md", ".markdown")):
-        records, errors = _parse_markdown_bytes(content)
-    elif filename.endswith(".json"):
-        records, errors = _parse_json_bytes(content)
-    else:
-        return JSONResponse({"ok": False, "error": "対応形式: .csv .xlsx .md .json"}, status_code=400)
-
-    added, skipped, apply_errors = _apply_records(records, user, db)
-    errors += apply_errors
-    return JSONResponse({"ok": True, "added": added, "skipped": skipped, "errors": errors})
-
-
-# ────────────────────────────────────────────────────────────────
-# スキルカタログ エクスポート（現在登録されているデータを出力）
-# ────────────────────────────────────────────────────────────────
-import json as _json
-
-@router.get("/skills/catalog/export/{fmt}")
-def catalog_export(fmt: str, request: Request, db: Session = Depends(get_db)):
-    """スキルカタログを CSV / Excel / JSON / Markdown でエクスポート"""
-    from fastapi.responses import StreamingResponse, Response
-    user = auth.require_manager_or_admin(request, db)
-
-    # Manager は自グループスコープ、Admin は全件
-    if user.role == "manager":
-        skill_ids = _get_manager_skill_ids(user, db)
-        skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).order_by(
-            models.Skill.tier, models.Skill.name
-        ).all() if skill_ids else []
-    else:
-        skills = db.query(models.Skill).order_by(models.Skill.tier, models.Skill.name).all()
-
-    if fmt == "csv":
-        lines = ["category_name,category_color,skill_name,tier,description"]
-        for s in skills:
-            cat_name  = (s.category.name  if s.category else "").replace(",", "、")
-            cat_color = (s.category.color if s.category else "#f97316")
-            desc = (s.description or "").replace(",", "、")
-            lines.append(f'{cat_name},{cat_color},{s.name},{s.tier},{desc}')
-        body = "﻿" + "\n".join(lines) + "\n"
-        return Response(content=body.encode("utf-8"),
-                        media_type="text/csv; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=skills.csv"})
-
-    elif fmt == "excel":
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-        wb = openpyxl.Workbook()
-        ws = wb.active; ws.title = "スキル"
-        headers    = ["category_name", "category_color", "skill_name", "tier", "description"]
-        headers_ja = ["カテゴリ名", "カラー(16進)", "スキル名", "ティア", "説明"]
-        hfill = PatternFill("solid", fgColor="F97316")
-        hfont = Font(bold=True, color="FFFFFF")
-        for ci, (h, hj) in enumerate(zip(headers, headers_ja), 1):
-            c = ws.cell(row=1, column=ci, value=h)
-            c.font = hfont; c.fill = hfill; c.alignment = Alignment(horizontal="center")
-            ws.cell(row=2, column=ci, value=f"({hj})")
-        widths = [24, 14, 30, 14, 40]
-        for ci, w in enumerate(widths, 1):
-            ws.column_dimensions[openpyxl.utils.get_column_letter(ci)].width = w
-        for s in skills:
-            ws.append([
-                s.category.name  if s.category else "",
-                s.category.color if s.category else "#f97316",
-                s.name, s.tier, s.description or "",
-            ])
-        buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-        return StreamingResponse(buf,
-                                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                 headers={"Content-Disposition": "attachment; filename=skills.xlsx"})
-
-    elif fmt == "json":
-        # カテゴリごとに階層化
-        cat_map: dict[str, dict] = {}
-        for s in skills:
-            cat = s.category.name if s.category else "未分類"
-            color = s.category.color if s.category else "#f97316"
-            if cat not in cat_map:
-                cat_map[cat] = {"category": cat, "color": color, "skills": []}
-            cat_map[cat]["skills"].append({
-                "name": s.name, "tier": s.tier, "description": s.description or ""
-            })
-        body = _json.dumps(list(cat_map.values()), ensure_ascii=False, indent=2)
-        return Response(content=body.encode("utf-8"),
-                        media_type="application/json; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=skills.json"})
-
-    elif fmt == "markdown":
-        lines = ["# スキルカタログ\n",
-                 "<!-- 書式: ## カテゴリ名 #カラー → ### tier → - スキル名: 説明 -->", ""]
-        current_cat = current_tier = None
-        for s in skills:
-            cat = s.category.name if s.category else "未分類"
-            color = s.category.color if s.category else "#94a3b8"
-            if cat != current_cat:
-                current_cat = cat; current_tier = None
-                lines += ["", f"## {cat} {color}", ""]
-            if s.tier != current_tier:
-                current_tier = s.tier
-                lines += [f"### {s.tier}", ""]
-            lines.append(f"- {s.name}: {s.description or ''}")
-        lines.append("")
-        body = "\n".join(lines)
-        return Response(content=body.encode("utf-8"),
-                        media_type="text/markdown; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=skills.md"})
-
-    else:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail=f"不明な形式: {fmt}")
-
-
-# ────────────────────────────────────────────────────────────────
-# テンプレートダウンロード
-# ────────────────────────────────────────────────────────────────
-
-@router.get("/skills/catalog/template/{fmt}")
-def catalog_template(fmt: str, request: Request, db: Session = Depends(get_db)):
-    """インポート用テンプレートファイルをダウンロードする"""
-    auth.require_manager_or_admin(request, db)
-
-    from fastapi.responses import StreamingResponse, Response
-
-    if fmt == "csv":
-        lines = ["category_name,category_color,skill_name,tier,description"]
-        for r in _SAMPLE_RECORDS:
-            lines.append(f'{r["category"]},{r["color"]},{r["name"]},{r["tier"]},{r["description"]}')
-        body = "﻿" + "\n".join(lines) + "\n"  # BOM付きUTF-8
-        return Response(content=body.encode("utf-8"),
-                        media_type="text/csv; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=skill_template.csv"})
-
-    elif fmt == "excel":
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "スキル"
-
-        header_fill = PatternFill("solid", fgColor="F97316")
-        header_font = Font(bold=True, color="FFFFFF")
-        headers = ["category_name", "category_color", "skill_name", "tier", "description"]
-        headers_ja = ["カテゴリ名", "カラー(16進)", "スキル名", "ティア", "説明"]
-
-        for ci, (h_en, h_ja) in enumerate(zip(headers, headers_ja), start=1):
-            cell = ws.cell(row=1, column=ci, value=h_en)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal="center")
-            ws.cell(row=2, column=ci, value=f"({h_ja})")
-
-        col_widths = [22, 14, 28, 14, 40]
-        for ci, w in enumerate(col_widths, start=1):
-            ws.column_dimensions[openpyxl.utils.get_column_letter(ci)].width = w
-
-        for ri, r in enumerate(_SAMPLE_RECORDS, start=3):
-            ws.cell(row=ri, column=1, value=r["category"])
-            ws.cell(row=ri, column=2, value=r["color"])
-            ws.cell(row=ri, column=3, value=r["name"])
-            ws.cell(row=ri, column=4, value=r["tier"])
-            ws.cell(row=ri, column=5, value=r["description"])
-
-        # 「説明」シートを追加
-        ws2 = wb.create_sheet("使い方")
-        notes = [
-            ("項目", "説明"),
-            ("category_name", "カテゴリ名。存在しない場合は新規作成されます。"),
-            ("category_color", "カテゴリの色（16進数 例: #dc2626）。省略可。"),
-            ("skill_name", "スキル名（必須・重複スキップ）"),
-            ("tier", "難易度: beginner / basic / intermediate / advanced"),
-            ("description", "スキルの説明（省略可）"),
-        ]
-        for row in notes:
-            ws2.append(row)
-
-        buf = io.BytesIO()
-        wb.save(buf)
-        buf.seek(0)
-        return StreamingResponse(buf,
-                                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                 headers={"Content-Disposition": "attachment; filename=skill_template.xlsx"})
-
-    elif fmt == "markdown":
-        lines = ["# スキルカタログ インポートテンプレート", "",
-                 "<!-- 書式: ## カテゴリ名 #カラー(16進) → ### ティア → - スキル名: 説明 -->", ""]
-        current_cat = None
-        current_tier = None
-        for r in _SAMPLE_RECORDS:
-            if r["category"] != current_cat:
-                current_cat  = r["category"]
-                current_tier = None
-                lines += ["", f'## {r["category"]} {r["color"]}', ""]
-            if r["tier"] != current_tier:
-                current_tier = r["tier"]
-                lines += [f'### {r["tier"]}', ""]
-            lines.append(f'- {r["name"]}: {r["description"]}')
-        lines.append("")
-        body = "\n".join(lines)
-        return Response(content=body.encode("utf-8"),
-                        media_type="text/markdown; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=skill_template.md"})
-
-    elif fmt == "json":
-        # JSON は category ごとにまとめる
-        cat_map: dict[str, dict] = {}
-        for r in _SAMPLE_RECORDS:
-            if r["category"] not in cat_map:
-                cat_map[r["category"]] = {"category": r["category"], "color": r["color"], "skills": []}
-            cat_map[r["category"]]["skills"].append(
-                {"name": r["name"], "tier": r["tier"], "description": r["description"]}
-            )
-        body = _json.dumps(list(cat_map.values()), ensure_ascii=False, indent=2)
-        return Response(content=body.encode("utf-8"),
-                        media_type="application/json; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=skill_template.json"})
-
-    else:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail=f"不明な形式: {fmt}")
 
 
 # ════════════════════════════════════════════════════════════════
@@ -1225,6 +633,57 @@ def skills_my(
         )
         skill_holder_map = {skill_id: cnt for skill_id, cnt in rows}
 
+    # ── おすすめスキル: グループでよく申告されている／自分の既得カテゴリと関連 ──
+    recommended_skills: list = []
+    if target_user.role == "user":
+        from sqlalchemy import func as _rec_func
+        acquired_ids = {sid for sid, lv in my_level_map.items() if lv > 0}
+        excluded_ids = acquired_ids | set(my_pending_level_map.keys())
+
+        group_member_ids: set[int] = set()
+        if my_groups:
+            rows_gm = db.execute(
+                _select(models.GroupMembership.user_id)
+                .where(models.GroupMembership.group_id.in_([g.id for g in my_groups]))
+                .distinct()
+            ).fetchall()
+            group_member_ids = {r[0] for r in rows_gm} - {target_user.id}
+
+        group_holder_map: dict[int, int] = {}
+        if group_member_ids:
+            rows_gh = (
+                db.query(models.UserSkillLevel.skill_id, _rec_func.count(models.UserSkillLevel.user_id))
+                .filter(
+                    models.UserSkillLevel.user_id.in_(group_member_ids),
+                    models.UserSkillLevel.approval_status == "approved",
+                    models.UserSkillLevel.level > 0,
+                )
+                .group_by(models.UserSkillLevel.skill_id)
+                .all()
+            )
+            group_holder_map = {sid: cnt for sid, cnt in rows_gh}
+
+        acquired_cat_ids = {
+            sk.category_id for sk in all_catalog
+            if sk.id in acquired_ids and sk.category_id
+        }
+
+        candidates = []
+        for sk in all_catalog:
+            if sk.id in excluded_ids or sk.is_archived:
+                continue
+            group_count = group_holder_map.get(sk.id, 0)
+            related = sk.category_id in acquired_cat_ids
+            score = group_count * 2 + (1 if related else 0)
+            if score > 0:
+                candidates.append((score, group_count, related, sk))
+
+        candidates.sort(key=lambda c: (-c[0], -c[1], c[3].name))
+        recommended_skills = [
+            {"skill": sk, "group_count": gc, "related": rel}
+            for score, gc, rel, sk in candidates[:8]
+        ]
+
     # カテゴリ別スキルのOrderedDict
     skills_by_category: OrderedDict = OrderedDict()
     for sk in catalog:
@@ -1269,6 +728,7 @@ def skills_my(
         "auto_level_map": auto_level_map,
         "skills_by_category": skills_by_category,
         "skill_holder_map": skill_holder_map,
+        "recommended_skills": recommended_skills,
         # 代理閲覧/編集
         "target_user": target_user,
         "view_as": target_user.id if target_user.id != user.id else 0,
@@ -1605,6 +1065,44 @@ def bulk_approval_action(
     return JSONResponse({"ok": True, "processed": processed})
 
 
+@router.get("/api/approvals/{record_id}/sub-skills")
+def approval_sub_skills_api(record_id: int, request: Request, db: Session = Depends(get_db)):
+    """承認画面用：申請者が選択しているサブスキルの状況をJSONで返す（Admin/Manager）"""
+    user = auth.require_manager_or_admin(request, db)
+    q = db.query(models.UserSkillLevel).filter(models.UserSkillLevel.id == record_id)
+    if user.role != "admin":
+        q = q.filter(models.UserSkillLevel.approver_id == user.id)
+    record = q.first()
+    if not record:
+        raise HTTPException(status_code=404)
+
+    sub_skills = (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == record.skill_id)
+        .order_by(models.SubSkill.order_index)
+        .all()
+    )
+    done_ids: set[int] = set()
+    if sub_skills:
+        done_ids = {
+            r.sub_skill_id for r in
+            db.query(models.UserSubSkillLevel).filter(
+                models.UserSubSkillLevel.user_id == record.user_id,
+                models.UserSubSkillLevel.sub_skill_id.in_([ss.id for ss in sub_skills]),
+                models.UserSubSkillLevel.can_do == True,
+            ).all()
+        }
+
+    return JSONResponse({
+        "skill_name": record.skill.name,
+        "user_name": record.user.display_name or record.user.username,
+        "sub_skills": [
+            {"id": ss.id, "name": ss.name, "done": ss.id in done_ids}
+            for ss in sub_skills
+        ],
+    })
+
+
 @router.get("/approvals/my", response_class=HTMLResponse)
 def my_approvals(request: Request, db: Session = Depends(get_db)):
     """自分が申請したスキルレベルの承認状況一覧"""
@@ -1659,6 +1157,55 @@ def my_approvals(request: Request, db: Session = Depends(get_db)):
         "current_user": user,
         "records": records,
         "approvers": approvers,
+    })
+
+
+@router.get("/api/my-skills/{skill_id}/detail")
+def my_skill_detail_api(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    """自分の申請状況画面用：申請したサブスキルの選択状況とエビデンスをJSONで返す"""
+    user = auth.require_approved(request, db)
+
+    skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not skill:
+        raise HTTPException(status_code=404)
+
+    sub_skills = (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == skill_id)
+        .order_by(models.SubSkill.order_index)
+        .all()
+    )
+    done_ids: set[int] = set()
+    if sub_skills:
+        done_ids = {
+            r.sub_skill_id for r in
+            db.query(models.UserSubSkillLevel).filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.sub_skill_id.in_([ss.id for ss in sub_skills]),
+                models.UserSubSkillLevel.can_do == True,
+            ).all()
+        }
+
+    return JSONResponse({
+        "skill_name": skill.name,
+        "sub_skills": [
+            {"id": ss.id, "name": ss.name, "done": ss.id in done_ids}
+            for ss in sub_skills
+        ],
+        "evidences": [
+            {
+                "id": ev.id,
+                "evidence_type": ev.evidence_type,
+                "title": ev.title or "",
+                "content": ev.content or "",
+                "original_filename": ev.original_filename or "",
+                "created_at": ev.created_at.strftime("%Y-%m-%d") if ev.created_at else "",
+            }
+            for ev in db.query(models.SkillEvidence).filter(
+                models.SkillEvidence.user_id == user.id,
+                models.SkillEvidence.skill_id == skill_id,
+            ).order_by(models.SkillEvidence.created_at.desc()).all()
+        ],
     })
 
 
@@ -2219,10 +1766,15 @@ async def skill_evidence_add(
     import uuid as _uuid
     user = auth.require_approved(request, db)
 
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
     skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
     if not skill:
+        if is_ajax:
+            return JSONResponse({"success": False, "error": "スキルが見つかりません"}, status_code=404)
         return RedirectResponse("/skills", status_code=303)
 
+    evidence = None
     if evidence_type == "file" and upload_file and upload_file.filename:
         os.makedirs(EVIDENCE_UPLOAD_DIR, exist_ok=True)
         original_name = upload_file.filename
@@ -2231,7 +1783,7 @@ async def skill_evidence_add(
         save_path = os.path.join(EVIDENCE_UPLOAD_DIR, saved_name)
         with open(save_path, "wb") as f:
             shutil.copyfileobj(upload_file.file, f)
-        db.add(models.SkillEvidence(
+        evidence = models.SkillEvidence(
             user_id=user.id,
             skill_id=skill_id,
             evidence_type="file",
@@ -2239,24 +1791,51 @@ async def skill_evidence_add(
             content="",
             file_path=save_path,
             original_filename=original_name,
-        ))
+        )
     elif evidence_type == "url":
-        db.add(models.SkillEvidence(
+        if is_ajax and not content.strip():
+            return JSONResponse({"success": False, "error": "URLを入力してください"}, status_code=400)
+        evidence = models.SkillEvidence(
             user_id=user.id,
             skill_id=skill_id,
             evidence_type="url",
             title=title.strip() or None,
             content=content.strip(),
-        ))
+        )
     else:
-        db.add(models.SkillEvidence(
+        if is_ajax and not content.strip():
+            return JSONResponse({"success": False, "error": "内容を入力してください"}, status_code=400)
+        evidence = models.SkillEvidence(
             user_id=user.id,
             skill_id=skill_id,
             evidence_type="note",
             title=title.strip() or None,
             content=content.strip(),
-        ))
+        )
+
+    if evidence is None:
+        if is_ajax:
+            return JSONResponse({"success": False, "error": "ファイルを選択してください"}, status_code=400)
+        return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+
+    db.add(evidence)
     db.commit()
+
+    if is_ajax:
+        db.refresh(evidence)
+        return JSONResponse({
+            "success": True,
+            "evidence": {
+                "id": evidence.id,
+                "evidence_type": evidence.evidence_type,
+                "title": evidence.title,
+                "content": evidence.content,
+                "original_filename": evidence.original_filename,
+                "download_url": (f"/skills/evidence/{evidence.id}/download"
+                                 if evidence.evidence_type == "file" else None),
+                "delete_url": f"/skills/evidence/{evidence.id}/delete",
+            },
+        })
     return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
 
 
@@ -3126,21 +2705,42 @@ def bulk_export(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/skills/bulk-import")
-async def bulk_import(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-):
-    """一括エクスポートJSONファイルからカテゴリ・スキル・サブスキルを一括インポート"""
-    import json as _json
-    auth.require_manager_or_admin(request, db)
+def _delete_all_catalog_data(db: Session):
+    """カテゴリ・スキル・サブスキルと、それらに紐づくユーザーデータを完全に削除する。
 
-    content = await file.read()
-    try:
-        data = _json.loads(content.decode("utf-8-sig"))
-    except Exception:
-        return JSONResponse({"ok": False, "error": "JSON の解析に失敗しました"}, status_code=400)
+    「全削除してインポート」モードの前処理。スキル・サブスキルに依存する
+    申告レベル・エビデンス・目標・タグ等を先に削除してから本体を削除する。
+    """
+    from sqlalchemy import text
+    sub_skill_ids = [r[0] for r in db.query(models.SubSkill.id).all()]
+    if sub_skill_ids:
+        db.query(models.UserSubSkillLevel).filter(
+            models.UserSubSkillLevel.sub_skill_id.in_(sub_skill_ids)
+        ).delete(synchronize_session=False)
+    db.query(models.SkillEvidence).delete(synchronize_session=False)
+    db.query(models.SkillGoal).delete(synchronize_session=False)
+    db.execute(text("DELETE FROM skill_tag_associations"))
+    db.query(models.UserSkillLevel).delete(synchronize_session=False)
+    db.query(models.SkillLevelHistory).delete(synchronize_session=False)
+    db.query(models.EducationalLink).update({models.EducationalLink.skill_id: None}, synchronize_session=False)
+    db.query(models.SubSkill).delete(synchronize_session=False)
+    db.query(models.Skill).delete(synchronize_session=False)
+    db.query(models.Category).delete(synchronize_session=False)
+    db.commit()
+
+
+def _apply_bulk_import(data: dict, db: Session, mode: str = "add") -> dict:
+    """一括エクスポート形式のデータ（カテゴリ・スキル・サブスキル）をDBに反映する。
+
+    初期セットアップ画面と管理者設定画面の両方から呼ばれる共通ロジック。
+
+    mode:
+      "add"         同名のカテゴリ・スキルは新規作成せずスキップする（新規追加のみ行う・デフォルト）
+      "replace_all" インポート前に既存のカテゴリ・スキル・サブスキル（とそれに紐づく申告データ）を
+                    すべて削除してからインポートする
+    """
+    if mode == "replace_all":
+        _delete_all_catalog_data(db)
 
     added_cats = added_skills = added_subs = 0
     skipped_cats = skipped_skills = skipped_subs = 0
@@ -3226,15 +2826,42 @@ async def bulk_import(
             added_subs += 1
 
     db.commit()
-    return JSONResponse({
-        "ok": True,
+    return {
         "added_categories": added_cats,
         "skipped_categories": skipped_cats,
         "added_skills": added_skills,
         "skipped_skills": skipped_skills,
         "added_sub_skills": added_subs,
         "skipped_sub_skills": skipped_subs,
-    })
+    }
+
+
+@router.post("/skills/bulk-import")
+async def bulk_import(
+    request: Request,
+    file: UploadFile = File(...),
+    mode: str = Form(default="add"),
+    db: Session = Depends(get_db),
+):
+    """一括エクスポートJSONファイルからカテゴリ・スキル・サブスキルを一括インポート
+
+    mode="add": 既存データに新規分のみ追加（デフォルト）
+    mode="replace_all": 既存のカテゴリ・スキル・サブスキル（と紐づく申告データ）を全削除してからインポート
+    """
+    import json as _json
+    auth.require_manager_or_admin(request, db)
+
+    if mode not in ("add", "replace_all"):
+        mode = "add"
+
+    content = await file.read()
+    try:
+        data = _json.loads(content.decode("utf-8-sig"))
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON の解析に失敗しました"}, status_code=400)
+
+    result = _apply_bulk_import(data, db, mode=mode)
+    return JSONResponse({"ok": True, "mode": mode, **result})
 
 
 # ════════════════════════════════════════════════════════════════
