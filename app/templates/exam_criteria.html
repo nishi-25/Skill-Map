@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - 評価項目管理 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-card-checklist me-2" style="color:#f97316;"></i>{{ exam.title }}</h1>
+    <p class="text-muted mb-0 small">実技試験のルーブリック（評価項目）を管理します</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if exam.has_written %}
+    <a href="/exams/{{ exam.id }}/questions" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-pencil-square me-1"></i>学科：問題管理
+    </a>
+    {% endif %}
+    <a href="/exams" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-arrow-left me-1"></i>一覧に戻る
+    </a>
+    <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;"
+            data-bs-toggle="modal" data-bs-target="#addCriterionModal">
+      <i class="bi bi-plus-lg me-1"></i>評価項目を追加
+    </button>
+  </div>
+</div>
+
+{% if exam.description %}
+<div class="alert alert-light border mb-3" style="border-radius:12px;">
+  <div class="fw-semibold small mb-1"><i class="bi bi-info-circle me-1"></i>課題内容</div>
+  <div style="white-space:pre-wrap;font-size:.9rem;">{{ exam.description }}</div>
+</div>
+{% endif %}
+
+{% if criteria %}
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th>評価項目</th>
+            <th>説明</th>
+            <th class="text-center" style="width:100px;">満点</th>
+            <th class="text-center" style="width:90px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in criteria %}
+          <tr>
+            <td class="fw-semibold">{{ c.title }}</td>
+            <td class="text-muted small" style="white-space:pre-wrap;">{{ c.description or '' }}</td>
+            <td class="text-center">{{ c.max_score }} 点</td>
+            <td class="text-center">
+              <div class="d-flex gap-1 justify-content-center">
+                <button type="button" class="btn btn-xs btn-outline-primary" style="font-size:.78rem;border-radius:8px;width:28px;height:28px;padding:0;"
+                        onclick="openEditCriterionModal({{ c.id }}, {{ c.title|tojson }}, {{ (c.description or '')|tojson }}, {{ c.max_score }})">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form method="post" action="/exams/{{ exam.id }}/criteria/{{ c.id }}/delete" onsubmit="return confirm('この評価項目を削除しますか？');">
+                  <button type="submit" class="btn btn-xs btn-outline-danger" style="font-size:.78rem;border-radius:8px;width:28px;height:28px;padding:0;">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-card-checklist fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">まだ評価項目が登録されていません</p>
+</div>
+{% endif %}
+
+<!-- 追加モーダル -->
+<div class="modal fade" id="addCriterionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-plus-lg me-2" style="color:#f97316;"></i>評価項目を追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/exams/{{ exam.id }}/criteria/add">
+        <div class="modal-body">
+          {% include "_exam_criterion_form_fields.html" %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">追加する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal fade" id="editCriterionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2" style="color:#f97316;"></i>評価項目を編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editCriterionForm" method="post">
+        <div class="modal-body">
+          {% with prefix="edit" %}
+          {% include "_exam_criterion_form_fields.html" %}
+          {% endwith %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditCriterionModal(id, title, description, maxScore) {
+  const form = document.getElementById('editCriterionForm');
+  form.action = '/exams/{{ exam.id }}/criteria/' + id + '/edit';
+  document.getElementById('edit_title').value = title;
+  document.getElementById('edit_description').value = description;
+  document.getElementById('edit_max_score').value = maxScore;
+  new bootstrap.Modal(document.getElementById('editCriterionModal')).show();
+}
+</script>
+{% endblock %}

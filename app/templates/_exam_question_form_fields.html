@@ -1,0 +1,27 @@
+{% set prefix = prefix|default("") %}
+{% set p = prefix ~ "_" if prefix else "" %}
+<div class="mb-3">
+  <label class="form-label fw-semibold small">問題文 <span class="text-danger">*</span></label>
+  <textarea name="question_text" id="{{ p }}question_text" class="form-control" rows="2" style="border-radius:10px;" required></textarea>
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">回答形式 <span class="text-danger">*</span></label>
+  <select name="question_type" id="{{ p }}question_type" class="form-select" style="border-radius:10px;" onchange="examQuestionTypeChanged('{{ p }}')" required>
+    <option value="single">単一選択（ラジオボタン）</option>
+    <option value="multi">複数選択（チェックボックス）</option>
+  </select>
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">選択肢 <span class="text-danger">*</span></label>
+  <div class="form-text mb-2">左のボタンをチェックして正解を指定してください。</div>
+  <div id="{{ p }}choices_list" class="d-flex flex-column gap-2"></div>
+  <button type="button" class="btn btn-sm btn-outline-secondary mt-2" style="border-radius:20px;" onclick="examAddChoice('{{ p }}')">
+    <i class="bi bi-plus-lg me-1"></i>選択肢を追加
+  </button>
+</div>
+<div class="mb-1" style="max-width:160px;">
+  <label class="form-label fw-semibold small">配点</label>
+  <input type="number" name="points" id="{{ p }}points" class="form-control" style="border-radius:10px;" min="1" value="1" required>
+</div>
+<input type="hidden" name="choices_text" id="{{ p }}choices_text">
+<input type="hidden" name="correct_text" id="{{ p }}correct_text">

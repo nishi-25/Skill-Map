@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ '試験を編集' if exam else '試験を作成' }} - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-clipboard-check me-2" style="color:#f97316;"></i>{{ '試験を編集' if exam else '試験を作成' }}</h1>
+  <p class="text-muted mb-0 small">
+    {% if exam %}試験の基本情報を編集します{% else %}試験の基本情報を入力してください。作成後、学科の問題・実技の評価項目をそれぞれ追加できます（どちらか一方、または両方をセットできます）{% endif %}
+  </p>
+</div>
+
+<div class="card" style="max-width:640px;">
+  <div class="card-body">
+    <form method="post" action="{{ '/exams/' ~ exam.id ~ '/edit' if exam else '/exams/new' }}">
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">タイトル <span class="text-danger">*</span></label>
+        <input type="text" name="title" class="form-control" style="border-radius:10px;" value="{{ exam.title if exam else '' }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">説明・課題内容</label>
+        <textarea name="description" class="form-control" rows="3" style="border-radius:10px;">{{ exam.description or '' if exam else '' }}</textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">試験内容 <span class="text-danger">*</span></label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="has_written" id="hasWritten" value="on"
+                   {% if not exam or exam.has_written %}checked{% endif %}>
+            <label class="form-check-label" for="hasWritten">学科試験を提供する</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="has_practical" id="hasPractical" value="on"
+                   {% if not exam or exam.has_practical %}checked{% endif %}>
+            <label class="form-check-label" for="hasPractical">実技試験を提供する</label>
+          </div>
+        </div>
+        <div class="form-text">少なくとも一方を選択してください</div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6" id="timeLimitField">
+          <label class="form-label fw-semibold small">制限時間（分）</label>
+          <input type="number" name="time_limit_minutes" min="1" class="form-control" style="border-radius:10px;"
+                 value="{{ exam.time_limit_minutes if exam and exam.time_limit_minutes else '' }}" placeholder="未設定可">
+          <div class="form-text">学科問題を受験する際の制限時間です</div>
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold small">合格ライン（%）</label>
+          <input type="number" name="pass_score" min="1" max="100" class="form-control" style="border-radius:10px;"
+                 value="{{ exam.pass_score if exam and exam.pass_score else '' }}" placeholder="未設定可">
+          <div class="form-text">学科・実技の合計スコアに対する割合です</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small mb-1">受験条件（任意）</label>
+        <p class="form-text mt-0">指定したスキルの指定ティアのサブスキルを一定割合以上取得していないと受験できないようにします</p>
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label small text-muted">対象スキル</label>
+            <select name="target_skill_id" id="targetSkillSelect" class="form-select" style="border-radius:10px;">
+              <option value="">設定しない</option>
+              {% for cat_name, cat_data in skills_by_category.items() %}
+              <optgroup label="{{ cat_name }}">
+                {% for sk in cat_data.skills %}
+                <option value="{{ sk.id }}" {% if exam and exam.target_skill_id == sk.id %}selected{% endif %}>{{ sk.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small text-muted">対象ティア</label>
+            <select name="target_tier" id="targetTierSelect" class="form-select" style="border-radius:10px;">
+              {% for t in tier_order %}
+              <option value="{{ t }}" {% if exam and exam.target_tier == t %}selected{% elif not exam and t == 'basic' %}selected{% endif %}>{{ tier_names.get(t, t) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small text-muted">必要取得率（%）</label>
+            <input type="number" name="required_completion_rate" id="requiredRateInput" min="1" max="100" class="form-control" style="border-radius:10px;"
+                   value="{{ exam.required_completion_rate if exam and exam.required_completion_rate else 80 }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <a href="/exams" class="btn btn-outline-secondary" style="border-radius:20px;padding:.5rem 1.5rem;">キャンセル</a>
+        <button type="submit" class="btn btn-primary" style="border-radius:20px;padding:.5rem 1.5rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">
+          {{ '保存する' if exam else '作成する' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  const hasWritten = document.getElementById('hasWritten');
+  const hasPractical = document.getElementById('hasPractical');
+  const timeLimitField = document.getElementById('timeLimitField');
+  function syncTimeLimitField() {
+    timeLimitField.style.display = hasWritten.checked ? '' : 'none';
+  }
+  hasWritten.addEventListener('change', syncTimeLimitField);
+  syncTimeLimitField();
+
+  const targetSkillSelect = document.getElementById('targetSkillSelect');
+  const targetTierSelect = document.getElementById('targetTierSelect');
+  const requiredRateInput = document.getElementById('requiredRateInput');
+  function syncEligibilityFields() {
+    const enabled = !!targetSkillSelect.value;
+    targetTierSelect.disabled = !enabled;
+    requiredRateInput.disabled = !enabled;
+  }
+  targetSkillSelect.addEventListener('change', syncEligibilityFields);
+  syncEligibilityFields();
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    if (!hasWritten.checked && !hasPractical.checked) {
+      e.preventDefault();
+      alert('学科・実技のいずれか一方は選択してください。');
+    }
+  });
+})();
+</script>
+{% endblock %}

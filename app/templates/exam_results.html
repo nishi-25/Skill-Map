@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - 結果一覧 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-bar-chart me-2" style="color:#f97316;"></i>{{ exam.title }} - 結果一覧</h1>
+    <p class="text-muted mb-0 small">割り当てられたメンバーの受験状況・採点結果を確認できます</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/exams/{{ exam.id }}/assign" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-person-check me-1"></i>割当を編集
+    </a>
+    <a href="/exams" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-arrow-left me-1"></i>一覧に戻る
+    </a>
+  </div>
+</div>
+
+{% if assignments %}
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th>メンバー</th>
+            <th class="text-center">状態</th>
+            <th class="text-center">スコア</th>
+            <th class="text-center">合否</th>
+            <th>提出日時</th>
+            <th class="text-center" style="width:120px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assignments %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if a.user.avatar_path %}
+                <img src="{{ a.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:600;">
+                  {{ (a.user.display_name or a.user.username)[0].upper() }}
+                </div>
+                {% endif %}
+                <span class="fw-semibold">{{ a.user.display_name or a.user.username }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-{{ EXAM_ASSIGN_STATUS_COLORS.get(a.status, 'secondary') }}">{{ EXAM_ASSIGN_STATUS.get(a.status, a.status) }}</span>
+            </td>
+            <td class="text-center">
+              {% if a.score is not none %}{{ a.score|round(1) }} / {{ a.max_score|round(1) }}{% else %}-{% endif %}
+            </td>
+            <td class="text-center">
+              {% if a.passed is not none %}
+                {% if a.passed %}<span class="badge bg-success">合格</span>{% else %}<span class="badge bg-danger">不合格</span>{% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ a.submitted_at.strftime('%Y/%m/%d %H:%M') if a.submitted_at else '-' }}</td>
+            <td class="text-center">
+              <a href="/exams/results/{{ a.id }}" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">
+                {% if exam.criteria and a.status == 'submitted' %}採点する{% else %}詳細{% endif %}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-bar-chart fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">まだ割り当てられたメンバーがいません</p>
+</div>
+{% endif %}
+{% endblock %}

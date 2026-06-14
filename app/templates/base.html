@@ -104,6 +104,42 @@
     .nav-link-item .nav-text { transition: opacity var(--transition); }
     .sidebar.collapsed .nav-text { opacity: 0; width: 0; overflow: hidden; pointer-events: none; }
 
+    /* ─ ナビゲーター: 折りたたみセクション ─ */
+    .nav-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .8rem 1.2rem .3rem; cursor: pointer;
+      white-space: nowrap; overflow: hidden;
+      transition: opacity var(--transition), background .15s;
+      border-radius: 8px; margin: 0 .4rem;
+    }
+    .nav-section-header:hover { background: rgba(255,255,255,.05); }
+    .nav-section-header .nav-label { padding: 0; margin: 0; flex: 1; }
+    .nav-section-controls { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+    .nav-section-pin {
+      background: none; border: none; padding: 2px; line-height: 1;
+      color: rgba(255,255,255,.3); font-size: .85rem; cursor: pointer;
+      transition: color .15s, transform .15s;
+    }
+    .nav-section-pin:hover { color: #fdba74; transform: scale(1.15); }
+    .nav-section-pin .bi-pin-angle-fill { display: none; }
+    .nav-section.pinned .nav-section-pin { color: #fb923c; }
+    .nav-section.pinned .nav-section-pin .bi-pin-angle { display: none; }
+    .nav-section.pinned .nav-section-pin .bi-pin-angle-fill { display: inline; }
+    .nav-section-chevron {
+      font-size: .75rem; color: rgba(255,255,255,.35);
+      transition: transform .25s ease;
+    }
+    .nav-section.expanded .nav-section-chevron { transform: rotate(90deg); }
+    .nav-section-content {
+      max-height: 0; overflow: hidden;
+      transition: max-height .3s ease;
+    }
+    .nav-section.expanded .nav-section-content { max-height: 1000px; }
+
+    /* ─ 縮小時: セクションヘッダーを隠し常時アイコン表示 ─ */
+    .sidebar.collapsed .nav-section-header { display: none; }
+    .sidebar.collapsed .nav-section-content { max-height: none !important; overflow: visible; }
+
     /* ─ 縮小時: 検索バー・お知らせベルを非表示 ─ */
     .sidebar.collapsed #sidebarSearchArea { display: none !important; }
     .sidebar.collapsed #annBubble         { display: none !important; }
@@ -418,98 +454,214 @@
     </div>
   </div>
 
-  <div class="nav-items">
-    <div class="nav-label" data-i18n="section.main">メインメニュー</div>
+  <div class="nav-items" id="navItems" data-pinned-sections="{{ (current_user.nav_pinned_sections if current_user else None) or '[]' }}">
+    <!-- ダッシュボード: どのセクションにも属さず常時表示 -->
     <a id="navDashboard" href="/dashboard" class="nav-link-item {% if request.url.path == '/dashboard' %}active{% endif %}" data-label="ダッシュボード">
       <i class="bi bi-speedometer2 nav-icon"></i><span class="nav-text" data-i18n="nav.dashboard">ダッシュボード</span>
     </a>
-    <a id="navSkills" href="/skills" class="nav-link-item {% if request.url.path == '/skills' %}active{% endif %}" data-label="スキルマップ">
-      <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text" data-i18n="nav.skills">スキルマップ</span>
-    </a>
-    <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
-      <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
-    </a>
 
-    <div class="nav-label" data-i18n="section.approval">承認</div>
-    {% if current_user and current_user.role in ('admin', 'manager') %}
-    <a id="navApprovals" href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}{% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %} nav-alert{% endif %}" data-label="承認依頼">
-      <i class="bi bi-check2-square nav-icon"></i><span class="nav-text" data-i18n="nav.approvals">承認依頼</span>
-      {% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %}
-      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_approval_count }}</span>
-      {% endif %}
-    </a>
-    {% endif %}
-    <a id="navMyApprovals" href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}{% if request.state.my_pending_count is defined and request.state.my_pending_count > 0 %} nav-alert{% endif %}" data-label="自分の申請状況">
-      <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
-      {% if request.state.my_pending_count is defined and request.state.my_pending_count > 0 %}
-      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.my_pending_count }}</span>
-      {% elif request.state.rejected_approval_count is defined and request.state.rejected_approval_count > 0 %}
-      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.rejected_approval_count }}</span>
-      {% endif %}
-    </a>
+    <div class="nav-section" data-section="main">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.main">メインメニュー</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        <a id="navSkills" href="/skills/start" class="nav-link-item {% if request.url.path in ('/skills', '/skills/start', '/skills/business-map') %}active{% endif %}" data-label="スキルマップ">
+          <i class="bi bi-lightning-charge nav-icon"></i><span class="nav-text" data-i18n="nav.skills">スキルマップ</span>
+        </a>
+        <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
+          <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
+        </a>
+        <a id="navCertifications" href="/certifications" class="nav-link-item {% if request.url.path == '/certifications' %}active{% endif %}" data-label="資格登録">
+          <i class="bi bi-patch-check nav-icon"></i><span class="nav-text">資格登録</span>
+        </a>
+        <a id="navWiki" href="/wiki" class="nav-link-item {% if request.url.path.startswith('/wiki') %}active{% endif %}" data-label="Wiki">
+          <i class="bi bi-journal-richtext nav-icon"></i><span class="nav-text">Wiki</span>
+        </a>
+        <a id="navExamsMy" href="/exams/my" class="nav-link-item {% if '/exams/my' in request.url.path %}active{% endif %}{% if request.state.my_exam_pending_count is defined and request.state.my_exam_pending_count > 0 %} nav-alert{% endif %}" data-label="試験">
+          <i class="bi bi-clipboard-check nav-icon"></i><span class="nav-text">試験</span>
+          {% if request.state.my_exam_pending_count is defined and request.state.my_exam_pending_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.my_exam_pending_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+    </div>
 
-    <div class="nav-label" data-i18n="section.analytics">分析</div>
-    {% if current_user and current_user.role in ('admin', 'manager') %}
-    <a id="navMatrix" href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}" data-label="スキルマトリクス">
-      <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
-    </a>
-    {% endif %}
-    <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
-      <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
-    </a>
+    <div class="nav-section" data-section="approval">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.approval">承認</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        {% if current_user and current_user.role in ('admin', 'manager') %}
+        <a id="navApprovals" href="/approvals" class="nav-link-item {% if request.url.path == '/approvals' %}active{% endif %}{% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %} nav-alert{% endif %}" data-label="承認依頼">
+          <i class="bi bi-check2-square nav-icon"></i><span class="nav-text" data-i18n="nav.approvals">承認依頼</span>
+          {% if request.state.pending_approval_count is defined and request.state.pending_approval_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_approval_count }}</span>
+          {% endif %}
+        </a>
+        {% endif %}
+        <a id="navMyApprovals" href="/approvals/my" class="nav-link-item {% if request.url.path == '/approvals/my' %}active{% endif %}{% if request.state.my_pending_count is defined and request.state.my_pending_count > 0 %} nav-alert{% endif %}" data-label="自分の申請状況">
+          <i class="bi bi-send nav-icon"></i><span class="nav-text" data-i18n="nav.my_approvals">自分の申請状況</span>
+          {% if request.state.my_pending_count is defined and request.state.my_pending_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.my_pending_count }}</span>
+          {% elif request.state.rejected_approval_count is defined and request.state.rejected_approval_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.rejected_approval_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section" data-section="analytics">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.analytics">分析</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        {% if current_user and current_user.role in ('admin', 'manager') %}
+        <a id="navMatrix" href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}" data-label="スキルマトリクス">
+          <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
+        </a>
+        {% endif %}
+        <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
+          <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
+        </a>
+        {% if current_user and current_user.role in ('admin', 'manager') %}
+        <a id="navCertMembers" href="/certifications/members" class="nav-link-item {% if '/certifications/members' in request.url.path %}active{% endif %}" data-label="資格マトリクス">
+          <i class="bi bi-patch-check-fill nav-icon"></i><span class="nav-text">資格マトリクス</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
 
     {% if current_user and current_user.role in ('admin', 'manager') %}
-    <div class="nav-label" data-i18n="section.catalog">カタログ管理</div>
-    <a id="navCatalog" href="/skills/catalog" class="nav-link-item {% if '/skills/catalog' in request.url.path %}active{% endif %}" data-label="スキルカタログ">
-      <i class="bi bi-collection nav-icon"></i><span class="nav-text" data-i18n="nav.catalog">スキルカタログ</span>
-    </a>
-    <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}" data-label="カテゴリー">
-      <i class="bi bi-tags nav-icon"></i><span class="nav-text" data-i18n="nav.categories">カテゴリー</span>
-    </a>
-    <div class="nav-label" data-i18n="section.groups">グループ</div>
-    <a id="navGroups" href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}" data-label="グループ管理">
-      <i class="bi bi-people-fill nav-icon"></i><span class="nav-text" data-i18n="nav.groups">グループ管理</span>
-    </a>
+    <div class="nav-section" data-section="catalog">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.catalog">カタログ管理</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        <a id="navCatalog" href="/skills/catalog" class="nav-link-item {% if '/skills/catalog' in request.url.path %}active{% endif %}" data-label="スキルカタログ">
+          <i class="bi bi-collection nav-icon"></i><span class="nav-text" data-i18n="nav.catalog">スキルカタログ</span>
+        </a>
+        <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}" data-label="カテゴリー">
+          <i class="bi bi-tags nav-icon"></i><span class="nav-text" data-i18n="nav.categories">カテゴリー</span>
+        </a>
+        <a href="/business-map/manage" class="nav-link-item {% if '/business-map' in request.url.path %}active{% endif %}" data-label="業務マップ">
+          <i class="bi bi-diagram-3 nav-icon"></i><span class="nav-text">業務マップ</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section" data-section="groups">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.groups">グループ</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        <a id="navGroups" href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}" data-label="グループ管理">
+          <i class="bi bi-people-fill nav-icon"></i><span class="nav-text" data-i18n="nav.groups">グループ管理</span>
+        </a>
+        <a id="navExams" href="/exams" class="nav-link-item {% if request.url.path.startswith('/exams') and not request.url.path.startswith('/exams/my') %}active{% endif %}{% if request.state.exam_grading_count is defined and request.state.exam_grading_count > 0 %} nav-alert{% endif %}" data-label="試験管理">
+          <i class="bi bi-clipboard-data nav-icon"></i><span class="nav-text">試験管理</span>
+          {% if request.state.exam_grading_count is defined and request.state.exam_grading_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.exam_grading_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+    </div>
     {% endif %}
 
     {% if current_user and current_user.role == 'admin' %}
-    <div class="nav-label" data-i18n="section.admin">管理</div>
-    <a id="navUsers" href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}" data-label="ユーザー管理">
-      <i class="bi bi-people nav-icon"></i><span class="nav-text" data-i18n="nav.users">ユーザー管理</span>
-      {% if request.state.pending_user_count is defined and request.state.pending_user_count > 0 %}
-      <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_user_count }}</span>
-      {% endif %}
-    </a>
-    <a id="navNotify" href="/admin/settings/notifications" class="nav-link-item {% if '/admin/settings/notifications' in request.url.path or '/admin/settings/mail' in request.url.path %}active{% endif %}" data-label="通知設定">
-      <i class="bi bi-bell nav-icon"></i><span class="nav-text">通知設定</span>
-    </a>
-    <a id="navData" href="/admin/settings/data" class="nav-link-item {% if '/admin/settings/data' in request.url.path or '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="データ管理">
-      <i class="bi bi-database nav-icon"></i><span class="nav-text">データ管理</span>
-    </a>
-    <a id="navTodos" href="/admin/todos" class="nav-link-item {% if '/admin/todos' in request.url.path %}active{% endif %}" data-label="ToDoリスト">
-      <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">ToDoリスト</span>
-    </a>
+    <div class="nav-section" data-section="admin">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.admin">管理</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        <a id="navUsers" href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}" data-label="ユーザー管理">
+          <i class="bi bi-people nav-icon"></i><span class="nav-text" data-i18n="nav.users">ユーザー管理</span>
+          {% if request.state.pending_user_count is defined and request.state.pending_user_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_user_count }}</span>
+          {% endif %}
+        </a>
+        <a id="navNotify" href="/admin/settings/notifications" class="nav-link-item {% if '/admin/settings/notifications' in request.url.path or '/admin/settings/mail' in request.url.path %}active{% endif %}" data-label="通知設定">
+          <i class="bi bi-bell nav-icon"></i><span class="nav-text">通知設定</span>
+        </a>
+        <a id="navData" href="/admin/settings/data" class="nav-link-item {% if '/admin/settings/data' in request.url.path or '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="データ管理">
+          <i class="bi bi-database nav-icon"></i><span class="nav-text">データ管理</span>
+        </a>
+        <a id="navTodos" href="/admin/todos" class="nav-link-item {% if '/admin/todos' in request.url.path %}active{% endif %}" data-label="ToDoリスト">
+          <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">ToDoリスト</span>
+        </a>
+        <a id="navCertCatalog" href="/certifications/catalog" class="nav-link-item {% if '/certifications/catalog' in request.url.path %}active{% endif %}" data-label="資格マスタ管理">
+          <i class="bi bi-patch-check nav-icon"></i><span class="nav-text">資格マスタ管理</span>
+        </a>
+      </div>
+    </div>
     {% endif %}
 
-    <div class="nav-label" data-i18n="section.help">ヘルプ</div>
-    <a href="/announcements" id="navAnnouncements" class="nav-link-item {% if '/announcements' in request.url.path %}active{% endif %}" data-label="お知らせ">
-      <i class="bi bi-megaphone-fill nav-icon"></i>
-      <span class="nav-text">お知らせ</span>
-      <span id="annBadge" class="badge rounded-pill ms-auto" style="background:#f97316;color:#fff;font-size:.65rem;display:none;">NEW</span>
-    </a>
-    <a href="/tickets" id="navTickets" class="nav-link-item {% if '/tickets' in request.url.path %}active{% endif %}" data-label="問い合わせ・要望">
-      <i class="bi bi-chat-dots-fill nav-icon"></i>
-      <span class="nav-text">問い合わせ・要望</span>
-      <span id="sidebarTicketBadge" class="badge rounded-pill ms-auto" style="background:#ef4444;color:#fff;font-size:.65rem;display:none;">0</span>
-    </a>
-    <a href="/manual" class="nav-link-item {% if request.url.path == '/manual' %}active{% endif %}" data-label="利用マニュアル">
-      <i class="bi bi-book nav-icon"></i><span class="nav-text" data-i18n="nav.manual">利用マニュアル</span>
-    </a>
-    <a id="navQuickStart" href="javascript:void(0)" class="nav-link-item" onclick="startTour(0)" style="color:rgba(129,140,248,.9);">
-      <i class="bi bi-play-circle-fill nav-icon" style="color:#fb923c;"></i>
-      <span class="nav-text" data-i18n="nav.quickstart">クイックスタート</span>
-      <span class="badge rounded-pill ms-auto" style="background:rgba(249,115,22,.3);color:#fdba74;font-size:.6rem;">NEW</span>
-    </a>
+    <div class="nav-section" data-section="help">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.help">ヘルプ</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        <a href="/announcements" id="navAnnouncements" class="nav-link-item {% if '/announcements' in request.url.path %}active{% endif %}" data-label="お知らせ">
+          <i class="bi bi-megaphone-fill nav-icon"></i>
+          <span class="nav-text">お知らせ</span>
+          <span id="annBadge" class="badge rounded-pill ms-auto" style="background:#f97316;color:#fff;font-size:.65rem;display:none;">NEW</span>
+        </a>
+        <a href="/tickets" id="navTickets" class="nav-link-item {% if '/tickets' in request.url.path %}active{% endif %}" data-label="問い合わせ・要望">
+          <i class="bi bi-chat-dots-fill nav-icon"></i>
+          <span class="nav-text">問い合わせ・要望</span>
+          <span id="sidebarTicketBadge" class="badge rounded-pill ms-auto" style="background:#ef4444;color:#fff;font-size:.65rem;display:none;">0</span>
+        </a>
+        <a href="/manual" class="nav-link-item {% if request.url.path == '/manual' %}active{% endif %}" data-label="利用マニュアル">
+          <i class="bi bi-book nav-icon"></i><span class="nav-text" data-i18n="nav.manual">利用マニュアル</span>
+        </a>
+        <a id="navQuickStart" href="javascript:void(0)" class="nav-link-item" onclick="startTour(0)" style="color:rgba(129,140,248,.9);">
+          <i class="bi bi-play-circle-fill nav-icon" style="color:#fb923c;"></i>
+          <span class="nav-text" data-i18n="nav.quickstart">クイックスタート</span>
+          <span class="badge rounded-pill ms-auto" style="background:rgba(249,115,22,.3);color:#fdba74;font-size:.6rem;">NEW</span>
+        </a>
+      </div>
+    </div>
 
   </div>
 
@@ -632,6 +784,70 @@
       document.getElementById('collapseIcon').className = 'bi bi-chevron-double-right';
     }
     document.addEventListener('DOMContentLoaded', _syncNavTooltips);
+  })();
+
+  /* ── ナビゲーションのスクロール位置を保持 ── */
+  (function() {
+    const navItems = document.getElementById('navItems');
+    if (!navItems) return;
+    const KEY = 'nav_scroll_top';
+    const saved = sessionStorage.getItem(KEY);
+    if (saved !== null) {
+      navItems.scrollTop = parseInt(saved, 10) || 0;
+    }
+    navItems.addEventListener('scroll', () => {
+      sessionStorage.setItem(KEY, navItems.scrollTop);
+    });
+    navItems.querySelectorAll('a.nav-link-item').forEach(a => {
+      a.addEventListener('click', () => {
+        sessionStorage.setItem(KEY, navItems.scrollTop);
+      });
+    });
+  })();
+
+  /* ── ナビゲーター: セクションの折りたたみ・固定表示 ── */
+  (function() {
+    const navItems = document.getElementById('navItems');
+    if (!navItems) return;
+
+    let pinnedSections = [];
+    try {
+      pinnedSections = JSON.parse(navItems.dataset.pinnedSections || '[]');
+    } catch (e) {
+      pinnedSections = [];
+    }
+
+    navItems.querySelectorAll('.nav-section').forEach(section => {
+      const key = section.dataset.section;
+      const isPinned = pinnedSections.includes(key);
+
+      if (isPinned) section.classList.add('pinned');
+      section.classList.add('expanded');
+
+      const header = section.querySelector('.nav-section-header');
+      const pinBtn = section.querySelector('.nav-section-pin');
+
+      if (header) {
+        header.addEventListener('click', (e) => {
+          if (pinBtn && pinBtn.contains(e.target)) return;
+          section.classList.toggle('expanded');
+        });
+      }
+
+      if (pinBtn) {
+        pinBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const nowPinned = !section.classList.contains('pinned');
+          section.classList.toggle('pinned', nowPinned);
+          if (nowPinned) section.classList.add('expanded');
+          fetch('/api/nav/pin-section', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ section: key, pinned: nowPinned }),
+          }).catch(() => {});
+        });
+      }
+    });
   })();
 
   /* ── Mobile sidebar ── */
@@ -1737,7 +1953,7 @@ window.openNewTicket = function() {
 
     { el: '#navSkills', pos: 'right', icon: 'bi-lightning-charge',
       title: '② スキルマップ（自己申告）',
-      body: '難易度ティア（基礎〜上級）ごとのカードをクリックしてスキル一覧へ。\n「全スキルを一覧表示」で全ティアを一画面で確認できます。' },
+      body: '難易度ティア（C級〜A級）ごとのカードをクリックしてスキル一覧へ。\n「全スキルを一覧表示」で全ティアを一画面で確認できます。' },
 
     { el: null, isHowto: 'skills', title: 'スキルの登録方法', icon: 'bi-lightning-charge-fill' },
 
@@ -1930,7 +2146,7 @@ window.openNewTicket = function() {
                 <div style="${ttlSt}">スキルマップを開く</div>
                 <div style="${subSt}">
                   左サイドバーの <b>⚡ スキルマップ</b> をクリック<br>
-                  <span style="${tagSt('#fff7ed','#c2410c')}">難易度別カード</span> が表示されます（基礎 / 中級 / 上級）
+                  <span style="${tagSt('#fff7ed','#c2410c')}">難易度別カード</span> が表示されます（C級 / B級 / A級）
                 </div>
               </div>
             </div>
@@ -1941,7 +2157,7 @@ window.openNewTicket = function() {
               <div style="flex:1;min-width:0;">
                 <div style="${ttlSt}">スキルを探す</div>
                 <div style="${subSt}">
-                  ティアカードをクリック <i style="font-size:.7rem;">（例：基礎）</i> → スキル一覧が開く<br>
+                  ティアカードをクリック <i style="font-size:.7rem;">（例：C級）</i> → スキル一覧が開く<br>
                   または <b>「全スキルを一覧表示」</b> で全ティアを一画面に表示<br>
                   <span style="color:#94a3b8;font-size:.7rem;"><i class="bi bi-search" style="font-size:.65rem;"></i> 上部の検索欄でスキル名の絞り込みも可</span>
                 </div>

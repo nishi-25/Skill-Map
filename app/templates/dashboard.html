@@ -140,8 +140,8 @@
 <!-- サマリーカード -->
 <div class="row g-3 mb-4">
   <!-- 対象メンバー -->
-  <div class="col-6 col-lg-3">
-    <div class="stat-card stat-hoverable" data-detail="members" style="cursor:default;">
+  <div class="col-6 col-lg">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="members" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-people-fill"></i></div>
         <div>
@@ -152,8 +152,8 @@
     </div>
   </div>
   <!-- 総申告スキル -->
-  <div class="col-6 col-lg-3">
-    <div class="stat-card stat-hoverable" data-detail="skills" style="cursor:default;">
+  <div class="col-6 col-lg">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="skills" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
@@ -164,8 +164,8 @@
     </div>
   </div>
   <!-- 全体平均レベル -->
-  <div class="col-6 col-lg-3">
-    <div class="stat-card stat-hoverable" data-detail="level" style="cursor:default;">
+  <div class="col-6 col-lg">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="level" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f59e0b;"><i class="bi bi-bar-chart-fill"></i></div>
         <div>
@@ -176,8 +176,8 @@
     </div>
   </div>
   <!-- カタログ総数 -->
-  <div class="col-6 col-lg-3">
-    <div class="stat-card stat-hoverable" data-detail="catalog" style="cursor:default;">
+  <div class="col-6 col-lg">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="catalog" style="cursor:default;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-collection-fill"></i></div>
         <div>
@@ -188,13 +188,14 @@
     </div>
   </div>
   {% if bus_factor_skills is defined and bus_factor_skills %}
-  <div class="col-6 col-lg-3">
-    <div class="card border-warning h-100">
-      <div class="card-body text-center">
-        <i class="bi bi-exclamation-triangle-fill text-warning fs-2 mb-2"></i>
-        <div class="fw-bold fs-4 text-warning">{{ bus_factor_skills|length }}</div>
-        <div class="text-muted small">単一依存スキル</div>
-        <div class="text-muted" style="font-size:0.75rem;">習得者1人以下</div>
+  <div class="col-6 col-lg">
+    <div class="stat-card border-warning h-100 d-flex align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);color:#f59e0b;"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4 text-warning" style="line-height:1;">{{ bus_factor_skills|length }}</div>
+          <div class="text-muted" style="font-size:.78rem;">単一依存スキル <span class="d-none d-xl-inline">(習得者1人以下)</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -409,138 +410,152 @@
   </div>
 </div>
 
-<!-- メンバーランキング -->
+<!-- ═══ ランキング ═══ -->
 {% if member_summary %}
 <div class="card mb-4">
   <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i data-i18n="lbl.member_ranking">メンバーランキング</h6>
-    <div class="table-responsive">
-      <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
-        <thead class="table-light">
-          <tr>
-            <th style="width:50px;">#</th>
-            <th>メンバー</th>
-            <th class="text-center" data-i18n="lbl.skill_count">申告スキル数</th>
-            <th class="text-center" data-i18n="lbl.avg_level">平均レベル</th>
-            <th style="min-width:140px;" data-i18n="lbl.level_bar">レベルバー</th>
-            <th class="text-end" data-i18n="lbl.detail">詳細</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for ms in member_summary %}
-          <tr class="skill-row">
-            <td>
-              {% if loop.index == 1 %}<span style="font-size:1.2rem;">🥇</span>
-              {% elif loop.index == 2 %}<span style="font-size:1.2rem;">🥈</span>
-              {% elif loop.index == 3 %}<span style="font-size:1.2rem;">🥉</span>
-              {% else %}<span class="text-muted">{{ loop.index }}</span>{% endif %}
-            </td>
-            <td>
-              <div class="d-flex align-items-center gap-2">
-                {% if ms.user.avatar_path %}
-                <img src="{{ ms.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
-                {% else %}
-                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
-                  {{ (ms.user.display_name or ms.user.username)[0].upper() }}
-                </div>
-                {% endif %}
-                <div>
-                  <div class="fw-semibold">{{ ms.user.display_name or ms.user.username }}</div>
-                  <div class="text-muted" style="font-size:.75rem;">@{{ ms.user.username }}</div>
-                </div>
-              </div>
-            </td>
-            <td class="text-center">
-              <span class="badge bg-light text-dark" style="font-size:.85rem;">{{ ms.total }}</span>
-            </td>
-            <td class="text-center">
-              <span class="fw-bold" style="color:#f97316;font-size:.95rem;">{{ ms.avg }}</span>
-              <span class="text-muted" style="font-size:.7rem;"> / 4.0</span>
-            </td>
-            <td>
-              <div class="progress" style="height:8px;border-radius:10px;">
-                <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:10px;"></div>
-              </div>
-            </td>
-            <td class="text-end">
-              <a href="/members/{{ ms.user.id }}/skills" class="btn btn-xs btn-outline-primary" style="border-radius:20px;font-size:.78rem;">
-                <i class="bi bi-eye me-1"></i>スキル詳細
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-{% endif %}
+    <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>ランキング</h6>
 
-<!-- 成長速度ランキング（直近30日） -->
-{% if growth_ranking %}
-<div class="card mb-4">
-  <div class="card-body">
-    <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow me-2" style="color:#22c55e;"></i>成長速度ランキング<span class="text-muted fw-normal" style="font-size:.75rem;"> （直近30日）</span></h6>
-    {% set active_growers = growth_ranking | selectattr('total_gain', 'greaterthan', 0) | list %}
-    {% if active_growers %}
-    <div class="table-responsive">
-      <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
-        <thead class="table-light">
-          <tr>
-            <th style="width:50px;">#</th>
-            <th>メンバー</th>
-            <th class="text-center">レベルUP回数</th>
-            <th class="text-center">合計上昇量</th>
-            <th style="min-width:160px;">成長バー</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% set max_gain = active_growers[0].total_gain if active_growers else 1 %}
-          {% for gr in active_growers[:10] %}
-          <tr>
-            <td>
-              {% if loop.index == 1 %}<span style="font-size:1.2rem;">🚀</span>
-              {% elif loop.index == 2 %}<span style="font-size:1.2rem;">⚡</span>
-              {% elif loop.index == 3 %}<span style="font-size:1.2rem;">🔥</span>
-              {% else %}<span class="text-muted">{{ loop.index }}</span>{% endif %}
-            </td>
-            <td>
-              <div class="d-flex align-items-center gap-2">
-                {% if gr.user.avatar_path %}
-                <img src="{{ gr.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
-                {% else %}
-                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#4ade80);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
-                  {{ (gr.user.display_name or gr.user.username)[0].upper() }}
-                </div>
-                {% endif %}
-                <div>
-                  <div class="fw-semibold">{{ gr.user.display_name or gr.user.username }}</div>
-                  <div class="text-muted" style="font-size:.75rem;">@{{ gr.user.username }}</div>
-                </div>
-              </div>
-            </td>
-            <td class="text-center">
-              <span class="badge" style="background:#dcfce7;color:#166534;font-size:.85rem;">{{ gr.ups }} 回</span>
-            </td>
-            <td class="text-center">
-              <span class="fw-bold" style="color:#22c55e;font-size:.95rem;">+{{ gr.total_gain }}</span>
-            </td>
-            <td>
-              <div class="progress" style="height:8px;border-radius:10px;">
-                <div class="progress-bar" style="width:{{ (gr.total_gain / max_gain * 100)|int }}%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:10px;"></div>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <ul class="nav nav-tabs mb-3" id="rankingTab" role="tablist" style="font-size:.85rem;">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabMemberRanking" type="button" style="border-radius:12px 12px 0 0;">
+          <i class="bi bi-trophy me-1" style="color:#f59e0b;"></i><span data-i18n="lbl.member_ranking">メンバーランキング</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGrowthRanking" type="button" style="border-radius:12px 12px 0 0;">
+          <i class="bi bi-graph-up-arrow me-1" style="color:#22c55e;"></i>成長速度ランキング<span class="text-muted fw-normal" style="font-size:.75rem;"> （直近30日）</span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- メンバーランキング -->
+      <div class="tab-pane fade show active" id="tabMemberRanking" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+            <thead class="table-light">
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>メンバー</th>
+                <th class="text-center" data-i18n="lbl.skill_count">申告スキル数</th>
+                <th class="text-center" data-i18n="lbl.avg_level">平均レベル</th>
+                <th style="min-width:140px;" data-i18n="lbl.level_bar">レベルバー</th>
+                <th class="text-end" data-i18n="lbl.detail">詳細</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ms in member_summary %}
+              <tr class="skill-row">
+                <td>
+                  {% if loop.index == 1 %}<span style="font-size:1.2rem;">🥇</span>
+                  {% elif loop.index == 2 %}<span style="font-size:1.2rem;">🥈</span>
+                  {% elif loop.index == 3 %}<span style="font-size:1.2rem;">🥉</span>
+                  {% else %}<span class="text-muted">{{ loop.index }}</span>{% endif %}
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if ms.user.avatar_path %}
+                    <img src="{{ ms.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                    {% else %}
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                      {{ (ms.user.display_name or ms.user.username)[0].upper() }}
+                    </div>
+                    {% endif %}
+                    <div>
+                      <div class="fw-semibold">{{ ms.user.display_name or ms.user.username }}</div>
+                      <div class="text-muted" style="font-size:.75rem;">@{{ ms.user.username }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-light text-dark" style="font-size:.85rem;">{{ ms.total }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="fw-bold" style="color:#f97316;font-size:.95rem;">{{ ms.avg }}</span>
+                  <span class="text-muted" style="font-size:.7rem;"> / 4.0</span>
+                </td>
+                <td>
+                  <div class="progress" style="height:8px;border-radius:10px;">
+                    <div class="progress-bar" style="width:{{ (ms.avg / 4 * 100)|int }}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:10px;"></div>
+                  </div>
+                </td>
+                <td class="text-end">
+                  <a href="/members/{{ ms.user.id }}/skills" class="btn btn-xs btn-outline-primary" style="border-radius:20px;font-size:.78rem;">
+                    <i class="bi bi-eye me-1"></i>スキル詳細
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 成長速度ランキング（直近30日） -->
+      <div class="tab-pane fade" id="tabGrowthRanking" role="tabpanel">
+        {% set active_growers = (growth_ranking | selectattr('total_gain', 'greaterthan', 0) | list) if growth_ranking else [] %}
+        {% if active_growers %}
+        <div class="table-responsive">
+          <table class="table table-hover table-skill align-middle mb-0" style="font-size:.9rem;">
+            <thead class="table-light">
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>メンバー</th>
+                <th class="text-center">レベルUP回数</th>
+                <th class="text-center">合計上昇量</th>
+                <th style="min-width:160px;">成長バー</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% set max_gain = active_growers[0].total_gain if active_growers else 1 %}
+              {% for gr in active_growers[:10] %}
+              <tr>
+                <td>
+                  {% if loop.index == 1 %}<span style="font-size:1.2rem;">🚀</span>
+                  {% elif loop.index == 2 %}<span style="font-size:1.2rem;">⚡</span>
+                  {% elif loop.index == 3 %}<span style="font-size:1.2rem;">🔥</span>
+                  {% else %}<span class="text-muted">{{ loop.index }}</span>{% endif %}
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if gr.user.avatar_path %}
+                    <img src="{{ gr.user.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                    {% else %}
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#4ade80);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0;">
+                      {{ (gr.user.display_name or gr.user.username)[0].upper() }}
+                    </div>
+                    {% endif %}
+                    <div>
+                      <div class="fw-semibold">{{ gr.user.display_name or gr.user.username }}</div>
+                      <div class="text-muted" style="font-size:.75rem;">@{{ gr.user.username }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge" style="background:#dcfce7;color:#166534;font-size:.85rem;">{{ gr.ups }} 回</span>
+                </td>
+                <td class="text-center">
+                  <span class="fw-bold" style="color:#22c55e;font-size:.95rem;">+{{ gr.total_gain }}</span>
+                </td>
+                <td>
+                  <div class="progress" style="height:8px;border-radius:10px;">
+                    <div class="progress-bar" style="width:{{ (gr.total_gain / max_gain * 100)|int }}%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:10px;"></div>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-3" style="font-size:.85rem;">
+          <i class="bi bi-hourglass-split fs-4 d-block mb-2" style="color:#d1d5db;"></i>
+          直近30日間にレベルアップした記録がありません
+        </div>
+        {% endif %}
+      </div>
     </div>
-    {% else %}
-    <div class="text-center text-muted py-3" style="font-size:.85rem;">
-      <i class="bi bi-hourglass-split fs-4 d-block mb-2" style="color:#d1d5db;"></i>
-      直近30日間にレベルアップした記録がありません
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endif %}
@@ -563,7 +578,7 @@
       </thead>
       <tbody>
         {% for skill in bus_factor_skills %}
-        <tr>
+        <tr {% if loop.index > 10 %}class="d-none bus-factor-extra"{% endif %}>
           <td>{{ skill.skill_name }}</td>
           <td><span class="badge bg-secondary">{{ skill.category_name }}</span></td>
           <td class="text-center">
@@ -575,6 +590,13 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if bus_factor_skills|length > 10 %}
+    <div class="text-center py-2 border-top">
+      <button type="button" class="btn btn-sm btn-link" onclick="toggleBusFactorRows(this)" data-extra-count="{{ bus_factor_skills|length - 10 }}">
+        残り{{ bus_factor_skills|length - 10 }}件を表示
+      </button>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endif %}
@@ -794,6 +816,114 @@
 {% else %}
 {# ── self / user / group モード (既存) ── #}
 
+<!-- ═══ 成長サマリー（モチベーションバナー） ═══ -->
+{% if view_mode in ('self', 'user') %}
+{% set my_pct = ([(total / catalog_total * 100)|int, 100]|min) if catalog_total else 0 %}
+<div class="card mb-4" style="background:linear-gradient(135deg,#fff7ed,#ffffff);border:1px solid #fed7aa;">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center gap-3">
+      <!-- 達成率プログレスリング -->
+      <div class="flex-shrink-0 position-relative" style="width:72px;height:72px;">
+        <svg viewBox="0 0 36 36" class="progress-ring" style="width:100%;height:100%;transform:rotate(-90deg);">
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#fed7aa" stroke-width="3"></circle>
+          <circle cx="18" cy="18" r="15.9" fill="none"
+                  stroke="#f97316" stroke-width="3" stroke-linecap="round"
+                  stroke-dasharray="100" stroke-dashoffset="{{ 100 - my_pct }}"
+                  style="transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);"></circle>
+        </svg>
+        <div class="position-absolute top-50 start-50 translate-middle fw-bold" style="font-size:1.05rem;color:#f97316;">{{ my_pct }}%</div>
+      </div>
+
+      <div class="flex-grow-1">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+          <div class="fw-bold" style="font-size:1.05rem;">
+            {% if my_pct >= 80 %}
+            🎉 素晴らしい！カタログの{{ my_pct }}%を習得済みです
+            {% elif my_pct >= 50 %}
+            👍 順調です！カタログの{{ my_pct }}%を習得済み、半分を超えました
+            {% elif my_pct >= 20 %}
+            🌱 着実に成長中です。カタログの{{ my_pct }}%を習得済みです
+            {% elif total > 0 %}
+            🚀 スキル登録、お疲れさまです！ここからさらに伸ばしていきましょう
+            {% else %}
+            ✨ まずは1つ、スキルマップでスキルを登録してみましょう
+            {% endif %}
+          </div>
+          <div class="text-muted" style="font-size:.8rem;">
+            保有スキル <strong>{{ total }}</strong>件 / カタログ {{ catalog_total }}件
+          </div>
+        </div>
+
+        <!-- 平均レベル: 星評価 -->
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted" style="font-size:.78rem;">平均レベル</span>
+          {% set _full = avg_level|round(0, 'floor')|int %}
+          <span class="star-rating" style="font-size:.95rem;">
+            {% for i in range(1, 5) %}
+            {% if i <= _full %}
+            <i class="bi bi-star-fill star active"></i>
+            {% elif (avg_level - _full) >= 0.5 and i == _full + 1 %}
+            <i class="bi bi-star-half star active"></i>
+            {% else %}
+            <i class="bi bi-star star"></i>
+            {% endif %}
+            {% endfor %}
+          </span>
+          <span class="text-muted" style="font-size:.78rem;">{{ avg_level }} / 4.0</span>
+          {% if my_rank %}
+          <span class="badge bg-light text-dark border ms-2" style="font-size:.72rem;" title="保有スキルがあるユーザー{{ my_rank_total }}人中の順位">
+            <i class="bi bi-people-fill me-1" style="color:#f97316;"></i>チーム内 {{ my_rank }}位 / {{ my_rank_total }}人（上位{{ my_percentile }}%）
+          </span>
+          {% endif %}
+        </div>
+
+        {% if recommended_skills %}
+        {% set rec0 = recommended_skills[0] %}
+        <div class="text-muted mt-2" style="font-size:.8rem;">
+          <i class="bi bi-arrow-right-circle me-1" style="color:#f97316;"></i>
+          次のおすすめ: <strong>{{ rec0.skill_name }}</strong>
+          （現在 {{ SKILL_LEVELS[rec0.user_level] }} → 次は {{ SKILL_LEVELS[rec0.next_level] }} を目指そう）
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- 所属グループ情報（User ロール・self モードのみ） -->
+{% if my_groups_info is defined and my_groups_info and view_mode == 'self' %}
+<div class="card mb-3">
+  <div class="card-header py-2 d-flex align-items-center gap-2">
+    <i class="bi bi-people-fill" style="color:#f97316;"></i>
+    <span class="fw-semibold small">所属グループ</span>
+    <span class="badge bg-light text-muted ms-1" style="font-size:.65rem;">{{ my_groups_info|length }}グループ</span>
+  </div>
+  <div class="card-body py-2 px-3">
+    <div class="d-flex flex-wrap gap-2">
+      {% for g in my_groups_info %}
+      <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
+           style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.84rem;">
+        <i class="bi bi-people text-muted" style="font-size:.8rem;"></i>
+        <div>
+          <div class="fw-semibold">{{ g.name }}</div>
+          {% if g.description %}<div class="text-muted" style="font-size:.73rem;">{{ g.description }}</div>{% endif %}
+        </div>
+        {% if g.manager %}
+        <span class="badge bg-light text-muted" style="font-size:.62rem;border-radius:10px;">
+          <i class="bi bi-person-gear me-1"></i>{{ g.manager.display_name or g.manager.username }}
+        </span>
+        {% endif %}
+        <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.62rem;border-radius:10px;">
+          {{ g.skill_count }}スキル
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Stats Cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
@@ -849,6 +979,110 @@
     </div>
   </div>
 </div>
+
+<!-- ═══ 現在の保有スキル ═══ -->
+{% if view_mode in ('self', 'user') %}
+<div class="card mb-3" style="border-left:3px solid #22c55e;">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">
+      <i class="bi bi-stars me-2" style="color:#22c55e;"></i>現在の保有スキル
+      <span class="text-muted fw-normal" style="font-size:.75rem;">（{{ total }}件・カテゴリー別）</span>
+    </h6>
+    {% if my_skills_by_category %}
+    <div class="row g-3">
+      {% for cat_name, cat_data in my_skills_by_category.items() %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="border rounded-3 p-3 h-100" style="border-color:#e2e8f0 !important;">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span style="width:10px;height:10px;border-radius:50%;background:{{ cat_data.color }};display:inline-block;flex-shrink:0;"></span>
+            <span class="fw-semibold" style="font-size:.85rem;">{{ cat_name }}</span>
+            <span class="badge bg-light text-muted ms-auto" style="font-size:.7rem;">{{ cat_data.skills|length }}件</span>
+          </div>
+          <div class="d-flex flex-column gap-2">
+            {% for sl in cat_data.skills %}
+            <div class="d-flex align-items-center justify-content-between gap-2">
+              <a href="/skills?skill_id={{ sl.skill.id }}{% if view_mode == 'user' %}&view_as={{ target_user.id }}{% endif %}"
+                 class="skill-link text-truncate text-decoration-none text-reset fw-medium"
+                 style="font-size:.83rem;"
+                 title="{{ sl.skill.name }}の詳細を見る">{{ sl.skill.name }}</a>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <div class="level-dots">
+                  {% for i in range(1, 5) %}
+                  <span class="level-dot {% if i <= sl.level %}active lv-{{ sl.level }}{% endif %}"></span>
+                  {% endfor %}
+                </div>
+                <span class="badge bg-{{ LEVEL_COLORS[sl.level] }}" style="font-size:.7rem;">{{ SKILL_LEVELS[sl.level] }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+      <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+      まだスキルが登録されていません。<a href="/skills">スキルマップで申告する</a>と、ここに表示されます。
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ═══ 資格・試験 ═══ -->
+{% if view_mode in ('self', 'user') %}
+<div class="card mb-3" style="border-left:3px solid #a855f7;">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-patch-check-fill me-2" style="color:#a855f7;"></i>資格・試験</h6>
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <div class="d-flex align-items-center justify-content-between p-2 rounded-3" style="background:#faf5ff;">
+          <div>
+            <div class="fw-bold fs-5" style="line-height:1;">{{ cert_count }}件</div>
+            <div class="text-muted" style="font-size:.78rem;">保有資格数</div>
+          </div>
+          <a href="/certifications" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">確認する</a>
+        </div>
+        {% if certs_expiring_soon %}
+        <div class="mt-2 d-flex flex-column gap-1">
+          {% for c in certs_expiring_soon %}
+          <div class="d-flex align-items-center gap-2" style="font-size:.78rem;color:#b45309;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span class="text-truncate">{{ c.name }}</span>
+            <span class="text-muted ms-auto">{{ c.expiry_date.strftime('%Y/%m/%d') }} 期限</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="d-flex align-items-center justify-content-between p-2 rounded-3" style="background:#eff6ff;">
+          <div>
+            <div class="fw-bold fs-5" style="line-height:1;">{{ exam_pending_count }}件</div>
+            <div class="text-muted" style="font-size:.78rem;">受験予定・進行中の試験</div>
+          </div>
+          <a href="/exams/my" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">確認する</a>
+        </div>
+        {% if exam_latest_result %}
+        <div class="mt-2" style="font-size:.78rem;">
+          <i class="bi bi-{% if exam_latest_result.passed == true %}check-circle-fill text-success{% elif exam_latest_result.passed == false %}x-circle-fill text-danger{% else %}info-circle-fill text-muted{% endif %} me-1"></i>
+          直近の結果: <strong>{{ exam_latest_result.exam_title }}</strong>
+          {% if exam_latest_result.score is not none %}
+          （{{ exam_latest_result.score }}{% if exam_latest_result.max_score %} / {{ exam_latest_result.max_score }}{% endif %}点）
+          {% endif %}
+          {% if exam_latest_result.passed == true %}
+          <span class="badge bg-success ms-1">合格</span>
+          {% elif exam_latest_result.passed == false %}
+          <span class="badge bg-danger ms-1">不合格</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- ティア別進捗 -->
 <div class="card mb-3">
@@ -1120,7 +1354,7 @@
           </thead>
           <tbody>
             {% for skill in bus_factor_skills %}
-            <tr>
+            <tr {% if loop.index > 10 %}class="d-none bus-factor-extra"{% endif %}>
               <td>{{ skill.skill_name }}</td>
               <td><span class="badge bg-secondary">{{ skill.category_name }}</span></td>
               <td class="text-center">
@@ -1132,6 +1366,13 @@
             {% endfor %}
           </tbody>
         </table>
+        {% if bus_factor_skills|length > 10 %}
+        <div class="text-center py-2 border-top">
+          <button type="button" class="btn btn-sm btn-link" onclick="toggleBusFactorRows(this)" data-extra-count="{{ bus_factor_skills|length - 10 }}">
+            残り{{ bus_factor_skills|length - 10 }}件を表示
+          </button>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -1156,22 +1397,32 @@
     <div class="card mb-4 border-primary">
       <div class="card-header bg-primary bg-opacity-10 d-flex align-items-center">
         <i class="bi bi-lightbulb-fill text-primary me-2"></i>
-        <strong>次のステップ：推奨スキル</strong>
+        <strong>次のステップ：伸ばしていきたいスキル</strong>
       </div>
       <div class="card-body">
         {% for skill in recommended_skills %}
         <div class="d-flex align-items-center mb-2 p-2 rounded {% if loop.first %}bg-light{% endif %}">
           <div class="flex-grow-1">
-            <div class="fw-semibold">
-              {{ skill.skill_name }}
-              {% if skill.is_required %}<span class="badge bg-danger ms-1 small">必須</span>{% endif %}
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <span class="fw-semibold">{{ skill.skill_name }}</span>
+              {% if skill.category_name %}
+              <span class="badge" style="background:{{ skill.category_color }};font-size:.7rem;">{{ skill.category_name }}</span>
+              {% endif %}
+              <span class="tier-pill tier-{{ skill.tier }}"><i class="bi {{ TIER_ICONS[skill.tier] }}"></i>{{ SKILL_TIERS[skill.tier] }}</span>
+              {% if skill.is_required %}<span class="status-pill status-required"><i class="bi bi-exclamation-circle-fill"></i>必須</span>{% endif %}
+              <span class="status-pill status-reason"><i class="bi bi-lightbulb-fill"></i>{{ skill.reason }}</span>
             </div>
             <div class="progress mt-1" style="height:6px;">
               <div class="progress-bar bg-primary" style="width:{{ (skill.user_level / 4 * 100)|int }}%"></div>
             </div>
-            <small class="text-muted">現在Lv{{ skill.user_level }} / チーム平均{{ "%.1f"|format(skill.team_avg) }}</small>
+            <small class="text-muted">
+              現在 {{ SKILL_LEVELS[skill.user_level] }}（Lv{{ skill.user_level }}）
+              <i class="bi bi-arrow-right mx-1"></i>
+              次は {{ SKILL_LEVELS[skill.next_level] }}（Lv{{ skill.next_level }}）を目指そう
+              {% if skill.team_avg > 0 %}・ チーム平均 Lv{{ "%.1f"|format(skill.team_avg) }}{% endif %}
+            </small>
           </div>
-          <span class="badge bg-primary ms-3 fs-6">Lv{{ skill.user_level }}</span>
+          <span class="badge bg-primary ms-3 fs-6">{{ skill.user_level }} → {{ skill.next_level }}</span>
         </div>
         {% endfor %}
       </div>
@@ -1179,65 +1430,29 @@
   </div>
   {% endif %}
 
-  <!-- バッジセクション -->
-  {% if user_badges is defined and user_badges %}
+  {% if view_mode in ('self', 'user') and stagnant_skills is defined and stagnant_skills %}
   <div class="col-12">
-    <div class="card mb-3">
-      <div class="card-header py-2 d-flex align-items-center gap-2">
-        <i class="bi bi-award-fill text-warning"></i>
-        <span class="fw-semibold small">獲得バッジ</span>
-        <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">{{ user_badges|length }}</span>
+    <div class="card mb-4" style="border-color:#fde68a !important;">
+      <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center">
+        <i class="bi bi-hourglass-split text-warning me-2"></i>
+        <strong>伸び悩んでいるスキル</strong>
+        <span class="text-muted ms-2" style="font-size:.75rem;">180日以上レベルが変わっていません</span>
       </div>
-      <div class="card-body py-2 px-3">
-        <div class="d-flex flex-wrap gap-2">
-          {% for ub in user_badges %}
-          {% set bdef = BADGE_DEFS.get(ub.badge_key, {}) %}
-          {% if bdef %}
-          <div class="d-flex align-items-center gap-1 px-3 py-2 rounded-3"
-               style="background:#fafafa;border:1px solid #e2e8f0;"
-               title="{{ bdef.desc }} ({{ ub.awarded_at.strftime('%Y/%m/%d') }})">
-            <i class="{{ bdef.icon }}" style="color:{{ bdef.color }};font-size:1.1rem;"></i>
-            <span class="fw-semibold" style="font-size:.8rem;">{{ bdef.label }}</span>
-          </div>
-          {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-
-  <!-- 所属グループ情報（User ロール・self モードのみ） -->
-  {% if my_groups_info is defined and my_groups_info and view_mode == 'self' %}
-  <div class="col-12">
-    <div class="card mb-3">
-      <div class="card-header py-2 d-flex align-items-center gap-2">
-        <i class="bi bi-people-fill" style="color:#f97316;"></i>
-        <span class="fw-semibold small">所属グループ</span>
-        <span class="badge bg-light text-muted ms-1" style="font-size:.65rem;">{{ my_groups_info|length }}グループ</span>
-      </div>
-      <div class="card-body py-2 px-3">
-        <div class="d-flex flex-wrap gap-2">
-          {% for g in my_groups_info %}
-          <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
-               style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.84rem;">
-            <i class="bi bi-people text-muted" style="font-size:.8rem;"></i>
-            <div>
-              <div class="fw-semibold">{{ g.name }}</div>
-              {% if g.description %}<div class="text-muted" style="font-size:.73rem;">{{ g.description }}</div>{% endif %}
-            </div>
-            {% if g.manager %}
-            <span class="badge bg-light text-muted" style="font-size:.62rem;border-radius:10px;">
-              <i class="bi bi-person-gear me-1"></i>{{ g.manager.display_name or g.manager.username }}
-            </span>
+      <div class="card-body">
+        {% for skill in stagnant_skills %}
+        <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded">
+          <div>
+            <span class="fw-semibold">{{ skill.skill_name }}</span>
+            {% if skill.category_name %}
+            <span class="badge ms-1" style="background:{{ skill.category_color }};font-size:.7rem;">{{ skill.category_name }}</span>
             {% endif %}
-            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.62rem;border-radius:10px;">
-              {{ g.skill_count }}スキル
-            </span>
+            <span class="badge bg-{{ LEVEL_COLORS[skill.level] }} ms-1" style="font-size:.7rem;">{{ SKILL_LEVELS[skill.level] }}</span>
           </div>
-          {% endfor %}
+          <small class="text-muted">
+            {% if skill.last_changed_at %}最終更新: {{ skill.last_changed_at.strftime('%Y/%m/%d') }}{% else %}更新履歴なし{% endif %}
+          </small>
         </div>
+        {% endfor %}
       </div>
     </div>
   </div>
@@ -1648,5 +1863,13 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(() => { if (trendStatus) trendStatus.textContent = 'データなし'; });
   }
 });
+
+function toggleBusFactorRows(btn) {
+  const table = btn.closest('.card-body').querySelector('table');
+  const rows = table.querySelectorAll('.bus-factor-extra');
+  const hidden = rows.length && rows[0].classList.contains('d-none');
+  rows.forEach(r => r.classList.toggle('d-none', !hidden));
+  btn.textContent = hidden ? '閉じる' : '残り' + btn.dataset.extraCount + '件を表示';
+}
 </script>
 {% endblock %}

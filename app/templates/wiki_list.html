@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Wiki - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-journal-richtext me-2" style="color:#f97316;"></i>Wiki</h1>
+    <p class="text-muted mb-0 small">グループで共有できるドキュメントです。Markdown形式で作成・画像の埋め込みができます。</p>
+  </div>
+  <a href="/wiki/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-plus-lg me-1"></i>新規作成
+  </a>
+</div>
+
+{% macro page_row(p) %}
+<a href="/wiki/{{ p.id }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between gap-2 flex-wrap">
+  <div class="d-flex align-items-center gap-2 min-width-0">
+    <i class="bi bi-file-earmark-text text-muted"></i>
+    <div class="min-width-0">
+      <div class="fw-semibold text-truncate">{{ p.title }}</div>
+      <div class="text-muted" style="font-size:.75rem;">
+        {{ p.creator.display_name or p.creator.username }} ・ 更新: {{ p.updated_at|jst }}
+      </div>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-1 flex-shrink-0">
+    {% if p.visibility == 'all' %}
+    <span class="badge bg-light text-dark border" style="font-size:.68rem;">
+      <i class="bi bi-globe2 me-1"></i>全体
+    </span>
+    {% endif %}
+    {% if p.visibility != 'private' %}
+    <span class="badge bg-light text-dark border" style="font-size:.68rem;">
+      <i class="bi bi-{% if p.edit_mode == 'members' %}pencil{% else %}eye{% endif %} me-1"></i>{{ WIKI_EDIT_MODES[p.edit_mode] }}
+    </span>
+    {% endif %}
+  </div>
+</a>
+{% endmacro %}
+
+<div class="card mb-4">
+  <div class="card-body">
+    <ul class="nav nav-tabs mb-3" id="wikiTab" role="tablist" style="font-size:.85rem;">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabPersonal" type="button" style="border-radius:12px 12px 0 0;">
+          <i class="bi bi-person me-1"></i>個人メモ <span class="badge bg-secondary ms-1">{{ personal_pages|length }}</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGlobal" type="button" style="border-radius:12px 12px 0 0;">
+          <i class="bi bi-globe2 me-1"></i>全体 <span class="badge bg-secondary ms-1">{{ global_pages|length }}</span>
+        </button>
+      </li>
+      {% for g in groups_with_pages %}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGroup{{ g.id }}" type="button" style="border-radius:12px 12px 0 0;">
+          <i class="bi bi-people me-1"></i>{{ g.name }} <span class="badge bg-secondary ms-1">{{ pages_by_group[g.id]|length }}</span>
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="tabPersonal" role="tabpanel">
+        {% if personal_pages %}
+        <div class="list-group list-group-flush">
+          {% for p in personal_pages %}{{ page_row(p) }}{% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-journal fs-3 d-block mb-2" style="color:#d1d5db;"></i>
+          個人メモはまだありません
+        </div>
+        {% endif %}
+      </div>
+      <div class="tab-pane fade" id="tabGlobal" role="tabpanel">
+        {% if global_pages %}
+        <div class="list-group list-group-flush">
+          {% for p in global_pages %}{{ page_row(p) }}{% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-globe2 fs-3 d-block mb-2" style="color:#d1d5db;"></i>
+          全体共有のページはまだありません
+        </div>
+        {% endif %}
+      </div>
+      {% for g in groups_with_pages %}
+      <div class="tab-pane fade" id="tabGroup{{ g.id }}" role="tabpanel">
+        <div class="list-group list-group-flush">
+          {% for p in pages_by_group[g.id] %}{{ page_row(p) }}{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if not personal_pages and not groups_with_pages and not global_pages %}
+    <div class="text-center text-muted py-4">
+      <i class="bi bi-journal-richtext fs-2 d-block mb-2" style="color:#d1d5db;"></i>
+      まだWikiページがありません。「新規作成」から作成してください。
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

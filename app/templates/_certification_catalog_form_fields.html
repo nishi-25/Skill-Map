@@ -1,0 +1,22 @@
+{% set prefix = prefix|default("") %}
+{% set p = (prefix ~ "_cat_") if prefix else "cat_" %}
+<div class="mb-3">
+  <label class="form-label fw-semibold small">資格名 <span class="text-danger">*</span></label>
+  <input type="text" name="name" id="{{ p }}name" class="form-control" style="border-radius:10px;" required>
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">発行元</label>
+  <input type="text" name="issuer" id="{{ p }}issuer" class="form-control" style="border-radius:10px;" placeholder="例: 〇〇協会">
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">関連カテゴリー</label>
+  <input type="text" name="category_name" id="{{ p }}category_name" class="form-control" style="border-radius:10px;" placeholder="例: HILSプラットフォームツール">
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">説明</label>
+  <textarea name="description" id="{{ p }}description" class="form-control" rows="2" style="border-radius:10px;"></textarea>
+</div>
+<div class="form-check mb-1">
+  <input type="checkbox" name="has_score" value="1" id="{{ p }}has_score" class="form-check-input">
+  <label class="form-check-label small" for="{{ p }}has_score">点数入力欄を表示する（TOEIC等）</label>
+</div>

@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block title %}業務マップ管理 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>業務マップ管理</h1>
+    <p class="text-muted mb-0 small">業務エリアを作成し、必要なサブスキルを織り込みます（左のサブスキル一覧からドラッグ&ドロップ、または削除アイコンで調整）</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;" onclick="openAreaModal()">
+      <i class="bi bi-plus-lg me-1"></i>業務エリアを追加
+    </button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- 左: サブスキルプール -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header bg-transparent d-flex align-items-center gap-2 flex-wrap">
+        <i class="bi bi-collection" style="color:#f97316;"></i>
+        <span class="fw-semibold small">サブスキル一覧</span>
+        <div class="ms-auto" style="max-width:200px;flex:1;">
+          <input type="text" id="bmSkillSearch" class="form-control form-control-sm" placeholder="サブスキルを検索..." oninput="bmFilterPool()" style="border-radius:20px;">
+        </div>
+      </div>
+      <div class="card-body bm-pool-body">
+        {% for cat_name, cat_data in skills_by_category.items() %}
+        <div class="mb-3 bm-pool-cat">
+          <div class="text-muted small fw-semibold mb-1">
+            {% if cat_data.category %}
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ cat_data.category.color }};display:inline-block;margin-right:4px;"></span>
+            {% endif %}
+            {{ cat_name }}
+          </div>
+          {% for sk in cat_data.skills %}
+          <div class="mb-2 bm-pool-skill">
+            <div class="small fw-semibold text-secondary mb-1">{{ sk.name }}</div>
+            <div class="bm-skill-pool d-flex flex-wrap gap-2">
+              {% for ss in sk.sub_skills %}
+              <div class="bm-skill-chip" data-subskill-id="{{ ss.id }}" data-tier="{{ ss.tier }}" data-parent="{{ sk.name }}"
+                   data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}" title="{{ sk.name }} › {{ ss.name }}">
+                <span class="tier-pill bm-tier-badge tier-{{ ss.tier }}">{{ tier_names.get(ss.tier, ss.tier) }}</span>
+                <span class="bm-skill-name">{{ ss.name }}</span>
+                <i class="bi bi-x-circle bm-skill-remove" title="削除"></i>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 右: 業務エリア -->
+  <div class="col-lg-7">
+    {% if areas %}
+    {% macro render_area_node(area, depth) %}
+    <div class="bm-node-wrap{% if depth > 1 %} bm-node-nested{% endif %}" data-area-id="{{ area.id }}" {% if depth > 1 %}style="margin-left:calc({{ depth - 1 }} * 1.25rem);"{% endif %}>
+      <div class="card bm-area-card{% if depth > 1 %} bm-area-card-nested{% endif %}" style="border-radius:14px;border-left:{{ 4 if depth == 1 else 3 }}px solid {{ area.color }};">
+        <div class="card-header bg-transparent d-flex align-items-center gap-2 bm-area-handle" style="border-bottom:1px solid #f1f5f9;">
+          <i class="bi bi-grip-vertical text-muted"></i>
+          <span style="width:12px;height:12px;border-radius:50%;background:{{ area.color }};flex-shrink:0;"></span>
+          <span class="fw-bold flex-grow-1 text-truncate" style="font-size:.9rem;">{{ area.name }}</span>
+          <button type="button" class="btn btn-xs btn-outline-success" style="border-radius:20px;"
+                  title="子カテゴリを追加"
+                  onclick='openAreaModal(0, "", "", "#6366f1", {{ area.id }}, {{ area.name|tojson }})'>
+            <i class="bi bi-plus-lg"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集"
+                  onclick='openAreaModal({{ area.id }}, {{ area.name|tojson }}, {{ (area.description or "")|tojson }}, {{ area.color|tojson }}, {{ area.parent_id or 0 }})'>
+            <i class="bi bi-pencil"></i>
+          </button>
+          <form method="post" action="/business-map/areas/{{ area.id }}/delete"
+                onsubmit="return confirm('「{{ area.name }}」を削除しますか？配下のカテゴリとサブスキルの割り当てもすべて削除されます。')">
+            <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;" title="削除"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+        <div class="card-body py-2 px-2">
+          {% if area.description %}
+          <p class="text-muted small mb-2" style="font-size:.78rem;">{{ area.description }}</p>
+          {% endif %}
+          {% if area.children %}
+          <div class="bm-children" data-parent-id="{{ area.id }}">
+            {% for child in area.children %}
+            {{ render_area_node(child, depth + 1) }}
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="bm-area-skills" data-area-id="{{ area.id }}">
+            {% for a_sk in area.area_sub_skills if a_sk.sub_skill %}
+            <div class="bm-skill-chip" data-subskill-id="{{ a_sk.sub_skill_id }}" data-tier="{{ a_sk.sub_skill.tier }}" title="{{ a_sk.sub_skill.skill.name }} › {{ a_sk.sub_skill.name }}">
+              <span class="tier-pill bm-tier-badge tier-{{ a_sk.sub_skill.tier }}">{{ tier_names.get(a_sk.sub_skill.tier, a_sk.sub_skill.tier) }}</span>
+              <span class="bm-skill-name">{{ a_sk.sub_skill.skill.name }} › {{ a_sk.sub_skill.name }}</span>
+              <i class="bi bi-x-circle bm-skill-remove" title="削除"></i>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="text-muted text-center small mb-0 py-2 bm-empty-hint" {% if area.area_sub_skills %}style="display:none;"{% endif %}>
+            左のサブスキル一覧からドラッグして追加
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endmacro %}
+
+    <div id="bmAreasFlow" class="bm-children" data-parent-id="0">
+      {% for area in areas %}
+      {{ render_area_node(area, 1) }}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-diagram-3 fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+        <h5>業務エリアがありません</h5>
+        <p class="small">「業務エリアを追加」から作成してください。</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- エリア追加/編集モーダル -->
+<div class="modal fade" id="areaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+        <h6 class="modal-title fw-bold" id="areaModalTitle"><i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>業務エリアを追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="areaForm" method="post" action="/business-map/areas/new">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">業務エリア名</label>
+            <input type="text" name="name" id="areaName" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">説明</label>
+            <textarea name="description" id="areaDescription" class="form-control" rows="2" style="border-radius:10px;"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">カラー</label>
+            <input type="color" name="color" id="areaColor" class="form-control form-control-color" value="#6366f1" style="border-radius:10px;width:80px;">
+          </div>
+          <input type="hidden" name="parent_id" id="areaParentId" value="0">
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;"><i class="bi bi-check me-1"></i>保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+function openAreaModal(id, name, description, color, parentId, parentName) {
+  const form = document.getElementById('areaForm');
+  const title = document.getElementById('areaModalTitle');
+  parentId = parentId || 0;
+  document.getElementById('areaParentId').value = parentId;
+
+  if (id) {
+    form.action = '/business-map/areas/' + id + '/edit';
+    title.innerHTML = '<i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>カテゴリを編集';
+    document.getElementById('areaName').value = name;
+    document.getElementById('areaDescription').value = description;
+    document.getElementById('areaColor').value = color;
+  } else {
+    form.action = '/business-map/areas/new';
+    title.innerHTML = '<i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>' +
+      (parentName ? '「' + parentName + '」に子カテゴリを追加' : '業務エリアを追加');
+    document.getElementById('areaName').value = '';
+    document.getElementById('areaDescription').value = '';
+    document.getElementById('areaColor').value = '#6366f1';
+  }
+  new bootstrap.Modal(document.getElementById('areaModal')).show();
+}
+
+function bmFilterPool() {
+  const q = document.getElementById('bmSkillSearch').value.trim().toLowerCase();
+  document.querySelectorAll('.bm-pool-skill').forEach(skillEl => {
+    let visibleCount = 0;
+    skillEl.querySelectorAll('.bm-skill-chip').forEach(chip => {
+      const match = !q || (chip.dataset.search || '').includes(q);
+      chip.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
+    });
+    skillEl.style.display = visibleCount > 0 ? '' : 'none';
+  });
+  document.querySelectorAll('.bm-pool-cat').forEach(catEl => {
+    const visible = [...catEl.querySelectorAll('.bm-pool-skill')].some(s => s.style.display !== 'none');
+    catEl.style.display = visible ? '' : 'none';
+  });
+}
+
+function bmReorderArea(listEl) {
+  const areaId = listEl.dataset.areaId;
+  const subSkillIds = [...listEl.querySelectorAll('.bm-skill-chip')].map(c => parseInt(c.dataset.subskillId));
+  fetch('/business-map/area-skills/reorder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({area_id: parseInt(areaId), sub_skill_ids: subSkillIds})
+  });
+}
+
+function bmHideEmptyHint(areaSkillsEl) {
+  const hint = areaSkillsEl.parentElement.querySelector('.bm-empty-hint');
+  if (hint) hint.style.display = 'none';
+}
+
+function bmShowEmptyHintIfEmpty(areaSkillsEl) {
+  if (areaSkillsEl.querySelectorAll('.bm-skill-chip').length === 0) {
+    const hint = areaSkillsEl.parentElement.querySelector('.bm-empty-hint');
+    if (hint) hint.style.display = '';
+  }
+}
+
+// カテゴリの並び替え（各階層ごとに独立したSortableを設定）
+document.querySelectorAll('.bm-children').forEach(container => {
+  new Sortable(container, {
+    handle: '.bm-area-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onEnd: function() {
+      const ids = [...container.children]
+        .filter(el => el.classList.contains('bm-node-wrap'))
+        .map(el => parseInt(el.dataset.areaId));
+      fetch('/business-map/areas/reorder', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids})
+      });
+    }
+  });
+});
+
+// サブスキル一覧（プール）: クリック&ドラッグでコピー
+document.querySelectorAll('.bm-skill-pool').forEach(pool => {
+  new Sortable(pool, {
+    group: { name: 'bmskills', pull: 'clone', put: false },
+    sort: false,
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+  });
+});
+
+// 業務エリア内のサブスキル: 並び替え・追加・削除・エリア間移動
+document.querySelectorAll('.bm-area-skills').forEach(list => {
+  new Sortable(list, {
+    group: { name: 'bmskills', pull: true, put: true },
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onAdd: function(evt) {
+      const areaId = evt.to.dataset.areaId;
+      const item = evt.item;
+      const subSkillId = parseInt(item.dataset.subskillId);
+      const parent = item.dataset.parent;
+      const nameEl = item.querySelector('.bm-skill-name');
+      if (parent && nameEl && !nameEl.dataset.prefixed) {
+        nameEl.textContent = parent + ' › ' + nameEl.textContent;
+        nameEl.dataset.prefixed = '1';
+      }
+      bmHideEmptyHint(evt.to);
+      fetch(`/business-map/areas/${areaId}/skills/add`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({sub_skill_id: subSkillId})
+      }).then(() => bmReorderArea(evt.to));
+    },
+    onUpdate: function(evt) {
+      bmReorderArea(evt.to);
+    },
+    onRemove: function(evt) {
+      const areaId = evt.from.dataset.areaId;
+      const subSkillId = parseInt(evt.item.dataset.subskillId);
+      fetch(`/business-map/areas/${areaId}/skills/remove`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({sub_skill_id: subSkillId})
+      });
+      bmShowEmptyHintIfEmpty(evt.from);
+    },
+  });
+});
+
+// ×アイコンでサブスキルを削除
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.bm-area-skills .bm-skill-remove');
+  if (!btn) return;
+  const chip = btn.closest('.bm-skill-chip');
+  const list = chip.closest('.bm-area-skills');
+  const areaId = list.dataset.areaId;
+  const subSkillId = parseInt(chip.dataset.subskillId);
+  fetch(`/business-map/areas/${areaId}/skills/remove`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({sub_skill_id: subSkillId})
+  }).then(() => {
+    chip.remove();
+    bmShowEmptyHintIfEmpty(list);
+  });
+});
+
+</script>
+
+<style>
+.bm-pool-body { max-height: calc(100vh - 6rem); overflow-y: auto; }
+@media (min-width: 992px) {
+  #bmAreasFlow { max-height: calc(100vh - 6rem); overflow-y: auto; padding-right: .5rem; }
+}
+.bm-children { display: flex; flex-direction: column; gap: 1rem; }
+.bm-node-wrap { position: relative; }
+.bm-area-card-nested { font-size: .92em; }
+.bm-area-card-nested .card-header { padding-top: .4rem; padding-bottom: .4rem; }
+.bm-area-card { height: 100%; }
+.bm-area-handle { cursor: grab; }
+.bm-area-handle:active { cursor: grabbing; }
+.bm-skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: .3rem .6rem;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: .78rem;
+  cursor: grab;
+  user-select: none;
+  max-width: 100%;
+}
+.bm-skill-chip:active { cursor: grabbing; }
+.bm-tier-badge { font-size: .65rem; padding: .15rem .5rem; flex-shrink: 0; }
+.bm-skill-pool .bm-skill-chip { background: #f8fafc; }
+.bm-skill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.bm-area-skills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; }
+.bm-skill-pool .bm-skill-remove { display: none; }
+.bm-area-skills .bm-skill-remove { display: inline-flex; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+.bm-area-skills .bm-skill-remove:hover { color: #ef4444; }
+.sortable-ghost { opacity: .4; background: #e0f2fe !important; }
+.sortable-drag { box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+</style>
+{% endblock %}

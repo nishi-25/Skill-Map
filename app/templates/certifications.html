@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}資格情報 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1>
+      <i class="bi bi-patch-check-fill me-2" style="color:#f97316;"></i>
+      {% if target_user %}{{ target_user.display_name or target_user.username }} さんの資格情報{% else %}資格情報{% endif %}
+    </h1>
+    <p class="text-muted mb-0 small">
+      {% if is_readonly %}保有資格・合格証の確認ができます（閲覧のみ）{% else %}保有資格を登録・管理できます{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if target_user %}
+    <a href="/certifications/members" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-arrow-left me-1"></i>メンバー一覧に戻る
+    </a>
+    {% endif %}
+    {% if not is_readonly %}
+    <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;"
+            data-bs-toggle="modal" data-bs-target="#addCertModal">
+      <i class="bi bi-plus-lg me-1"></i>資格を追加
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% if certifications %}
+<div class="row g-3">
+  {% for cert in certifications %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100" style="border-radius:14px;border:1px solid #f1f5f9;">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="fw-bold mb-0" style="color:#1e293b;">{{ cert.name }}</h6>
+          {% if not is_readonly %}
+          <div class="d-flex gap-1 flex-shrink-0">
+            <button type="button" class="btn btn-xs btn-outline-primary" style="font-size:.78rem;border-radius:8px;width:28px;height:28px;padding:0;"
+                    onclick="openEditCertModal({{ cert.id }}, {{ cert.catalog_id or 0 }}, '{{ cert.name|replace("'", "\\'") }}', '{{ (cert.issuer or '')|replace("'", "\\'") }}', '{{ cert.issued_date.isoformat() if cert.issued_date else '' }}', '{{ cert.expiry_date.isoformat() if cert.expiry_date else '' }}', '{{ (cert.certificate_number or '')|replace("'", "\\'") }}', '{{ cert.score if cert.score is not none else '' }}', '{{ (cert.note or '')|replace("'", "\\'")|replace('\n','\\n') }}')">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <form method="post" action="/certifications/{{ cert.id }}/delete" onsubmit="return confirm('この資格情報を削除しますか？');">
+              <button type="submit" class="btn btn-xs btn-outline-danger" style="font-size:.78rem;border-radius:8px;width:28px;height:28px;padding:0;">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        {% if cert.issuer %}
+        <div class="text-muted small mb-1"><i class="bi bi-building me-1"></i>{{ cert.issuer }}</div>
+        {% endif %}
+        <div class="d-flex flex-wrap gap-2 mb-2" style="font-size:.8rem;">
+          {% if cert.issued_date %}
+          <span class="badge bg-light text-dark border" style="font-weight:500;"><i class="bi bi-calendar-check me-1"></i>取得: {{ cert.issued_date.strftime('%Y/%m/%d') }}</span>
+          {% endif %}
+          {% if cert.expiry_date %}
+          <span class="badge bg-light text-dark border" style="font-weight:500;"><i class="bi bi-calendar-x me-1"></i>有効期限: {{ cert.expiry_date.strftime('%Y/%m/%d') }}</span>
+          {% endif %}
+          {% if cert.score is not none %}
+          <span class="badge bg-light text-dark border" style="font-weight:500;"><i class="bi bi-star me-1"></i>点数: {{ cert.score }}</span>
+          {% endif %}
+        </div>
+        {% if cert.certificate_number %}
+        <div class="text-muted small mb-1"><i class="bi bi-hash me-1"></i>証明書番号: {{ cert.certificate_number }}</div>
+        {% endif %}
+        {% if cert.note %}
+        <div class="text-muted small mb-2" style="white-space:pre-wrap;">{{ cert.note }}</div>
+        {% endif %}
+        {% if cert.file_path %}
+        <a href="/certifications/{{ cert.id }}/file" target="_blank" class="btn btn-sm btn-outline-success w-100" style="border-radius:10px;font-size:.8rem;">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i>{{ cert.original_filename or '添付ファイルを開く' }}
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-patch-check fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">{% if is_readonly %}登録されている資格情報はありません{% else %}まだ資格情報が登録されていません{% endif %}</p>
+</div>
+{% endif %}
+
+{% if not is_readonly %}
+<!-- 追加モーダル -->
+<div class="modal fade" id="addCertModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-plus-lg me-2" style="color:#f97316;"></i>資格情報を追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/certifications/new" enctype="multipart/form-data">
+        <div class="modal-body">
+          {% include "_certification_form_fields.html" %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">追加する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal fade" id="editCertModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2" style="color:#f97316;"></i>資格情報を編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editCertForm" method="post" enctype="multipart/form-data">
+        <div class="modal-body">
+          {% with prefix="edit" %}
+          {% include "_certification_form_fields.html" %}
+          {% endwith %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function certCatalogChanged(select, prefix) {
+  const wrap = document.getElementById(prefix + 'custom_name_wrap');
+  const customInput = document.getElementById(prefix + 'custom_name');
+  const issuerInput = document.getElementById(prefix + 'issuer');
+  const scoreWrap = document.getElementById(prefix + 'score_wrap');
+  const opt = select.options[select.selectedIndex];
+  if (select.value === '0') {
+    wrap.classList.remove('d-none');
+    customInput.setAttribute('required', 'required');
+  } else {
+    wrap.classList.add('d-none');
+    customInput.removeAttribute('required');
+    const issuer = opt ? opt.getAttribute('data-issuer') : '';
+    if (issuer && !issuerInput.value) {
+      issuerInput.value = issuer;
+    }
+  }
+  const hasScore = opt && opt.getAttribute('data-has-score') === '1';
+  if (scoreWrap) {
+    scoreWrap.classList.toggle('d-none', !hasScore);
+  }
+}
+
+function openEditCertModal(id, catalogId, name, issuer, issuedDate, expiryDate, certNumber, score, note) {
+  const form = document.getElementById('editCertForm');
+  form.action = '/certifications/' + id + '/edit';
+  const select = document.getElementById('edit_catalog_id');
+  select.value = catalogId && catalogId != 0 ? String(catalogId) : '0';
+  certCatalogChanged(select, 'edit_');
+  if (!catalogId || catalogId == 0) {
+    document.getElementById('edit_custom_name').value = name;
+  } else {
+    document.getElementById('edit_custom_name').value = '';
+  }
+  document.getElementById('edit_issuer').value = issuer;
+  document.getElementById('edit_issued_date').value = issuedDate;
+  document.getElementById('edit_expiry_date').value = expiryDate;
+  document.getElementById('edit_certificate_number').value = certNumber;
+  document.getElementById('edit_score').value = score || '';
+  document.getElementById('edit_note').value = note;
+  new bootstrap.Modal(document.getElementById('editCertModal')).show();
+}
+</script>
+{% endif %}
+{% endblock %}

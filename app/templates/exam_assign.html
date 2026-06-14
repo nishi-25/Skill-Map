@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - 割当 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-person-check me-2" style="color:#f97316;"></i>{{ exam.title }} - 割当</h1>
+    <p class="text-muted mb-0 small">受験させるメンバーを選択してください。再割当すると過去の回答・採点結果はリセットされます。</p>
+  </div>
+  <a href="/exams" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-arrow-left me-1"></i>一覧に戻る
+  </a>
+</div>
+
+{% if candidates %}
+<form method="post" action="/exams/{{ exam.id }}/assign">
+  <div class="card mb-3">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0" style="font-size:.9rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:60px;"></th>
+              <th>メンバー</th>
+              <th class="text-center" style="width:160px;">受験条件</th>
+              <th class="text-center" style="width:120px;">割当済み</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in candidates %}
+            <tr>
+              <td class="text-center">
+                <input type="checkbox" class="form-check-input" name="user_ids" value="{{ u.id }}" {% if u.id in assigned_ids %}checked{% endif %}>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  {% if u.avatar_path %}
+                  <img src="{{ u.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                  {% else %}
+                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:600;">
+                    {{ (u.display_name or u.username)[0].upper() }}
+                  </div>
+                  {% endif %}
+                  <span class="fw-semibold">{{ u.display_name or u.username }}</span>
+                </div>
+              </td>
+              <td class="text-center">
+                {% set elig = eligibility_map.get(u.id, {}) %}
+                {% if elig.applicable %}
+                  {% if elig.eligible %}
+                  <span class="badge bg-success">条件達成 ({{ elig.rate }}%)</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">条件未達成 ({{ elig.rate }}% / {{ elig.required }}%必要)</span>
+                  {% endif %}
+                {% else %}
+                <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if u.id in assigned_ids %}<span class="badge bg-success">割当済み</span>{% else %}<span class="text-muted small">-</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3" style="max-width:320px;">
+    <div class="card-body">
+      <label class="form-label fw-semibold small">期限（任意）</label>
+      <input type="date" name="due_date" class="form-control" style="border-radius:10px;">
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary" style="border-radius:20px;padding:.5rem 1.5rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">
+      <i class="bi bi-send me-1"></i>割り当てる
+    </button>
+  </div>
+</form>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-people fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">割り当て可能なメンバーがいません</p>
+</div>
+{% endif %}
+{% endblock %}

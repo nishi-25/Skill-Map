@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}資格マスタ管理 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-patch-check-fill me-2" style="color:#f97316;"></i>資格マスタ管理</h1>
+    <p class="text-muted mb-0 small">ユーザーが選択できる資格の一覧を管理します（{{ items|length }} 件）</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/certifications/members" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-arrow-left me-1"></i>資格マトリクスに戻る
+    </a>
+    <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;"
+            data-bs-toggle="modal" data-bs-target="#addCatalogModal">
+      <i class="bi bi-plus-lg me-1"></i>資格を追加
+    </button>
+  </div>
+</div>
+
+<p class="text-muted small mb-3">
+  <i class="bi bi-info-circle me-1"></i>
+  インポート・エクスポートは <a href="/admin/settings/data">データ管理</a> ページから行えます。
+</p>
+
+{% if items %}
+<div class="mb-3">
+  <div class="input-group" style="max-width:360px;">
+    <span class="input-group-text bg-white" style="border-radius:20px 0 0 20px;border-right:0;"><i class="bi bi-search text-muted"></i></span>
+    <input type="text" id="catalogSearchInput" class="form-control" placeholder="資格名・発行元・カテゴリーで検索"
+           style="border-radius:0 20px 20px 0;border-left:0;" oninput="filterCatalogTable(this.value)">
+  </div>
+  <div class="text-muted small mt-1" id="catalogSearchCount"></div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" style="font-size:.88rem;">
+      <thead class="table-light">
+        <tr>
+          <th style="width:22%;">資格名</th>
+          <th style="width:14%;">発行元</th>
+          <th style="width:14%;">関連カテゴリー</th>
+          <th class="hide-mobile">説明</th>
+          <th class="text-center" style="width:8%;">点数入力</th>
+          <th class="text-center" style="width:8%;">状態</th>
+          <th class="text-end" style="width:120px;">操作</th>
+        </tr>
+      </thead>
+      <tbody id="catalogTableBody">
+        {% for item in items %}
+        <tr style="{% if item.is_archived %}opacity:.55;{% endif %}"
+            data-search="{{ (item.name ~ ' ' ~ (item.issuer or '') ~ ' ' ~ (item.category_name or ''))|lower }}">
+          <td class="fw-semibold">{{ item.name }}</td>
+          <td class="text-muted">{{ item.issuer or '-' }}</td>
+          <td class="text-muted">{{ item.category_name or '-' }}</td>
+          <td class="text-muted small hide-mobile">{{ item.description or '-' }}</td>
+          <td class="text-center">
+            {% if item.has_score %}
+            <span class="badge bg-info text-dark">あり</span>
+            {% else %}
+            <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if item.is_archived %}
+            <span class="badge bg-secondary">無効</span>
+            {% else %}
+            <span class="badge bg-success">有効</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-flex gap-1 justify-content-end">
+              <button type="button" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集"
+                      onclick="openEditCatalogModal({{ item.id }}, '{{ item.name|replace("'", "\\'") }}', '{{ (item.issuer or '')|replace("'", "\\'") }}', '{{ (item.category_name or '')|replace("'", "\\'") }}', '{{ (item.description or '')|replace("'", "\\'")|replace('\n','\\n') }}', {{ 'true' if item.has_score else 'false' }})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="post" action="/certifications/catalog/{{ item.id }}/archive"
+                    onsubmit="return confirm('{{ '有効化' if item.is_archived else '無効化' }}しますか？');">
+                <button type="submit" class="btn btn-xs btn-outline-secondary" style="border-radius:20px;" title="{{ '有効化' if item.is_archived else '無効化' }}">
+                  <i class="bi {{ 'bi-eye' if item.is_archived else 'bi-eye-slash' }}"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-patch-check fs-1 d-block mb-3" style="color:#fed7aa;"></i>
+    <h5>資格マスタが登録されていません</h5>
+    <p class="small">ユーザーが選択できる資格を追加しましょう。</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- 追加モーダル -->
+<div class="modal fade" id="addCatalogModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-plus-lg me-2" style="color:#f97316;"></i>資格を追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/certifications/catalog/new">
+        <div class="modal-body">
+          {% include "_certification_catalog_form_fields.html" %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">追加する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal fade" id="editCatalogModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2" style="color:#f97316;"></i>資格を編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editCatalogForm" method="post">
+        <div class="modal-body">
+          {% with prefix="edit" %}
+          {% include "_certification_catalog_form_fields.html" %}
+          {% endwith %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterCatalogTable(query) {
+  const q = query.trim().toLowerCase();
+  const rows = document.querySelectorAll('#catalogTableBody tr');
+  let visible = 0;
+  rows.forEach(row => {
+    const match = !q || (row.dataset.search || '').includes(q);
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  const countEl = document.getElementById('catalogSearchCount');
+  if (countEl) {
+    countEl.textContent = q ? `${visible} / ${rows.length} 件表示` : '';
+  }
+}
+
+function openEditCatalogModal(id, name, issuer, categoryName, description, hasScore) {
+  const form = document.getElementById('editCatalogForm');
+  form.action = '/certifications/catalog/' + id + '/edit';
+  document.getElementById('edit_cat_name').value = name;
+  document.getElementById('edit_cat_issuer').value = issuer;
+  document.getElementById('edit_cat_category_name').value = categoryName;
+  document.getElementById('edit_cat_description').value = description;
+  document.getElementById('edit_cat_has_score').checked = !!hasScore;
+  new bootstrap.Modal(document.getElementById('editCatalogModal')).show();
+}
+</script>
+{% endblock %}

@@ -211,6 +211,45 @@
 .level-dot.lv-3 { background: #f59e0b; }
 .level-dot.lv-4 { background: #ef4444; }
 
+/* ── Tier Pill Badges (icon + solid color) ── */
+.tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .25rem .7rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+.tier-pill.tier-basic        { background: #f97316; }
+.tier-pill.tier-intermediate { background: #f59e0b; }
+.tier-pill.tier-advanced     { background: #ef4444; }
+
+/* ── Status Pill Badges (soft bg + icon) ── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .25rem .7rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.status-pill.status-required { background: #fee2e2; color: #dc2626; }
+.status-pill.status-reason    { background: #f1f5f9; color: #64748b; }
+
+/* ── Skill name link (dashboard) ── */
+.skill-link {
+  transition: color .15s;
+}
+.skill-link:hover {
+  color: #f97316 !important;
+  text-decoration: underline !important;
+}
+
 /* ── Toast Notifications ── */
 .toast-container {
   position: fixed;
@@ -458,4 +497,48 @@
 }
 .table-skill tbody tr:hover {
   background: rgba(249,115,22,.04);
+}
+
+/* ── Wiki: Markdownレンダリング ── */
+.markdown-body {
+  line-height: 1.75;
+  font-size: .95rem;
+  word-break: break-word;
+}
+.markdown-body h1, .markdown-body h2, .markdown-body h3,
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  font-weight: 700;
+  margin: 1.2em 0 .6em;
+}
+.markdown-body h1 { font-size: 1.6rem; border-bottom: 2px solid #f1f5f9; padding-bottom: .3em; }
+.markdown-body h2 { font-size: 1.35rem; border-bottom: 1px solid #f1f5f9; padding-bottom: .25em; }
+.markdown-body h3 { font-size: 1.15rem; }
+.markdown-body p { margin: 0 0 .8em; }
+.markdown-body ul, .markdown-body ol { margin: 0 0 .8em; padding-left: 1.6em; }
+.markdown-body img { max-width: 100%; border-radius: 8px; margin: .4em 0; }
+.markdown-body pre {
+  background: #f8fafc; border-radius: 8px; padding: .8em 1em;
+  overflow-x: auto; font-size: .85rem;
+}
+.markdown-body code {
+  background: #f1f5f9; border-radius: 4px; padding: .15em .4em; font-size: .85em;
+}
+.markdown-body pre code { background: none; padding: 0; }
+.markdown-body blockquote {
+  border-left: 4px solid #fdba74; margin: 0 0 .8em; padding: .3em 1em;
+  color: #6b7280; background: #fff7ed;
+}
+.markdown-body table { width: 100%; margin-bottom: .8em; border-collapse: collapse; }
+.markdown-body table th, .markdown-body table td {
+  border: 1px solid #e2e8f0; padding: .4em .7em; font-size: .9em;
+}
+.markdown-body table th { background: #f8fafc; }
+.markdown-body a { color: #f97316; }
+
+/* ── Wiki: 編集ツールバー ── */
+.wiki-toolbar .btn { border-radius: 6px; }
+.wiki-editor textarea {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: .88rem;
+  resize: vertical;
 }

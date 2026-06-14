@@ -1,6 +1,6 @@
 from datetime import datetime, date as _date_type
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, Boolean, UniqueConstraint, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Float, ForeignKey, Boolean, UniqueConstraint, Table
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from database import Base
 
@@ -9,12 +9,14 @@ APPROVAL_STATUS = {
     "pending":  "承認待ち",
     "approved": "承認済み",
     "rejected": "差し戻し",
+    "revoke_pending": "取消申請中",
 }
 
 APPROVAL_STATUS_COLORS = {
     "pending":  "warning",
     "approved": "success",
     "rejected": "danger",
+    "revoke_pending": "dark",
 }
 
 # ── ユーザーのスキル自己評価レベル ──────────────────────────────
@@ -36,9 +38,9 @@ LEVEL_COLORS = {
 
 # ── スキルカタログの難易度ティア ────────────────────────────────
 SKILL_TIERS = {
-    "basic":        "基礎",
-    "intermediate": "中級",
-    "advanced":     "上級",
+    "basic":        "C級",
+    "intermediate": "B級",
+    "advanced":     "A級",
 }
 
 TIER_COLORS = {
@@ -47,11 +49,18 @@ TIER_COLORS = {
     "advanced":     "danger",
 }
 
+# Python側でのティア並び替え用（basic < intermediate < advanced）
+TIER_ORDER = {
+    "basic":        0,
+    "intermediate": 1,
+    "advanced":     2,
+}
+
 # ── ティア表示名（カスタマイズ可、DB優先） ──────────────────────
 DEFAULT_TIER_NAMES = {
-    "basic":        "基礎",
-    "intermediate": "中級",
-    "advanced":     "上級",
+    "basic":        "C級",
+    "intermediate": "B級",
+    "advanced":     "A級",
 }
 
 TIER_ICONS = {
@@ -92,6 +101,7 @@ class User(Base):
     avatar_path = Column(String(255), nullable=True)
     suppress_ann_popup = Column(Boolean, default=False)   # お知らせポップアップを非表示にするか
     must_change_password = Column(Boolean, default=False) # 仮パスワードでログイン後の強制変更フラグ
+    nav_pinned_sections = Column(Text, nullable=True)     # ナビゲーターで常時展開するセクション名のJSON配列
     created_at = Column(DateTime, server_default=func.now())
 
     skill_levels = relationship("UserSkillLevel", back_populates="user",
@@ -127,8 +137,6 @@ class Skill(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    # 難易度ティア: beginner / basic / intermediate / advanced
-    tier = Column(String(20), default="basic", nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -142,6 +150,16 @@ class Skill(Base):
     sub_skills = relationship("SubSkill", back_populates="skill",
                               order_by="SubSkill.order_index",
                               cascade="all, delete-orphan")
+
+    @property
+    def tier(self):
+        """サブスキルの難易度ティアの最頻値を代表値として返す（同数なら難度が高い方を優先）"""
+        if not self.sub_skills:
+            return "basic"
+        counts = {}
+        for sub in self.sub_skills:
+            counts[sub.tier] = counts.get(sub.tier, 0) + 1
+        return max(counts, key=lambda t: (counts[t], TIER_ORDER.get(t, 0)))
 
 
 # ─── ユーザーのスキルレベル自己申告 ──────────────────────────────
@@ -412,6 +430,43 @@ class SkillTag(Base):
     skills = relationship("Skill", secondary="skill_tag_associations", back_populates="tags")
 
 
+# ─── 業務マップ ───────────────────────────────────────────────────
+
+class BusinessMapArea(Base):
+    __tablename__ = "business_map_areas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    color = Column(String(20), default="#6366f1")
+    order_index = Column(Integer, default=0)
+    parent_id = Column(Integer, ForeignKey("business_map_areas.id"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    area_sub_skills = relationship("BusinessMapAreaSkill", back_populates="area",
+                                    order_by="BusinessMapAreaSkill.order_index",
+                                    cascade="all, delete-orphan")
+    parent = relationship("BusinessMapArea", remote_side="BusinessMapArea.id",
+                           backref=backref("children", cascade="all, delete-orphan",
+                                            order_by="BusinessMapArea.order_index"),
+                           foreign_keys=[parent_id])
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class BusinessMapAreaSkill(Base):
+    __tablename__ = "business_map_area_skills"
+    __table_args__ = (UniqueConstraint("area_id", "sub_skill_id", name="uq_area_subskill"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    area_id = Column(Integer, ForeignKey("business_map_areas.id", ondelete="CASCADE"), nullable=False)
+    sub_skill_id = Column(Integer, ForeignKey("sub_skills.id", ondelete="CASCADE"), nullable=False)
+    order_index = Column(Integer, default=0)
+
+    area = relationship("BusinessMapArea", back_populates="area_sub_skills")
+    sub_skill = relationship("SubSkill")
+
+
 # ─── サブスキル ───────────────────────────────────────────────────
 
 class SubSkill(Base):
@@ -421,6 +476,8 @@ class SubSkill(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     order_index = Column(Integer, default=0)
+    # 難易度ティア: basic / intermediate / advanced
+    tier = Column(String(20), default="basic", nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -520,4 +577,223 @@ class AdminTodo(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+# ─── 資格情報 ───────────────────────────────────────────────────
+
+class CertificationCatalog(Base):
+    """事前登録された資格マスタ（ユーザーはここから選択して資格情報を登録する）"""
+    __tablename__ = "certification_catalog"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False, unique=True)
+    issuer = Column(String(200), nullable=True)
+    category_name = Column(String(100), nullable=True)  # 関連するスキルカタログのカテゴリ名等
+    description = Column(Text, nullable=True)
+    has_score = Column(Boolean, default=False, nullable=False)  # TOEIC等、点数入力欄を表示するか
+    is_archived = Column(Boolean, default=False, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class Certification(Base):
+    __tablename__ = "certifications"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    catalog_id = Column(Integer, ForeignKey("certification_catalog.id"), nullable=True)
+    name = Column(String(200), nullable=False)
+    issuer = Column(String(200), nullable=True)
+    issued_date = Column(Date, nullable=True)
+    expiry_date = Column(Date, nullable=True)
+    certificate_number = Column(String(100), nullable=True)
+    score = Column(Integer, nullable=True)  # TOEIC等の点数
+    note = Column(Text, nullable=True)
+    file_path = Column(String(500), nullable=True)
+    original_filename = Column(String(255), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    catalog = relationship("CertificationCatalog", foreign_keys=[catalog_id])
+
+
+# ─── 試験機能 ───────────────────────────────────────────────────
+
+QUESTION_TYPES = {"single": "単一選択", "multi": "複数選択"}
+EXAM_ASSIGN_STATUS = {
+    "assigned": "未受験",
+    "in_progress": "受験中",
+    "submitted": "採点待ち",
+    "graded": "完了",
+}
+EXAM_ASSIGN_STATUS_COLORS = {
+    "assigned": "secondary",
+    "in_progress": "warning",
+    "submitted": "info",
+    "graded": "success",
+}
+
+
+class Exam(Base):
+    __tablename__ = "exams"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    exam_type = Column(String(20), nullable=False)  # 旧フィールド（未使用）
+    has_written = Column(Boolean, default=True, nullable=False)    # 学科試験を含むか
+    has_practical = Column(Boolean, default=True, nullable=False)  # 実技試験を含むか
+    time_limit_minutes = Column(Integer, nullable=True)   # 学科のみ
+    pass_score = Column(Integer, nullable=True)           # 学科のみ、合格ライン(%)
+    is_archived = Column(Boolean, default=False, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    # 受験条件: 対象スキルの対象ティアの取得率が required_completion_rate(%) 以上で受験可能
+    target_skill_id = Column(Integer, ForeignKey("skills.id"), nullable=True)
+    target_tier = Column(String(20), nullable=True)            # basic / intermediate / advanced
+    required_completion_rate = Column(Integer, nullable=True)  # 0-100 (%)
+
+    creator = relationship("User", foreign_keys=[created_by])
+    target_skill = relationship("Skill", foreign_keys=[target_skill_id])
+    questions = relationship("ExamQuestion", order_by="ExamQuestion.order_index",
+                              cascade="all, delete-orphan", back_populates="exam")
+    criteria = relationship("ExamCriterion", order_by="ExamCriterion.order_index",
+                             cascade="all, delete-orphan", back_populates="exam")
+    assignments = relationship("ExamAssignment", cascade="all, delete-orphan", back_populates="exam")
+
+
+class ExamQuestion(Base):
+    __tablename__ = "exam_questions"
+
+    id = Column(Integer, primary_key=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False)
+    question_text = Column(Text, nullable=False)
+    question_type = Column(String(20), nullable=False)  # single / multi
+    choices = Column(Text, nullable=False, default="[]")          # JSON配列文字列
+    correct_indices = Column(Text, nullable=False, default="[]")  # JSON配列文字列(0-based)
+    points = Column(Integer, default=1, nullable=False)
+    order_index = Column(Integer, default=0)
+
+    exam = relationship("Exam", back_populates="questions")
+
+
+class ExamCriterion(Base):
+    __tablename__ = "exam_criteria"
+
+    id = Column(Integer, primary_key=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    max_score = Column(Integer, default=10, nullable=False)
+    order_index = Column(Integer, default=0)
+
+    exam = relationship("Exam", back_populates="criteria")
+
+
+class ExamAssignment(Base):
+    __tablename__ = "exam_assignments"
+    __table_args__ = (UniqueConstraint("exam_id", "user_id", name="uq_exam_assignment"),)
+
+    id = Column(Integer, primary_key=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    assigned_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assigned_at = Column(DateTime, server_default=func.now())
+    due_date = Column(Date, nullable=True)
+    status = Column(String(20), default="assigned", nullable=False)
+    started_at = Column(DateTime, nullable=True)
+    written_submitted_at = Column(DateTime, nullable=True)  # 学科部分の提出（実技と分離して受験する場合の進行管理）
+    submitted_at = Column(DateTime, nullable=True)
+    graded_at = Column(DateTime, nullable=True)
+    graded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    score = Column(Float, nullable=True)
+    max_score = Column(Float, nullable=True)
+    passed = Column(Boolean, nullable=True)
+    feedback = Column(Text, nullable=True)
+
+    exam = relationship("Exam", back_populates="assignments")
+    user = relationship("User", foreign_keys=[user_id])
+    assigner = relationship("User", foreign_keys=[assigned_by])
+    grader = relationship("User", foreign_keys=[graded_by])
+    answers = relationship("ExamAnswer", cascade="all, delete-orphan", back_populates="assignment")
+    criterion_scores = relationship("ExamCriterionScore", cascade="all, delete-orphan", back_populates="assignment")
+    evidences = relationship("ExamSubmissionEvidence", cascade="all, delete-orphan", back_populates="assignment")
+
+
+class ExamAnswer(Base):
+    __tablename__ = "exam_answers"
+
+    id = Column(Integer, primary_key=True)
+    assignment_id = Column(Integer, ForeignKey("exam_assignments.id", ondelete="CASCADE"), nullable=False)
+    question_id = Column(Integer, ForeignKey("exam_questions.id", ondelete="CASCADE"), nullable=False)
+    selected_indices = Column(Text, nullable=False, default="[]")  # JSON配列文字列
+    is_correct = Column(Boolean, nullable=True)
+    points_awarded = Column(Float, default=0, nullable=False)
+
+    assignment = relationship("ExamAssignment", back_populates="answers")
+    question = relationship("ExamQuestion")
+
+
+class ExamCriterionScore(Base):
+    __tablename__ = "exam_criterion_scores"
+
+    id = Column(Integer, primary_key=True)
+    assignment_id = Column(Integer, ForeignKey("exam_assignments.id", ondelete="CASCADE"), nullable=False)
+    criterion_id = Column(Integer, ForeignKey("exam_criteria.id", ondelete="CASCADE"), nullable=False)
+    score = Column(Float, nullable=True)
+    comment = Column(Text, nullable=True)
+
+    assignment = relationship("ExamAssignment", back_populates="criterion_scores")
+    criterion = relationship("ExamCriterion")
+
+
+class ExamSubmissionEvidence(Base):
+    __tablename__ = "exam_submission_evidences"
+
+    id = Column(Integer, primary_key=True)
+    assignment_id = Column(Integer, ForeignKey("exam_assignments.id", ondelete="CASCADE"), nullable=False)
+    evidence_type = Column(String(20), nullable=False)  # url / note / file
+    title = Column(String(200), nullable=True)
+    content = Column(Text, nullable=False, default="")
+    file_path = Column(String(500), nullable=True)
+    original_filename = Column(String(255), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    assignment = relationship("ExamAssignment", back_populates="evidences")
+
+
+# ─── Wiki ────────────────────────────────────────────────────
+
+WIKI_EDIT_MODES = {
+    "owner": "作成者のみ編集可",
+    "members": "共有メンバーも編集可",
+}
+
+WIKI_VISIBILITY = {
+    "private": "個人（自分のみ）",
+    "group":   "グループ",
+    "all":     "全体（組織内全員）",
+}
+
+
+class WikiPage(Base):
+    __tablename__ = "wiki_pages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False, default="")
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    visibility = Column(String(20), default="private", nullable=False)  # private / group / all
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    edit_mode = Column(String(20), default="owner", nullable=False)  # owner / members
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    group = relationship("Group")
     creator = relationship("User", foreign_keys=[created_by])

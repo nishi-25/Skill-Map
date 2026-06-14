@@ -59,12 +59,6 @@
         <option value="{{ cat.id }}">{{ cat.name }}</option>
         {% endfor %}
       </select>
-      <select id="filterTier" class="form-select form-select-sm w-auto" onchange="filterSkills()">
-        <option value="">全ティア</option>
-        {% for tk, tv in SKILL_TIERS.items() %}
-        <option value="{{ tk }}">{{ tv }}</option>
-        {% endfor %}
-      </select>
       <select id="filterArchived" class="form-select form-select-sm w-auto" onchange="filterSkills()">
         <option value="active">有効のみ</option>
         <option value="archived">アーカイブのみ</option>
@@ -118,19 +112,12 @@
           <option value="archive">📦 アーカイブ</option>
           <option value="unarchive">📂 アーカイブ解除</option>
           <option value="change_category">🏷️ カテゴリ変更</option>
-          <option value="change_tier">📊 難易度変更</option>
           <option value="delete">🗑️ 削除</option>
         </select>
         <select name="category_id" class="form-select form-select-sm" id="bulkCategorySelect"
                 style="display:none;max-width:160px;border-radius:20px;">
           {% for cat in categories %}
           <option value="{{ cat.id }}">{{ cat.name }}</option>
-          {% endfor %}
-        </select>
-        <select name="tier" class="form-select form-select-sm" id="bulkTierSelect"
-                style="display:none;max-width:140px;border-radius:20px;">
-          {% for tk, tv in SKILL_TIERS.items() %}
-          <option value="{{ tk }}">{{ tv }}</option>
           {% endfor %}
         </select>
         <button type="button" class="btn btn-warning btn-sm fw-semibold"
@@ -159,10 +146,7 @@
           <th style="width:15%;cursor:pointer;" onclick="sortByHeader('cat')" class="sort-th" data-sort="cat">
             カテゴリー <i class="bi bi-arrow-down-up text-muted" id="sort-icon-cat" style="font-size:.7rem;"></i>
           </th>
-          <th style="width:12%;cursor:pointer;" onclick="sortByHeader('tier')" class="sort-th" data-sort="tier" data-i18n="lbl.tier">
-            難易度 <i class="bi bi-arrow-down-up text-muted" id="sort-icon-tier" style="font-size:.7rem;"></i>
-          </th>
-          <th style="width:28%;" class="hide-mobile">説明</th>
+          <th style="width:40%;" class="hide-mobile">説明</th>
           <th style="width:8%;cursor:pointer;" onclick="sortByHeader('count')" class="sort-th text-center" data-sort="count" data-i18n="lbl.declared_count">
             申告数 <i class="bi bi-arrow-down-up text-muted" id="sort-icon-count" style="font-size:.7rem;"></i>
           </th>
@@ -171,7 +155,6 @@
         </tr>
       </thead>
       <tbody>
-        {% set TIER_ORDER = {'basic':0,'intermediate':1,'advanced':2} %}
         {% for s in skills %}
         {% set declared_count = s.user_levels | selectattr('level', 'gt', 0) | list | length %}
         <tr class="skill-row"
@@ -180,8 +163,6 @@
             data-desc="{{ (s.description | lower) if s.description else '' }}"
             data-category-id="{{ s.category_id or '' }}"
             data-cat="{{ s.category.name | lower if s.category else '' }}"
-            data-tier="{{ s.tier }}"
-            data-tier-order="{{ TIER_ORDER.get(s.tier, 0) }}"
             data-count="{{ declared_count }}"
             data-archived="{{ 'true' if s.is_archived is defined and s.is_archived else 'false' }}"
             data-tag-ids="{% if s.tags is defined %}{% for t in s.tags %}{{ t.id }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
@@ -207,11 +188,6 @@
             {% if s.category %}
             <span class="badge" style="background:{{ s.category.color }};font-size:.72rem;">{{ s.category.name }}</span>
             {% else %}<span class="text-muted">-</span>{% endif %}
-          </td>
-          <td>
-            <span class="badge bg-{{ TIER_COLORS[s.tier] }}" style="font-size:.72rem;">
-              {{ SKILL_TIERS[s.tier] }}
-            </span>
           </td>
           <td class="text-muted hide-mobile" style="font-size:.82rem;overflow:hidden;">
             {% if s.description %}
@@ -256,7 +232,7 @@
           </td>
         </tr>
         <tr id="sub-skills-{{ s.id }}" style="display:none;background:#f8fafc;">
-          <td colspan="8" style="padding:.75rem 1.5rem .75rem 3rem;">
+          <td colspan="7" style="padding:.75rem 1.5rem .75rem 3rem;">
             <!-- 既存サブスキル一覧 -->
             {% if s.sub_skills %}
             <ul class="list-unstyled mb-2" id="sub-list-{{ s.id }}" style="font-size:.84rem;">
@@ -266,6 +242,7 @@
                    style="cursor:grab;font-size:.9rem;flex-shrink:0;" title="ドラッグで並び替え"></i>
                 <div class="d-flex align-items-baseline" style="flex:1;min-width:0;gap:.5rem;">
                   <span class="fw-semibold flex-shrink-0">{{ ss.name }}</span>
+                  <span class="tier-pill tier-{{ ss.tier }} flex-shrink-0">{{ SKILL_TIERS[ss.tier] }}</span>
                   {% if ss.description %}
                   <span class="text-muted skill-desc-trunc" data-bs-toggle="tooltip" data-bs-placement="top"
                         title="{{ ss.description }}" style="font-size:.78rem;flex:1;min-width:0;">{{ ss.description }}</span>
@@ -273,7 +250,7 @@
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
                   <button class="btn btn-xs btn-outline-secondary" style="border-radius:16px;padding:.15rem .5rem;font-size:.72rem;"
-                          onclick="openEditSubSkill({{ ss.id }}, '{{ ss.name|e }}', '{{ (ss.description or '')|e }}')">
+                          onclick="openEditSubSkill({{ ss.id }}, '{{ ss.name|e }}', '{{ (ss.description or '')|e }}', '{{ ss.tier }}')">
                     <i class="bi bi-pencil"></i>
                   </button>
                   <form method="post" action="/skills/sub-skills/{{ ss.id }}/delete"
@@ -299,6 +276,14 @@
                 <label class="form-label mb-1" style="font-size:.75rem;color:#64748b;">説明（任意）</label>
                 <input type="text" name="description" class="form-control form-control-sm"
                        placeholder="簡単な説明" style="border-radius:8px;min-width:200px;">
+              </div>
+              <div>
+                <label class="form-label mb-1" style="font-size:.75rem;color:#64748b;">難易度</label>
+                <select name="tier" class="form-select form-select-sm" style="border-radius:8px;">
+                  {% for tk, tv in SKILL_TIERS.items() %}
+                  <option value="{{ tk }}" {% if tk == 'basic' %}selected{% endif %}>{{ tv }}</option>
+                  {% endfor %}
+                </select>
               </div>
               <button type="submit" class="btn btn-sm btn-primary" style="border-radius:20px;">
                 <i class="bi bi-plus-lg me-1"></i>追加
@@ -339,7 +324,6 @@
     const clearBtn = document.getElementById('skillSearchClear');
     if (clearBtn) clearBtn.style.display = searchRaw ? 'block' : 'none';
     const catFilter = document.getElementById('filterCategory').value;
-    const tierFilter = document.getElementById('filterTier').value;
     const archivedFilter = document.getElementById('filterArchived').value;
     const tagFilterEl = document.getElementById('filterTag');
     const tagFilter = tagFilterEl ? tagFilterEl.value : '';
@@ -349,14 +333,12 @@
       const name = row.dataset.name || '';
       const desc = row.dataset.desc || '';
       const catId = row.dataset.categoryId || '';
-      const tier = row.dataset.tier || '';
       const isArchived = row.dataset.archived === 'true';
       const tagIds = (row.dataset.tagIds || '').split(',').filter(Boolean);
 
       let show = true;
       if (search && !name.includes(search) && !desc.includes(search)) show = false;
       if (catFilter && catId !== catFilter) show = false;
-      if (tierFilter && tier !== tierFilter) show = false;
       if (archivedFilter === 'active' && isArchived) show = false;
       if (archivedFilter === 'archived' && !isArchived) show = false;
       if (tagFilter && !tagIds.includes(tagFilter)) show = false;
@@ -388,7 +370,6 @@
   function toggleBulkOptions() {
     const action = document.getElementById('bulkActionSelect').value;
     document.getElementById('bulkCategorySelect').style.display = action === 'change_category' ? '' : 'none';
-    document.getElementById('bulkTierSelect').style.display      = action === 'change_tier'     ? '' : 'none';
   }
 
   function updateBulkBar() {
@@ -420,18 +401,17 @@
   }
 
   /* ══ 複数ソート機能 ══════════════════════════════════════════ */
-  // sortKeys: [{key, dir}, ...] 優先順位順（デフォルト: カテゴリー昇順 → 難易度 易→難）
-  let _sortKeys = [{key: 'cat', dir: 'asc'}, {key: 'tier', dir: 'asc'}];
+  // sortKeys: [{key, dir}, ...] 優先順位順（デフォルト: カテゴリー昇順）
+  let _sortKeys = [{key: 'cat', dir: 'asc'}];
 
   const _SORT_LABELS = {
-    name:  'スキル名', cat: 'カテゴリー', tier: '難易度', count: '申告数'
+    name:  'スキル名', cat: 'カテゴリー', count: '申告数'
   };
 
   function _getVal(row, key) {
     switch (key) {
       case 'name':  return row.dataset.name || '';
       case 'cat':   return row.dataset.cat  || '';
-      case 'tier':  return parseInt(row.dataset.tierOrder  || 0);
       case 'count': return parseInt(row.dataset.count      || 0);
       default:      return '';
     }
@@ -455,7 +435,6 @@
     const options = [
       ['name-asc','スキル名 A→Z'], ['name-desc','スキル名 Z→A'],
       ['cat-asc','カテゴリー 昇順'], ['cat-desc','カテゴリー 降順'],
-      ['tier-asc','難易度 易→難'], ['tier-desc','難易度 難→易'],
       ['count-desc','申告数 多→少'], ['count-asc','申告数 少→多'],
     ];
     const available = options.filter(([v]) => {
@@ -636,6 +615,14 @@
             <label class="form-label fw-semibold small">説明（任意）</label>
             <input type="text" name="description" id="editSubSkillDesc" class="form-control" style="border-radius:10px;">
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">難易度</label>
+            <select name="tier" id="editSubSkillTier" class="form-select" style="border-radius:10px;">
+              {% for tk, tv in SKILL_TIERS.items() %}
+              <option value="{{ tk }}">{{ tv }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
         <div class="modal-footer" style="border-top:none;">
           <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
@@ -646,10 +633,11 @@
   </div>
 </div>
 <script>
-function openEditSubSkill(id, name, desc) {
+function openEditSubSkill(id, name, desc, tier) {
   document.getElementById('editSubSkillForm').action = '/skills/sub-skills/' + id + '/edit';
   document.getElementById('editSubSkillName').value = name;
   document.getElementById('editSubSkillDesc').value = desc;
+  document.getElementById('editSubSkillTier').value = tier;
   new bootstrap.Modal(document.getElementById('editSubSkillModal')).show();
 }
 </script>

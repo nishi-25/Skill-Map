@@ -17,6 +17,44 @@ from routers.groups import _get_all_group_skill_ids
 router = APIRouter()
 
 
+def compute_tier_stats(db, skill_ids=None, user_ids=None, member_multiplier=1):
+    """難易度ティア別の達成状況を SubSkill.tier + UserSubSkillLevel.can_do から集計する。
+
+    skill_ids: 集計対象スキルのID集合（None=全カタログ。空集合なら対象0件）
+    user_ids: 達成数(done)を集計するユーザーのID集合（None=全ユーザー。空集合なら0件）
+    member_multiplier: total（分母）に掛ける人数（グループ/全体集計でメンバー数分に拡大する場合に使用）
+
+    戻り値: {tier_key: {"total": int, "done": int}}
+    """
+    totals = {tk: 0 for tk in models.SKILL_TIERS}
+    sub_q = db.query(models.SubSkill.tier, func.count(models.SubSkill.id))
+    if skill_ids is not None:
+        sub_q = sub_q.filter(models.SubSkill.skill_id.in_(skill_ids)) if skill_ids \
+            else sub_q.filter(models.SubSkill.id.in_([]))
+    for tk, cnt in sub_q.group_by(models.SubSkill.tier).all():
+        if tk in totals:
+            totals[tk] += cnt
+
+    done = {tk: 0 for tk in models.SKILL_TIERS}
+    done_q = (db.query(models.SubSkill.tier, func.count(models.UserSubSkillLevel.id))
+              .join(models.UserSubSkillLevel, models.UserSubSkillLevel.sub_skill_id == models.SubSkill.id)
+              .filter(models.UserSubSkillLevel.can_do == True))
+    if skill_ids is not None:
+        done_q = done_q.filter(models.SubSkill.skill_id.in_(skill_ids)) if skill_ids \
+            else done_q.filter(models.SubSkill.id.in_([]))
+    if user_ids is not None:
+        done_q = done_q.filter(models.UserSubSkillLevel.user_id.in_(user_ids)) if user_ids \
+            else done_q.filter(models.UserSubSkillLevel.user_id.in_([]))
+    for tk, cnt in done_q.group_by(models.SubSkill.tier).all():
+        if tk in done:
+            done[tk] += cnt
+
+    return {
+        tk: {"total": totals[tk] * member_multiplier, "done": done[tk]}
+        for tk in models.SKILL_TIERS
+    }
+
+
 # ════════════════════════════════════════════════════════════════
 # カテゴリー管理（Admin / Manager のみ）
 # ════════════════════════════════════════════════════════════════
@@ -177,7 +215,6 @@ def _get_manager_skill_ids(user, db) -> set:
 def catalog_list(
     request: Request,
     category_id: int = 0,
-    tier: str = "",
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
@@ -190,21 +227,14 @@ def catalog_list(
 
     if category_id:
         q = q.filter(models.Skill.category_id == category_id)
-    if tier:
-        q = q.filter(models.Skill.tier == tier)
 
-    from sqlalchemy import case as _case
-    _tier_order = _case(
-        (models.Skill.tier == "basic",        0),
-        (models.Skill.tier == "intermediate", 1),
-        (models.Skill.tier == "advanced",     2),
-        else_=9,
-    )
     skills = (
         q.outerjoin(models.Category, models.Skill.category_id == models.Category.id)
-         .order_by(models.Category.name.nullslast(), _tier_order, models.Skill.name)
+         .order_by(models.Category.name.nullslast(), models.Skill.name)
          .all()
     )
+
+    skills.sort(key=lambda sk: (sk.category.name if sk.category else "￿"))
 
     # カテゴリもManagerのスコープに絞る
     if user.role == "manager":
@@ -220,7 +250,7 @@ def catalog_list(
     return templates.TemplateResponse(request, "skill_catalog.html", {
         "current_user": user, "skills": skills,
         "categories": categories,
-        "sel_category": category_id, "sel_tier": tier,
+        "sel_category": category_id,
         "all_tags": all_tags,
         "highlight": request.query_params.get("highlight", ""),
     })
@@ -244,7 +274,6 @@ def catalog_new_post(
     name: str = Form(...),
     description: str = Form(""),
     category_id: int = Form(0),
-    tier: str = Form("basic"),
     tag_ids: List[int] = Form(default=[]),
     db: Session = Depends(get_db),
 ):
@@ -253,7 +282,6 @@ def catalog_new_post(
         name=name,
         description=description or None,
         category_id=category_id or None,
-        tier=tier,
         created_by=user.id,
     )
     db.add(skill)
@@ -286,7 +314,6 @@ def catalog_edit_post(
     name: str = Form(...),
     description: str = Form(""),
     category_id: int = Form(0),
-    tier: str = Form("basic"),
     tag_ids: List[int] = Form(default=[]),
     db: Session = Depends(get_db),
 ):
@@ -297,7 +324,6 @@ def catalog_edit_post(
     skill.name = name
     skill.description = description or None
     skill.category_id = category_id or None
-    skill.tier = tier
     # タグの更新
     if tag_ids:
         skill.tags = db.query(models.SkillTag).filter(models.SkillTag.id.in_(tag_ids)).all()
@@ -317,6 +343,12 @@ def catalog_delete(skill_id: int, request: Request, db: Session = Depends(get_db
         db.query(models.SkillLevelHistory).filter(models.SkillLevelHistory.skill_id == skill_id).delete()
         db.query(models.SkillEvidence).filter(models.SkillEvidence.skill_id == skill_id).delete()
         db.query(models.SkillGoal).filter(models.SkillGoal.skill_id == skill_id).delete()
+        # 業務マップへの割り当ても合わせて削除（cascadeが効かないテーブルのため明示削除）
+        sub_skill_ids = [s.id for s in db.query(models.SubSkill.id).filter(models.SubSkill.skill_id == skill_id)]
+        if sub_skill_ids:
+            db.query(models.BusinessMapAreaSkill).filter(
+                models.BusinessMapAreaSkill.sub_skill_id.in_(sub_skill_ids)
+            ).delete(synchronize_session=False)
         # sub_skills は cascade="all, delete-orphan" で自動削除されるが念のため
         db.query(models.SubSkill).filter(models.SubSkill.skill_id == skill_id).delete()
         db.delete(skill)
@@ -393,6 +425,7 @@ def skills_my(
     group_id: int = 0,
     view: str = "",
     view_as: int = 0,
+    area_id: int = 0,
     db: Session = Depends(get_db),
 ):
     user = auth.require_approved(request, db)
@@ -472,9 +505,39 @@ def skills_my(
     q_all = db.query(models.Skill)
     if category_id:
         q_all = q_all.filter(models.Skill.category_id == category_id)
-    all_catalog = q_all.order_by(models.Skill.tier, models.Skill.name).all()
+    all_catalog = q_all.order_by(models.Skill.name).all()
     if group_skill_ids is not None:
         all_catalog = [sk for sk in all_catalog if sk.id in group_skill_ids]
+
+    # 業務マップのエリアでスキルを絞込み
+    business_map_area = None
+    area_subskill_ids: set[int] = set()
+    if area_id:
+        business_map_area = (
+            db.query(models.BusinessMapArea)
+            .filter(models.BusinessMapArea.id == area_id)
+            .first()
+        )
+    if business_map_area is not None:
+        area_subskill_order = {
+            a_sk.sub_skill_id: i for i, a_sk in enumerate(business_map_area.area_sub_skills)
+        }
+        area_subskill_ids = set(area_subskill_order.keys())
+        subs_in_area = (
+            db.query(models.SubSkill).filter(models.SubSkill.id.in_(area_subskill_ids)).all()
+            if area_subskill_ids else []
+        )
+        skill_min_order: dict[int, int] = {}
+        area_skill_ids: set[int] = set()
+        for ss in subs_in_area:
+            area_skill_ids.add(ss.skill_id)
+            o = area_subskill_order[ss.id]
+            if ss.skill_id not in skill_min_order or o < skill_min_order[ss.skill_id]:
+                skill_min_order[ss.skill_id] = o
+        all_catalog = [sk for sk in all_catalog if sk.id in area_skill_ids]
+        all_catalog.sort(key=lambda sk: (skill_min_order.get(sk.id, 0), sk.name))
+    else:
+        all_catalog.sort(key=lambda sk: models.TIER_ORDER.get(sk.tier, 0))
 
     # 対象ユーザーのスキルレベル（全ステータス）
     my_levels = (
@@ -499,7 +562,7 @@ def skills_my(
     }
 
     # ── ティア概要（overview_mode） ──
-    overview_mode = not tier and view != "all"
+    overview_mode = (not tier and view != "all") and business_map_area is None
     tier_summary = {}
     for t_key in tier_order:
         t_skills = [s for s in all_catalog if s.tier == t_key]
@@ -595,6 +658,8 @@ def skills_my(
             .all()
         )
         for ss in all_subs:
+            if business_map_area is not None and ss.id not in area_subskill_ids:
+                continue
             sub_skills_map[ss.skill_id].append(ss)
 
     # ユーザーが「できる」にしているサブスキルIDのセット（一括取得）
@@ -711,6 +776,8 @@ def skills_my(
         "total_set": sum(1 for sk in all_catalog if my_level_map.get(sk.id, 0) > 0),
         "my_groups": my_groups,
         "sel_group": group_id,
+        "business_map_area": business_map_area,
+        "sel_area_id": area_id,
         "overview_mode": overview_mode,
         "tier_summary": tier_summary,
         "TIER_NAMES": tier_names,
@@ -833,7 +900,7 @@ def approvals_list(request: Request, db: Session = Depends(get_db)):
         # Admin: 全ユーザーの全申告を表示
         pending = (
             db.query(models.UserSkillLevel)
-            .filter(models.UserSkillLevel.approval_status == "pending")
+            .filter(models.UserSkillLevel.approval_status.in_(["pending", "revoke_pending"]))
             .order_by(models.UserSkillLevel.updated_at.desc())
             .all()
         )
@@ -850,7 +917,7 @@ def approvals_list(request: Request, db: Session = Depends(get_db)):
             db.query(models.UserSkillLevel)
             .filter(
                 models.UserSkillLevel.approver_id == user.id,
-                models.UserSkillLevel.approval_status == "pending",
+                models.UserSkillLevel.approval_status.in_(["pending", "revoke_pending"]),
             )
             .all()
         )
@@ -889,6 +956,45 @@ def approvals_list(request: Request, db: Session = Depends(get_db)):
     })
 
 
+def _finalize_skill_revoke(record: "models.UserSkillLevel", approver_id: int, db: Session):
+    """取り消し申請を承認: レベルを0に戻し、サブスキルの達成状況もリセットする"""
+    prev_history = (
+        db.query(models.SkillLevelHistory)
+        .filter(
+            models.SkillLevelHistory.user_id == record.user_id,
+            models.SkillLevelHistory.skill_id == record.skill_id,
+        )
+        .order_by(models.SkillLevelHistory.changed_at.desc())
+        .first()
+    )
+    previous_level = prev_history.level if prev_history else record.level
+
+    db.add(models.SkillLevelHistory(
+        user_id=record.user_id,
+        skill_id=record.skill_id,
+        level=0,
+        previous_level=previous_level,
+        approved_by=approver_id,
+    ))
+
+    record.level = 0
+    record.approval_status = "approved"
+    record.approved_at = func.now()
+    record.approver_comment = "取り消し承認"
+    record.override_level = None
+    record.override_reason = None
+
+    sub_skill_ids = [
+        ss.id for ss in
+        db.query(models.SubSkill).filter(models.SubSkill.skill_id == record.skill_id).all()
+    ]
+    if sub_skill_ids:
+        db.query(models.UserSubSkillLevel).filter(
+            models.UserSubSkillLevel.user_id == record.user_id,
+            models.UserSubSkillLevel.sub_skill_id.in_(sub_skill_ids),
+        ).update({"can_do": False}, synchronize_session=False)
+
+
 @router.post("/approvals/{record_id}/approve")
 def approve_skill(
     record_id: int,
@@ -900,36 +1006,39 @@ def approve_skill(
     user = auth.require_manager_or_admin(request, db)
     _q = db.query(models.UserSkillLevel).filter(
         models.UserSkillLevel.id == record_id,
-        models.UserSkillLevel.approval_status == "pending",
+        models.UserSkillLevel.approval_status.in_(["pending", "revoke_pending"]),
     )
     if user.role != "admin":
         _q = _q.filter(models.UserSkillLevel.approver_id == user.id)
     record = _q.first()
     if record:
-        # 承認前のレベルを取得（履歴用）
-        prev_history = (
-            db.query(models.SkillLevelHistory)
-            .filter(
-                models.SkillLevelHistory.user_id == record.user_id,
-                models.SkillLevelHistory.skill_id == record.skill_id,
+        if record.approval_status == "revoke_pending":
+            _finalize_skill_revoke(record, user.id, db)
+        else:
+            # 承認前のレベルを取得（履歴用）
+            prev_history = (
+                db.query(models.SkillLevelHistory)
+                .filter(
+                    models.SkillLevelHistory.user_id == record.user_id,
+                    models.SkillLevelHistory.skill_id == record.skill_id,
+                )
+                .order_by(models.SkillLevelHistory.changed_at.desc())
+                .first()
             )
-            .order_by(models.SkillLevelHistory.changed_at.desc())
-            .first()
-        )
-        previous_level = prev_history.level if prev_history else 0
+            previous_level = prev_history.level if prev_history else 0
 
-        record.approval_status = "approved"
-        record.approved_at = func.now()
-        record.approver_comment = comment or None
+            record.approval_status = "approved"
+            record.approved_at = func.now()
+            record.approver_comment = comment or None
 
-        # 承認履歴を記録
-        db.add(models.SkillLevelHistory(
-            user_id=record.user_id,
-            skill_id=record.skill_id,
-            level=record.level,
-            previous_level=previous_level,
-            approved_by=user.id,
-        ))
+            # 承認履歴を記録
+            db.add(models.SkillLevelHistory(
+                user_id=record.user_id,
+                skill_id=record.skill_id,
+                level=record.level,
+                previous_level=previous_level,
+                approved_by=user.id,
+            ))
         db.commit()
     return RedirectResponse("/approvals", status_code=303)
 
@@ -941,19 +1050,24 @@ def reject_skill(
     comment: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """スキルレベルを差し戻す。Admin は承認者に関係なく全申告を差し戻し可能。"""
+    """スキルレベルを差し戻す。取り消し申請の場合は却下し承認済みの状態に戻す。
+    Admin は承認者に関係なく全申告を差し戻し可能。"""
     user = auth.require_manager_or_admin(request, db)
     _rq = db.query(models.UserSkillLevel).filter(
         models.UserSkillLevel.id == record_id,
-        models.UserSkillLevel.approval_status == "pending",
+        models.UserSkillLevel.approval_status.in_(["pending", "revoke_pending"]),
     )
     if user.role != "admin":
         _rq = _rq.filter(models.UserSkillLevel.approver_id == user.id)
     record = _rq.first()
     if record:
-        record.approval_status = "rejected"
-        record.approved_at = func.now()
-        record.approver_comment = comment or None
+        if record.approval_status == "revoke_pending":
+            record.approval_status = "approved"
+            record.approver_comment = comment or None
+        else:
+            record.approval_status = "rejected"
+            record.approved_at = func.now()
+            record.approver_comment = comment or None
         db.commit()
     return RedirectResponse("/approvals", status_code=303)
 
@@ -1025,7 +1139,7 @@ def bulk_approval_action(
 
     q = db.query(models.UserSkillLevel).filter(
         models.UserSkillLevel.id.in_(record_ids),
-        models.UserSkillLevel.approval_status == "pending",
+        models.UserSkillLevel.approval_status.in_(["pending", "revoke_pending"]),
     )
     # Admin は全件対象、Manager は自分が承認者のもののみ
     if user.role != "admin":
@@ -1035,30 +1149,37 @@ def bulk_approval_action(
     processed = 0
     for record in records:
         if action == "approve":
-            prev_history = (
-                db.query(models.SkillLevelHistory)
-                .filter(
-                    models.SkillLevelHistory.user_id == record.user_id,
-                    models.SkillLevelHistory.skill_id == record.skill_id,
+            if record.approval_status == "revoke_pending":
+                _finalize_skill_revoke(record, user.id, db)
+            else:
+                prev_history = (
+                    db.query(models.SkillLevelHistory)
+                    .filter(
+                        models.SkillLevelHistory.user_id == record.user_id,
+                        models.SkillLevelHistory.skill_id == record.skill_id,
+                    )
+                    .order_by(models.SkillLevelHistory.changed_at.desc())
+                    .first()
                 )
-                .order_by(models.SkillLevelHistory.changed_at.desc())
-                .first()
-            )
-            previous_level = prev_history.level if prev_history else 0
-            record.approval_status = "approved"
-            record.approved_at = func.now()
-            record.approver_comment = comment or None
-            db.add(models.SkillLevelHistory(
-                user_id=record.user_id,
-                skill_id=record.skill_id,
-                level=record.level,
-                previous_level=previous_level,
-                approved_by=user.id,
-            ))
+                previous_level = prev_history.level if prev_history else 0
+                record.approval_status = "approved"
+                record.approved_at = func.now()
+                record.approver_comment = comment or None
+                db.add(models.SkillLevelHistory(
+                    user_id=record.user_id,
+                    skill_id=record.skill_id,
+                    level=record.level,
+                    previous_level=previous_level,
+                    approved_by=user.id,
+                ))
         else:
-            record.approval_status = "rejected"
-            record.approved_at = func.now()
-            record.approver_comment = comment or None
+            if record.approval_status == "revoke_pending":
+                record.approval_status = "approved"
+                record.approver_comment = comment or None
+            else:
+                record.approval_status = "rejected"
+                record.approved_at = func.now()
+                record.approver_comment = comment or None
         processed += 1
 
     db.commit()
@@ -1330,6 +1451,54 @@ def withdraw_my_approval(record_id: int, request: Request, db: Session = Depends
     return JSONResponse({"ok": True})
 
 
+@router.post("/api/skills/{skill_id}/request-revoke")
+def request_revoke_skill(
+    skill_id: int,
+    request: Request,
+    reason: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """承認済みスキルの取り消し申請を行う（一般ユーザー向け）"""
+    user = auth.require_approved(request, db)
+    rec = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.skill_id == skill_id,
+            models.UserSkillLevel.approval_status == "approved",
+            models.UserSkillLevel.level > 0,
+        )
+        .first()
+    )
+    if not rec:
+        return JSONResponse({"ok": False, "error": "取り消し申請可能な承認済みスキルが見つかりません"}, status_code=404)
+    rec.approval_status = "revoke_pending"
+    rec.approver_comment = reason.strip() or None
+    db.commit()
+    return JSONResponse({"ok": True, "approval_status": "revoke_pending"})
+
+
+@router.post("/api/skills/{skill_id}/cancel-revoke")
+def cancel_revoke_skill(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    """取り消し申請を取り下げ、承認済みの状態に戻す"""
+    user = auth.require_approved(request, db)
+    rec = (
+        db.query(models.UserSkillLevel)
+        .filter(
+            models.UserSkillLevel.user_id == user.id,
+            models.UserSkillLevel.skill_id == skill_id,
+            models.UserSkillLevel.approval_status == "revoke_pending",
+        )
+        .first()
+    )
+    if not rec:
+        return JSONResponse({"ok": False, "error": "取り下げ可能な取り消し申請が見つかりません"}, status_code=404)
+    rec.approval_status = "approved"
+    rec.approver_comment = None
+    db.commit()
+    return JSONResponse({"ok": True, "approval_status": "approved"})
+
+
 # ════════════════════════════════════════════════════════════════
 # スキル申告フロー再設計（案5）
 # ════════════════════════════════════════════════════════════════
@@ -1351,7 +1520,7 @@ def calc_level_from_ratio(done: int, total: int) -> int:
 
 
 @router.get("/api/skills/{skill_id}/panel")
-def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, db: Session = Depends(get_db)):
+def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, area_id: int = 0, db: Session = Depends(get_db)):
     """2ペインUI用：右ペインに必要なデータをJSONで返す。view_as で代理閲覧対応。"""
     from fastapi.responses import JSONResponse as _JSONResponse
     user = auth.require_approved(request, db)
@@ -1386,6 +1555,11 @@ def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, db: Sessi
         .order_by(models.SubSkill.order_index)
         .all()
     )
+    if area_id:
+        area = db.query(models.BusinessMapArea).filter(models.BusinessMapArea.id == area_id).first()
+        if area:
+            allowed = {a_sk.sub_skill_id for a_sk in area.area_sub_skills}
+            sub_skills = [ss for ss in sub_skills if ss.id in allowed]
 
     done_ids: set[int] = set()
     if sub_skills:
@@ -1442,6 +1616,7 @@ def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, db: Sessi
         models.SkillGoal.skill_id == skill_id,
     ).first()
     is_proxy = panel_user.id != user.id
+    tier_names = models.get_tier_display_names(db)
 
     return _JSONResponse({
         "skill": {
@@ -1449,12 +1624,17 @@ def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, db: Sessi
             "name": skill.name,
             "description": skill.description or "",
             "tier": skill.tier,
-            "tier_name": models.DEFAULT_TIER_NAMES.get(skill.tier, skill.tier),
+            "tier_name": tier_names.get(skill.tier, skill.tier),
             "category_name": skill.category.name if skill.category else "",
             "category_color": skill.category.color if skill.category else "#999",
         },
         "sub_skills": [
-            {"id": ss.id, "name": ss.name, "description": ss.description or "", "done": ss.id in done_ids}
+            {
+                "id": ss.id, "name": ss.name, "description": ss.description or "",
+                "done": ss.id in done_ids,
+                "tier": ss.tier,
+                "tier_name": tier_names.get(ss.tier, ss.tier),
+            }
             for ss in sub_skills
         ],
         "current_level": current_usl.level if current_usl else 0,
@@ -1913,11 +2093,7 @@ def api_dashboard_stats(request: Request, db: Session = Depends(get_db)):
     for n in cat_stats:
         cat_avg[n] = round(cat_stats[n] / cat_counts[n], 1) if cat_counts[n] else 0
 
-    tier_stats = {}
-    for tk in models.SKILL_TIERS:
-        tier_total = db.query(models.Skill).filter(models.Skill.tier == tk).count()
-        tier_done = sum(1 for sl in my_levels if sl.skill.tier == tk and sl.level > 0)
-        tier_stats[tk] = {"total": tier_total, "done": tier_done}
+    tier_stats = compute_tier_stats(db, user_ids=[user.id])
 
     return JSONResponse({
         "total": total,
@@ -2049,10 +2225,16 @@ def skill_matrix(
             if any(level_map.get((u.id, sk.id), 0) > 0 for u in users)
         )
         total = len(cat_skills)
+        # 専門人材数（Lv3以上の申告延べ数）
+        experts = sum(
+            1 for sk in cat_skills for u in users
+            if level_map.get((u.id, sk.id), 0) >= 3
+        )
         cat_coverage[cat.name] = {
             "covered": covered,
             "total": total,
             "pct": int(covered / total * 100) if total else 0,
+            "experts": experts,
         }
 
     # 2) レベル分布（ドーナツ用）
@@ -2217,11 +2399,7 @@ def member_skill_detail(
         level_dist[sl.level] += 1
 
     # ティア別
-    tier_stats = {}
-    for tier_key in models.SKILL_TIERS:
-        tier_catalog = db.query(models.Skill).filter(models.Skill.tier == tier_key).count()
-        tier_done = sum(1 for sl in skill_levels if sl.skill.tier == tier_key and sl.level > 0)
-        tier_stats[tier_key] = {"total": tier_catalog, "done": tier_done}
+    tier_stats = compute_tier_stats(db, user_ids=[target.id])
 
     # 所属グループ
     user_groups = (db.query(models.Group)
@@ -2259,6 +2437,7 @@ def member_skill_detail(
 def skill_timeline(
     request: Request,
     user_id: int = 0,
+    page: int = 1,
     db: Session = Depends(get_db),
 ):
     """スキルの成長を時系列で確認"""
@@ -2324,9 +2503,37 @@ def skill_timeline(
             "level": rec.level,
         })
 
-    # 成長サマリー
+    # 全体平均レベルの推移
+    overall_avg_timeline: list = []
+    _current_levels_map: dict = {}
+    for rec in history:
+        _current_levels_map[rec.skill_id] = rec.level
+        _avg = sum(_current_levels_map.values()) / len(_current_levels_map)
+        overall_avg_timeline.append({
+            "date": (rec.changed_at + timedelta(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
+            "avg": round(_avg, 2),
+        })
+
+    # 達成マイルストーン（指導可Lv3・エキスパートLv4への初到達）
+    milestones: list = []
+    for rec in history:
+        prev = rec.previous_level or 0
+        if prev < 3 <= rec.level or prev < 4 <= rec.level:
+            milestones.append({
+                "date": (rec.changed_at + timedelta(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
+                "skill_name": rec.skill.name,
+                "category_name": rec.skill.category.name if rec.skill.category else None,
+                "level": rec.level,
+            })
+    milestones.reverse()
+
+    # 成長サマリー（履歴はページネーションで全件表示）
     growth_count = sum(1 for r in history if (r.previous_level or 0) < r.level)
-    recent_history = list(reversed(history[-20:]))
+    PAGE_SIZE = 20
+    total_pages = max(1, (len(history) + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(1, min(page, total_pages))
+    history_desc = list(reversed(history))
+    recent_history = history_desc[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
 
     return templates.TemplateResponse(request, "skill_timeline.html", {
         "current_user": current_user,
@@ -2336,9 +2543,13 @@ def skill_timeline(
         "current_levels": current_levels,
         "cat_timeline": cat_timeline,
         "skill_timeline": skill_timeline,
+        "overall_avg_timeline": overall_avg_timeline,
+        "milestones": milestones,
         "growth_count": growth_count,
         "total_changes": len(history),
         "is_privileged": is_privileged,
+        "page": page,
+        "total_pages": total_pages,
     })
 
 
@@ -2427,7 +2638,6 @@ def skills_bulk_action(
     skill_ids: List[int] = Form(default=[]),
     action: str = Form(default=""),
     category_id: Optional[int] = Form(default=None),
-    tier: Optional[str] = Form(default=None),
     tag_id: Optional[int] = Form(default=None),
     db: Session = Depends(get_db),
 ):
@@ -2446,9 +2656,6 @@ def skills_bulk_action(
     elif action == "change_category" and category_id is not None:
         for skill in skills:
             skill.category_id = category_id or None
-    elif action == "change_tier" and tier:
-        for skill in skills:
-            skill.tier = tier
     elif action == "add_tag" and tag_id is not None:
         tag = db.query(models.SkillTag).filter(models.SkillTag.id == tag_id).first()
         if tag:
@@ -2493,6 +2700,7 @@ def skills_bulk_action(
 @router.post("/skills/{skill_id}/sub-skills/add")
 def sub_skill_add(skill_id: int, request: Request,
                   name: str = Form(...), description: str = Form(""),
+                  tier: str = Form("basic"),
                   db: Session = Depends(get_db)):
     user = auth.require_manager_or_admin(request, db)
     skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
@@ -2504,6 +2712,7 @@ def sub_skill_add(skill_id: int, request: Request,
         skill_id=skill_id, name=name.strip(),
         description=description.strip() or None,
         order_index=max_order + 1,
+        tier=tier if tier in models.SKILL_TIERS else "basic",
         created_by=user.id,
     ))
     db.commit()
@@ -2515,6 +2724,8 @@ def sub_skill_delete(sub_id: int, request: Request, db: Session = Depends(get_db
     auth.require_manager_or_admin(request, db)
     ss = db.query(models.SubSkill).filter(models.SubSkill.id == sub_id).first()
     if ss:
+        # 業務マップへの割り当ても合わせて削除（cascadeが効かないテーブルのため明示削除）
+        db.query(models.BusinessMapAreaSkill).filter(models.BusinessMapAreaSkill.sub_skill_id == sub_id).delete()
         db.delete(ss)
         db.commit()
     return RedirectResponse(f"/skills/catalog?highlight={ss.skill_id if ss else ''}", status_code=303)
@@ -2523,12 +2734,14 @@ def sub_skill_delete(sub_id: int, request: Request, db: Session = Depends(get_db
 @router.post("/skills/sub-skills/{sub_id}/edit")
 def sub_skill_edit(sub_id: int, request: Request,
                    name: str = Form(...), description: str = Form(""),
+                   tier: str = Form("basic"),
                    db: Session = Depends(get_db)):
     auth.require_manager_or_admin(request, db)
     ss = db.query(models.SubSkill).filter(models.SubSkill.id == sub_id).first()
     if ss:
         ss.name = name.strip()
         ss.description = description.strip() or None
+        ss.tier = tier if tier in models.SKILL_TIERS else "basic"
         db.commit()
     return RedirectResponse(f"/skills/catalog?highlight={ss.skill_id if ss else ''}", status_code=303)
 
@@ -2656,51 +2869,224 @@ def _award_badges(user_id: int, db) -> list:
 # 一括エクスポート / インポート（カテゴリ + スキル + サブスキル）
 # ════════════════════════════════════════════════════════════════
 
+# 一括エクスポート/インポートで使用する各エンティティのフィールド定義
+_BULK_CATEGORY_FIELDS = ["id", "name", "color", "description"]
+_BULK_SKILL_FIELDS = ["id", "name", "description", "category_name"]
+_BULK_SUBSKILL_FIELDS = ["skill_id", "skill_name", "name", "description", "order_index", "tier"]
+_BULK_INT_FIELDS = {"id", "skill_id", "order_index"}
+_BULK_FIELD_MAP = {
+    "categories": _BULK_CATEGORY_FIELDS,
+    "skills": _BULK_SKILL_FIELDS,
+    "sub_skills": _BULK_SUBSKILL_FIELDS,
+}
+
+# インポートのテンプレート / 入力例として表示するサンプルデータ
+_BULK_TEMPLATE_DATA = {
+    "categories": [
+        {"id": "", "name": "プログラミング", "color": "#6366f1", "description": "プログラミング言語・開発に関するスキルのカテゴリ"},
+    ],
+    "skills": [
+        {"id": 1, "name": "Python", "description": "Pythonによるプログラミングスキル", "category_name": "プログラミング"},
+    ],
+    "sub_skills": [
+        {"skill_id": 1, "skill_name": "Python", "name": "変数とデータ型の基本操作",
+         "description": "変数の宣言、int・str・list等の基本的なデータ型を扱える", "order_index": 1, "tier": "basic"},
+        {"skill_id": 1, "skill_name": "Python", "name": "関数・モジュールの作成",
+         "description": "defによる関数定義、モジュール分割ができる", "order_index": 2, "tier": "intermediate"},
+        {"skill_id": 1, "skill_name": "Python", "name": "デコレータ・非同期処理",
+         "description": "デコレータやasync/awaitを使った高度な実装ができる", "order_index": 3, "tier": "advanced"},
+    ],
+}
+
+
+def _bulk_xlsx_bytes(data: dict) -> bytes:
+    """カテゴリ・スキル・サブスキルのデータをExcelワークブックのbytesに変換"""
+    from openpyxl import Workbook
+    wb = Workbook()
+    wb.remove(wb.active)
+    for key, fields in _BULK_FIELD_MAP.items():
+        if key not in data:
+            continue
+        ws = wb.create_sheet(title=key)
+        ws.append(fields)
+        for row in data[key]:
+            ws.append([row.get(f, "") for f in fields])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def _bulk_csv_bytes(data: dict, key: str) -> bytes:
+    """カテゴリ・スキル・サブスキルのうち1エンティティ分をCSVのbytesに変換"""
+    fields = _BULK_FIELD_MAP[key]
+    out = io.StringIO()
+    out.write("﻿")
+    writer = csv.writer(out)
+    writer.writerow(fields)
+    for row in data.get(key, []):
+        writer.writerow([row.get(f, "") for f in fields])
+    return out.getvalue().encode("utf-8")
+
+
+def _bulk_zip_bytes(data: dict, keys: list[str]) -> bytes:
+    """複数エンティティを `{エンティティ名}.csv` にまとめたZIPのbytesに変換"""
+    import zipfile as _zipfile
+    buf = io.BytesIO()
+    with _zipfile.ZipFile(buf, "w", _zipfile.ZIP_DEFLATED) as zf:
+        for key in keys:
+            zf.writestr(f"{key}.csv", _bulk_csv_bytes(data, key))
+    return buf.getvalue()
+
+
 @router.get("/skills/bulk-export")
-def bulk_export(request: Request, db: Session = Depends(get_db)):
-    """カテゴリ・スキルカタログ・サブスキルを1つのJSONファイルで一括エクスポート"""
-    from fastapi.responses import Response as _Response
+def bulk_export(
+    request: Request,
+    format: str = "json",
+    categories: int = 1,
+    skills: int = 1,
+    sub_skills: int = 1,
+    db: Session = Depends(get_db),
+):
+    """カテゴリ・スキル・サブスキルを選択した形式・範囲で一括エクスポート"""
+    from fastapi.responses import Response as _Response, StreamingResponse as _StreamingResponse
     import json as _json
+    import io as _io
     from datetime import datetime as _dt
     auth.require_manager_or_admin(request, db)
 
-    cats = db.query(models.Category).order_by(models.Category.name).all()
-    skills = db.query(models.Skill).filter(models.Skill.is_archived == False).order_by(models.Skill.id).all()
-    sub_skills = db.query(models.SubSkill).order_by(models.SubSkill.skill_id, models.SubSkill.order_index).all()
+    include_categories = bool(categories)
+    include_skills = bool(skills)
+    include_sub_skills = bool(sub_skills)
+    if not (include_categories or include_skills or include_sub_skills):
+        include_categories = include_skills = include_sub_skills = True
 
-    data = {
-        "exported_at": _dt.now().isoformat(),
-        "categories": [
+    data: dict = {"exported_at": _dt.now().isoformat()}
+
+    if include_categories:
+        cats = db.query(models.Category).order_by(models.Category.name).all()
+        data["categories"] = [
             {"id": c.id, "name": c.name, "color": c.color, "description": c.description or ""}
             for c in cats
-        ],
-        "skills": [
+        ]
+    if include_skills:
+        sk_list = db.query(models.Skill).filter(models.Skill.is_archived == False).order_by(models.Skill.id).all()
+        data["skills"] = [
             {
                 "id": sk.id,
                 "name": sk.name,
                 "description": sk.description or "",
-                "tier": sk.tier,
                 "category_name": sk.category.name if sk.category else "",
             }
-            for sk in skills
-        ],
-        "sub_skills": [
+            for sk in sk_list
+        ]
+    if include_sub_skills:
+        ss_list = db.query(models.SubSkill).order_by(models.SubSkill.skill_id, models.SubSkill.order_index).all()
+        data["sub_skills"] = [
             {
                 "skill_id": ss.skill_id,
                 "skill_name": ss.skill.name if ss.skill else "",
                 "name": ss.name,
                 "description": ss.description or "",
                 "order_index": ss.order_index,
+                "tier": ss.tier,
             }
-            for ss in sub_skills
-        ],
-    }
+            for ss in ss_list
+        ]
+
+    date_str = _dt.now().strftime("%Y%m%d")
+
+    if format == "xlsx":
+        buf = _io.BytesIO(_bulk_xlsx_bytes(data))
+        filename = f"skillmap_bulk_{date_str}.xlsx"
+        return _StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+
+    if format == "csv":
+        selected = [k for k in _BULK_FIELD_MAP if k in data]
+        if len(selected) == 1:
+            key = selected[0]
+            filename = f"skillmap_{key}_{date_str}.csv"
+            return _Response(
+                content=_bulk_csv_bytes(data, key),
+                media_type="text/csv; charset=utf-8-sig",
+                headers={"Content-Disposition": f"attachment; filename={filename}"},
+            )
+
+        buf = _io.BytesIO(_bulk_zip_bytes(data, selected))
+        filename = f"skillmap_bulk_{date_str}.zip"
+        return _StreamingResponse(
+            buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
 
     body = _json.dumps(data, ensure_ascii=False, indent=2)
-    filename = f"skillmap_bulk_{_dt.now().strftime('%Y%m%d')}.json"
+    filename = f"skillmap_bulk_{date_str}.json"
     return _Response(
         content=body.encode("utf-8"),
         media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/skills/bulk-import-template")
+def bulk_import_template(
+    request: Request,
+    format: str = "xlsx",
+    categories: int = 1,
+    skills: int = 1,
+    sub_skills: int = 1,
+    db: Session = Depends(get_db),
+):
+    """\u4e00\u62ec\u30a4\u30f3\u30dd\u30fc\u30c8\u7528\u306e\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\uff08\u30d8\u30c3\u30c0\u30fc\uff0b\u5165\u529b\u4f8b\uff09\u3092\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9"""
+    from fastapi.responses import Response as _Response, StreamingResponse as _StreamingResponse
+    import io as _io
+    from datetime import datetime as _dt
+    auth.require_manager_or_admin(request, db)
+
+    include_categories = bool(categories)
+    include_skills = bool(skills)
+    include_sub_skills = bool(sub_skills)
+    if not (include_categories or include_skills or include_sub_skills):
+        include_categories = include_skills = include_sub_skills = True
+
+    data: dict = {}
+    if include_categories:
+        data["categories"] = _BULK_TEMPLATE_DATA["categories"]
+    if include_skills:
+        data["skills"] = _BULK_TEMPLATE_DATA["skills"]
+    if include_sub_skills:
+        data["sub_skills"] = _BULK_TEMPLATE_DATA["sub_skills"]
+
+    date_str = _dt.now().strftime("%Y%m%d")
+
+    if format == "csv":
+        selected = [k for k in _BULK_FIELD_MAP if k in data]
+        if len(selected) == 1:
+            key = selected[0]
+            filename = f"skillmap_template_{key}_{date_str}.csv"
+            return _Response(
+                content=_bulk_csv_bytes(data, key),
+                media_type="text/csv; charset=utf-8-sig",
+                headers={"Content-Disposition": f"attachment; filename={filename}"},
+            )
+
+        buf = _io.BytesIO(_bulk_zip_bytes(data, selected))
+        filename = f"skillmap_template_{date_str}.zip"
+        return _StreamingResponse(
+            buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+
+    buf = _io.BytesIO(_bulk_xlsx_bytes(data))
+    filename = f"skillmap_template_{date_str}.xlsx"
+    return _StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
@@ -2775,12 +3161,17 @@ def _apply_bulk_import(data: dict, db: Session, mode: str = "add") -> dict:
         cat_name = (sk.get("category_name") or "").strip()
         cat_id = cat_name_to_id.get(cat_name)
         if not cat_id and cat_name:
-            # カテゴリが存在しない場合は新規作成
-            new_cat = models.Category(name=cat_name, color="#6366f1")
-            db.add(new_cat)
-            db.flush()
-            cat_name_to_id[cat_name] = new_cat.id
-            cat_id = new_cat.id
+            # cat_name_to_id はインポートデータ内のcategoriesのみから構築されるため、
+            # スキル単体インポート時はDB側の既存カテゴリも確認する
+            existing_cat = db.query(models.Category).filter(models.Category.name == cat_name).first()
+            if existing_cat:
+                cat_id = existing_cat.id
+            else:
+                new_cat = models.Category(name=cat_name, color="#6366f1")
+                db.add(new_cat)
+                db.flush()
+                cat_id = new_cat.id
+            cat_name_to_id[cat_name] = cat_id
 
         existing = db.query(models.Skill).filter(models.Skill.name == name).first()
         if existing:
@@ -2790,7 +3181,6 @@ def _apply_bulk_import(data: dict, db: Session, mode: str = "add") -> dict:
             new_skill = models.Skill(
                 name=name,
                 description=sk.get("description") or None,
-                tier=sk.get("tier") or "basic",
                 category_id=cat_id,
             )
             db.add(new_skill)
@@ -2817,11 +3207,13 @@ def _apply_bulk_import(data: dict, db: Session, mode: str = "add") -> dict:
         if existing_ss:
             skipped_subs += 1
         else:
+            ss_tier = ss.get("tier") or "basic"
             db.add(models.SubSkill(
                 skill_id=new_skill_id,
                 name=ss_name,
                 description=ss.get("description") or None,
                 order_index=ss.get("order_index", 0),
+                tier=ss_tier if ss_tier in models.SKILL_TIERS else "basic",
             ))
             added_subs += 1
 
@@ -2836,17 +3228,117 @@ def _apply_bulk_import(data: dict, db: Session, mode: str = "add") -> dict:
     }
 
 
+def _bulk_row_value(field: str, raw):
+    """CSV/Excelの1セルを一括インポート用のdictの値に変換する"""
+    if raw is None:
+        raw = ""
+    if isinstance(raw, str):
+        raw = raw.strip()
+    if field in _BULK_INT_FIELDS:
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
+            return 0
+    return raw
+
+
+def _bulk_rows_to_items(headers: list[str], rows) -> list[dict]:
+    headers = [(h or "").strip() for h in headers]
+    items = []
+    for row in rows:
+        if all((c is None or str(c).strip() == "") for c in row):
+            continue
+        item = {}
+        for h, v in zip(headers, row):
+            if not h:
+                continue
+            item[h] = _bulk_row_value(h, v)
+        items.append(item)
+    return items
+
+
+def _parse_bulk_xlsx(content: bytes) -> dict:
+    """一括エクスポートExcelファイル（シート名=categories/skills/sub_skills）を辞書に変換"""
+    from openpyxl import load_workbook
+    wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+    data: dict = {}
+    for key in _BULK_FIELD_MAP:
+        if key not in wb.sheetnames:
+            continue
+        rows = list(wb[key].iter_rows(values_only=True))
+        if not rows:
+            continue
+        data[key] = _bulk_rows_to_items(list(rows[0]), rows[1:])
+    return data
+
+
+def _parse_bulk_csv_rows(content: bytes):
+    reader = csv.reader(io.StringIO(content.decode("utf-8-sig")))
+    rows = list(reader)
+    if not rows:
+        return [], []
+    return rows[0], rows[1:]
+
+
+def _detect_bulk_csv_key(headers: list[str]) -> Optional[str]:
+    hs = {(h or "").strip() for h in headers}
+    if "skill_id" in hs:
+        return "sub_skills"
+    if "color" in hs:
+        return "categories"
+    if "category_name" in hs:
+        return "skills"
+    return None
+
+
+def _parse_bulk_csv(content: bytes, filename: str = "") -> dict:
+    """単一エンティティ分の一括エクスポートCSVファイルを辞書に変換"""
+    headers, rows = _parse_bulk_csv_rows(content)
+    key = _detect_bulk_csv_key(headers)
+    if not key:
+        filename = filename.lower()
+        for cand in _BULK_FIELD_MAP:
+            if cand in filename:
+                key = cand
+                break
+    if not key:
+        return {}
+    return {key: _bulk_rows_to_items(headers, rows)}
+
+
+def _parse_bulk_zip(content: bytes) -> dict:
+    """複数CSV（categories.csv / skills.csv / sub_skills.csv）を含むZIPを辞書に変換"""
+    import zipfile as _zipfile
+    data: dict = {}
+    with _zipfile.ZipFile(io.BytesIO(content)) as zf:
+        for name in zf.namelist():
+            base = name.rsplit("/", 1)[-1]
+            for key in _BULK_FIELD_MAP:
+                if base.lower().startswith(key):
+                    headers, rows = _parse_bulk_csv_rows(zf.read(name))
+                    if headers:
+                        data[key] = _bulk_rows_to_items(headers, rows)
+                    break
+    return data
+
+
 @router.post("/skills/bulk-import")
 async def bulk_import(
     request: Request,
     file: UploadFile = File(...),
     mode: str = Form(default="add"),
+    import_categories: str = Form(default="1"),
+    import_skills: str = Form(default="1"),
+    import_sub_skills: str = Form(default="1"),
     db: Session = Depends(get_db),
 ):
-    """一括エクスポートJSONファイルからカテゴリ・スキル・サブスキルを一括インポート
+    """一括エクスポートファイル（JSON/Excel/CSV/ZIP）からカテゴリ・スキル・サブスキルを一括インポート
 
     mode="add": 既存データに新規分のみ追加（デフォルト）
     mode="replace_all": 既存のカテゴリ・スキル・サブスキル（と紐づく申告データ）を全削除してからインポート
+
+    import_categories / import_skills / import_sub_skills: "1"の場合のみ
+    そのエンティティをファイルから読み込む（"0"の場合はファイルに含まれていてもスキップ）
     """
     import json as _json
     auth.require_manager_or_admin(request, db)
@@ -2855,10 +3347,26 @@ async def bulk_import(
         mode = "add"
 
     content = await file.read()
+    filename = (file.filename or "").lower()
+
     try:
-        data = _json.loads(content.decode("utf-8-sig"))
+        if filename.endswith(".xlsx"):
+            data = _parse_bulk_xlsx(content)
+        elif filename.endswith(".zip"):
+            data = _parse_bulk_zip(content)
+        elif filename.endswith(".csv"):
+            data = _parse_bulk_csv(content, filename)
+        else:
+            data = _json.loads(content.decode("utf-8-sig"))
     except Exception:
-        return JSONResponse({"ok": False, "error": "JSON の解析に失敗しました"}, status_code=400)
+        return JSONResponse({"ok": False, "error": "ファイルの解析に失敗しました"}, status_code=400)
+
+    if import_categories not in ("1", "true", "on"):
+        data.pop("categories", None)
+    if import_skills not in ("1", "true", "on"):
+        data.pop("skills", None)
+    if import_sub_skills not in ("1", "true", "on"):
+        data.pop("sub_skills", None)
 
     result = _apply_bulk_import(data, db, mode=mode)
     return JSONResponse({"ok": True, "mode": mode, **result})

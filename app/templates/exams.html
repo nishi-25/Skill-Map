@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}試験管理 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-clipboard-check me-2" style="color:#f97316;"></i>試験管理</h1>
+    <p class="text-muted mb-0 small">学科試験・実技試験の作成・割当・結果確認ができます</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if show_archived %}
+    <a href="/exams" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-eye-slash me-1"></i>アーカイブ済みを隠す
+    </a>
+    {% else %}
+    <a href="/exams?show_archived=1" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-archive me-1"></i>アーカイブ済みを表示
+    </a>
+    {% endif %}
+    <a href="/exams/new" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">
+      <i class="bi bi-plus-lg me-1"></i>試験を作成
+    </a>
+  </div>
+</div>
+
+{% if exams %}
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th>種別</th>
+            <th>タイトル</th>
+            <th class="text-center">問題/評価項目</th>
+            <th class="text-center">割当数</th>
+            <th>作成者</th>
+            <th class="text-center" style="width:340px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exam in exams %}
+          <tr{% if exam.is_archived %} class="text-muted"{% endif %}>
+            <td>
+              {% if exam.has_written %}<span class="badge bg-primary">学科</span>{% endif %}
+              {% if exam.has_practical %}<span class="badge bg-success {% if exam.has_written %}ms-1{% endif %}">実技</span>{% endif %}
+              {% if not exam.has_written and not exam.has_practical %}<span class="badge bg-light text-dark border">未設定</span>{% endif %}
+              {% if exam.is_archived %}<span class="badge bg-secondary ms-1">アーカイブ</span>{% endif %}
+            </td>
+            <td>
+              <div class="fw-semibold">{{ exam.title }}</div>
+              {% if exam.description %}<div class="text-muted small">{{ exam.description }}</div>{% endif %}
+            </td>
+            <td class="text-center">
+              {{ question_counts.get(exam.id, 0) }} 問 / {{ criteria_counts.get(exam.id, 0) }} 項目
+            </td>
+            <td class="text-center">{{ assignment_counts.get(exam.id, 0) }} 件</td>
+            <td>{{ exam.creator.display_name or exam.creator.username if exam.creator else '-' }}</td>
+            <td class="text-center">
+              <div class="d-flex gap-1 justify-content-center flex-wrap">
+                {% if exam.has_written %}<a href="/exams/{{ exam.id }}/questions" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">学科</a>{% endif %}
+                {% if exam.has_practical %}<a href="/exams/{{ exam.id }}/criteria" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">実技</a>{% endif %}
+                <a href="/exams/{{ exam.id }}/assign" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;">割当</a>
+                <a href="/exams/{{ exam.id }}/results" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;">結果</a>
+                <a href="/exams/{{ exam.id }}/edit" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;"><i class="bi bi-pencil"></i></a>
+                {% if exam.is_archived %}
+                <form method="post" action="/exams/{{ exam.id }}/restore" class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-success" style="border-radius:8px;"><i class="bi bi-arrow-counterclockwise"></i></button>
+                </form>
+                {% else %}
+                <form method="post" action="/exams/{{ exam.id }}/delete" class="d-inline" onsubmit="return confirm('この試験をアーカイブしますか？');">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:8px;"><i class="bi bi-archive"></i></button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-clipboard-check fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">まだ試験が登録されていません</p>
+</div>
+{% endif %}
+{% endblock %}

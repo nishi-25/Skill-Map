@@ -1,0 +1,643 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - 試験 - Skill View.{% endblock %}
+
+{% block content %}
+<style>
+/* ============ 試験画面: カラーテーマ & アニメーション ============ */
+@keyframes examFadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes examPopIn {
+  0%   { opacity: 0; transform: scale(.7); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes examGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153,.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(236,72,153,0); }
+}
+@keyframes examTimerPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+@keyframes examBadgeBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+.exam-hero {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  border-radius: 18px; padding: 1.5rem 1.7rem; color: #fff;
+  box-shadow: 0 10px 28px rgba(139,92,246,.28);
+  position: relative; overflow: hidden;
+  animation: examFadeInUp .45s ease both;
+}
+.exam-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 88% 15%, rgba(255,255,255,.28), transparent 55%);
+  pointer-events: none;
+}
+.exam-hero h1 { color: #fff; position: relative; z-index: 1; }
+.exam-hero-sub { color: rgba(255,255,255,.92) !important; position: relative; z-index: 1; }
+.exam-hero .btn-outline-secondary {
+  position: relative; z-index: 1;
+  color: #fff; border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.1);
+}
+.exam-hero .btn-outline-secondary:hover { background: rgba(255,255,255,.24); color: #fff; }
+.exam-hero-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: rgba(255,255,255,.22); margin-right: .6rem;
+  font-size: 1.3rem; animation: examBadgeBounce 2.4s ease-in-out infinite;
+}
+
+/* ── 概要 ── */
+.exam-info-card {
+  background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+  border: 1px solid #e0e7ff; border-radius: 14px;
+  animation: examFadeInUp .45s ease both; animation-delay: .05s;
+}
+
+/* ── スコアバナー ── */
+.exam-score-banner {
+  border-radius: 16px; padding: 1.2rem 1.5rem; color: #fff;
+  position: relative; overflow: hidden;
+  animation: examPopIn .5s ease both;
+}
+.exam-score-banner.passed { background: linear-gradient(135deg, #22c55e, #16a34a 60%, #0ea5e9); box-shadow: 0 8px 22px rgba(34,197,94,.3); }
+.exam-score-banner.failed { background: linear-gradient(135deg, #f97316, #ef4444 70%); box-shadow: 0 8px 22px rgba(239,68,68,.28); }
+.exam-score-banner .score-value { font-size: 1.6rem; font-weight: 800; }
+.exam-score-banner .score-icon { font-size: 2.2rem; animation: examBadgeBounce 1.8s ease-in-out infinite; }
+
+/* ── タイマー ── */
+.exam-timer {
+  border-radius: 14px; border: none; color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  box-shadow: 0 6px 16px rgba(249,115,22,.25);
+  animation: examFadeInUp .45s ease both; animation-delay: .05s;
+}
+.exam-timer .bi-stopwatch { animation: examTimerPulse 1.4s ease-in-out infinite; }
+.exam-timer.exam-timer-danger {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  animation: examFadeInUp .45s ease both, examGlowPulse 1s ease-in-out infinite;
+}
+
+/* ── 進捗バー ── */
+.exam-progress-wrap {
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 14px;
+  padding: .8rem 1.1rem; margin-bottom: 1rem;
+  display: flex; align-items: center; gap: .9rem;
+  animation: examFadeInUp .45s ease both; animation-delay: .08s;
+}
+.exam-progress-track { flex: 1; height: 10px; border-radius: 6px; background: #f1f5f9; overflow: hidden; }
+.exam-progress-fill {
+  height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, #6366f1, #ec4899, #f97316);
+  width: 0%; transition: width .4s ease;
+}
+.exam-progress-label { font-size: .85rem; font-weight: 700; color: #6366f1; white-space: nowrap; }
+
+/* ── セクション見出し ── */
+.exam-section-title { display: flex; align-items: center; gap: .5rem; font-weight: 800; margin-bottom: .7rem; }
+.exam-section-title.written { color: #4338ca; }
+.exam-section-title.practical { color: #0f766e; }
+.exam-section-title .exam-section-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 9px; color: #fff; font-size: 1rem;
+}
+.exam-section-title.written .exam-section-icon { background: linear-gradient(135deg, #6366f1, #818cf8); }
+.exam-section-title.practical .exam-section-icon { background: linear-gradient(135deg, #14b8a6, #22c55e); }
+
+/* ── 問題カード ── */
+.exam-q-card {
+  border-radius: 16px; border: 1px solid #eef2ff; overflow: hidden;
+  animation: examFadeInUp .45s ease both;
+  transition: transform .2s, box-shadow .2s;
+  position: relative;
+}
+.exam-q-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(99,102,241,.12); }
+.exam-q-card::before {
+  content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 5px;
+  background: linear-gradient(180deg, #6366f1, #818cf8);
+}
+.exam-q-card.exam-q-correct::before { background: linear-gradient(180deg, #22c55e, #4ade80); }
+.exam-q-card.exam-q-incorrect::before { background: linear-gradient(180deg, #ef4444, #f87171); }
+.exam-q-card.exam-q-correct { background: linear-gradient(135deg, #f0fdf4, #ffffff); }
+.exam-q-card.exam-q-incorrect { background: linear-gradient(135deg, #fef2f2, #ffffff); }
+
+.exam-q-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 26px; padding: 0 .5rem; border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #a78bfa); color: #fff;
+  font-weight: 700; font-size: .78rem;
+}
+.exam-q-points {
+  font-size: .75rem; font-weight: 700; color: #f97316;
+  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: .15rem .55rem;
+}
+
+/* ── 選択肢 ── */
+.exam-choice {
+  display: flex; align-items: center; gap: .65rem; padding: .65rem .9rem;
+  border: 2px solid #eef2ff; border-radius: 12px; cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s;
+}
+.exam-choice:hover { border-color: #c7d2fe; background: #f5f7ff; transform: translateX(2px); }
+.exam-choice input { accent-color: #6366f1; width: 18px; height: 18px; }
+.exam-choice.exam-choice-selected { border-color: #818cf8; background: #eef2ff; box-shadow: 0 0 0 3px rgba(129,140,248,.15); }
+
+/* ── 結果表示の選択肢 ── */
+.exam-result-choice { display: flex; align-items: center; gap: .5rem; padding: .4rem .6rem; border-radius: 10px; }
+.exam-result-choice.exam-result-correct-choice { background: rgba(34,197,94,.1); color: #15803d; font-weight: 700; }
+.exam-result-choice.exam-result-wrong-pick { background: rgba(239,68,68,.1); color: #b91c1c; }
+
+/* ── 実技カード ── */
+.exam-criteria-card, .exam-evidence-card {
+  border-radius: 16px; border: 1px solid #ecfdf5;
+  animation: examFadeInUp .45s ease both; animation-delay: .1s;
+}
+.exam-criteria-item {
+  border: 2px solid #ecfdf5; border-radius: 12px; padding: .7rem .9rem;
+  transition: transform .15s, box-shadow .15s;
+}
+.exam-criteria-item:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(20,184,166,.12); border-color: #99f6e4; }
+.exam-criteria-score { background: linear-gradient(135deg, #14b8a6, #22c55e); color: #fff; border: none; font-weight: 700; }
+
+/* ── 提出物 ── */
+.exam-evidence-item { border: 1px solid #ecfdf5; border-radius: 12px; transition: transform .15s, box-shadow .15s; }
+.exam-evidence-item:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(20,184,166,.1); }
+
+/* ── 提出ボタン ── */
+.exam-submit-btn {
+  border: none; border-radius: 24px; padding: .7rem 2rem; font-weight: 800;
+  color: #fff; background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+  background-size: 200% 200%;
+  box-shadow: 0 10px 24px rgba(236,72,153,.3);
+  transition: transform .15s, box-shadow .15s, background-position .4s;
+}
+.exam-submit-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 28px rgba(236,72,153,.4); background-position: 100% 0; }
+.exam-submit-btn:disabled { opacity: .55; cursor: not-allowed; animation: none; }
+.exam-submit-btn:not(:disabled) { animation: examGlowPulse 2.4s ease-in-out infinite; }
+
+/* ── 実技に進むカード ── */
+.exam-proceed-card {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+  border: 2px dashed #99f6e4; border-radius: 16px;
+  animation: examFadeInUp .45s ease both;
+}
+.exam-proceed-btn {
+  border: none; border-radius: 24px; padding: .7rem 2rem; font-weight: 800;
+  color: #fff; background: linear-gradient(135deg, #14b8a6, #22c55e);
+  box-shadow: 0 10px 22px rgba(20,184,166,.3);
+  transition: transform .15s, box-shadow .15s;
+  animation: examGlowPulse 2.4s ease-in-out infinite;
+}
+.exam-proceed-btn:hover { transform: translateY(-2px) scale(1.03); }
+
+/* ── フィードバック ── */
+.exam-feedback-card {
+  border-radius: 14px; border: 1px solid #fef3c7;
+  background: linear-gradient(135deg, #fffbeb, #fff);
+  animation: examFadeInUp .45s ease both;
+}
+</style>
+
+<div class="exam-hero d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="d-flex align-items-center mb-1"><span class="exam-hero-icon"><i class="bi bi-clipboard-check"></i></span>{{ exam.title }}</h1>
+    <p class="exam-hero-sub mb-0 small">
+      {% if questions %}<span class="badge" style="background:rgba(255,255,255,.28);">学科</span>{% endif %}
+      {% if criteria %}<span class="badge {% if questions %}ms-1{% endif %}" style="background:rgba(255,255,255,.28);">実技</span>{% endif %}
+      <span class="badge bg-{{ EXAM_ASSIGN_STATUS_COLORS.get(assignment.status, 'secondary') }} ms-1">{{ EXAM_ASSIGN_STATUS.get(assignment.status, assignment.status) }}</span>
+      {% if assignment.due_date %}<span class="ms-2">期限: {{ assignment.due_date.strftime('%Y/%m/%d') }}</span>{% endif %}
+    </p>
+  </div>
+  <a href="/exams/my" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-arrow-left me-1"></i>一覧に戻る
+  </a>
+</div>
+
+{% if exam.description %}
+<div class="exam-info-card p-3 mb-3">
+  <div class="fw-semibold small mb-1" style="color:#4338ca;"><i class="bi bi-info-circle me-1"></i>概要</div>
+  <div style="white-space:pre-wrap;font-size:.9rem;">{{ exam.description }}</div>
+</div>
+{% endif %}
+
+{% if assignment.status == 'graded' %}
+<div class="exam-score-banner mb-3 {{ 'passed' if assignment.passed else 'failed' if assignment.passed is not none else 'passed' }} d-flex align-items-center gap-3">
+  <div class="score-icon">
+    <i class="bi {% if assignment.passed %}bi-trophy-fill{% elif assignment.passed is not none %}bi-emoji-smile{% else %}bi-stars{% endif %}"></i>
+  </div>
+  <div>
+    <div class="score-value">{{ assignment.score|round(1) }} / {{ assignment.max_score|round(1) }} 点</div>
+    {% if assignment.passed is not none %}
+      {% if assignment.passed %}<div class="fw-bold">🎉 合格です！お疲れさまでした</div>
+      {% else %}<div class="fw-bold">採点結果をご確認ください</div>{% endif %}
+    {% else %}
+      <div class="fw-bold">採点が完了しました</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if remaining_seconds is not none %}
+<div class="alert exam-timer d-flex align-items-center gap-2 mb-3" id="examTimerBox">
+  <i class="bi bi-stopwatch fs-5"></i>
+  <span>残り時間: <span id="timerDisplay" class="fw-bold"></span></span>
+</div>
+{% endif %}
+
+{% if eligibility_blocked %}
+<div class="alert alert-warning" style="border-radius:14px;">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+  この試験には受験条件があります。「{{ eligibility.skill_name }}」の {{ eligibility.tier_name }}
+  サブスキルの取得率が {{ eligibility.required }}% 以上である必要があります
+  （現在 {{ eligibility.rate }}%）。スキル一覧から該当サブスキルを取得してから受験してください。
+</div>
+{% else %}
+{% if stage == 'written' %}
+<!-- ════════════ 学科：受験フォーム（実技がある場合は提出後に実技へ進む） ════════════ -->
+<form id="examForm" method="post" action="/exams/my/{{ assignment.id }}/submit-written" onsubmit="return confirm('学科の解答を提出しますか？提出後は変更できません。');">
+<div class="exam-section-title written"><span class="exam-section-icon"><i class="bi bi-pencil-square"></i></span>学科問題</div>
+
+<div class="exam-progress-wrap">
+  <div class="exam-progress-track"><div class="exam-progress-fill" id="examProgressFill"></div></div>
+  <div class="exam-progress-label" id="examProgressLabel">0 / {{ questions|length }} 問 解答済み</div>
+</div>
+
+<div class="d-flex flex-column gap-3 mb-3">
+  {% for q in questions %}
+  <div class="card exam-q-card" style="animation-delay: {{ (loop.index0 * 0.06)|round(2) }}s;">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="exam-q-num">第{{ loop.index }}問</span>
+        <span class="exam-q-points">{{ q.points }} 点</span>
+      </div>
+      <div class="mb-2 fw-semibold" style="white-space:pre-wrap;">{{ q.question_text }}</div>
+      <div class="d-flex flex-column gap-2 exam-choice-group">
+        {% for choice in q.choices %}
+        <label class="exam-choice">
+          {% if q.question_type == 'multi' %}
+          <input type="checkbox" name="q_{{ q.id }}" value="{{ loop.index0 }}" class="form-check-input m-0">
+          {% else %}
+          <input type="radio" name="q_{{ q.id }}" value="{{ loop.index0 }}" class="form-check-input m-0" required>
+          {% endif %}
+          <span>{{ choice }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+</form>
+
+<div class="d-flex justify-content-end">
+  <button type="submit" form="examForm" class="exam-submit-btn">
+    <i class="bi bi-send me-1"></i>学科を提出する
+  </button>
+</div>
+<p class="text-muted small text-end mt-1">提出後、実技に進みます。</p>
+
+{% elif stage == 'practical' %}
+<!-- ════════════ 学科は提出済み。結果は実技採点後にまとめて表示 ════════════ -->
+<div class="exam-section-title written"><span class="exam-section-icon"><i class="bi bi-pencil-square"></i></span>学科問題</div>
+<div class="alert alert-light border d-flex align-items-center gap-2 mb-3" style="border-radius:14px;">
+  <i class="bi bi-check-circle-fill text-success fs-5"></i>
+  <div class="small mb-0">学科の解答を提出しました。結果は実技の採点が完了するとまとめて確認できます。</div>
+</div>
+
+<div id="practicalGate" class="exam-proceed-card text-center py-4" style="{% if proceed_to_practical %}display:none;{% endif %}">
+  <div style="font-size:2.4rem;" class="mb-2">🎯</div>
+  <p class="text-muted small mb-3">学科の採点が完了しました。続いて実技に進んでください。</p>
+  <button type="button" class="exam-proceed-btn" onclick="proceedToPractical()">
+    <i class="bi bi-arrow-right-circle me-1"></i>実技に進む
+  </button>
+</div>
+
+<div id="practicalSection" style="{% if not proceed_to_practical %}display:none;{% endif %}">
+  <div class="exam-section-title practical mt-3"><span class="exam-section-icon"><i class="bi bi-card-checklist"></i></span>実技：評価される観点</div>
+  <div class="card exam-criteria-card mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-column gap-2">
+        {% for c in criteria %}
+        <div class="exam-criteria-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="fw-semibold">{{ c.title }}</div>
+            <span class="badge exam-criteria-score">満点 {{ c.max_score }} 点</span>
+          </div>
+          {% if c.description %}<div class="text-muted small" style="white-space:pre-wrap;">{{ c.description }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card exam-evidence-card mb-3">
+    <div class="card-body">
+      <h6 class="fw-bold mb-3" style="color:#0f766e;"><i class="bi bi-paperclip me-2"></i>提出物</h6>
+      {% if evidences %}
+      <div class="d-flex flex-column gap-2 mb-3">
+        {% for ev in evidences %}
+        <div class="d-flex align-items-center justify-content-between exam-evidence-item p-2">
+          <div class="flex-grow-1">
+            {% if ev.evidence_type == 'url' %}
+            <div class="small text-muted mb-1"><i class="bi bi-link-45deg me-1"></i>URL{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+            <a href="{{ ev.content }}" target="_blank" rel="noopener noreferrer" class="small">{{ ev.content }}</a>
+            {% elif ev.evidence_type == 'file' %}
+            <div class="small text-muted mb-1"><i class="bi bi-file-earmark me-1"></i>ファイル{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+            <a href="/exams/my/{{ assignment.id }}/evidence/{{ ev.id }}/download" class="small">
+              <i class="bi bi-download me-1"></i>{{ ev.original_filename or 'ダウンロード' }}
+            </a>
+            {% else %}
+            <div class="small text-muted mb-1"><i class="bi bi-card-text me-1"></i>メモ{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+            <div class="small" style="white-space:pre-wrap;">{{ ev.content }}</div>
+            {% endif %}
+          </div>
+          <form method="post" action="/exams/my/{{ assignment.id }}/evidence/{{ ev.id }}/delete" onsubmit="return confirm('この提出物を削除しますか？');">
+            <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted small">まだ提出物がありません</p>
+      {% endif %}
+
+      <form method="post" action="/exams/my/{{ assignment.id }}/evidence/add" enctype="multipart/form-data">
+        <input type="text" name="title" class="form-control mb-2" placeholder="タイトル（任意）" style="border-radius:10px;">
+        <input type="file" name="upload_file" class="form-control mb-2" required style="border-radius:10px;">
+        <div class="form-text mb-2">どの形式のファイルでもアップロードできます。</div>
+        <button type="submit" class="btn btn-outline-success w-100" style="border-radius:10px;"><i class="bi bi-upload me-1"></i>ファイルを追加</button>
+      </form>
+    </div>
+  </div>
+
+  <form id="examForm" method="post" action="/exams/my/{{ assignment.id }}/submit" onsubmit="return confirm('提出しますか？提出後は内容を変更できません。');"></form>
+  <div class="d-flex justify-content-end">
+    <button type="submit" form="examForm" class="exam-submit-btn"
+            {% if not evidences %}disabled{% endif %}>
+      <i class="bi bi-send me-1"></i>提出する
+    </button>
+  </div>
+  {% if not evidences %}<p class="text-muted small text-end mt-1">提出物を1件以上登録してください</p>{% endif %}
+</div>
+
+<script>
+function proceedToPractical() {
+  if (confirm('実技に進みますか？')) {
+    document.getElementById('practicalGate').style.display = 'none';
+    var sec = document.getElementById('practicalSection');
+    sec.style.display = '';
+    sec.scrollIntoView({behavior: 'smooth'});
+  }
+}
+</script>
+
+{% else %}
+<!-- ════════════ 単一セクションの試験、または提出済み・採点済みの結果表示 ════════════ -->
+{% if assignment.status == 'in_progress' %}
+<form id="examForm" method="post" action="/exams/my/{{ assignment.id }}/submit" onsubmit="return confirm('提出しますか？提出後は内容を変更できません。');">
+{% endif %}
+
+{% if questions %}
+<div class="exam-section-title written"><span class="exam-section-icon"><i class="bi bi-pencil-square"></i></span>学科問題</div>
+
+{% if assignment.status == 'graded' %}
+<!-- 結果表示 -->
+<div class="d-flex flex-column gap-3 mb-3">
+  {% for q in questions %}
+  <div class="card exam-q-card {{ 'exam-q-correct' if q.is_correct else 'exam-q-incorrect' }}" style="animation-delay: {{ (loop.index0 * 0.06)|round(2) }}s;">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="exam-q-num">第{{ loop.index }}問（{{ q.points_awarded }} / {{ q.points }} 点）</span>
+        {% if q.is_correct %}
+        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>正解</span>
+        {% else %}
+        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>不正解</span>
+        {% endif %}
+      </div>
+      <div class="mb-2" style="white-space:pre-wrap;">{{ q.question_text }}</div>
+      <ul class="list-unstyled mb-0 small">
+        {% for choice in q.choices %}
+        <li class="exam-result-choice {{ 'exam-result-correct-choice' if loop.index0 in q.correct_indices else '' }} {{ 'exam-result-wrong-pick' if (loop.index0 in q.selected_indices and loop.index0 not in q.correct_indices) else '' }}">
+          {% if loop.index0 in q.selected_indices %}<i class="bi bi-record-circle"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+          <span>{{ choice }}</span>
+          {% if loop.index0 in q.correct_indices %}<span class="badge bg-success ms-1">正解</span>{% endif %}
+          {% if loop.index0 in q.selected_indices and loop.index0 not in q.correct_indices %}<span class="badge bg-danger ms-1">ここが不正解です</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% elif assignment.status == 'submitted' %}
+<div class="alert alert-light border d-flex align-items-center gap-2 mb-3" style="border-radius:14px;">
+  <i class="bi bi-check-circle-fill text-success fs-5"></i>
+  <div class="small mb-0">学科の解答を提出しました。結果は実技の採点が完了するとまとめて確認できます。</div>
+</div>
+
+{% else %}
+<!-- 受験フォーム -->
+<div class="exam-progress-wrap">
+  <div class="exam-progress-track"><div class="exam-progress-fill" id="examProgressFill"></div></div>
+  <div class="exam-progress-label" id="examProgressLabel">0 / {{ questions|length }} 問 解答済み</div>
+</div>
+<div class="d-flex flex-column gap-3 mb-3">
+  {% for q in questions %}
+  <div class="card exam-q-card" style="animation-delay: {{ (loop.index0 * 0.06)|round(2) }}s;">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="exam-q-num">第{{ loop.index }}問</span>
+        <span class="exam-q-points">{{ q.points }} 点</span>
+      </div>
+      <div class="mb-2 fw-semibold" style="white-space:pre-wrap;">{{ q.question_text }}</div>
+      <div class="d-flex flex-column gap-2 exam-choice-group">
+        {% for choice in q.choices %}
+        <label class="exam-choice">
+          {% if q.question_type == 'multi' %}
+          <input type="checkbox" name="q_{{ q.id }}" value="{{ loop.index0 }}" class="form-check-input m-0">
+          {% else %}
+          <input type="radio" name="q_{{ q.id }}" value="{{ loop.index0 }}" class="form-check-input m-0" required>
+          {% endif %}
+          <span>{{ choice }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+{% if assignment.status == 'in_progress' %}
+</form>
+{% endif %}
+
+{% if criteria %}
+<div class="exam-section-title practical mt-3"><span class="exam-section-icon"><i class="bi bi-card-checklist"></i></span>実技：評価される観点</div>
+<div class="card exam-criteria-card mb-3">
+  <div class="card-body">
+    <div class="d-flex flex-column gap-2">
+      {% if assignment.status == 'graded' %}
+        {% for d in criterion_details %}
+        <div class="exam-criteria-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="fw-semibold">{{ d.criterion.title }}</div>
+            <span class="badge exam-criteria-score">{{ d.score if d.score is not none else '-' }} / {{ d.criterion.max_score }} 点</span>
+          </div>
+          {% if d.criterion.description %}<div class="text-muted small" style="white-space:pre-wrap;">{{ d.criterion.description }}</div>{% endif %}
+          {% if d.comment %}<div class="small mt-1" style="white-space:pre-wrap;"><i class="bi bi-chat-left-text me-1"></i>{{ d.comment }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        {% for c in criteria %}
+        <div class="exam-criteria-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="fw-semibold">{{ c.title }}</div>
+            <span class="badge exam-criteria-score">満点 {{ c.max_score }} 点</span>
+          </div>
+          {% if c.description %}<div class="text-muted small" style="white-space:pre-wrap;">{{ c.description }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card exam-evidence-card mb-3">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3" style="color:#0f766e;"><i class="bi bi-paperclip me-2"></i>提出物</h6>
+    {% if evidences %}
+    <div class="d-flex flex-column gap-2 mb-3">
+      {% for ev in evidences %}
+      <div class="d-flex align-items-center justify-content-between exam-evidence-item p-2">
+        <div class="flex-grow-1">
+          {% if ev.evidence_type == 'url' %}
+          <div class="small text-muted mb-1"><i class="bi bi-link-45deg me-1"></i>URL{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+          <a href="{{ ev.content }}" target="_blank" rel="noopener noreferrer" class="small">{{ ev.content }}</a>
+          {% elif ev.evidence_type == 'file' %}
+          <div class="small text-muted mb-1"><i class="bi bi-file-earmark me-1"></i>ファイル{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+          <a href="/exams/my/{{ assignment.id }}/evidence/{{ ev.id }}/download" class="small">
+            <i class="bi bi-download me-1"></i>{{ ev.original_filename or 'ダウンロード' }}
+          </a>
+          {% else %}
+          <div class="small text-muted mb-1"><i class="bi bi-card-text me-1"></i>メモ{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+          <div class="small" style="white-space:pre-wrap;">{{ ev.content }}</div>
+          {% endif %}
+        </div>
+        {% if assignment.status != 'graded' %}
+        <form method="post" action="/exams/my/{{ assignment.id }}/evidence/{{ ev.id }}/delete" onsubmit="return confirm('この提出物を削除しますか？');">
+          <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted small">まだ提出物がありません</p>
+    {% endif %}
+
+    {% if assignment.status != 'graded' %}
+    <form method="post" action="/exams/my/{{ assignment.id }}/evidence/add" enctype="multipart/form-data">
+      <input type="text" name="title" class="form-control mb-2" placeholder="タイトル（任意）" style="border-radius:10px;">
+      <input type="file" name="upload_file" class="form-control mb-2" required style="border-radius:10px;">
+      <div class="form-text mb-2">どの形式のファイルでもアップロードできます。</div>
+      <button type="submit" class="btn btn-outline-success w-100" style="border-radius:10px;"><i class="bi bi-upload me-1"></i>ファイルを追加</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if assignment.status == 'in_progress' %}
+<div class="d-flex justify-content-end">
+  <button type="submit" form="examForm" class="exam-submit-btn"
+          {% if criteria and not evidences %}disabled{% endif %}>
+    <i class="bi bi-send me-1"></i>提出する
+  </button>
+</div>
+{% if criteria and not evidences %}<p class="text-muted small text-end mt-1">提出物を1件以上登録してください</p>{% endif %}
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% if assignment.status == 'graded' and assignment.feedback %}
+<div class="exam-feedback-card p-3 mt-3">
+  <div class="fw-semibold small mb-1" style="color:#b45309;"><i class="bi bi-chat-left-text me-1"></i>フィードバック</div>
+  <div style="white-space:pre-wrap;font-size:.9rem;">{{ assignment.feedback }}</div>
+</div>
+{% endif %}
+
+{% if remaining_seconds is not none %}
+<script>
+(function() {
+  let remaining = {{ remaining_seconds }};
+  const display = document.getElementById('timerDisplay');
+  const box = document.getElementById('examTimerBox');
+  function render() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    display.textContent = m + '分' + String(s).padStart(2, '0') + '秒';
+    if (box) box.classList.toggle('exam-timer-danger', remaining <= 60);
+  }
+  render();
+  const timer = setInterval(function() {
+    remaining -= 1;
+    if (remaining <= 0) {
+      remaining = 0;
+      render();
+      clearInterval(timer);
+      const form = document.getElementById('examForm');
+      form.removeAttribute('onsubmit');
+      form.submit();
+      return;
+    }
+    render();
+  }, 1000);
+})();
+</script>
+{% endif %}
+
+{% if questions and assignment.status == 'in_progress' %}
+<script>
+(function() {
+  const form = document.getElementById('examForm');
+  if (!form) return;
+  const fill = document.getElementById('examProgressFill');
+  const label = document.getElementById('examProgressLabel');
+  const groupNames = [];
+  form.querySelectorAll('.exam-choice-group').forEach(function(group) {
+    const inputs = group.querySelectorAll('input[type=radio], input[type=checkbox]');
+    if (!inputs.length) return;
+    groupNames.push(inputs[0].name);
+    inputs.forEach(function(inp) {
+      inp.addEventListener('change', function() {
+        group.querySelectorAll('.exam-choice').forEach(function(label) {
+          const input = label.querySelector('input');
+          label.classList.toggle('exam-choice-selected', input.checked);
+        });
+        updateProgress();
+      });
+    });
+  });
+  const total = groupNames.length;
+  function updateProgress() {
+    if (!fill || !label || total === 0) return;
+    let answered = 0;
+    groupNames.forEach(function(name) {
+      if (form.querySelector('input[name="' + name + '"]:checked')) answered++;
+    });
+    fill.style.width = (answered / total * 100) + '%';
+    label.textContent = answered + ' / ' + total + ' 問 解答済み';
+  }
+  updateProgress();
+})();
+</script>
+{% endif %}
+{% endblock %}

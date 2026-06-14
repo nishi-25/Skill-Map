@@ -282,6 +282,8 @@ def data_settings_get(request: Request, db: Session = Depends(get_db)):
         "skill_count": db.query(models.Skill).filter(models.Skill.is_archived == False).count(),
         "sub_skill_count": db.query(models.SubSkill).count(),
         "education_path_count": db.query(models.EducationalLink).filter(models.EducationalLink.skill_id.isnot(None)).count(),
+        "certification_catalog_count": db.query(models.CertificationCatalog).count(),
+        "business_map_area_count": db.query(models.BusinessMapArea).count(),
         "todo_count": db.query(models.AdminTodo).count(),
         "promo_video_exists": os.path.isfile(PROMO_VIDEO_PATH),
         "ai_enabled":   cfg.get("ai_summary_enabled", False),

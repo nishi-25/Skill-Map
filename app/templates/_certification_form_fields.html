@@ -1,0 +1,61 @@
+{% set prefix = prefix|default("") %}
+{% set p = prefix ~ "_" if prefix else "" %}
+<div class="mb-3">
+  <label class="form-label fw-semibold small">資格名 <span class="text-danger">*</span></label>
+  <select name="catalog_id" id="{{ p }}catalog_id" class="form-select" style="border-radius:10px;"
+          onchange="certCatalogChanged(this, '{{ p }}')" required>
+    <option value="">選択してください</option>
+    {% set ns = namespace(current_category=None) %}
+    {% for item in catalog_options %}
+      {% if item.category_name != ns.current_category %}
+        {% if ns.current_category is not none %}</optgroup>{% endif %}
+        <optgroup label="{{ item.category_name or 'その他' }}">
+        {% set ns.current_category = item.category_name %}
+      {% endif %}
+      <option value="{{ item.id }}"
+              data-issuer="{{ item.issuer or '' }}"
+              data-description="{{ item.description or '' }}"
+              data-has-score="{{ '1' if item.has_score else '0' }}">{{ item.name }}</option>
+    {% endfor %}
+    {% if catalog_options %}</optgroup>{% endif %}
+    <option value="0" data-has-score="0">その他（リストにない資格）</option>
+  </select>
+  <div class="form-text">登録されていない資格は「その他」を選択し、資格名を入力してください。</div>
+</div>
+<div class="mb-3 d-none" id="{{ p }}custom_name_wrap">
+  <label class="form-label fw-semibold small">資格名（その他） <span class="text-danger">*</span></label>
+  <input type="text" name="custom_name" id="{{ p }}custom_name" class="form-control" style="border-radius:10px;">
+</div>
+<div class="mb-3 d-none" id="{{ p }}score_wrap">
+  <label class="form-label fw-semibold small">点数</label>
+  <input type="number" name="score" id="{{ p }}score" class="form-control" style="border-radius:10px;" min="0" placeholder="例: 850">
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">発行元</label>
+  <input type="text" name="issuer" id="{{ p }}issuer" class="form-control" style="border-radius:10px;" placeholder="例: 〇〇協会">
+</div>
+<div class="row g-2 mb-3">
+  <div class="col-6">
+    <label class="form-label fw-semibold small">取得日</label>
+    <input type="date" name="issued_date" id="{{ p }}issued_date" class="form-control" style="border-radius:10px;">
+  </div>
+  <div class="col-6">
+    <label class="form-label fw-semibold small">有効期限</label>
+    <input type="date" name="expiry_date" id="{{ p }}expiry_date" class="form-control" style="border-radius:10px;">
+  </div>
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">証明書番号</label>
+  <input type="text" name="certificate_number" id="{{ p }}certificate_number" class="form-control" style="border-radius:10px;">
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">メモ</label>
+  <textarea name="note" id="{{ p }}note" class="form-control" rows="2" style="border-radius:10px;"></textarea>
+</div>
+<div class="mb-1">
+  <label class="form-label fw-semibold small">合格証・証明書ファイル（画像/PDF）</label>
+  <input type="file" name="upload_file" class="form-control" style="border-radius:10px;" accept="image/*,application/pdf">
+  {% if prefix %}
+  <div class="form-text">新しいファイルを選択すると、既存の添付ファイルと差し替わります。</div>
+  {% endif %}
+</div>

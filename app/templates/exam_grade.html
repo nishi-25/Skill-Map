@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - 採点 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-clipboard-data me-2" style="color:#f97316;"></i>{{ exam.title }}</h1>
+    <p class="text-muted mb-0 small">
+      受験者: <span class="fw-semibold">{{ assignment.user.display_name or assignment.user.username }}</span>
+      <span class="badge bg-{{ EXAM_ASSIGN_STATUS_COLORS.get(assignment.status, 'secondary') }} ms-2">{{ EXAM_ASSIGN_STATUS.get(assignment.status, assignment.status) }}</span>
+    </p>
+  </div>
+  <a href="/exams/{{ exam.id }}/results" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+    <i class="bi bi-arrow-left me-1"></i>結果一覧に戻る
+  </a>
+</div>
+
+{% if assignment.score is not none %}
+<div class="alert alert-light border mb-3" style="border-radius:12px;">
+  <span class="fw-semibold">スコア: {{ assignment.score|round(1) }} / {{ assignment.max_score|round(1) }}</span>
+  {% if assignment.passed is not none %}
+    {% if assignment.passed %}<span class="badge bg-success ms-2">合格</span>{% else %}<span class="badge bg-danger ms-2">不合格</span>{% endif %}
+  {% endif %}
+</div>
+{% endif %}
+
+{% if exam.description %}
+<div class="alert alert-light border mb-3" style="border-radius:12px;">
+  <div class="fw-semibold small mb-1"><i class="bi bi-info-circle me-1"></i>概要</div>
+  <div style="white-space:pre-wrap;font-size:.9rem;">{{ exam.description }}</div>
+</div>
+{% endif %}
+
+{% if question_details %}
+<h6 class="fw-bold mb-2"><i class="bi bi-pencil-square me-2" style="color:#f97316;"></i>学科問題</h6>
+<div class="d-flex flex-column gap-3 mb-3">
+  {% for d in question_details %}
+  <div class="card" style="border-radius:14px;border:1px solid #f1f5f9;">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="badge bg-light text-dark border">第{{ loop.index }}問（{{ d.points_awarded }} / {{ d.question.points }} 点）</span>
+        {% if d.is_correct %}
+        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>正解</span>
+        {% else %}
+        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>不正解</span>
+        {% endif %}
+      </div>
+      <div class="mb-2" style="white-space:pre-wrap;">{{ d.question.question_text }}</div>
+      <ul class="list-unstyled mb-0 small">
+        {% for choice in d.choices %}
+        <li class="{{ 'text-success fw-semibold' if loop.index0 in d.correct_indices else '' }}">
+          {% if loop.index0 in d.selected_indices %}<i class="bi bi-record-circle me-1"></i>{% else %}<i class="bi bi-circle me-1 text-muted"></i>{% endif %}
+          {{ choice }}
+          {% if loop.index0 in d.correct_indices %}<span class="badge bg-success ms-1">正解</span>{% endif %}
+          {% if loop.index0 in d.selected_indices and loop.index0 not in d.correct_indices %}<span class="badge bg-danger ms-1">ここが不正解です</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if criterion_details %}
+<h6 class="fw-bold mb-2"><i class="bi bi-card-checklist me-2" style="color:#f97316;"></i>実技：提出物</h6>
+<div class="card mb-3">
+  <div class="card-body">
+    {% if assignment.evidences %}
+    <div class="d-flex flex-column gap-2">
+      {% for ev in assignment.evidences %}
+      <div class="border rounded p-2" style="border-radius:10px;">
+        {% if ev.evidence_type == 'url' %}
+        <div class="small text-muted mb-1"><i class="bi bi-link-45deg me-1"></i>URL{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+        <a href="{{ ev.content }}" target="_blank" rel="noopener noreferrer" class="small">{{ ev.content }}</a>
+        {% elif ev.evidence_type == 'file' %}
+        <div class="small text-muted mb-1"><i class="bi bi-file-earmark me-1"></i>ファイル{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+        <a href="/exams/my/{{ assignment.id }}/evidence/{{ ev.id }}/download" class="btn btn-sm btn-outline-success" style="border-radius:8px;">
+          <i class="bi bi-download me-1"></i>{{ ev.original_filename or 'ダウンロード' }}
+        </a>
+        {% else %}
+        <div class="small text-muted mb-1"><i class="bi bi-card-text me-1"></i>メモ{% if ev.title %} - {{ ev.title }}{% endif %}</div>
+        <div class="small" style="white-space:pre-wrap;">{{ ev.content }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted small mb-0">まだ提出物がありません</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="/exams/results/{{ assignment.id }}/grade">
+{% if criterion_details %}
+  <h6 class="fw-bold mb-2">ルーブリック採点</h6>
+  <div class="card mb-3">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0" style="font-size:.9rem;">
+          <thead class="table-light">
+            <tr>
+              <th>評価項目</th>
+              <th style="width:120px;" class="text-center">点数</th>
+              <th>コメント</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in criterion_details %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ d.criterion.title }}</div>
+                {% if d.criterion.description %}<div class="text-muted small" style="white-space:pre-wrap;">{{ d.criterion.description }}</div>{% endif %}
+                <div class="text-muted small">満点: {{ d.criterion.max_score }} 点</div>
+              </td>
+              <td>
+                <input type="number" name="score_{{ d.criterion.id }}" class="form-control text-center" style="border-radius:10px;"
+                       min="0" max="{{ d.criterion.max_score }}" step="0.5" value="{{ d.score if d.score is not none else '' }}">
+              </td>
+              <td>
+                <textarea name="comment_{{ d.criterion.id }}" class="form-control" rows="2" style="border-radius:10px;">{{ d.comment }}</textarea>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+  <div class="card mb-3" style="max-width:640px;">
+    <div class="card-body">
+      <label class="form-label fw-semibold small">フィードバック</label>
+      <textarea name="feedback" class="form-control" rows="3" style="border-radius:10px;">{{ assignment.feedback or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary" style="border-radius:20px;padding:.5rem 1.5rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">
+      <i class="bi bi-check2-circle me-1"></i>{{ '採点を保存する' if criterion_details else '保存する' }}
+    </button>
+  </div>
+</form>
+{% endblock %}

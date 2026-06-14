@@ -1,0 +1,14 @@
+{% set prefix = prefix|default("") %}
+{% set p = prefix ~ "_" if prefix else "" %}
+<div class="mb-3">
+  <label class="form-label fw-semibold small">評価項目名 <span class="text-danger">*</span></label>
+  <input type="text" name="title" id="{{ p }}title" class="form-control" style="border-radius:10px;" required>
+</div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">説明（評価基準など）</label>
+  <textarea name="description" id="{{ p }}description" class="form-control" rows="3" style="border-radius:10px;"></textarea>
+</div>
+<div class="mb-1" style="max-width:160px;">
+  <label class="form-label fw-semibold small">満点 <span class="text-danger">*</span></label>
+  <input type="number" name="max_score" id="{{ p }}max_score" class="form-control" style="border-radius:10px;" min="1" value="10" required>
+</div>

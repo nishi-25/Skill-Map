@@ -89,6 +89,11 @@
         <span class="leg-item"><span class="leg-swatch" style="background:#dc2626;"></span><span style="color:#dc2626;font-weight:700;">エキスパート</span></span>
       </div>
     </form>
+    <div class="mt-1 matrix-legend">
+      <span class="leg-item"><i class="bi bi-caret-up-fill" style="color:#16a34a;"></i><span class="text-muted">チーム平均より高い</span></span>
+      <span class="leg-item"><i class="bi bi-caret-down-fill" style="color:#dc2626;"></i><span class="text-muted">チーム平均より低い</span></span>
+      <span class="leg-item"><span class="badge" style="background:#ede9fe;color:#6d28d9;font-size:.6rem;">専門 N名</span><span class="text-muted">Lv3以上の人数</span></span>
+    </div>
   </div>
 </div>
 
@@ -356,6 +361,9 @@
           <div class="coverage-bar">
             <div class="coverage-bar-inner" style="width:{{ cat_cov.pct }}%;background:{% if cat_cov.pct >= 80 %}#22c55e{% elif cat_cov.pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
           </div>
+          {% if cat_cov.experts %}
+          <span class="badge mt-1" style="background:#ede9fe;color:#6d28d9;font-size:.6rem;" title="指導可(Lv3)以上の人数">専門 {{ cat_cov.experts }}名</span>
+          {% endif %}
         </td>
       </tr>
       {% set ns_cat.sum = 0 %}{% set ns_cat.count = 0 %}{% set ns_cat.skill_n = 0 %}
@@ -378,12 +386,14 @@
       {% endif %}
 
       {# ── スキル行 ── #}
-      {% set ns_sk = namespace(sum=0, count=0) %}
+      {% set ns_sk = namespace(sum=0, count=0, experts=0) %}
       {% for u in users %}
         {% set lv = level_map.get((u.id, sk.id), 0) %}
         {% if lv > 0 %}{% set ns_sk.sum = ns_sk.sum + lv %}{% set ns_sk.count = ns_sk.count + 1 %}{% endif %}
+        {% if lv >= 3 %}{% set ns_sk.experts = ns_sk.experts + 1 %}{% endif %}
       {% endfor %}
       {% set cov_pct = (ns_sk.count / users|length * 100)|int if users else 0 %}
+      {% set sk_avg = (ns_sk.sum / ns_sk.count) if ns_sk.count > 0 else 0 %}
 
       <tr style="{% if ns_sk.count == 0 and users %}border-left:3px solid #fca5a5;{% endif %}">
         <td class="skill-col" title="{{ sk.name }}" style="font-size:.76rem;{% if ns_sk.count == 0 and users %}color:#9f1239;{% endif %}">
@@ -398,8 +408,15 @@
           {%- elif lv == 2 %}#fbbf24;color:#713f12
           {%- elif lv == 1 %}#fef3c7;color:#92400e
           {%- else %}#f8fafc;color:#cbd5e1
-          {%- endif %};" title="Lv{{ lv }}: {{ SKILL_LEVELS[lv] }}">
-          <div style="font-size:.8rem;font-weight:700;line-height:1;">{{ lv if lv > 0 else '-' }}</div>
+          {%- endif %};" title="Lv{{ lv }}: {{ SKILL_LEVELS[lv] }}{% if lv > 0 and sk_avg > 0 %} / チーム平均 {{ sk_avg|round(1) }}{% endif %}">
+          <div style="font-size:.8rem;font-weight:700;line-height:1;">
+            {{ lv if lv > 0 else '-' }}
+            {% if lv > 0 and sk_avg > 0 %}
+              {% if lv > sk_avg %}<i class="bi bi-caret-up-fill" style="font-size:.55rem;color:#16a34a;" title="チーム平均より高い"></i>
+              {% elif lv < sk_avg %}<i class="bi bi-caret-down-fill" style="font-size:.55rem;color:#dc2626;" title="チーム平均より低い"></i>
+              {% endif %}
+            {% endif %}
+          </div>
           <div style="font-size:.6rem;font-weight:500;line-height:1;margin-top:1px;opacity:.85;">{{ lv_labels[lv] if lv > 0 else '' }}</div>
         </td>
         {% endfor %}
@@ -414,6 +431,9 @@
           <div class="coverage-bar">
             <div class="coverage-bar-inner" style="width:{{ cov_pct }}%;background:{% if cov_pct >= 80 %}#22c55e{% elif cov_pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
           </div>
+          {% if ns_sk.experts > 0 %}
+          <span class="badge mt-1" style="background:#ede9fe;color:#6d28d9;font-size:.6rem;" title="指導可(Lv3)以上の人数">専門 {{ ns_sk.experts }}名</span>
+          {% endif %}
         </td>
       </tr>
 
@@ -451,6 +471,9 @@
           <div class="coverage-bar">
             <div class="coverage-bar-inner" style="width:{{ cat_cov.pct }}%;background:{% if cat_cov.pct >= 80 %}#22c55e{% elif cat_cov.pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
           </div>
+          {% if cat_cov.experts %}
+          <span class="badge mt-1" style="background:#ede9fe;color:#6d28d9;font-size:.6rem;" title="指導可(Lv3)以上の人数">専門 {{ cat_cov.experts }}名</span>
+          {% endif %}
         </td>
       </tr>
       {% endif %}

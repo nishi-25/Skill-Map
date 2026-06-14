@@ -130,6 +130,7 @@
             <th>申請者</th>
             <th>スキル</th>
             <th>カテゴリー</th>
+            <th class="text-center">種別</th>
             <th class="text-center" data-i18n="lbl.level">申告レベル</th>
             <th data-i18n="lbl.date">申請日</th>
             <th>エビデンス</th>
@@ -164,6 +165,13 @@
               {% if rec.skill.category %}
               <span class="badge" style="background:{{ rec.skill.category.color }};font-size:.7rem;">{{ rec.skill.category.name }}</span>
               {% else %}<span class="text-muted">-</span>{% endif %}
+            </td>
+            <td class="text-center">
+              {% if rec.approval_status == 'revoke_pending' %}
+              <span class="badge bg-dark" style="font-size:.7rem;"><i class="bi bi-arrow-counterclockwise me-1"></i>取消申請</span>
+              {% else %}
+              <span class="badge bg-secondary" style="font-size:.7rem;">新規/更新</span>
+              {% endif %}
             </td>
             <td class="text-center">
               <span class="badge bg-{{ LEVEL_COLORS[rec.level] }}" style="font-size:.78rem;">
@@ -217,24 +225,28 @@
                 <div class="d-flex gap-1 justify-content-center align-items-center">
                   <button type="button" class="btn btn-sm btn-success" style="border-radius:8px;"
                           onclick="quickAction({{ rec.id }}, 'approve')">
+                    {% if rec.approval_status == 'revoke_pending' %}
+                    <i class="bi bi-check-lg me-1"></i>取消を承認
+                    {% else %}
                     <i class="bi bi-check-lg me-1"></i>承認
+                    {% endif %}
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:8px;"
                           onclick="toggleInlineReject({{ rec.id }})">
-                    <i class="bi bi-x-lg"></i>差し戻し
+                    <i class="bi bi-x-lg"></i>{% if rec.approval_status == 'revoke_pending' %}却下{% else %}差し戻し{% endif %}
                   </button>
                 </div>
                 <!-- インライン差し戻しコメント -->
                 <div id="rejectInline-{{ rec.id }}" style="display:none;" class="mt-1">
                   <textarea class="form-control form-control-sm mb-1"
                             rows="3"
-                            placeholder="差し戻し理由（任意）"
+                            placeholder="{% if rec.approval_status == 'revoke_pending' %}却下理由（任意・現状維持）{% else %}差し戻し理由（任意）{% endif %}"
                             id="rejectComment-{{ rec.id }}"
                             style="border-radius:8px;resize:vertical;min-height:64px;font-size:.82rem;"></textarea>
                   <div class="d-flex justify-content-end">
                     <button class="btn btn-danger btn-sm" style="border-radius:8px;"
                             onclick="quickAction({{ rec.id }}, 'reject', document.getElementById('rejectComment-{{ rec.id }}').value)">
-                      <i class="bi bi-send me-1"></i>差し戻し送信
+                      <i class="bi bi-send me-1"></i>{% if rec.approval_status == 'revoke_pending' %}却下を送信{% else %}差し戻し送信{% endif %}
                     </button>
                   </div>
                 </div>

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Wiki{{ '編集' if page else '新規作成' }} - Skill View.{% endblock %}
+
+{% block content %}
+{% set can_edit_sharing = (not page) or page.created_by == current_user.id or current_user.role == 'admin' %}
+<div class="page-header">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-1" style="font-size:.85rem;">
+    <li class="breadcrumb-item"><a href="/wiki">Wiki</a></li>
+    {% if page %}<li class="breadcrumb-item"><a href="/wiki/{{ page.id }}">{{ page.title }}</a></li>{% endif %}
+    <li class="breadcrumb-item active">{{ '編集' if page else '新規作成' }}</li>
+  </ol></nav>
+  <h1><i class="bi bi-journal-richtext me-2" style="color:#f97316;"></i>Wiki{{ '編集' if page else '新規作成' }}</h1>
+</div>
+
+{% if error %}<div class="alert alert-danger py-2 small">{{ error }}</div>{% endif %}
+
+<form method="post" action="/wiki/{% if page %}{{ page.id }}/edit{% else %}new{% endif %}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">タイトル <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" required autofocus
+                   placeholder="例: 開発環境セットアップ手順"
+                   value="{{ page.title if page else '' }}">
+          </div>
+
+          <label class="form-label fw-semibold">本文 <span class="text-muted fw-normal" style="font-size:.78rem;">(Markdown形式)</span></label>
+          <div class="wiki-toolbar d-flex flex-wrap gap-1 mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsert('**','**','太字')" title="太字"><i class="bi bi-type-bold"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsert('*','*','斜体')" title="斜体"><i class="bi bi-type-italic"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsertLine('## ')" title="見出し"><i class="bi bi-type-h2"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsertLine('- ')" title="リスト"><i class="bi bi-list-ul"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsertLine('> ')" title="引用"><i class="bi bi-blockquote-left"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsert('`','`','code')" title="コード"><i class="bi bi-code"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="wikiInsert('[','](https://)','リンク文言')" title="リンク"><i class="bi bi-link-45deg"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('wikiImageInput').click()" title="画像を挿入">
+              <i class="bi bi-image"></i> 画像
+            </button>
+            <input type="file" id="wikiImageInput" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;">
+            <button type="button" id="wikiPreviewBtn" class="btn btn-sm btn-outline-primary ms-auto">
+              <i class="bi bi-eye me-1"></i>プレビュー
+            </button>
+          </div>
+
+          <div class="wiki-editor">
+            <textarea id="wikiContent" name="content" class="form-control" rows="18"
+                      placeholder="# 見出し&#10;&#10;Markdown形式で本文を入力できます。&#10;画像はツールバーの「画像」ボタンから挿入できます。">{{ page.content if page else '' }}</textarea>
+            <div id="wikiPreview" class="markdown-body border rounded p-3" style="display:none;min-height:300px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="bi bi-people me-2" style="color:#0ea5e9;"></i>共有設定</h6>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">公開範囲</label>
+            <select name="scope" id="wikiScopeSelect" class="form-select" {% if not can_edit_sharing %}disabled{% endif %}
+                    onchange="wikiToggleEditMode()">
+              <option value="" {% if not page or page.visibility == 'private' %}selected{% endif %}>個人（自分のみ閲覧・編集可）</option>
+              <option value="all" {% if page and page.visibility == 'all' %}selected{% endif %}>全体（組織内全員に共有）</option>
+              {% if my_groups %}
+              <optgroup label="グループ">
+                {% for g in my_groups %}
+                <option value="{{ g.id }}" {% if page and page.visibility == 'group' and page.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endif %}
+            </select>
+            <div class="form-text">「全体」を選ぶと組織内の全ユーザーに、グループを選ぶとそのメンバーに共有されます</div>
+          </div>
+
+          <div class="mb-3" id="wikiEditModeBlock" style="{% if not page or page.visibility == 'private' %}display:none;{% endif %}">
+            <label class="form-label fw-semibold">編集権限</label>
+            {% for k, v in WIKI_EDIT_MODES.items() %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="edit_mode" id="editMode_{{ k }}" value="{{ k }}"
+                     {% if not can_edit_sharing %}disabled{% endif %}
+                     {% if (page and page.edit_mode == k) or (not page and k == 'owner') %}checked{% endif %}>
+              <label class="form-check-label" for="editMode_{{ k }}">{{ v }}</label>
+            </div>
+            {% endfor %}
+            <div class="form-text">「{{ WIKI_EDIT_MODES['owner'] }}」以外を選ぶと、共有グループのメンバーも本文を編集できます</div>
+          </div>
+
+          {% if not can_edit_sharing %}
+          <div class="alert alert-light border py-2 small mb-0">
+            <i class="bi bi-info-circle me-1"></i>共有設定は作成者のみ変更できます
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill fw-semibold" style="border-radius:20px;">
+          <i class="bi bi-check-lg me-1"></i>{{ '更新する' if page else '作成する' }}
+        </button>
+        <a href="{% if page %}/wiki/{{ page.id }}{% else %}/wiki{% endif %}" class="btn btn-outline-secondary" style="border-radius:20px;">キャンセル</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+function wikiInsert(before, after, placeholder) {
+  const ta = document.getElementById('wikiContent');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.substring(start, end) || placeholder;
+  ta.value = ta.value.substring(0, start) + before + selected + after + ta.value.substring(end);
+  ta.focus();
+  ta.selectionStart = start + before.length;
+  ta.selectionEnd = start + before.length + selected.length;
+}
+
+function wikiInsertLine(prefix) {
+  const ta = document.getElementById('wikiContent');
+  const start = ta.selectionStart;
+  const lineStart = ta.value.lastIndexOf('\n', start - 1) + 1;
+  ta.value = ta.value.substring(0, lineStart) + prefix + ta.value.substring(lineStart);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + prefix.length;
+}
+
+function wikiToggleEditMode() {
+  const sel = document.getElementById('wikiScopeSelect');
+  document.getElementById('wikiEditModeBlock').style.display = sel.value ? '' : 'none';
+}
+
+document.getElementById('wikiImageInput').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/wiki/upload-image', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.url) {
+      wikiInsert('![', `](${data.url})`, file.name);
+    } else {
+      alert(data.error || '画像のアップロードに失敗しました');
+    }
+  } catch (e) {
+    alert('画像のアップロードに失敗しました');
+  }
+  this.value = '';
+});
+
+document.getElementById('wikiPreviewBtn').addEventListener('click', async function() {
+  const ta = document.getElementById('wikiContent');
+  const preview = document.getElementById('wikiPreview');
+  if (preview.style.display === 'none') {
+    const fd = new FormData();
+    fd.append('content', ta.value);
+    const res = await fetch('/wiki/preview', { method: 'POST', body: fd });
+    const data = await res.json();
+    preview.innerHTML = data.html || '<p class="text-muted">(本文がありません)</p>';
+    preview.style.display = 'block';
+    ta.style.display = 'none';
+    this.innerHTML = '<i class="bi bi-pencil me-1"></i>編集に戻る';
+  } else {
+    preview.style.display = 'none';
+    ta.style.display = 'block';
+    this.innerHTML = '<i class="bi bi-eye me-1"></i>プレビュー';
+  }
+});
+</script>
+{% endblock %}

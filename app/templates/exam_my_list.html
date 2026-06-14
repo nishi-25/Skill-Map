@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}試験 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-clipboard-check me-2" style="color:#f97316;"></i>試験</h1>
+  <p class="text-muted mb-0 small">割り当てられた試験の受験・結果確認ができます</p>
+</div>
+
+{% if assignments %}
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th>種別</th>
+            <th>タイトル</th>
+            <th class="text-center">状態</th>
+            <th class="text-center">スコア</th>
+            <th>期限</th>
+            <th class="text-center" style="width:120px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assignments %}
+          <tr>
+            <td>
+              {% if a.exam.has_written %}<span class="badge bg-primary">学科</span>{% endif %}
+              {% if a.exam.has_practical %}<span class="badge bg-success {% if a.exam.has_written %}ms-1{% endif %}">実技</span>{% endif %}
+            </td>
+            <td class="fw-semibold">{{ a.exam.title }}</td>
+            <td class="text-center">
+              <span class="badge bg-{{ EXAM_ASSIGN_STATUS_COLORS.get(a.status, 'secondary') }}">
+                {{ EXAM_ASSIGN_STATUS.get(a.status, a.status) }}
+              </span>
+            </td>
+            <td class="text-center">
+              {% if a.score is not none %}{{ a.score|round(1) }} / {{ a.max_score|round(1) }}
+                {% if a.passed is not none %}
+                  {% if a.passed %}<span class="badge bg-success ms-1">合格</span>{% else %}<span class="badge bg-danger ms-1">不合格</span>{% endif %}
+                {% endif %}
+              {% else %}-{% endif %}
+            </td>
+            <td class="text-muted small">{{ a.due_date.strftime('%Y/%m/%d') if a.due_date else '-' }}</td>
+            <td class="text-center">
+              <a href="/exams/my/{{ a.id }}" class="btn btn-sm btn-outline-primary" style="border-radius:8px;"
+                {% if a.status in ('assigned','in_progress') %}
+                onclick="return confirm('試験を開始しますか？\n開始すると受験中の状態になります。準備ができたら「OK」を押してください。');"
+                {% endif %}>
+                {% if a.status in ('assigned','in_progress') %}受験する{% else %}詳細{% endif %}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-clipboard-check fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">現在割り当てられている試験はありません</p>
+</div>
+{% endif %}
+{% endblock %}

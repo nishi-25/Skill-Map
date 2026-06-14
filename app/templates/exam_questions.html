@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - 問題管理 - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-list-check me-2" style="color:#f97316;"></i>{{ exam.title }}</h1>
+    <p class="text-muted mb-0 small">学科試験の問題を管理します（単一選択／複数選択）</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if exam.has_practical %}
+    <a href="/exams/{{ exam.id }}/criteria" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-card-checklist me-1"></i>実技：評価項目管理
+    </a>
+    {% endif %}
+    <a href="/exams" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
+      <i class="bi bi-arrow-left me-1"></i>一覧に戻る
+    </a>
+    <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;background:linear-gradient(135deg,#f97316,#fb923c);border:none;"
+            data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+      <i class="bi bi-plus-lg me-1"></i>問題を追加
+    </button>
+  </div>
+</div>
+
+{% if questions %}
+<div class="d-flex flex-column gap-3">
+  {% for q in questions %}
+  <div class="card" style="border-radius:14px;border:1px solid #f1f5f9;">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <span class="badge bg-light text-dark border me-2">第{{ loop.index }}問</span>
+          <span class="badge {{ 'bg-info' if q.question_type == 'multi' else 'bg-secondary' }}">{{ QUESTION_TYPES.get(q.question_type, q.question_type) }}</span>
+          <span class="badge bg-light text-dark border">{{ q.points }} 点</span>
+        </div>
+        <div class="d-flex gap-1">
+          <button type="button" class="btn btn-xs btn-outline-primary" style="font-size:.78rem;border-radius:8px;width:28px;height:28px;padding:0;"
+                  onclick="openEditQuestionModal({{ q.id }}, {{ q.question_text|tojson }}, {{ q.question_type|tojson }}, {{ q.choices|tojson }}, {{ q.correct_indices|tojson }}, {{ q.points }})">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <form method="post" action="/exams/{{ exam.id }}/questions/{{ q.id }}/delete" onsubmit="return confirm('この問題を削除しますか？');">
+            <button type="submit" class="btn btn-xs btn-outline-danger" style="font-size:.78rem;border-radius:8px;width:28px;height:28px;padding:0;">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="mb-2" style="white-space:pre-wrap;">{{ q.question_text }}</div>
+      <ul class="list-unstyled mb-0 small">
+        {% for choice in q.choices %}
+        <li class="{{ 'text-success fw-semibold' if loop.index0 in q.correct_indices else '' }}">
+          {% if loop.index0 in q.correct_indices %}<i class="bi bi-check-circle-fill me-1"></i>{% else %}<i class="bi bi-circle me-1 text-muted"></i>{% endif %}
+          {{ choice }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-list-check fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">まだ問題が登録されていません</p>
+</div>
+{% endif %}
+
+<!-- 追加モーダル -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-plus-lg me-2" style="color:#f97316;"></i>問題を追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="addQuestionForm" method="post" action="/exams/{{ exam.id }}/questions/add">
+        <div class="modal-body">
+          {% include "_exam_question_form_fields.html" %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">追加する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal fade" id="editQuestionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2" style="color:#f97316;"></i>問題を編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editQuestionForm" method="post">
+        <div class="modal-body">
+          {% with prefix="edit" %}
+          {% include "_exam_question_form_fields.html" %}
+          {% endwith %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" style="border-radius:20px;background:linear-gradient(135deg,#f97316,#fb923c);border:none;">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function examMakeChoiceRow(prefix, type, text, checked) {
+  const row = document.createElement('div');
+  row.className = 'd-flex align-items-center gap-2 exam-choice-row';
+
+  const marker = document.createElement('input');
+  marker.type = type === 'multi' ? 'checkbox' : 'radio';
+  marker.className = 'form-check-input flex-shrink-0 exam-choice-correct';
+  marker.name = prefix + 'exam_correct_marker';
+  marker.checked = !!checked;
+  marker.style.marginTop = '0';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control exam-choice-text';
+  input.value = text || '';
+  input.placeholder = '選択肢';
+  input.style.borderRadius = '10px';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn btn-xs btn-outline-danger flex-shrink-0';
+  removeBtn.style.cssText = 'border-radius:8px;width:32px;height:32px;padding:0;';
+  removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+  removeBtn.addEventListener('click', () => examRemoveChoice(prefix, row));
+
+  row.appendChild(marker);
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  return row;
+}
+
+function examUpdateRemoveButtons(prefix) {
+  const list = document.getElementById(prefix + 'choices_list');
+  const disable = list.children.length <= 2;
+  list.querySelectorAll('.exam-choice-row button').forEach(btn => btn.disabled = disable);
+}
+
+function examAddChoice(prefix, text, checked) {
+  const list = document.getElementById(prefix + 'choices_list');
+  const type = document.getElementById(prefix + 'question_type').value;
+  list.appendChild(examMakeChoiceRow(prefix, type, text, checked));
+  examUpdateRemoveButtons(prefix);
+}
+
+function examRemoveChoice(prefix, row) {
+  const list = document.getElementById(prefix + 'choices_list');
+  if (list.children.length <= 2) return;
+  row.remove();
+  examUpdateRemoveButtons(prefix);
+}
+
+function examQuestionTypeChanged(prefix) {
+  const type = document.getElementById(prefix + 'question_type').value;
+  const markers = document.getElementById(prefix + 'choices_list').querySelectorAll('.exam-choice-correct');
+  if (type === 'single') {
+    let foundChecked = false;
+    markers.forEach(m => {
+      m.type = 'radio';
+      if (m.checked) {
+        if (foundChecked) m.checked = false;
+        foundChecked = true;
+      }
+    });
+  } else {
+    markers.forEach(m => { m.type = 'checkbox'; });
+  }
+}
+
+function examInitChoices(prefix, choices, correctIndices, type) {
+  const list = document.getElementById(prefix + 'choices_list');
+  list.innerHTML = '';
+  document.getElementById(prefix + 'question_type').value = type || 'single';
+  const items = (choices && choices.length) ? choices : ['', ''];
+  items.forEach((text, i) => {
+    list.appendChild(examMakeChoiceRow(prefix, type || 'single', text, (correctIndices || []).includes(i)));
+  });
+  examUpdateRemoveButtons(prefix);
+}
+
+function examSerializeChoices(prefix) {
+  const list = document.getElementById(prefix + 'choices_list');
+  const rows = Array.from(list.querySelectorAll('.exam-choice-row'));
+  const choices = [];
+  const correctIdx = [];
+  rows.forEach(row => {
+    const text = row.querySelector('.exam-choice-text').value.trim();
+    if (!text) return;
+    if (row.querySelector('.exam-choice-correct').checked) correctIdx.push(choices.length);
+    choices.push(text);
+  });
+  document.getElementById(prefix + 'choices_text').value = choices.join('\n');
+  document.getElementById(prefix + 'correct_text').value = correctIdx.map(i => i + 1).join(',');
+  return choices.length >= 2 && correctIdx.length >= 1;
+}
+
+function openEditQuestionModal(id, text, type, choices, correctIndices, points) {
+  const form = document.getElementById('editQuestionForm');
+  form.action = '/exams/{{ exam.id }}/questions/' + id + '/edit';
+  document.getElementById('edit_question_text').value = text;
+  document.getElementById('edit_points').value = points;
+  examInitChoices('edit_', choices, correctIndices, type);
+  new bootstrap.Modal(document.getElementById('editQuestionModal')).show();
+}
+
+document.getElementById('addQuestionModal').addEventListener('show.bs.modal', function() {
+  document.getElementById('question_text').value = '';
+  document.getElementById('points').value = 1;
+  examInitChoices('', ['', ''], [], 'single');
+});
+
+document.getElementById('addQuestionForm').addEventListener('submit', function(e) {
+  if (!examSerializeChoices('')) {
+    e.preventDefault();
+    alert('選択肢は2つ以上入力し、正解を1つ以上選択してください。');
+  }
+});
+
+document.getElementById('editQuestionForm').addEventListener('submit', function(e) {
+  if (!examSerializeChoices('edit_')) {
+    e.preventDefault();
+    alert('選択肢は2つ以上入力し、正解を1つ以上選択してください。');
+  }
+});
+</script>
+{% endblock %}

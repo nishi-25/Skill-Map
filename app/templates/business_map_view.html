@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}業務マップ - Skill View.{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1>
+      <a href="/skills/start" class="text-decoration-none" style="color:#f97316;">
+        <i class="bi bi-arrow-left-circle me-2" style="font-size:1.1rem;"></i>
+      </a>
+      <i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>業務マップ
+    </h1>
+    <p class="text-muted mb-0 small">業務（エリア）を選択すると、その業務に必要なスキルだけを申告できます</p>
+  </div>
+  {% if current_user.role in ('admin', 'manager') %}
+  <a href="/business-map/manage" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">
+    <i class="bi bi-gear me-1"></i>業務マップを編集
+  </a>
+  {% endif %}
+</div>
+
+{% if breadcrumbs %}
+<nav class="mb-3 small" aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0" style="background:transparent;padding:0;">
+    <li class="breadcrumb-item"><a href="/skills/business-map" class="text-decoration-none">業務マップ</a></li>
+    {% for b in breadcrumbs %}
+    {% if not loop.last %}
+    <li class="breadcrumb-item"><a href="/skills/business-map?parent_id={{ b.id }}" class="text-decoration-none">{{ b.name }}</a></li>
+    {% else %}
+    <li class="breadcrumb-item active" aria-current="page">{{ b.name }}</li>
+    {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}
+
+{% if area_stats %}
+<div class="bm-flow">
+  {% for stat in area_stats %}
+  {% set area = stat.area %}
+  {% set pct = (stat.acquired / stat.total * 100)|int if stat.total else 0 %}
+  {% set href = ('/skills/business-map?parent_id=' ~ area.id) if not stat.is_leaf else ('/skills?area_id=' ~ area.id) %}
+  <a href="{{ href }}" class="text-decoration-none bm-flow-card-link">
+    <div class="card bm-flow-card" style="border-radius:14px;border:2px solid {{ area.color }}33;">
+      <div class="card-body py-3 px-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span style="width:12px;height:12px;border-radius:50%;background:{{ area.color }};flex-shrink:0;box-shadow:0 0 0 3px {{ area.color }}33;"></span>
+          <span class="fw-bold flex-grow-1" style="font-size:.92rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ area.name }}</span>
+        </div>
+        {% if area.description %}
+        <p class="text-muted small mb-2" style="min-height:2.4em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{{ area.description }}</p>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <div class="progress flex-grow-1" style="height:6px;border-radius:3px;background:#f1f5f9;">
+            <div class="progress-bar" style="width:{{ pct }}%;border-radius:3px;
+                 background:{% if pct==100 %}#22c55e{% elif stat.acquired > 0 %}linear-gradient(90deg,#f97316,#fb923c){% else %}#94a3b8{% endif %};
+                 transition:width .5s;"></div>
+          </div>
+          <span class="text-muted" style="font-size:.75rem;white-space:nowrap;">{{ stat.acquired }}/{{ stat.total }}</span>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+        <span class="text-muted" style="font-size:.72rem;">
+          {% if not stat.is_leaf %}
+          <i class="bi bi-chevron-right me-1"></i>カテゴリを開く
+          {% else %}
+          <i class="bi bi-chevron-right me-1"></i>クリックしてスキルを申告
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </a>
+  {% if not loop.last %}
+  <div class="bm-flow-arrow"><i class="bi bi-arrow-right"></i></div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-diagram-3 fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    {% if current_parent %}
+    <h5>このカテゴリには項目がありません</h5>
+    <p class="small">「{{ current_parent.name }}」の配下にカテゴリが設定されていません。</p>
+    <a href="/skills/business-map" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">業務マップに戻る</a>
+    {% else %}
+    <h5>業務マップが未設定です</h5>
+    {% if current_user.role in ('admin', 'manager') %}
+    <p class="small">業務エリアを作成して、必要なスキルを織り込みましょう。</p>
+    <a href="/business-map/manage" class="btn btn-primary btn-sm" style="border-radius:20px;">業務マップを作成</a>
+    {% else %}
+    <p class="small">管理者・マネージャーが業務マップを設定すると、ここから業務ベースでスキルを選択できます。</p>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<style>
+.bm-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .75rem;
+}
+.bm-flow-card-link { display: block; flex: 1 1 240px; max-width: 320px; }
+.bm-flow-card {
+  height: 100%;
+  transition: transform .15s, box-shadow .15s;
+}
+.bm-flow-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+}
+.bm-flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c7d2fe;
+  font-size: 1.4rem;
+  flex: 0 0 auto;
+}
+@media (max-width: 768px) {
+  .bm-flow { flex-direction: column; }
+  .bm-flow-card-link { max-width: none; }
+  .bm-flow-arrow { transform: rotate(90deg); }
+}
+</style>
+{% endblock %}
