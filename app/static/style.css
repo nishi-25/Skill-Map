@@ -223,8 +223,8 @@
   color: #fff;
   line-height: 1.3;
 }
-.tier-pill.tier-basic        { background: #f97316; }
-.tier-pill.tier-intermediate { background: #f59e0b; }
+.tier-pill.tier-basic        { background: #fdba74; }
+.tier-pill.tier-intermediate { background: #ea580c; }
 .tier-pill.tier-advanced     { background: #ef4444; }
 
 /* ── Status Pill Badges (soft bg + icon) ── */

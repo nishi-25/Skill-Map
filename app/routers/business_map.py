@@ -124,6 +124,11 @@ def business_map_manage(request: Request, db: Session = Depends(get_db)):
                 "category": sk.category,
                 "skills": [],
             }
+        # スキル単位ドロップ用: 配下のサブスキル一覧をJSONで保持
+        sk.sub_skills_json = json.dumps(
+            [{"id": ss.id, "name": ss.name, "tier": ss.tier} for ss in sk.sub_skills],
+            ensure_ascii=False,
+        )
         skills_by_category[cat_name]["skills"].append(sk)
 
     tier_names = models.get_tier_display_names(db)

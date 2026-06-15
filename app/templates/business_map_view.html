@@ -70,7 +70,7 @@
       </div>
     </div>
   </a>
-  {% if not loop.last %}
+  {% if not loop.last and current_parent %}
   <div class="bm-flow-arrow"><i class="bi bi-arrow-right"></i></div>
   {% endif %}
   {% endfor %}

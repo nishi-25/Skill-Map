@@ -5,7 +5,7 @@
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
     <h1><i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>業務マップ管理</h1>
-    <p class="text-muted mb-0 small">業務エリアを作成し、必要なサブスキルを織り込みます（左のサブスキル一覧からドラッグ&ドロップ、または削除アイコンで調整）</p>
+    <p class="text-muted mb-0 small">業務エリアを作成し、必要なサブスキルを織り込みます（左のサブスキル一覧からドラッグ&ドロップ、スキル名をドラッグするとそのスキル配下をまとめて追加、業務エリアのサブスキルを左の一覧に戻すと割り当て解除、または削除アイコンで調整）</p>
   </div>
   <div class="d-flex gap-2">
     <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;" onclick="openAreaModal()">
@@ -18,37 +18,60 @@
   <!-- 左: サブスキルプール -->
   <div class="col-lg-5">
     <div class="card h-100">
-      <div class="card-header bg-transparent d-flex align-items-center gap-2 flex-wrap">
-        <i class="bi bi-collection" style="color:#f97316;"></i>
-        <span class="fw-semibold small">サブスキル一覧</span>
-        <div class="ms-auto" style="max-width:200px;flex:1;">
-          <input type="text" id="bmSkillSearch" class="form-control form-control-sm" placeholder="サブスキルを検索..." oninput="bmFilterPool()" style="border-radius:20px;">
+      <div class="card-header bg-transparent">
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+          <i class="bi bi-collection" style="color:#f97316;"></i>
+          <span class="fw-semibold small">サブスキル一覧</span>
+          <div class="ms-auto" style="max-width:200px;flex:1;">
+            <input type="text" id="bmSkillSearch" class="form-control form-control-sm" placeholder="サブスキルを検索..." oninput="bmFilterPool()" style="border-radius:20px;">
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="text-muted" style="font-size:.72rem;">難易度:</span>
+          <span class="bm-tier-filter-chip active" data-tier="" onclick="bmSetTierFilter(this, '')">全て</span>
+          {% for tk, tv in tier_names.items() %}
+          <span class="bm-tier-filter-chip" data-tier="{{ tk }}" onclick="bmSetTierFilter(this, '{{ tk }}')">{{ tv }}</span>
+          {% endfor %}
+          <button type="button" class="btn btn-xs btn-outline-secondary ms-auto" style="border-radius:20px;font-size:.72rem;" onclick="bmToggleAllCats()">
+            <i class="bi bi-arrows-expand me-1"></i><span id="bmToggleAllLabel">すべて展開</span>
+          </button>
         </div>
       </div>
       <div class="card-body bm-pool-body">
         {% for cat_name, cat_data in skills_by_category.items() %}
-        <div class="mb-3 bm-pool-cat">
-          <div class="text-muted small fw-semibold mb-1">
+        {% set ns = namespace(count=0) %}
+        {% for sk in cat_data.skills %}{% set ns.count = ns.count + sk.sub_skills|length %}{% endfor %}
+        <div class="mb-2 bm-pool-cat bm-collapsed">
+          <div class="bm-pool-cat-header d-flex align-items-center gap-1" onclick="bmToggleCat(this)">
+            <i class="bi bi-chevron-right bm-cat-toggle-icon" style="font-size:.7rem;"></i>
             {% if cat_data.category %}
-            <span style="width:8px;height:8px;border-radius:50%;background:{{ cat_data.category.color }};display:inline-block;margin-right:4px;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ cat_data.category.color }};display:inline-block;margin-right:2px;"></span>
             {% endif %}
-            {{ cat_name }}
+            <span class="text-muted small fw-semibold">{{ cat_name }}</span>
+            <span class="badge bg-light text-muted" style="font-size:.68rem;">{{ ns.count }}</span>
           </div>
-          {% for sk in cat_data.skills %}
-          <div class="mb-2 bm-pool-skill">
-            <div class="small fw-semibold text-secondary mb-1">{{ sk.name }}</div>
-            <div class="bm-skill-pool d-flex flex-wrap gap-2">
-              {% for ss in sk.sub_skills %}
-              <div class="bm-skill-chip" data-subskill-id="{{ ss.id }}" data-tier="{{ ss.tier }}" data-parent="{{ sk.name }}"
-                   data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}" title="{{ sk.name }} › {{ ss.name }}">
-                <span class="tier-pill bm-tier-badge tier-{{ ss.tier }}">{{ tier_names.get(ss.tier, ss.tier) }}</span>
-                <span class="bm-skill-name">{{ ss.name }}</span>
-                <i class="bi bi-x-circle bm-skill-remove" title="削除"></i>
+          <div class="bm-pool-cat-body">
+            {% for sk in cat_data.skills %}
+            <div class="mb-2 bm-pool-skill bm-skill-collapsed" data-skill-id="{{ sk.id }}" data-skill-name="{{ sk.name }}" data-subskills="{{ sk.sub_skills_json }}">
+              <div class="small fw-semibold text-secondary mb-1 bm-pool-skill-header d-flex align-items-center gap-1" onclick="bmToggleSkill(this)"
+                   title="ドラッグすると「{{ sk.name }}」のサブスキルをまとめて業務エリアに追加できます（{{ sk.sub_skills|length }}件）">
+                <i class="bi bi-chevron-right bm-skill-toggle-icon" style="font-size:.7rem;"></i>
+                <i class="bi bi-grip-vertical text-muted" style="font-size:.7rem;"></i>
+                {{ sk.name }}
               </div>
-              {% endfor %}
+              <div class="bm-skill-pool">
+                {% for ss in sk.sub_skills %}
+                <div class="bm-skill-chip" data-subskill-id="{{ ss.id }}" data-tier="{{ ss.tier }}" data-parent="{{ sk.name }}"
+                     data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}" title="{{ sk.name }} › {{ ss.name }}">
+                  <span class="tier-pill bm-tier-badge tier-{{ ss.tier }}">{{ tier_names.get(ss.tier, ss.tier) }}</span>
+                  <span class="bm-skill-name">{{ ss.name }}</span>
+                  <i class="bi bi-x-circle bm-skill-remove" title="削除"></i>
+                </div>
+                {% endfor %}
+              </div>
             </div>
+            {% endfor %}
           </div>
-          {% endfor %}
         </div>
         {% endfor %}
       </div>
@@ -160,6 +183,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+const BM_TIER_NAMES = {{ tier_names | tojson }};
+
 function openAreaModal(id, name, description, color, parentId, parentName) {
   const form = document.getElementById('areaForm');
   const title = document.getElementById('areaModalTitle');
@@ -183,21 +208,79 @@ function openAreaModal(id, name, description, color, parentId, parentName) {
   new bootstrap.Modal(document.getElementById('areaModal')).show();
 }
 
+let bmTierFilter = '';
+
 function bmFilterPool() {
   const q = document.getElementById('bmSkillSearch').value.trim().toLowerCase();
+  const filtering = !!q || !!bmTierFilter;
+
   document.querySelectorAll('.bm-pool-skill').forEach(skillEl => {
     let visibleCount = 0;
-    skillEl.querySelectorAll('.bm-skill-chip').forEach(chip => {
-      const match = !q || (chip.dataset.search || '').includes(q);
+    const body = skillEl.querySelector('.bm-skill-pool');
+    body.querySelectorAll('.bm-skill-chip').forEach(chip => {
+      const matchSearch = !q || (chip.dataset.search || '').includes(q);
+      const matchTier = !bmTierFilter || chip.dataset.tier === bmTierFilter;
+      const match = matchSearch && matchTier;
       chip.style.display = match ? '' : 'none';
       if (match) visibleCount++;
     });
     skillEl.style.display = visibleCount > 0 ? '' : 'none';
+    if (filtering) {
+      // 検索・フィルタ中はヒットしたスキルを自動展開
+      if (visibleCount > 0) body.style.display = 'flex';
+    } else {
+      body.style.display = skillEl.classList.contains('bm-skill-collapsed') ? 'none' : '';
+    }
   });
   document.querySelectorAll('.bm-pool-cat').forEach(catEl => {
     const visible = [...catEl.querySelectorAll('.bm-pool-skill')].some(s => s.style.display !== 'none');
     catEl.style.display = visible ? '' : 'none';
+    const body = catEl.querySelector('.bm-pool-cat-body');
+    if (filtering) {
+      // 検索・フィルタ中はヒットしたカテゴリを自動展開
+      if (visible) body.style.display = 'block';
+    } else {
+      // フィルタ解除時は折りたたみ状態に戻す
+      body.style.display = catEl.classList.contains('bm-collapsed') ? 'none' : '';
+    }
   });
+}
+
+function bmSetTierFilter(chip, tier) {
+  bmTierFilter = tier;
+  document.querySelectorAll('.bm-tier-filter-chip').forEach(c => c.classList.toggle('active', c === chip));
+  bmFilterPool();
+}
+
+function bmToggleSkill(headerEl) {
+  const skillEl = headerEl.closest('.bm-pool-skill');
+  const body = skillEl.querySelector('.bm-skill-pool');
+  const icon = headerEl.querySelector('.bm-skill-toggle-icon');
+  const collapsed = skillEl.classList.toggle('bm-skill-collapsed');
+  body.style.display = collapsed ? 'none' : '';
+  if (icon) icon.className = 'bi bm-skill-toggle-icon ' + (collapsed ? 'bi-chevron-right' : 'bi-chevron-down');
+}
+
+function bmToggleCat(headerEl) {
+  const catEl = headerEl.closest('.bm-pool-cat');
+  const body = catEl.querySelector('.bm-pool-cat-body');
+  const icon = headerEl.querySelector('.bm-cat-toggle-icon');
+  const collapsed = catEl.classList.toggle('bm-collapsed');
+  body.style.display = collapsed ? 'none' : '';
+  if (icon) icon.className = 'bi bm-cat-toggle-icon ' + (collapsed ? 'bi-chevron-right' : 'bi-chevron-down');
+}
+
+function bmToggleAllCats() {
+  const cats = document.querySelectorAll('.bm-pool-cat');
+  const expand = [...cats].some(c => c.classList.contains('bm-collapsed'));
+  cats.forEach(catEl => {
+    const body = catEl.querySelector('.bm-pool-cat-body');
+    const icon = catEl.querySelector('.bm-cat-toggle-icon');
+    catEl.classList.toggle('bm-collapsed', !expand);
+    body.style.display = expand ? '' : 'none';
+    if (icon) icon.className = 'bi bm-cat-toggle-icon ' + (expand ? 'bi-chevron-down' : 'bi-chevron-right');
+  });
+  document.getElementById('bmToggleAllLabel').textContent = expand ? 'すべて折りたたむ' : 'すべて展開';
 }
 
 function bmReorderArea(listEl) {
@@ -241,12 +324,27 @@ document.querySelectorAll('.bm-children').forEach(container => {
   });
 });
 
-// サブスキル一覧（プール）: クリック&ドラッグでコピー
+// サブスキル一覧（プール）: クリック&ドラッグでコピー。業務エリアからのドロップは割り当て解除として受け取る
 document.querySelectorAll('.bm-skill-pool').forEach(pool => {
   new Sortable(pool, {
+    group: { name: 'bmskills', pull: 'clone', put: true },
+    sort: false,
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onAdd: function(evt) {
+      // 業務エリアの割り当て解除は元リストのonRemoveで処理済みのため、プールには複製を残さない
+      evt.item.remove();
+    },
+  });
+});
+
+// スキルカタログ単位のドラッグ: ヘッダーを掴んで配下のサブスキルをまとめて業務エリアにドロップ
+document.querySelectorAll('.bm-pool-cat-body').forEach(body => {
+  new Sortable(body, {
     group: { name: 'bmskills', pull: 'clone', put: false },
     sort: false,
     animation: 150,
+    handle: '.bm-pool-skill-header',
     ghostClass: 'sortable-ghost',
   });
 });
@@ -260,6 +358,48 @@ document.querySelectorAll('.bm-area-skills').forEach(list => {
     onAdd: function(evt) {
       const areaId = evt.to.dataset.areaId;
       const item = evt.item;
+
+      // スキルカタログ単位のドロップ: 配下のサブスキルをまとめて追加
+      if (item.dataset.skillId) {
+        const skillName = item.dataset.skillName;
+        let subSkills = [];
+        try { subSkills = JSON.parse(item.dataset.subskills || '[]'); } catch (e) {}
+        item.remove();
+        const addPromises = [];
+        subSkills.forEach(sub => {
+          if (evt.to.querySelector(`.bm-skill-chip[data-subskill-id="${sub.id}"]`)) return;
+          const chip = document.createElement('div');
+          chip.className = 'bm-skill-chip';
+          chip.dataset.subskillId = sub.id;
+          chip.dataset.tier = sub.tier;
+          chip.title = skillName + ' › ' + sub.name;
+
+          const tierSpan = document.createElement('span');
+          tierSpan.className = 'tier-pill bm-tier-badge tier-' + sub.tier;
+          tierSpan.textContent = BM_TIER_NAMES[sub.tier] || sub.tier;
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'bm-skill-name';
+          nameSpan.dataset.prefixed = '1';
+          nameSpan.textContent = skillName + ' › ' + sub.name;
+
+          const removeIcon = document.createElement('i');
+          removeIcon.className = 'bi bi-x-circle bm-skill-remove';
+          removeIcon.title = '削除';
+
+          chip.append(tierSpan, nameSpan, removeIcon);
+          evt.to.appendChild(chip);
+          addPromises.push(fetch(`/business-map/areas/${areaId}/skills/add`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sub_skill_id: sub.id})
+          }));
+        });
+        bmHideEmptyHint(evt.to);
+        Promise.all(addPromises).then(() => bmReorderArea(evt.to));
+        return;
+      }
+
       const subSkillId = parseInt(item.dataset.subskillId);
       const parent = item.dataset.parent;
       const nameEl = item.querySelector('.bm-skill-name');
@@ -344,11 +484,61 @@ document.addEventListener('click', function(e) {
   white-space: nowrap;
   min-width: 0;
 }
-.bm-area-skills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; }
+.bm-area-skills { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 40px; }
 .bm-skill-pool .bm-skill-remove { display: none; }
 .bm-area-skills .bm-skill-remove { display: inline-flex; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
 .bm-area-skills .bm-skill-remove:hover { color: #ef4444; }
 .sortable-ghost { opacity: .4; background: #e0f2fe !important; }
 .sortable-drag { box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.bm-pool-cat-header {
+  cursor: pointer;
+  padding: .3rem .4rem;
+  border-radius: 8px;
+  user-select: none;
+}
+.bm-pool-cat-header:hover { background: #f1f5f9; }
+.bm-pool-cat.bm-collapsed .bm-pool-cat-body { display: none; }
+.bm-pool-cat-body { padding-top: .4rem; }
+.bm-skill-pool {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .5rem;
+}
+.bm-pool-skill.bm-skill-collapsed .bm-skill-pool { display: none; }
+.bm-pool-skill-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  cursor: grab;
+  user-select: none;
+  padding: .2rem .3rem;
+  margin: 0 -.3rem .25rem -.3rem;
+  border-radius: 6px;
+}
+.bm-pool-skill-header:hover { background: #f1f5f9; }
+.bm-pool-skill-header:active { cursor: grabbing; }
+/* スキル単位ドラッグ中は配下のサブスキル一覧を隠し、ヘッダーのみ表示する */
+.sortable-drag .bm-skill-pool,
+.sortable-ghost .bm-skill-pool { display: none !important; }
+.bm-tier-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: .15rem .6rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: .72rem;
+  cursor: pointer;
+  color: #64748b;
+  user-select: none;
+}
+.bm-tier-filter-chip:hover { border-color: #f97316; }
+.bm-tier-filter-chip.active {
+  background: #f97316;
+  border-color: #f97316;
+  color: #fff;
+}
 </style>
 {% endblock %}

@@ -302,8 +302,13 @@ def _startup():
         _migrate_certification_catalog_table()
         _migrate_certifications_catalog_id_column()
         _migrate_certification_score_columns(db)
+        _migrate_certification_catalog_tier_column()
         # suppress_ann_popup は冒頭で実行済み
         _migrate_categories(db)
+        _migrate_subskill_tier_review_pilot(db)
+        _migrate_subskill_tier_review_hils_v1(db)
+        _seed_business_map_hils_subcategories_v1(db)
+        _migrate_merge_test_spec_reading_into_execution_v1(db)
         _seed_embedded_c_memory_skill(db)
         _sync_tier_names(db)
         _seed_certification_catalog(db)
@@ -663,6 +668,358 @@ def _migrate_categories(db):
     db.commit()
 
 
+def _migrate_subskill_tier_review_pilot(db):
+    """新しいC/B/A基準に基づくサブスキル難易度の見直し（パイロット: テスト分析/テスト実行・記録、一度だけ実行・冪等）"""
+    _MIGRATION_KEY = "subskill_tier_review_pilot_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
+    changes = [
+        ("テスト分析", "要求仕様からのテスト観点抽出", "intermediate"),
+        ("テスト実行・記録", "エビデンスのファイリング", "basic"),
+    ]
+    for skill_name, sub_name, new_tier in changes:
+        sub = (
+            db.query(models.SubSkill)
+            .join(models.Skill)
+            .filter(models.Skill.name == skill_name, models.SubSkill.name == sub_name)
+            .first()
+        )
+        if sub:
+            sub.tier = new_tier
+
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+    db.commit()
+
+
+def _migrate_subskill_tier_review_hils_v1(db):
+    """新しいC/B/A基準に基づくサブスキル難易度の見直し（単体HILS構築関連10スキル、一度だけ実行・冪等）"""
+    from sqlalchemy import func
+
+    _MIGRATION_KEY = "subskill_tier_review_hils_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
+    tier_changes = [
+        ("HILS環境整備・保守", "配線とコネクタの外観点検", "basic"),
+        ("HILS環境整備・保守", "電源電圧の定期測定", "basic"),
+        ("HILS環境整備・保守", "ソフトウェアの更新管理", "intermediate"),
+        ("HILS環境整備・保守", "消耗品の在庫管理と予防交換", "intermediate"),
+        ("HILS環境整備・保守", "プロジェクト設定のバックアップ", "basic"),
+        ("HILS環境整備・保守", "保守記録の更新", "basic"),
+        ("HILSシステム設計", "テスト要件の整理とHILS化範囲の決定", "intermediate"),
+        ("HILS障害切り分け", "暫定対策の実施と確認", "intermediate"),
+        ("HILS筐体・構成設計", "筐体サイズとラックへの配置設計", "intermediate"),
+        ("HILSラック組立・配線", "ECU・電源ユニットの固定", "basic"),
+        ("HILSラック組立・配線", "ハーネスの接続", "basic"),
+        ("HILSラック組立・配線", "電源線の接続と配線整理", "basic"),
+        ("HILSラック組立・配線", "配線の全数外観確認", "basic"),
+        ("HILSラック組立・配線", "通電確認と動作チェック", "intermediate"),
+        ("モデル結合・I/F設計", "Constantによるパラメータの集中管理", "basic"),
+        ("モデル結合・I/F設計", "SignalグループとSignal Namingの規約", "intermediate"),
+        ("モデル結合・I/F設計", "Goto/Fromブロックによる配線省略", "intermediate"),
+        ("ConfigurationDesk", "LINボードの通信設定", "basic"),
+        ("ConfigurationDesk", "アプリのビルドとダウンロード", "basic"),
+        ("ConfigurationDesk", "PWMチャンネルの設定", "basic"),
+        ("ConfigurationDesk", "カウンタ・エンコーダ入力の設定", "basic"),
+        ("ConfigurationDesk", "CAN FDボードの設定", "basic"),
+        ("ConfigurationDesk", "Ethernetボードの設定", "basic"),
+        ("ConfigurationDesk", "タスクとサンプル時間の設定", "intermediate"),
+        ("ConfigurationDesk", "マルチプロセッサ構成の設定", "intermediate"),
+        ("ConfigurationDesk", "A2L/シンボルファイルの管理", "intermediate"),
+        ("ConfigurationDesk", "設定の変更とホットダウンロード", "intermediate"),
+    ]
+    for skill_name, sub_name, new_tier in tier_changes:
+        sub = (
+            db.query(models.SubSkill)
+            .join(models.Skill)
+            .filter(models.Skill.name == skill_name, models.SubSkill.name == sub_name)
+            .first()
+        )
+        if sub:
+            sub.tier = new_tier
+
+    new_subskills = [
+        ("HILS環境整備・保守", "保守計画・予防保全方針の見直し提案",
+         "故障・交換履歴の傾向を分析し、保守周期や手順の改善を提案できる", "advanced"),
+        ("HILSキャリブレーション", "校正手順・周期の妥当性検証と改善提案",
+         "校正結果の傾向から校正手順・周期の見直しを提案できる", "advanced"),
+        ("HILS基本操作", "操作手順書の改善提案",
+         "日常操作で気づいた非効率・問題点を分析し、手順書の改善を提案できる", "advanced"),
+        ("HILS構成理解", "構成変更時の影響分析",
+         "構成変更が既存のテスト・モデルに与える影響を分析し、対応方針を提案できる", "advanced"),
+        ("HILSシステム設計", "HILSシステム総合動作確認",
+         "要求仕様を踏まえてHILS環境全体の動作を確認し、問題があれば判断できる", "intermediate"),
+        ("HILSラック組立・配線", "組立・配線工程の効率化提案",
+         "組立・配線作業での問題点や非効率を分析し、手順や治具の改善を提案できる", "advanced"),
+        ("ConfigurationDesk", "設定構成の最適化提案",
+         "性能・要件面の課題を分析し、ConfigurationDesk設定構成全体の最適化を提案できる", "advanced"),
+    ]
+    for skill_name, sub_name, sub_desc, tier in new_subskills:
+        skill = db.query(models.Skill).filter(models.Skill.name == skill_name).first()
+        if not skill:
+            continue
+        exists = (
+            db.query(models.SubSkill)
+            .filter(models.SubSkill.skill_id == skill.id, models.SubSkill.name == sub_name)
+            .first()
+        )
+        if exists:
+            continue
+        max_order = db.query(func.max(models.SubSkill.order_index)).filter(
+            models.SubSkill.skill_id == skill.id
+        ).scalar() or 0
+        db.add(models.SubSkill(
+            skill_id=skill.id, name=sub_name, description=sub_desc,
+            order_index=max_order + 1, tier=tier,
+        ))
+
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+    db.commit()
+
+
+def _seed_business_map_hils_subcategories_v1(db):
+    """業務マップ「単体HILS構築」のArea2〜6配下に中分類エリアを新設し、サブスキルを割り当てる（一度だけ実行・冪等）"""
+    _MIGRATION_KEY = "business_map_hils_subcategories_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
+    root = (
+        db.query(models.BusinessMapArea)
+        .filter(models.BusinessMapArea.name == "F2パワトレ単体HILS構築", models.BusinessMapArea.parent_id.is_(None))
+        .first()
+    )
+    if not root:
+        db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+        db.commit()
+        return
+
+    parent_areas = {
+        a.name: a
+        for a in db.query(models.BusinessMapArea).filter(models.BusinessMapArea.parent_id == root.id)
+    }
+
+    # 親エリア名 -> [(中分類名, 説明, [(スキル名, サブスキル名), ...]), ...]
+    structure = {
+        "HILSシステム設計": [
+            ("システム構成設計",
+             "テスト要件の整理からリアルタイムボード・I/O・通信・プラントモデルの構成までを設計する",
+             [
+                 ("HILSシステム設計", "テスト要件の整理とHILS化範囲の決定"),
+                 ("HILSシステム設計", "リアルタイムボードの選定"),
+                 ("HILSシステム設計", "I/O設計方針の統合・確認"),
+                 ("HILSシステム設計", "通信ネットワークの論理設計"),
+                 ("HILSシステム設計", "プラントモデルの要件定義"),
+             ]),
+            ("筐体・構成設計",
+             "HILSラックの筐体・配線経路・冷却などハードウェア構成を設計する",
+             [
+                 ("HILS筐体・構成設計", "筐体サイズとラックへの配置設計"),
+                 ("HILS筐体・構成設計", "熱計算と冷却設計"),
+                 ("HILS筐体・構成設計", "配線経路の分離設計"),
+                 ("HILS筐体・構成設計", "ケーブルマネジメントの設計"),
+                 ("HILS筐体・構成設計", "筐体仕様書の作成"),
+             ]),
+            ("設計レビュー",
+             "システム設計・筐体設計の内容をチームでレビューし問題点を洗い出す",
+             [
+                 ("HILSシステム設計", "設計レビューの実施"),
+                 ("HILS筐体・構成設計", "設計レビューの実施"),
+             ]),
+        ],
+        " ConfigurationDesk設定": [
+            ("基本I/O設定",
+             "アナログ/デジタル入出力やCAN通信などConfigurationDeskの基本I/O設定を行う",
+             [
+                 ("ConfigurationDesk", "接続ボードの認識確認"),
+                 ("ConfigurationDesk", "アナログ入力チャンネルの設定"),
+                 ("ConfigurationDesk", "アナログ出力チャンネルの設定"),
+                 ("ConfigurationDesk", "デジタルI/Oチャンネルの設定"),
+                 ("ConfigurationDesk", "CANボードの通信設定"),
+             ]),
+            ("拡張I/O・通信設定",
+             "LIN/PWM/カウンタ・エンコーダ/CAN FD/Ethernetなど拡張I/O・通信の設定を行う",
+             [
+                 ("ConfigurationDesk", "LINボードの通信設定"),
+                 ("ConfigurationDesk", "PWMチャンネルの設定"),
+                 ("ConfigurationDesk", "カウンタ・エンコーダ入力の設定"),
+                 ("ConfigurationDesk", "CAN FDボードの設定"),
+                 ("ConfigurationDesk", "Ethernetボードの設定"),
+             ]),
+            ("ビルド・運用管理",
+             "アプリのビルド・ダウンロードや設定ファイルのバージョン管理、モデル間通信の設定を行う",
+             [
+                 ("ConfigurationDesk", "アプリのビルドとダウンロード"),
+                 ("ConfigurationDesk", "設定ファイルの保存とバージョン管理"),
+                 ("ConfigurationDesk", "モデル間通信（RTI INTECRIO）の設定"),
+             ]),
+            ("高度な設定・最適化",
+             "タスク設計・マルチプロセッサ構成・計測通信など高度な設定と最適化を行う",
+             [
+                 ("ConfigurationDesk", "タスクとサンプル時間の設定"),
+                 ("ConfigurationDesk", "マルチプロセッサ構成の設定"),
+                 ("ConfigurationDesk", "A2L/シンボルファイルの管理"),
+                 ("ConfigurationDesk", "XCP通信チャンネルの設定"),
+                 ("ConfigurationDesk", "設定の変更とホットダウンロード"),
+                 ("ConfigurationDesk", "設定構成の最適化提案"),
+             ]),
+        ],
+        "配線・組み付け": [
+            ("準備・取付",
+             "機器レイアウトの確認やdSPACEボード・ECU・電源ユニットの取り付けを行う",
+             [
+                 ("HILSラック組立・配線", "機器レイアウトの確認と準備"),
+                 ("HILSラック組立・配線", "dSPACEボードの取り付け"),
+                 ("HILSラック組立・配線", "ECU・電源ユニットの固定"),
+             ]),
+            ("配線作業",
+             "ハーネス・電源線・アース・シールドなどラック内配線作業を行う",
+             [
+                 ("HILSラック組立・配線", "ハーネスの接続"),
+                 ("HILSラック組立・配線", "電源線の接続と配線整理"),
+                 ("HILSラック組立・配線", "アース・シールド処理"),
+             ]),
+            ("検査・改善",
+             "配線の外観確認や通電・動作チェックを行い、工程の改善を提案する",
+             [
+                 ("HILSラック組立・配線", "配線の全数外観確認"),
+                 ("HILSラック組立・配線", "通電確認と動作チェック"),
+                 ("HILSラック組立・配線", "組立・配線工程の効率化提案"),
+             ]),
+        ],
+        "モデル結合・作成": [
+            ("基本I/F定義",
+             "Bus Objectの定義やBusCreator/BusSelectorなどモデル結合の基本I/Fを定義する",
+             [
+                 ("モデル結合・I/F設計", "インタフェース仕様書の作成"),
+                 ("モデル結合・I/F設計", "Bus Objectの定義"),
+                 ("モデル結合・I/F設計", "BusCreatorで信号を束ねる"),
+                 ("モデル結合・I/F設計", "BusSelectorで信号を取り出す"),
+                 ("モデル結合・I/F設計", "Constantによるパラメータの集中管理"),
+             ]),
+            ("信号結合・変換操作",
+             "Mux/Demuxやモデル参照、データ型・サンプル時間の整合などモデル結合操作を行う",
+             [
+                 ("モデル結合・I/F設計", "MuxとDemuxの使い方"),
+                 ("モデル結合・I/F設計", "モデル参照（Model Reference）の設定"),
+                 ("モデル結合・I/F設計", "データ型の統一と変換"),
+                 ("モデル結合・I/F設計", "サンプル時間の整合確認"),
+                 ("モデル結合・I/F設計", "In/Outポートによる階層I/F定義"),
+             ]),
+            ("整合性確認・規約適用",
+             "結合後の信号整合性確認やSignal Naming規約の適用を行う",
+             [
+                 ("モデル結合・I/F設計", "結合後の信号整合性確認"),
+                 ("モデル結合・I/F設計", "SignalグループとSignal Namingの規約"),
+                 ("モデル結合・I/F設計", "Goto/Fromブロックによる配線省略"),
+             ]),
+            ("応用・品質改善",
+             "Variantサブシステムの活用やModel Advisorによる品質チェックを行う",
+             [
+                 ("モデル結合・I/F設計", "VariantサブシステムによるI/F切り替え"),
+                 ("モデル結合・I/F設計", "Model Advisorによるモデル品質チェック"),
+             ]),
+        ],
+        "完成度確認": [
+            ("結合・動作確認",
+             "結合後の信号整合性確認や通電・動作チェックにより組み上げたHILSの状態を確認する",
+             [
+                 ("モデル結合・I/F設計", "結合後の信号整合性確認"),
+                 ("HILSラック組立・配線", "通電確認と動作チェック"),
+             ]),
+            ("総合動作確認",
+             "要求仕様を踏まえてHILS環境全体を動作させ、完成度を確認する",
+             [
+                 ("HILSシステム設計", "HILSシステム総合動作確認"),
+             ]),
+        ],
+    }
+
+    for parent_name, subcats in structure.items():
+        parent = parent_areas.get(parent_name)
+        if not parent:
+            continue
+        for order_idx, (subcat_name, desc, subskill_refs) in enumerate(subcats):
+            subcat = (
+                db.query(models.BusinessMapArea)
+                .filter(models.BusinessMapArea.parent_id == parent.id, models.BusinessMapArea.name == subcat_name)
+                .first()
+            )
+            if not subcat:
+                subcat = models.BusinessMapArea(
+                    name=subcat_name, description=desc, color=parent.color,
+                    order_index=order_idx, parent_id=parent.id,
+                )
+                db.add(subcat)
+                db.flush()
+
+            for skill_name, sub_name in subskill_refs:
+                sub = (
+                    db.query(models.SubSkill)
+                    .join(models.Skill)
+                    .filter(models.Skill.name == skill_name, models.SubSkill.name == sub_name)
+                    .first()
+                )
+                if not sub:
+                    continue
+                exists = (
+                    db.query(models.BusinessMapAreaSkill)
+                    .filter_by(area_id=subcat.id, sub_skill_id=sub.id)
+                    .first()
+                )
+                if not exists:
+                    db.add(models.BusinessMapAreaSkill(area_id=subcat.id, sub_skill_id=sub.id))
+
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+    db.commit()
+
+
+def _migrate_merge_test_spec_reading_into_execution_v1(db):
+    """「テスト仕様書読解」を「テスト実行・記録」に統合する（一度だけ実行・冪等）
+
+    テスト実行は「仕様書を理解→準備→実行→記録」という一連の流れであるため、
+    テスト仕様書読解の6サブスキルをテスト実行・記録の先頭（仕様理解フェーズ）に移動し、
+    テスト仕様書読解スキル自体は削除する。
+    """
+    _MIGRATION_KEY = "merge_test_spec_reading_into_execution_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
+    spec_skill = db.query(models.Skill).filter(models.Skill.name == "テスト仕様書読解").first()
+    exec_skill = db.query(models.Skill).filter(models.Skill.name == "テスト実行・記録").first()
+    if not spec_skill or not exec_skill:
+        db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+        db.commit()
+        return
+
+    spec_subs = (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == spec_skill.id)
+        .order_by(models.SubSkill.order_index)
+        .all()
+    )
+    shift = len(spec_subs)
+
+    # 既存サブスキルのorder_indexを後方にシフトして先頭の空きを作る
+    for sub in (
+        db.query(models.SubSkill)
+        .filter(models.SubSkill.skill_id == exec_skill.id)
+        .order_by(models.SubSkill.order_index.desc())
+    ):
+        sub.order_index += shift
+
+    # 仕様理解フェーズのサブスキルを先頭に移動
+    for i, sub in enumerate(spec_subs):
+        sub.skill_id = exec_skill.id
+        sub.order_index = i
+
+    exec_skill.description = "テスト仕様書の理解からテスト準備・実行・結果記録・エビデンス取得までを行う"
+
+    db.delete(spec_skill)
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+    db.commit()
+
+
 def _seed_embedded_c_memory_skill(db):
     """「組み込みC解析・メモリ(RAM/ROM)調査」スキルを新設し、関連業務エリアに紐付ける（冪等）"""
     cat = db.query(models.Category).filter(models.Category.name == "ソフトウェアテスト").first()
@@ -879,6 +1236,15 @@ def _migrate_certification_score_columns(db):
         models.CertificationCatalog.has_score.is_(False),
     ).update({"has_score": True}, synchronize_session=False)
     db.commit()
+
+
+def _migrate_certification_catalog_tier_column():
+    from sqlalchemy import inspect as sa_inspect, text
+    insp = sa_inspect(database.engine)
+    cols = [c["name"] for c in insp.get_columns("certification_catalog")]
+    with database.engine.begin() as conn:
+        if "tier" not in cols:
+            conn.execute(text("ALTER TABLE certification_catalog ADD COLUMN tier VARCHAR(20) DEFAULT 'basic' NOT NULL"))
 
 
 def _seed_certification_catalog(db):

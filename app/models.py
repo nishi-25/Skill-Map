@@ -70,9 +70,9 @@ TIER_ICONS = {
 }
 
 TIER_DESCRIPTIONS = {
-    "basic":        "業務で実際に活用できる基礎スキル",
-    "intermediate": "チームをリードできる応用・設計スキル",
-    "advanced":     "専門家レベルの高度・体系的なスキル",
+    "basic":        "決められた手順・手順書のとおりに、指示された作業を正確に実施できる（手順内のOK/NG判定を含む）",
+    "intermediate": "作業の目的・背景・前後関係を理解し、状況に応じて判断・調整しながら作業を進められる",
+    "advanced":     "専門知識をもとに課題を分析し、手順や仕組みの改善・効率化を提案・実行できる",
 }
 
 
@@ -592,6 +592,7 @@ class CertificationCatalog(Base):
     category_name = Column(String(100), nullable=True)  # 関連するスキルカタログのカテゴリ名等
     description = Column(Text, nullable=True)
     has_score = Column(Boolean, default=False, nullable=False)  # TOEIC等、点数入力欄を表示するか
+    tier = Column(String(20), default="basic", nullable=False)  # 難易度（basic/intermediate/advanced）
     is_archived = Column(Boolean, default=False, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

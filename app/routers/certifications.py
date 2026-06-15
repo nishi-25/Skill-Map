@@ -411,6 +411,7 @@ def certification_catalog_new(
     category_name: str = Form(""),
     description: str = Form(""),
     has_score: str = Form(""),
+    tier: str = Form("basic"),
     db: Session = Depends(get_db),
 ):
     """資格マスタに新しい資格を追加"""
@@ -429,6 +430,7 @@ def certification_catalog_new(
                 category_name=category_name.strip() or None,
                 description=description.strip() or None,
                 has_score=bool(has_score),
+                tier=tier if tier in models.SKILL_TIERS else "basic",
                 created_by=user.id,
             ))
             db.commit()
@@ -444,6 +446,7 @@ def certification_catalog_edit(
     category_name: str = Form(""),
     description: str = Form(""),
     has_score: str = Form(""),
+    tier: str = Form("basic"),
     db: Session = Depends(get_db),
 ):
     """資格マスタの内容を編集"""
@@ -455,6 +458,7 @@ def certification_catalog_edit(
         item.category_name = category_name.strip() or None
         item.description = description.strip() or None
         item.has_score = bool(has_score)
+        item.tier = tier if tier in models.SKILL_TIERS else "basic"
         db.commit()
     return RedirectResponse("/certifications/catalog", status_code=303)
 
@@ -495,6 +499,7 @@ def certification_catalog_export(request: Request, db: Session = Depends(get_db)
                 "category_name": it.category_name or "",
                 "description": it.description or "",
                 "has_score": it.has_score,
+                "tier": it.tier,
                 "is_archived": it.is_archived,
             }
             for it in items
@@ -538,11 +543,15 @@ async def certification_catalog_import(
             .filter(models.CertificationCatalog.name == name)
             .first()
         )
+        tier = item.get("tier") or "basic"
+        if tier not in models.SKILL_TIERS:
+            tier = "basic"
         if existing:
             existing.issuer = (item.get("issuer") or "").strip() or None
             existing.category_name = (item.get("category_name") or "").strip() or None
             existing.description = (item.get("description") or "").strip() or None
             existing.has_score = bool(item.get("has_score", False))
+            existing.tier = tier
             existing.is_archived = bool(item.get("is_archived", False))
             updated += 1
         else:
@@ -552,6 +561,7 @@ async def certification_catalog_import(
                 category_name=(item.get("category_name") or "").strip() or None,
                 description=(item.get("description") or "").strip() or None,
                 has_score=bool(item.get("has_score", False)),
+                tier=tier,
                 is_archived=bool(item.get("is_archived", False)),
                 created_by=user.id,
             ))

@@ -16,6 +16,14 @@
   <label class="form-label fw-semibold small">説明</label>
   <textarea name="description" id="{{ p }}description" class="form-control" rows="2" style="border-radius:10px;"></textarea>
 </div>
+<div class="mb-3">
+  <label class="form-label fw-semibold small">難易度</label>
+  <select name="tier" id="{{ p }}tier" class="form-select" style="border-radius:10px;">
+    {% for tk, tv in SKILL_TIERS.items() %}
+    <option value="{{ tk }}" {% if tk == 'basic' %}selected{% endif %}>{{ tv }}</option>
+    {% endfor %}
+  </select>
+</div>
 <div class="form-check mb-1">
   <input type="checkbox" name="has_score" value="1" id="{{ p }}has_score" class="form-check-input">
   <label class="form-check-label small" for="{{ p }}has_score">点数入力欄を表示する（TOEIC等）</label>

@@ -37,10 +37,11 @@
     <table class="table table-hover align-middle mb-0" style="font-size:.88rem;">
       <thead class="table-light">
         <tr>
-          <th style="width:22%;">資格名</th>
-          <th style="width:14%;">発行元</th>
-          <th style="width:14%;">関連カテゴリー</th>
+          <th style="width:20%;">資格名</th>
+          <th style="width:12%;">発行元</th>
+          <th style="width:12%;">関連カテゴリー</th>
           <th class="hide-mobile">説明</th>
+          <th class="text-center" style="width:8%;">難易度</th>
           <th class="text-center" style="width:8%;">点数入力</th>
           <th class="text-center" style="width:8%;">状態</th>
           <th class="text-end" style="width:120px;">操作</th>
@@ -54,6 +55,9 @@
           <td class="text-muted">{{ item.issuer or '-' }}</td>
           <td class="text-muted">{{ item.category_name or '-' }}</td>
           <td class="text-muted small hide-mobile">{{ item.description or '-' }}</td>
+          <td class="text-center">
+            <span class="badge bg-{{ TIER_COLORS[item.tier] }}" style="font-size:.72rem;">{{ SKILL_TIERS[item.tier] }}</span>
+          </td>
           <td class="text-center">
             {% if item.has_score %}
             <span class="badge bg-info text-dark">あり</span>
@@ -71,7 +75,7 @@
           <td class="text-end">
             <div class="d-flex gap-1 justify-content-end">
               <button type="button" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集"
-                      onclick="openEditCatalogModal({{ item.id }}, '{{ item.name|replace("'", "\\'") }}', '{{ (item.issuer or '')|replace("'", "\\'") }}', '{{ (item.category_name or '')|replace("'", "\\'") }}', '{{ (item.description or '')|replace("'", "\\'")|replace('\n','\\n') }}', {{ 'true' if item.has_score else 'false' }})">
+                      onclick="openEditCatalogModal({{ item.id }}, '{{ item.name|replace("'", "\\'") }}', '{{ (item.issuer or '')|replace("'", "\\'") }}', '{{ (item.category_name or '')|replace("'", "\\'") }}', '{{ (item.description or '')|replace("'", "\\'")|replace('\n','\\n') }}', {{ 'true' if item.has_score else 'false' }}, '{{ item.tier }}')">
                 <i class="bi bi-pencil"></i>
               </button>
               <form method="post" action="/certifications/catalog/{{ item.id }}/archive"
@@ -158,7 +162,7 @@ function filterCatalogTable(query) {
   }
 }
 
-function openEditCatalogModal(id, name, issuer, categoryName, description, hasScore) {
+function openEditCatalogModal(id, name, issuer, categoryName, description, hasScore, tier) {
   const form = document.getElementById('editCatalogForm');
   form.action = '/certifications/catalog/' + id + '/edit';
   document.getElementById('edit_cat_name').value = name;
@@ -166,6 +170,7 @@ function openEditCatalogModal(id, name, issuer, categoryName, description, hasSc
   document.getElementById('edit_cat_category_name').value = categoryName;
   document.getElementById('edit_cat_description').value = description;
   document.getElementById('edit_cat_has_score').checked = !!hasScore;
+  document.getElementById('edit_cat_tier').value = tier;
   new bootstrap.Modal(document.getElementById('editCatalogModal')).show();
 }
 </script>
