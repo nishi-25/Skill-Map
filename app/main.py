@@ -309,6 +309,7 @@ def _startup():
         _migrate_subskill_tier_review_hils_v1(db)
         _seed_business_map_hils_subcategories_v1(db)
         _migrate_merge_test_spec_reading_into_execution_v1(db)
+        _migrate_fix_test_spec_reading_subskills_v1(db)
         _seed_embedded_c_memory_skill(db)
         _sync_tier_names(db)
         _seed_certification_catalog(db)
@@ -1016,6 +1017,49 @@ def _migrate_merge_test_spec_reading_into_execution_v1(db):
     exec_skill.description = "テスト仕様書の理解からテスト準備・実行・結果記録・エビデンス取得までを行う"
 
     db.delete(spec_skill)
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+    db.commit()
+
+
+def _migrate_fix_test_spec_reading_subskills_v1(db):
+    """_migrate_merge_test_spec_reading_into_execution_v1で、ORMのcascade設定により
+    「テスト仕様書読解」削除時に仕様理解フェーズの6サブスキルが一緒に削除されてしまった
+    不具合を修正する（一度だけ実行・冪等）"""
+    _MIGRATION_KEY = "fix_test_spec_reading_subskills_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
+    exec_skill = db.query(models.Skill).filter(models.Skill.name == "テスト実行・記録").first()
+    if not exec_skill:
+        db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+        db.commit()
+        return
+
+    existing_names = {
+        sub.name
+        for sub in db.query(models.SubSkill).filter(models.SubSkill.skill_id == exec_skill.id).all()
+    }
+
+    spec_subs = [
+        ("テスト対象機能の確認", "テスト仕様書から対象となる機能・モジュールを正しく把握できる", "basic"),
+        ("前提条件の把握", "テスト実施に必要な前提条件・環境構成を仕様書から読み取れる", "basic"),
+        ("テスト手順の解釈", "仕様書に記載されたテスト手順を正しく理解し、実施可能な形に整理できる", "basic"),
+        ("入力値の確認", "テストで使用する入力値・パラメータを仕様書から正確に把握できる", "basic"),
+        ("期待値・合否判定基準の確認", "テストの期待値・合否判定基準を仕様書から正確に読み取れる", "basic"),
+        ("疑問点を担当者に確認する", "仕様書の記載で不明な点を整理し、担当者に確認・調整できる", "intermediate"),
+    ]
+
+    if any(name not in existing_names for name, _, _ in spec_subs):
+        for i, (name, description, tier) in enumerate(spec_subs):
+            if name not in existing_names:
+                db.add(models.SubSkill(
+                    skill_id=exec_skill.id,
+                    name=name,
+                    description=description,
+                    order_index=i,
+                    tier=tier,
+                ))
+
     db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
     db.commit()
 
