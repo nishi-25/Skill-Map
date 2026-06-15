@@ -1065,9 +1065,15 @@ def _migrate_fix_test_spec_reading_subskills_v1(db):
 
 
 def _seed_embedded_c_memory_skill(db):
-    """「組み込みC解析・メモリ(RAM/ROM)調査」スキルを新設し、関連業務エリアに紐付ける（冪等）"""
+    """「組み込みC解析・メモリ(RAM/ROM)調査」スキルを新設し、関連業務エリアに紐付ける（一度だけ実行・冪等）"""
+    _MIGRATION_KEY = "seed_embedded_c_memory_skill_v1_done"
+    if db.query(models.AppSetting).filter(models.AppSetting.key == _MIGRATION_KEY).first():
+        return
+
     cat = db.query(models.Category).filter(models.Category.name == "ソフトウェアテスト").first()
     if not cat:
+        db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
+        db.commit()
         return
 
     skill_name = "組み込みC解析・メモリ(RAM/ROM)調査"
@@ -1126,6 +1132,8 @@ def _seed_embedded_c_memory_skill(db):
             exists = db.query(models.BusinessMapAreaSkill).filter_by(area_id=area.id, sub_skill_id=sub.id).first()
             if not exists:
                 db.add(models.BusinessMapAreaSkill(area_id=area.id, sub_skill_id=sub.id))
+
+    db.add(models.AppSetting(key=_MIGRATION_KEY, value="done"))
     db.commit()
 
 
