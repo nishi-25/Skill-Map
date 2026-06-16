@@ -14,23 +14,23 @@
   {% endif %}
 </div>
 
-<!-- 全体進捗サマリー（User のみ・グループ所属済み） -->
+{# ── 全体進捗サマリー（User のみ） ── #}
 {% if not is_scoped or (is_scoped and not no_group) %}
 {% if path_groups %}
-{% set total_steps = namespace(n=0) %}
-{% set done_steps  = namespace(n=0) %}
-{% for skill, active, done in path_groups %}
-  {% set total_steps.n = total_steps.n + active|length + done|length %}
-  {% set done_steps.n  = done_steps.n  + done|length %}
+{% set ns = namespace(total_n=0, done_n=0) %}
+{% for g in path_groups %}
+  {% set ns.total_n = ns.total_n + g.total %}
+  {% set ns.done_n  = ns.done_n  + g.done_count %}
 {% endfor %}
-{% set overall_pct = (done_steps.n / total_steps.n * 100)|int if total_steps.n else 0 %}
+{% if current_user.role not in ('admin','manager') %}
+{% set overall_pct = (ns.done_n / ns.total_n * 100)|int if ns.total_n else 0 %}
 <div class="card mb-3 border-0" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">
   <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
     <i class="bi bi-mortarboard-fill" style="font-size:1.5rem;color:#f97316;"></i>
     <div style="flex:1;">
       <div class="d-flex justify-content-between mb-1">
         <span class="fw-bold" style="color:#c2410c;">学習パス全体進捗</span>
-        <span class="text-muted small">{{ done_steps.n }} / {{ total_steps.n }} ステップ完了</span>
+        <span class="text-muted small">{{ ns.done_n }} / {{ ns.total_n }} ステップ完了</span>
       </div>
       <div class="progress" style="height:7px;border-radius:4px;">
         <div class="progress-bar" style="width:{{ overall_pct }}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px;"></div>
@@ -41,8 +41,9 @@
 </div>
 {% endif %}
 {% endif %}
+{% endif %}
 
-<!-- スコープバナー（Userのみ） -->
+{# ── スコープバナー（User のみ） ── #}
 {% if is_scoped %}
   {% if no_group %}
   <div class="alert mb-3 d-flex align-items-center gap-3"
@@ -66,11 +67,9 @@
 {% endif %}
 
 {% if path_groups %}
-{% set TIER_COLORS = {'beginner':'success','basic':'primary','intermediate':'warning','advanced':'danger'} %}
-{% set SKILL_TIERS = {'beginner':'入門','basic':'基礎','intermediate':'応用','advanced':'上級'} %}
 {% set is_mgr = current_user.role in ('admin','manager') %}
 
-<!-- カテゴリーフィルター -->
+{# ── カテゴリーフィルター ── #}
 {% if filter_categories %}
 <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
   <span class="text-muted small" style="font-size:.8rem;">カテゴリー:</span>
@@ -86,33 +85,39 @@
 </div>
 {% endif %}
 
-<!-- スキル別学習パスカード -->
-{% for skill, active_lnks, done_lnks in path_groups %}
-{% set total = active_lnks|length + done_lnks|length %}
-{% set done_count = done_lnks|length %}
+{# ── スキル別学習パスカード ── #}
+{% for g in path_groups %}
+{% set skill = g.skill %}
+{% set steps = g.steps %}
+{% set completed_ids = g.completed_ids %}
+{% set done_count = g.done_count %}
+{% set total = g.total %}
 {% set all_done = (done_count == total and total > 0 and not is_mgr) %}
+{% set in_progress = (done_count > 0 and not all_done and not is_mgr) %}
+{# カードを最初から開く: in_progress は展開、それ以外は折りたたみ #}
+{% set body_open = in_progress %}
 
 <div class="card mb-3 skill-path-card" data-category-id="{{ skill.category_id or 0 }}"
-     style="border-radius:14px;overflow:hidden;">
-  <!-- ── ヘッダー（クリックで展開） ── -->
+     style="border-radius:14px;overflow:hidden;border:{% if all_done %}1.5px solid #86efac{% elif in_progress %}1.5px solid #fed7aa{% else %}1px solid #e2e8f0{% endif %};">
+
+  {# ── ヘッダー ── #}
   <div class="card-header d-flex align-items-center gap-2 flex-wrap"
-       style="background:{% if all_done %}#f0fdf4{% else %}#fff7ed{% endif %};
-              border-bottom:2px solid {% if all_done %}#86efac{% else %}#fed7aa{% endif %};
+       style="background:{% if all_done %}#f0fdf4{% elif in_progress %}#fff7ed{% else %}#f8fafc{% endif %};
+              border-bottom:2px solid {% if all_done %}#86efac{% elif in_progress %}#fed7aa{% else %}#e2e8f0{% endif %};
               padding:.65rem 1rem;cursor:pointer;"
        data-bs-toggle="collapse" data-bs-target="#skill-body-{{ skill.id }}"
-       aria-expanded="false" aria-controls="skill-body-{{ skill.id }}"
+       aria-expanded="{{ 'true' if body_open else 'false' }}"
        onclick="rotateChevron('chev-{{ skill.id }}')">
-    <i class="bi bi-{% if all_done %}check-circle-fill{% else %}collection-fill{% endif %}"
-       style="color:{% if all_done %}#16a34a{% else %}#f97316{% endif %};font-size:.95rem;flex-shrink:0;"></i>
+
+    <i class="bi bi-{% if all_done %}check-circle-fill{% elif in_progress %}play-circle-fill{% else %}collection-fill{% endif %}"
+       style="color:{% if all_done %}#16a34a{% elif in_progress %}#f97316{% else %}#94a3b8{% endif %};font-size:.95rem;flex-shrink:0;"></i>
+
     <span class="fw-bold" style="font-size:.95rem;">{{ skill.name }}</span>
     {% if skill.category %}
     <span class="badge" style="background:{{ skill.category.color }};font-size:.65rem;">{{ skill.category.name }}</span>
     {% endif %}
-    {% if skill.tier %}
-    <span class="badge bg-{{ TIER_COLORS.get(skill.tier,'secondary') }}" style="font-size:.65rem;">{{ SKILL_TIERS.get(skill.tier, skill.tier) }}</span>
-    {% endif %}
 
-    <!-- 進捗バッジ（User のみ） -->
+    {# ── 進捗バッジ ── #}
     {% if not is_mgr %}
       {% if all_done %}
       <span class="badge ms-1" style="background:#dcfce7;color:#16a34a;font-size:.68rem;border-radius:20px;">
@@ -125,24 +130,24 @@
       {% else %}
       <span class="badge ms-1 bg-light text-muted border" style="font-size:.68rem;border-radius:20px;">{{ total }} ステップ</span>
       {% endif %}
-      {% if total > 0 and done_count > 0 and not all_done %}
-      <div style="flex:1;min-width:60px;max-width:80px;height:4px;background:#fed7aa;border-radius:2px;overflow:hidden;">
-        <div style="height:100%;width:{{ (done_count / total * 100)|int }}%;background:#f97316;border-radius:2px;"></div>
-      </div>
-      {% endif %}
     {% else %}
       <span class="badge ms-1 bg-light text-muted border" style="font-size:.68rem;border-radius:20px;">{{ total }} ステップ</span>
     {% endif %}
 
+    {# インラインプログレスバー (進行中のみ) #}
+    {% if in_progress and total > 0 %}
+    <div style="flex:1;min-width:60px;max-width:100px;height:5px;background:#fed7aa;border-radius:3px;overflow:hidden;">
+      <div style="height:100%;width:{{ (done_count / total * 100)|int }}%;background:#f97316;border-radius:3px;"></div>
+    </div>
+    {% endif %}
+
     <div class="ms-auto d-flex gap-1 align-items-center">
       {% if is_mgr %}
-      <!-- ＋ ステップ追加ボタン -->
       <button class="btn btn-sm btn-success" style="border-radius:20px;font-size:.72rem;padding:.2rem .55rem;"
               title="ステップを追加"
               onclick="event.stopPropagation();openAddStep({{ skill.id }},'{{ skill.name|replace("'","\\'") }}')">
         <i class="bi bi-plus-lg"></i>
       </button>
-      <!-- 管理ページへ -->
       <a href="/education/path/{{ skill.id }}"
          class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.72rem;padding:.2rem .6rem;"
          onclick="event.stopPropagation()">
@@ -150,134 +155,119 @@
       </a>
       {% endif %}
       <i class="bi bi-chevron-down" id="chev-{{ skill.id }}"
-         style="color:#94a3b8;font-size:.8rem;transition:transform .2s;flex-shrink:0;"></i>
+         style="color:#94a3b8;font-size:.8rem;transition:transform .2s;flex-shrink:0;
+                {% if body_open %}transform:rotate(180deg);{% endif %}"></i>
     </div>
   </div>
 
-  <!-- ── 本体（折りたたみ） ── -->
-  <div id="skill-body-{{ skill.id }}" class="collapse">
-    <div class="card-body py-3 px-4">
+  {# ── ステップリスト ── #}
+  <div id="skill-body-{{ skill.id }}" class="collapse{% if body_open %} show{% endif %}">
+    <div class="card-body py-3 px-3">
+      {% set ns2 = namespace(found_current=False) %}
+      {% for lnk in steps %}
+        {% set is_done = lnk.id in completed_ids %}
+        {% set is_current = not is_done and not ns2.found_current and not is_mgr %}
+        {% if is_current %}{% set ns2.found_current = True %}{% endif %}
+        {% set is_last = loop.last %}
 
-      <!-- 未完了ステップ -->
-      {% if active_lnks %}
-      {% for lnk in active_lnks %}
-      <div class="d-flex gap-3 {% if not loop.last or done_lnks %}mb-3{% endif %}">
-        <div class="d-flex flex-column align-items-center" style="min-width:36px;">
-          <div style="width:32px;height:32px;border-radius:50%;
-                      background:{% if lnk.step_order %}#f97316{% else %}#94a3b8{% endif %};
-                      color:#fff;display:flex;align-items:center;justify-content:center;
-                      font-size:.75rem;font-weight:700;flex-shrink:0;">
-            {% if lnk.step_order %}{{ lnk.step_order }}{% else %}-{% endif %}
+        <div class="d-flex gap-3 {% if not is_last %}mb-2{% endif %}">
+          {# ── ステップ番号インジケーター ── #}
+          <div class="d-flex flex-column align-items-center" style="min-width:32px;">
+            <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+                        justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;
+                        {% if is_done %}
+                          background:#dcfce7;color:#16a34a;
+                        {% elif is_current %}
+                          background:#f97316;color:#fff;box-shadow:0 0 0 3px #fed7aa;
+                        {% else %}
+                          background:#f1f5f9;color:#94a3b8;
+                        {% endif %}">
+              {% if is_done %}
+                <i class="bi bi-check2" style="font-size:.85rem;"></i>
+              {% elif is_current %}
+                <i class="bi bi-play-fill" style="font-size:.8rem;"></i>
+              {% else %}
+                {{ lnk.step_order or '-' }}
+              {% endif %}
+            </div>
+            {% if not is_last %}
+            <div style="width:2px;flex:1;min-height:12px;margin-top:3px;
+                        background:{% if is_done %}#bbf7d0{% else %}#e2e8f0{% endif %};"></div>
+            {% endif %}
           </div>
-          {% if not loop.last or done_lnks %}
-          <div style="width:2px;flex:1;background:#fed7aa;margin-top:4px;min-height:16px;"></div>
-          {% endif %}
-        </div>
-        <div class="flex-fill mb-1">
-          <div class="card" style="border-radius:10px;border:1px solid #e2e8f0;">
-            <div class="card-body py-2 px-3">
-              <div class="d-flex align-items-start gap-2">
-                <div style="width:26px;height:26px;border-radius:7px;background:#f8fafc;border:1px solid #e2e8f0;
-                            display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
-                  <img src="https://www.google.com/s2/favicons?domain={{ lnk.url }}&sz=32"
-                       alt="" style="width:14px;height:14px;"
-                       onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                  <i class="bi bi-link-45deg" style="color:#94a3b8;font-size:.8rem;display:none;"></i>
-                </div>
-                <div class="flex-fill min-width-0">
-                  <div class="fw-semibold" style="font-size:.88rem;line-height:1.3;">{{ lnk.title }}</div>
-                  <div class="text-muted" style="font-size:.7rem;">
-                    {{ lnk.url | replace('https://','') | replace('http://','') | truncate(48, true, '…') }}
+
+          {# ── コンテンツカード ── #}
+          <div class="flex-fill mb-1">
+            <div class="card" style="border-radius:10px;
+                 border:1px solid {% if is_done %}#bbf7d0{% elif is_current %}#fed7aa{% else %}#e2e8f0{% endif %};
+                 {% if is_done %}background:#f0fdf4;{% elif is_current %}background:#fffbeb;border-left:3px solid #f97316;{% endif %}">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex align-items-center gap-2">
+                  {# ファビコン #}
+                  <div style="width:24px;height:24px;border-radius:6px;flex-shrink:0;overflow:hidden;
+                              display:flex;align-items:center;justify-content:center;
+                              background:{% if is_done %}#dcfce7{% else %}#f8fafc{% endif %};
+                              border:1px solid {% if is_done %}#bbf7d0{% else %}#e2e8f0{% endif %};">
+                    <img src="https://www.google.com/s2/favicons?domain={{ lnk.url }}&sz=32"
+                         alt="" style="width:13px;height:13px;"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <i class="bi bi-link-45deg" style="color:#94a3b8;font-size:.75rem;display:none;"></i>
                   </div>
-                  {% if lnk.description %}
-                  <div class="text-muted mt-1" style="font-size:.76rem;line-height:1.4;">{{ lnk.description }}</div>
-                  {% endif %}
-                </div>
-                <div class="d-flex gap-1 align-items-start flex-shrink-0">
-                  <a href="{{ lnk.url }}" target="_blank" rel="noopener"
-                     class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.75rem;">
-                    <i class="bi bi-box-arrow-up-right"></i>
-                  </a>
-                  {% if not is_mgr %}
-                  <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
-                    <button class="btn btn-sm btn-outline-success" style="border-radius:20px;font-size:.75rem;" title="完了にする">
-                      <i class="bi bi-check2 me-1"></i>完了
-                    </button>
-                  </form>
-                  {% endif %}
+                  {# テキスト #}
+                  <div class="flex-fill min-width-0">
+                    <div class="fw-semibold" style="font-size:.87rem;line-height:1.3;
+                         {% if is_done %}color:#4b7a5a;text-decoration:line-through;text-decoration-color:#86efac;{% elif is_current %}color:#92400e;{% endif %}">
+                      {{ lnk.title }}
+                      {% if is_current %}<span class="badge ms-1" style="background:#f97316;color:#fff;font-size:.6rem;border-radius:20px;vertical-align:middle;">今ここ</span>{% endif %}
+                    </div>
+                    {% if lnk.description %}
+                    <div class="text-muted" style="font-size:.75rem;line-height:1.3;">{{ lnk.description }}</div>
+                    {% endif %}
+                  </div>
+                  {# アクションボタン #}
+                  <div class="d-flex gap-1 align-items-center flex-shrink-0">
+                    <a href="{{ lnk.url }}" target="_blank" rel="noopener"
+                       class="btn btn-sm" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;
+                              border:1px solid {% if is_done %}#86efac{% else %}#d1d5db{% endif %};
+                              color:{% if is_done %}#16a34a{% else %}#6b7280{% endif %};">
+                      <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    {% if is_mgr %}
+                    <form method="post" action="/education/path/{{ skill.id }}/delete/{{ lnk.id }}"
+                          onsubmit="return confirm('「{{ lnk.title }}」を削除しますか？')">
+                      <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;" title="削除">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    {% elif is_done %}
+                    <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
+                      <button class="btn btn-sm" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;border:1px solid #86efac;color:#6b7280;" title="未完了に戻す">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                      </button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
+                      <button class="btn btn-sm {% if is_current %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                              style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;" title="完了にする">
+                        <i class="bi bi-check2{% if is_current %}-all{% endif %}"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       {% endfor %}
-      {% elif not done_lnks %}
-      <p class="text-muted small text-center py-2">ステップがありません</p>
-      {% endif %}
 
-      <!-- 完了済みセクション（User のみ表示） -->
-      {% if done_lnks and not is_mgr %}
-      <div class="mt-{% if active_lnks %}2{% else %}0{% endif %}">
-        <div class="d-flex align-items-center gap-2 mb-2"
-             style="cursor:pointer;padding:.3rem 0;"
-             data-bs-toggle="collapse" data-bs-target="#done-{{ skill.id }}"
-             onclick="rotateChevron('done-chev-{{ skill.id }}')">
-          <div style="flex:1;height:1px;background:#dcfce7;"></div>
-          <span style="font-size:.78rem;color:#16a34a;font-weight:600;white-space:nowrap;">
-            <i class="bi bi-check-circle-fill me-1"></i>完了済み ({{ done_count }})
-          </span>
-          <i class="bi bi-chevron-down" id="done-chev-{{ skill.id }}"
-             style="color:#16a34a;font-size:.7rem;transition:transform .2s;"></i>
-          <div style="flex:1;height:1px;background:#dcfce7;"></div>
-        </div>
-        <div id="done-{{ skill.id }}" class="collapse show">
-          {% for lnk in done_lnks %}
-          <div class="d-flex gap-3 {% if not loop.last %}mb-2{% endif %}">
-            <div style="min-width:36px;display:flex;justify-content:center;">
-              <div style="width:30px;height:30px;border-radius:50%;background:#dcfce7;
-                          color:#16a34a;display:flex;align-items:center;justify-content:center;
-                          font-size:.8rem;flex-shrink:0;">
-                <i class="bi bi-check2"></i>
-              </div>
-            </div>
-            <div class="flex-fill mb-1">
-              <div class="card" style="border-radius:10px;border:1px solid #bbf7d0;background:#f0fdf4;opacity:.85;">
-                <div class="card-body py-2 px-3">
-                  <div class="d-flex align-items-start gap-2">
-                    <div style="width:24px;height:24px;border-radius:6px;background:#dcfce7;border:1px solid #bbf7d0;
-                                display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
-                      <img src="https://www.google.com/s2/favicons?domain={{ lnk.url }}&sz=32"
-                           alt="" style="width:13px;height:13px;"
-                           onerror="this.style.display='none'">
-                    </div>
-                    <div class="flex-fill min-width-0">
-                      <div class="fw-semibold" style="font-size:.85rem;line-height:1.3;color:#166534;text-decoration:line-through;text-decoration-color:#86efac;">{{ lnk.title }}</div>
-                      <div style="font-size:.7rem;color:#4ade80;">
-                        {{ lnk.url | replace('https://','') | replace('http://','') | truncate(48, true, '…') }}
-                      </div>
-                    </div>
-                    <div class="d-flex gap-1 align-items-start flex-shrink-0">
-                      <a href="{{ lnk.url }}" target="_blank" rel="noopener"
-                         class="btn btn-sm" style="border-radius:20px;font-size:.72rem;border:1px solid #86efac;color:#16a34a;">
-                        <i class="bi bi-box-arrow-up-right"></i>
-                      </a>
-                      <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
-                        <button class="btn btn-sm" style="border-radius:20px;font-size:.72rem;border:1px solid #86efac;color:#6b7280;" title="未完了に戻す">
-                          <i class="bi bi-arrow-counterclockwise"></i>
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
+      {% if all_done %}
+      <div class="text-center mt-2 pt-2" style="border-top:1px solid #dcfce7;">
+        <span style="font-size:.82rem;color:#16a34a;font-weight:600;">
+          <i class="bi bi-trophy-fill me-1"></i>このスキルの学習パスが完了しました！
+        </span>
       </div>
       {% endif %}
-
     </div>
   </div>
 </div>
@@ -289,7 +279,7 @@
     <i class="bi bi-signpost-split fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>学習パスがまだ登録されていません</h5>
     {% if current_user.role in ('admin','manager') %}
-    <p class="small">スキルカタログからスキルを選び、「管理」で学習ステップを登録してください。</p>
+    <p class="small">スキルに紐づく学習パスを設定するには「管理」ページからステップを追加してください。</p>
     {% else %}
     <p class="small">管理者またはマネージャーが学習パスを設定するとここに表示されます。</p>
     {% endif %}
@@ -297,7 +287,7 @@
 </div>
 {% endif %}
 
-<!-- ── ステップ追加モーダル（Manager/Admin 用） ── -->
+{# ── ステップ追加モーダル（Manager/Admin 用） ── #}
 {% if current_user.role in ('admin','manager') %}
 <div class="modal fade" id="addStepModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -351,7 +341,6 @@
 
 {% block scripts %}
 <script>
-// カテゴリーフィルター
 function filterCat(catId, btn) {
   document.querySelectorAll('.filter-cat-btn').forEach(b => {
     b.classList.remove('btn-primary');
@@ -364,14 +353,12 @@ function filterCat(catId, btn) {
   });
 }
 
-// シェブロン回転
 function rotateChevron(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.style.transform = el.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
 }
 
-// ステップ追加モーダルを開く
 function openAddStep(skillId, skillName) {
   document.getElementById('addStepForm').action = `/education/path/${skillId}/add`;
   document.getElementById('modalSkillName').textContent = skillName;
@@ -381,7 +368,6 @@ function openAddStep(skillId, skillName) {
   new bootstrap.Modal(document.getElementById('addStepModal')).show();
 }
 
-// モーダル内ファビコンプレビュー
 function previewModalFavicon(url) {
   const preview = document.getElementById('modalFaviconPreview');
   const img     = document.getElementById('modalFaviconImg');

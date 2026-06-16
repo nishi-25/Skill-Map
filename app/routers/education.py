@@ -74,22 +74,29 @@ def education_list(request: Request, db: Session = Depends(get_db)):
         .all()
     }
 
-    # スキルごとに active / done に分割（スキルが削除済みのリンクはスキップ）
+    # スキルごとに全ステップ・完了ID付きのdictに整理（スキルが削除済みはスキップ）
     path_groups = []
     for sid, lnks in _groups.items():
         skill_obj = lnks[0].skill
         if skill_obj is None:
-            continue  # 紐づくスキルが削除済みの場合はスキップ
-        active = [l for l in lnks if l.id not in completed_ids]
-        done   = [l for l in lnks if l.id in completed_ids]
-        path_groups.append((skill_obj, active, done))
-    path_groups.sort(key=lambda t: (t[0].category.name if t[0].category else "", t[0].name))
+            continue
+        done_count = sum(1 for l in lnks if l.id in completed_ids)
+        total = len(lnks)
+        path_groups.append({
+            "skill": skill_obj,
+            "steps": lnks,
+            "completed_ids": completed_ids,
+            "done_count": done_count,
+            "total": total,
+        })
+    path_groups.sort(key=lambda g: (g["skill"].category.name if g["skill"].category else "", g["skill"].name))
 
-    # カテゴリーフィルター用（path_groups に含まれるカテゴリーのみ）
+    # カテゴリーフィルター用
     seen: dict = {}
-    for skill_obj, _, __ in path_groups:
-        if skill_obj.category and skill_obj.category_id not in seen:
-            seen[skill_obj.category_id] = skill_obj.category
+    for g in path_groups:
+        s = g["skill"]
+        if s.category and s.category_id not in seen:
+            seen[s.category_id] = s.category
     filter_categories = sorted(seen.values(), key=lambda c: c.name)
 
     return templates.TemplateResponse(request, "education.html", {
@@ -234,7 +241,7 @@ async def education_path_add(
     title: str = Form(...),
     url: str = Form(...),
     description: str = Form(""),
-    next: str = Form("/education/path/{skill_id}"),
+    next: str = Form(""),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
@@ -290,8 +297,17 @@ def education_path_delete(skill_id: int, link_id: int, request: Request, db: Ses
     return RedirectResponse(f"/education/path/{skill_id}", status_code=303)
 
 
+@router.post("/education/path/{skill_id}/delete-all")
+def education_path_delete_all(skill_id: int, request: Request, db: Session = Depends(get_db)):
+    """スキルに紐づく学習パスのステップを全件削除する"""
+    user = auth.require_manager_or_admin(request, db)
+    db.query(models.EducationalLink).filter(models.EducationalLink.skill_id == skill_id).delete()
+    db.commit()
+    return RedirectResponse("/education", status_code=303)
+
+
 @router.post("/education/progress/{link_id}/toggle")
-def toggle_progress(link_id: int, request: Request, db: Session = Depends(get_db)):
+def toggle_progress(link_id: int, request: Request, next: str = Form(""), db: Session = Depends(get_db)):
     user = auth.require_approved(request, db)
     existing = (
         db.query(models.UserLearningProgress)
@@ -306,7 +322,8 @@ def toggle_progress(link_id: int, request: Request, db: Session = Depends(get_db
     else:
         db.add(models.UserLearningProgress(user_id=user.id, educational_link_id=link_id))
     db.commit()
-    return RedirectResponse("/education", status_code=303)
+    redirect_to = next if next.startswith("/") else "/education"
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 @router.post("/education/path/{skill_id}/reorder/{link_id}")

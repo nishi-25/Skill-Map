@@ -177,10 +177,80 @@
         </div>
         {% endif %}
 
+        <!-- 学習パス進捗 -->
+        {% if learning_steps %}
+        {% set lp_done = learning_done_ids|length %}
+        {% set lp_total = learning_steps|length %}
+        {% set lp_all_done = (lp_done == lp_total) %}
+        <div class="card mb-3" style="border:1.5px solid {% if lp_all_done %}#86efac{% else %}#fed7aa{% endif %};">
+          <div class="card-header py-2 d-flex align-items-center gap-2"
+               style="background:{% if lp_all_done %}#f0fdf4{% else %}#fff7ed{% endif %};">
+            <i class="bi bi-signpost-split" style="color:{% if lp_all_done %}#16a34a{% else %}#f97316{% endif %};"></i>
+            <span class="fw-semibold small">学習パス</span>
+            {% if lp_all_done %}
+            <span class="badge ms-auto" style="background:#dcfce7;color:#16a34a;font-size:.65rem;"><i class="bi bi-check2-all me-1"></i>完了</span>
+            {% else %}
+            <span class="badge ms-auto" style="background:#fff7ed;color:#f97316;border:1px solid #fed7aa;font-size:.65rem;">{{ lp_done }}/{{ lp_total }}</span>
+            {% endif %}
+          </div>
+          <div class="card-body p-2">
+            {% set lns = namespace(found_cur=False) %}
+            {% for lnk in learning_steps %}
+            {% set is_done = lnk.id in learning_done_ids %}
+            {% set is_cur = not is_done and not lns.found_cur %}
+            {% if is_cur %}{% set lns.found_cur = True %}{% endif %}
+            <div class="d-flex align-items-center gap-2 py-1 {% if not loop.last %}border-bottom{% endif %}" style="border-color:#f1f5f9!important;">
+              <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;flex-shrink:0;
+                          {% if is_done %}background:#dcfce7;color:#16a34a;
+                          {% elif is_cur %}background:#f97316;color:#fff;
+                          {% else %}background:#f1f5f9;color:#94a3b8;{% endif %}">
+                {% if is_done %}<i class="bi bi-check2"></i>
+                {% elif is_cur %}<i class="bi bi-play-fill"></i>
+                {% else %}{{ lnk.step_order or loop.index }}{% endif %}
+              </div>
+              <span style="flex:1;font-size:.82rem;line-height:1.3;
+                           {% if is_done %}color:#4b7a5a;text-decoration:line-through;text-decoration-color:#86efac;
+                           {% elif is_cur %}font-weight:600;color:#92400e;{% endif %}">
+                {{ lnk.title }}
+              </span>
+              <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
+                <input type="hidden" name="next" value="/skills/{{ skill.id }}/declare">
+                {% if is_done %}
+                <button class="btn btn-sm" style="border-radius:20px;font-size:.68rem;padding:.1rem .4rem;border:1px solid #86efac;color:#6b7280;" title="未完了に戻す">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+                {% else %}
+                <button class="btn btn-sm {% if is_cur %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                        style="border-radius:20px;font-size:.68rem;padding:.1rem .45rem;" title="完了にする">
+                  <i class="bi bi-check2"></i>
+                </button>
+                {% endif %}
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+          {% if not lp_all_done %}
+          <div class="card-footer py-1 px-2" style="background:#fef2f2;border-top:1px solid #fca5a5;">
+            <span style="font-size:.72rem;color:#dc2626;"><i class="bi bi-lock-fill me-1"></i>学習パスを全て完了すると申告できます（{{ lp_done }}/{{ lp_total }} 完了）</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
         <!-- 申告するボタン -->
+        {% set lp_all_done_flag = (learning_steps|length == 0) or (learning_done_ids|length == learning_steps|length) %}
         <div class="d-grid mb-3">
-          <button type="submit" class="btn btn-primary btn-lg" style="border-radius:24px;font-size:1rem;">
+          <button type="submit" class="btn btn-lg fw-semibold"
+                  {% if not lp_all_done_flag %}disabled title="学習パスを全て完了してから申告してください"{% endif %}
+                  style="border-radius:24px;font-size:1rem;
+                         {% if lp_all_done_flag %}background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;
+                         {% else %}background:#d1d5db;border-color:#d1d5db;color:#9ca3af;cursor:not-allowed;{% endif %}">
+            {% if lp_all_done_flag %}
             <i class="bi bi-send me-2"></i>申告する
+            {% if learning_steps %}<i class="bi bi-check2-circle ms-1"></i>{% endif %}
+            {% else %}
+            <i class="bi bi-lock-fill me-2"></i>学習パス未完了
+            {% endif %}
           </button>
         </div>
         {% if current %}

@@ -27,6 +27,53 @@ def _collect_leaf_subskill_ids(area: "models.BusinessMapArea") -> set:
     return ids
 
 
+def _build_stats_tree(areas, done_sub_ids: set) -> list:
+    """エリアリストを再帰的にstats付きツリーに変換する"""
+    result = []
+    for area in sorted(areas, key=lambda a: a.order_index):
+        sub_ids = _collect_leaf_subskill_ids(area)
+        total = len(sub_ids)
+        acquired = sum(1 for sid in sub_ids if sid in done_sub_ids)
+        is_leaf = not area.children
+
+        # リーフエリアのスキルデータ: エリアに含まれるスキルの全サブスキルを収集
+        skills_data = []
+        if is_leaf:
+            seen_skills: dict = {}
+            for a_sk in sorted(area.area_sub_skills, key=lambda x: x.order_index):
+                ss = a_sk.sub_skill
+                if ss and ss.skill and not ss.skill.is_archived:
+                    skill_id = ss.skill_id
+                    if skill_id not in seen_skills:
+                        skill = ss.skill
+                        all_subs = sorted(skill.sub_skills, key=lambda x: (x.order_index, x.id))
+                        seen_skills[skill_id] = {
+                            "skill": skill,
+                            "sub_skills": [
+                                {
+                                    "id": sub.id,
+                                    "name": sub.name,
+                                    "description": sub.description or "",
+                                    "tier": sub.tier or "basic",
+                                    "can_do": sub.id in done_sub_ids,
+                                }
+                                for sub in all_subs
+                            ],
+                        }
+            skills_data = list(seen_skills.values())
+
+        result.append({
+            "area": area,
+            "total": total,
+            "acquired": acquired,
+            "pct": int(acquired / total * 100) if total else 0,
+            "is_leaf": is_leaf,
+            "children": _build_stats_tree(area.children, done_sub_ids) if not is_leaf else [],
+            "skills_data": skills_data,
+        })
+    return result
+
+
 # ════════════════════════════════════════════════════════════════
 # ユーザー向け: スキルマップ入口の選択画面 / 業務マップ一覧
 # ════════════════════════════════════════════════════════════════
@@ -72,24 +119,64 @@ def business_map_view(request: Request, parent_id: int = 0, db: Session = Depend
         ).all()
     }
 
-    area_stats = []
-    for area in areas:
-        sub_ids = _collect_leaf_subskill_ids(area)
-        total = len(sub_ids)
-        acquired = sum(1 for sid in sub_ids if sid in done_sub_ids)
-        area_stats.append({
-            "area": area,
-            "total": total,
-            "acquired": acquired,
-            "is_leaf": not area.children,
-        })
+    tree = _build_stats_tree(areas, done_sub_ids)
+
+    # ユーザーのエビデンスをスキルIDでインデックス化
+    evidence_map: dict = {}
+    for ev in (
+        db.query(models.SkillEvidence)
+        .filter(models.SkillEvidence.user_id == user.id)
+        .order_by(models.SkillEvidence.created_at)
+        .all()
+    ):
+        evidence_map.setdefault(ev.skill_id, []).append(ev)
 
     return templates.TemplateResponse(request, "business_map_view.html", {
         "current_user": user,
-        "area_stats": area_stats,
+        "tree": tree,
         "current_parent": current_parent,
         "breadcrumbs": breadcrumbs,
+        "SKILL_LEVELS": models.SKILL_LEVELS,
+        "LEVEL_COLORS": models.LEVEL_COLORS,
+        "SKILL_TIERS": models.SKILL_TIERS,
+        "TIER_COLORS": models.TIER_COLORS,
+        "evidence_map": evidence_map,
     })
+
+
+@router.post("/skills/business-map/area/{area_id}/declare")
+async def business_map_area_declare(area_id: int, request: Request, db: Session = Depends(get_db)):
+    """業務マップのリーフエリアからサブスキルを一括申告する"""
+    user = auth.require_approved(request, db)
+    area = db.query(models.BusinessMapArea).filter(models.BusinessMapArea.id == area_id).first()
+    if not area:
+        return RedirectResponse("/skills/business-map", status_code=303)
+
+    form_data = await request.form()
+    next_url = str(form_data.get("_next", "/skills/business-map"))
+    if not next_url.startswith("/"):
+        next_url = "/skills/business-map"
+
+    for a_sk in area.area_sub_skills:
+        if not a_sk.sub_skill:
+            continue
+        ss_id = a_sk.sub_skill_id
+        can_do = form_data.get(f"ss_{ss_id}") == "1"
+        existing = (
+            db.query(models.UserSubSkillLevel)
+            .filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.sub_skill_id == ss_id,
+            )
+            .first()
+        )
+        if existing:
+            existing.can_do = can_do
+        else:
+            db.add(models.UserSubSkillLevel(user_id=user.id, sub_skill_id=ss_id, can_do=can_do))
+
+    db.commit()
+    return RedirectResponse(next_url, status_code=303)
 
 
 # ════════════════════════════════════════════════════════════════

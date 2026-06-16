@@ -1773,6 +1773,23 @@ def skill_declare_get(skill_id: int, request: Request, db: Session = Depends(get
         models.SkillGoal.skill_id == skill_id,
     ).first()
 
+    # 学習パスステップ
+    learning_steps = (
+        db.query(models.EducationalLink)
+        .filter(models.EducationalLink.skill_id == skill_id)
+        .order_by(models.EducationalLink.step_order.nullslast(), models.EducationalLink.id)
+        .all()
+    )
+    learning_done_ids = {
+        p.educational_link_id
+        for p in db.query(models.UserLearningProgress)
+        .filter(
+            models.UserLearningProgress.user_id == user.id,
+            models.UserLearningProgress.educational_link_id.in_([s.id for s in learning_steps]),
+        )
+        .all()
+    } if learning_steps else set()
+
     return templates.TemplateResponse(request, "skill_declare.html", {
         "current_user": user,
         "skill": skill,
@@ -1787,6 +1804,8 @@ def skill_declare_get(skill_id: int, request: Request, db: Session = Depends(get
         "APPROVAL_STATUS_COLORS": models.APPROVAL_STATUS_COLORS,
         "group_managers": group_managers,
         "skill_goal": skill_goal,
+        "learning_steps": learning_steps,
+        "learning_done_ids": learning_done_ids,
     })
 
 
@@ -1799,6 +1818,7 @@ def skill_declare_post(
     override_reason: str = Form(default=""),
     approver_id: Optional[int] = Form(default=None),
     for_user_id: int = Form(default=0),
+    redirect_to: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     """スキル申告フォーム送信処理。Admin/Manager は代理申告のみ可。"""
@@ -1834,6 +1854,26 @@ def skill_declare_post(
     skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
     if not skill:
         return RedirectResponse("/skills", status_code=303)
+
+    # 学習パスが設定されている場合、全ステップ完了を申告の前提条件とする
+    if not is_proxy:
+        lp_steps = (
+            db.query(models.EducationalLink)
+            .filter(models.EducationalLink.skill_id == skill_id)
+            .all()
+        )
+        if lp_steps:
+            lp_done_ids = {
+                p.educational_link_id
+                for p in db.query(models.UserLearningProgress)
+                .filter(
+                    models.UserLearningProgress.user_id == declare_user.id,
+                    models.UserLearningProgress.educational_link_id.in_([s.id for s in lp_steps]),
+                )
+                .all()
+            }
+            if len(lp_done_ids) < len(lp_steps):
+                return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
 
     # 1. UserSubSkillLevel を upsert
     all_sub_skills = (
@@ -1925,6 +1965,8 @@ def skill_declare_post(
     _award_badges(declare_user.id, db)
     db.commit()
     redirect_url = f"/skills?view_as={declare_user.id}" if is_proxy else "/skills"
+    if redirect_to and redirect_to.startswith("/") and not is_proxy:
+        redirect_url = redirect_to
     return RedirectResponse(redirect_url, status_code=303)
 
 

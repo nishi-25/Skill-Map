@@ -160,10 +160,18 @@
   </div>
 </div>
 
-<div class="mt-3">
+<div class="mt-3 d-flex gap-2 align-items-center flex-wrap">
   <a href="/education?view=path" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">
     <i class="bi bi-arrow-left me-1"></i>教育リソースに戻る
   </a>
+  {% if steps %}
+  <form method="post" action="/education/path/{{ skill.id }}/delete-all"
+        onsubmit="return confirm('「{{ skill.name }}」の学習パス（{{ steps|length }}件のステップ）をすべて削除しますか？')">
+    <button type="submit" class="btn btn-outline-danger btn-sm" style="border-radius:20px;">
+      <i class="bi bi-trash me-1"></i>このパスを全削除
+    </button>
+  </form>
+  {% endif %}
 </div>
 {% endblock %}
 
