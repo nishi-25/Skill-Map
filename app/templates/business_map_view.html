@@ -10,15 +10,24 @@
 {% macro _bm_declare_form(node) %}
 <div class="bm-form-wrap">
   {% if node.skills_data %}
+  <div class="d-flex justify-content-end mb-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm bm-close-btn"
+            style="border-radius:20px;font-size:.75rem;"
+            data-bs-toggle="collapse" data-bs-target="#bmDeclare-{{ node.area.id }}">
+      <i class="bi bi-chevron-up me-1"></i>閉じる
+    </button>
+  </div>
   {% for skill_data in node.skills_data %}
   {% set sk = skill_data.skill %}
   {% set subs = skill_data.sub_skills %}
   {% set done_ct = subs | selectattr('can_do') | list | length %}
   {% set total_ct = subs | length %}
   {% set pct_init = (done_ct / total_ct * 100) | int if total_ct else 0 %}
-  {% set evidences = evidence_map.get(sk.id, []) %}
   <div class="bm-skill-block {% if not loop.last %}mb-3 pb-3 border-bottom{% endif %}"
-       data-bm-skill-id="{{ sk.id }}" data-bm-skill-total="{{ total_ct }}">
+       data-bm-skill-id="{{ sk.id }}" data-bm-skill-total="{{ total_ct }}"
+       data-bm-catalog-total="{{ skill_data.catalog_total }}"
+       data-bm-catalog-done="{{ skill_data.catalog_done }}"
+       data-bm-area-done-init="{{ done_ct }}">
 
     {# スキルヘッダー #}
     <div class="d-flex align-items-center gap-2 mb-2">
@@ -40,7 +49,7 @@
     </div>
 
     {# 申告フォーム #}
-    <form method="post" action="/skills/{{ sk.id }}/declare">
+    <form method="post" action="/skills/business-map/area/{{ node.area.id }}/skill/{{ sk.id }}/declare">
       <input type="hidden" name="redirect_to" value="/skills/business-map">
       <div class="list-group list-group-flush bm-ss-list mb-2">
         {% for ss in subs %}
@@ -48,7 +57,7 @@
           <input class="form-check-input mt-1 flex-shrink-0 bm-check-{{ sk.id }}"
                  type="checkbox" name="sub_skill_ids" value="{{ ss.id }}"
                  {% if ss.can_do %}checked{% endif %}
-                 onchange="bmRecalc({{ sk.id }}, {{ total_ct }})">
+                 onchange="bmRecalc({{ sk.id }}, {{ total_ct }});markDeclareFlag();">
           <span class="flex-fill">
             <span style="font-size:.85rem;font-weight:500;">{{ ss.name }}</span>
             <span class="badge ms-1 bg-{{ TIER_COLORS.get(ss.tier,'secondary') }}" style="font-size:.62rem;vertical-align:middle;">{{ SKILL_TIERS.get(ss.tier,ss.tier) }}</span>
@@ -64,126 +73,16 @@
                 onclick="bmCheckAll({{ sk.id }}, {{ total_ct }}, true)"><i class="bi bi-check2-all me-1"></i>全選択</button>
         <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;font-size:.75rem;"
                 onclick="bmCheckAll({{ sk.id }}, {{ total_ct }}, false)"><i class="bi bi-x-square me-1"></i>全解除</button>
-        <button type="submit" class="btn btn-sm fw-semibold ms-auto"
-                style="border-radius:20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;min-width:90px;">
+        <button type="button" class="btn btn-sm fw-semibold ms-auto"
+                style="border-radius:20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;min-width:90px;"
+                onclick="bmOpenDeclareModal({{ sk.id }}, this.closest('form'))">
           <i class="bi bi-send me-1"></i>申告する
         </button>
       </div>
     </form>
 
-    {# エビデンスセクション #}
-    <div class="bm-ev-section">
-      <button type="button" class="btn btn-outline-secondary btn-sm bm-ev-toggle collapsed"
-              style="border-radius:20px;font-size:.75rem;"
-              data-bs-toggle="collapse" data-bs-target="#bm-ev-{{ sk.id }}">
-        <i class="bi bi-paperclip me-1"></i>エビデンス
-        {% if evidences %}<span class="badge bg-secondary ms-1" style="font-size:.65rem;">{{ evidences|length }}</span>{% endif %}
-        <i class="bi bi-chevron-down bm-chevron ms-1" style="font-size:.7rem;"></i>
-      </button>
-      <div id="bm-ev-{{ sk.id }}" class="collapse mt-2">
-        <div class="bm-ev-card">
-          {# 既存エビデンス #}
-          <div id="bm-ev-list-{{ sk.id }}" class="mb-2">
-            {% if not evidences %}
-            <p class="text-muted small mb-1" id="bm-ev-empty-{{ sk.id }}" style="font-size:.78rem;"><i class="bi bi-info-circle me-1"></i>エビデンスがまだありません</p>
-            {% endif %}
-            {% for ev in evidences %}
-            <div class="bm-ev-item d-flex align-items-start gap-2 mb-1 p-2 rounded" data-ev-id="{{ ev.id }}">
-              <div style="flex:1;min-width:0;font-size:.8rem;">
-                {% if ev.evidence_type == 'file' %}
-                <i class="bi bi-paperclip text-success me-1"></i>
-                <a href="/skills/evidence/{{ ev.id }}/download" target="_blank">{{ ev.original_filename or ev.title or 'ファイル' }}</a>
-                {% elif ev.evidence_type == 'url' %}
-                <i class="bi bi-link-45deg text-primary me-1"></i>
-                {% if ev.title %}<span class="fw-semibold">{{ ev.title }}</span><br>{% endif %}
-                <a href="{{ ev.content }}" target="_blank" rel="noopener" class="text-truncate d-inline-block" style="max-width:220px;">{{ ev.content }}</a>
-                {% else %}
-                <i class="bi bi-pencil text-warning me-1"></i>
-                {% if ev.title %}<span class="fw-semibold">{{ ev.title }}</span><br>{% endif %}
-                <span class="text-muted">{{ ev.content[:80] }}{% if ev.content|length > 80 %}...{% endif %}</span>
-                {% endif %}
-              </div>
-              <form method="post" action="/skills/evidence/{{ ev.id }}/delete"
-                    onsubmit="return confirm('このエビデンスを削除しますか？')" style="flex-shrink:0;">
-                <button type="submit" class="btn btn-outline-danger p-1" style="border-radius:6px;font-size:.7rem;line-height:1;" title="削除">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </form>
-            </div>
-            {% endfor %}
-          </div>
-          {# エビデンス追加 #}
-          <ul class="nav nav-tabs nav-fill mb-2" style="font-size:.75rem;">
-            <li class="nav-item">
-              <button class="nav-link active py-1 px-1" data-bs-toggle="tab" data-bs-target="#bm-ev-url-{{ sk.id }}" type="button">
-                <i class="bi bi-link-45deg me-1"></i>URL
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link py-1 px-1" data-bs-toggle="tab" data-bs-target="#bm-ev-file-{{ sk.id }}" type="button">
-                <i class="bi bi-paperclip me-1"></i>ファイル
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link py-1 px-1" data-bs-toggle="tab" data-bs-target="#bm-ev-note-{{ sk.id }}" type="button">
-                <i class="bi bi-pencil me-1"></i>テキスト
-              </button>
-            </li>
-          </ul>
-          <div class="tab-content">
-            <div class="tab-pane fade show active" id="bm-ev-url-{{ sk.id }}">
-              <form class="bm-evidence-add-form" action="/skills/{{ sk.id }}/evidence/add"
-                    data-skill-id="{{ sk.id }}">
-                <input type="hidden" name="evidence_type" value="url">
-                <div class="input-group input-group-sm mb-1">
-                  <input type="text" name="title" class="form-control form-control-sm" placeholder="タイトル（任意）" style="border-radius:6px 0 0 6px;">
-                </div>
-                <div class="input-group input-group-sm">
-                  <input type="url" name="content" class="form-control form-control-sm" placeholder="https://..." required>
-                  <button type="submit" class="btn btn-outline-primary btn-sm" style="border-radius:0 6px 6px 0;">追加</button>
-                </div>
-              </form>
-            </div>
-            <div class="tab-pane fade" id="bm-ev-file-{{ sk.id }}">
-              <form class="bm-evidence-add-form" action="/skills/{{ sk.id }}/evidence/add"
-                    data-skill-id="{{ sk.id }}" enctype="multipart/form-data">
-                <input type="hidden" name="evidence_type" value="file">
-                <div class="mb-1">
-                  <input type="text" name="title" class="form-control form-control-sm" placeholder="タイトル（任意）">
-                </div>
-                <div class="input-group input-group-sm">
-                  <input type="file" name="upload_file" class="form-control form-control-sm" required
-                         accept=".pdf,.png,.jpg,.jpeg,.gif,.xlsx,.xls,.csv,.docx,.doc,.txt,.zip,.mp4,.mov">
-                  <button type="submit" class="btn btn-outline-primary btn-sm">追加</button>
-                </div>
-              </form>
-            </div>
-            <div class="tab-pane fade" id="bm-ev-note-{{ sk.id }}">
-              <form class="bm-evidence-add-form" action="/skills/{{ sk.id }}/evidence/add"
-                    data-skill-id="{{ sk.id }}">
-                <input type="hidden" name="evidence_type" value="note">
-                <div class="mb-1">
-                  <input type="text" name="title" class="form-control form-control-sm" placeholder="タイトル（任意）">
-                </div>
-                <div class="input-group input-group-sm">
-                  <textarea name="content" class="form-control form-control-sm" rows="2" placeholder="業務経験・習得状況など" required style="resize:vertical;"></textarea>
-                </div>
-                <button type="submit" class="btn btn-outline-primary btn-sm w-100 mt-1">追加</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
   {% endfor %}
-  <div class="mt-3 text-end">
-    <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;"
-            data-bs-toggle="collapse" data-bs-target="#bmDeclare-{{ node.area.id }}">
-      <i class="bi bi-chevron-up me-1"></i>閉じる
-    </button>
-  </div>
   {% else %}
   <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>このエリアにはサブスキルが割り当てられていません。</p>
   {% endif %}
@@ -426,96 +325,45 @@ function bmCalcLevel(done, total) {
   const r = done / total;
   if (r <= 0.40) return 1; if (r <= 0.70) return 2; if (r < 1.00) return 3; return 4;
 }
-function bmRecalc(skillId, total) {
+function bmRecalc(skillId, areaTotal) {
+  const block = document.querySelector(`[data-bm-skill-id="${skillId}"]`);
+  // カタログ全体数と初期済み件数をdata属性から取得（正確なレベル計算に使用）
+  const catalogTotal = block ? parseInt(block.dataset.bmCatalogTotal || areaTotal) : areaTotal;
+  const catalogDoneInit = block ? parseInt(block.dataset.bmCatalogDone || 0) : 0;
+  const areaDoneInit = block ? parseInt(block.dataset.bmAreaDoneInit || 0) : 0;
+  const outsideDone = catalogDoneInit - areaDoneInit; // エリア外カタログ申告数
+
   const checks = document.querySelectorAll(`.bm-check-${skillId}`);
-  let done = 0;
+  let areaDone = 0;
   checks.forEach(cb => {
     const icon = document.querySelector(`.bm-check-icon-${cb.value}`);
-    if (cb.checked) { done++; if (icon) icon.style.opacity='1'; }
-    else            {          if (icon) icon.style.opacity='0'; }
+    if (cb.checked) { areaDone++; if (icon) icon.style.opacity='1'; }
+    else            {             if (icon) icon.style.opacity='0'; }
   });
-  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  const areaPct = areaTotal > 0 ? Math.round(areaDone / areaTotal * 100) : 0;
   const bar   = document.getElementById(`bm-bar-${skillId}`);
   const pctEl = document.getElementById(`bm-pct-${skillId}`);
   const badge = document.getElementById(`bm-badge-${skillId}`);
   const lname = document.getElementById(`bm-lname-${skillId}`);
   if (!bar) return;
-  bar.style.width = pct+'%';
-  bar.style.background = pct===100 ? '#22c55e' : pct>0 ? '#f97316' : '#cbd5e1';
-  if (pctEl) pctEl.textContent = pct+'%';
-  const level = bmCalcLevel(done, total);
+  bar.style.width = areaPct+'%';
+  bar.style.background = areaPct===100 ? '#22c55e' : areaPct>0 ? '#f97316' : '#cbd5e1';
+  if (pctEl) pctEl.textContent = areaPct+'%';
+  // レベルはカタログ全体(outsideDone + areaDone) / catalogTotal で計算
+  const level = bmCalcLevel(outsideDone + areaDone, catalogTotal);
   if (badge) { badge.className='badge '+(BM_BADGE_CLASS[level]||'bg-secondary'); badge.textContent=level>0?`Lv.${level}`:'—'; }
   if (lname) lname.textContent = BM_SKILL_LEVELS[level]||'未経験';
 }
 function bmCheckAll(skillId, total, val) {
   document.querySelectorAll(`.bm-check-${skillId}`).forEach(cb => { cb.checked=val; });
   bmRecalc(skillId, total);
+  markDeclareFlag();
 }
 
-/* ── エビデンス AJAX ── */
-function bmEscHtml(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
-
-function bmBuildEvItem(ev, skillId) {
-  let inner = '';
-  if (ev.evidence_type==='file') {
-    inner = `<i class="bi bi-paperclip text-success me-1"></i><a href="${ev.download_url||'#'}" target="_blank" style="font-size:.8rem;">${bmEscHtml(ev.original_filename||ev.title||'ファイル')}</a>`;
-  } else if (ev.evidence_type==='url') {
-    inner = '<i class="bi bi-link-45deg text-primary me-1"></i>';
-    if (ev.title) inner += `<span class="fw-semibold" style="font-size:.8rem;">${bmEscHtml(ev.title)}</span><br>`;
-    inner += `<a href="${bmEscHtml(ev.content)}" target="_blank" rel="noopener" class="text-truncate d-inline-block" style="max-width:200px;font-size:.8rem;">${bmEscHtml(ev.content)}</a>`;
-  } else {
-    inner = '<i class="bi bi-pencil text-warning me-1"></i>';
-    if (ev.title) inner += `<span class="fw-semibold" style="font-size:.8rem;">${bmEscHtml(ev.title)}</span><br>`;
-    const c=ev.content||''; inner += `<span class="text-muted" style="font-size:.8rem;">${bmEscHtml(c.length>80?c.slice(0,80)+'...':c)}</span>`;
-  }
-  const wrap = document.createElement('div');
-  wrap.className = 'bm-ev-item d-flex align-items-start gap-2 mb-1 p-2 rounded';
-  wrap.dataset.evId = ev.id;
-  wrap.innerHTML = `<div style="flex:1;min-width:0;">${inner}</div>`
-    + `<form method="post" action="${bmEscHtml(ev.delete_url)}" onsubmit="return confirm('削除しますか？')" style="flex-shrink:0;">`
-    + '<button type="submit" class="btn btn-outline-danger p-1" style="border-radius:6px;font-size:.7rem;line-height:1;" title="削除"><i class="bi bi-trash3"></i></button></form>';
-  return wrap;
-}
-
-function bmShowMsg(form, msg, isErr) {
-  let el = form.querySelector('.bm-form-msg');
-  if (!el) { el=document.createElement('div'); el.className='bm-form-msg small mt-1'; form.appendChild(el); }
-  el.textContent=msg; el.style.color=isErr?'#dc2626':'#16a34a';
-  if (!isErr) { if(el._t) clearTimeout(el._t); el._t=setTimeout(()=>{el.textContent=''},2500); }
-}
-
-function initBmEvidenceForms() {
-  document.querySelectorAll('.bm-evidence-add-form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const skillId = form.dataset.skillId;
-      const btn = form.querySelector('button[type="submit"]');
-      if (btn) btn.disabled=true;
-      fetch(form.getAttribute('action'), {
-        method:'POST',
-        headers:{'X-Requested-With':'XMLHttpRequest'},
-        body: new FormData(form),
-      })
-        .then(r => r.json().then(d => ({ok:r.ok,d})))
-        .then(({ok,d}) => {
-          if (ok && d.success) {
-            const list = document.getElementById(`bm-ev-list-${skillId}`);
-            const empty = document.getElementById(`bm-ev-empty-${skillId}`);
-            if (empty) empty.remove();
-            if (list) list.appendChild(bmBuildEvItem(d.evidence, skillId));
-            // バッジ更新
-            const toggle = document.querySelector(`[data-bs-target="#bm-ev-${skillId}"]`);
-            if (toggle) {
-              let badge = toggle.querySelector('.badge');
-              if (!badge) { badge=document.createElement('span'); badge.className='badge bg-secondary ms-1'; badge.style.fontSize='.65rem'; toggle.insertBefore(badge,toggle.querySelector('.bm-chevron')); }
-              const cur = parseInt(badge.textContent)||0; badge.textContent=cur+1;
-            }
-            form.reset(); bmShowMsg(form,'追加しました',false);
-          } else { bmShowMsg(form,(d&&d.error)||'追加に失敗しました',true); }
-        })
-        .catch(()=>bmShowMsg(form,'通信エラー',true))
-        .finally(()=>{ if(btn) btn.disabled=false; });
-    });
+function bmOpenDeclareModal(skillId, form) {
+  openEvidenceModal(skillId, function() {
+    clearDeclareFlag();
+    form.submit();
   });
 }
 
@@ -523,7 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('[data-bm-skill-id]').forEach(el => {
     bmRecalc(el.dataset.bmSkillId, parseInt(el.dataset.bmSkillTotal));
   });
-  initBmEvidenceForms();
 });
 </script>
 {% endblock %}

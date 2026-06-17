@@ -2547,5 +2547,146 @@ function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
+
+<!-- ═══ エビデンス申告モーダル（全ページ共有） ═══ -->
+<div class="modal fade" id="evidenceDeclareModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-content" style="border-radius:18px;border:none;box-shadow:0 12px 40px rgba(0,0,0,.15);">
+      <div class="modal-header py-2 px-4" style="border-bottom:1px solid #f1f5f9;">
+        <h6 class="modal-title fw-semibold mb-0">
+          <i class="bi bi-paperclip me-2" style="color:#0ea5e9;"></i>エビデンスを追加する（任意）
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 py-3">
+        <p class="text-muted mb-3" style="font-size:.8rem;">
+          <i class="bi bi-info-circle me-1"></i>申告の根拠となる資料を任意で添付できます。スキップして直接申告することもできます。
+        </p>
+        <ul class="nav nav-tabs nav-fill mb-3" style="font-size:.83rem;">
+          <li class="nav-item">
+            <button class="nav-link active py-1" data-bs-toggle="tab" data-bs-target="#ev-modal-url-pane" type="button" id="ev-modal-tab-url">
+              <i class="bi bi-link-45deg me-1"></i>URL
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-1" data-bs-toggle="tab" data-bs-target="#ev-modal-file-pane" type="button" id="ev-modal-tab-file">
+              <i class="bi bi-file-earmark me-1"></i>ファイル
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-1" data-bs-toggle="tab" data-bs-target="#ev-modal-note-pane" type="button" id="ev-modal-tab-note">
+              <i class="bi bi-sticky me-1"></i>メモ
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="ev-modal-url-pane">
+            <input type="text" id="ev-modal-url-title" class="form-control form-control-sm mb-2" placeholder="タイトル（任意）" style="border-radius:8px;font-size:.83rem;">
+            <input type="url" id="ev-modal-url-url" class="form-control form-control-sm" placeholder="https://..." style="border-radius:8px;font-size:.83rem;">
+          </div>
+          <div class="tab-pane fade" id="ev-modal-file-pane">
+            <input type="text" id="ev-modal-file-title" class="form-control form-control-sm mb-2" placeholder="タイトル（任意）" style="border-radius:8px;font-size:.83rem;">
+            <input type="file" id="ev-modal-file-input" class="form-control form-control-sm"
+                   accept=".pdf,.png,.jpg,.jpeg,.gif,.xlsx,.xls,.csv,.docx,.doc,.txt,.zip,.mp4,.mov"
+                   style="border-radius:8px;font-size:.83rem;">
+          </div>
+          <div class="tab-pane fade" id="ev-modal-note-pane">
+            <input type="text" id="ev-modal-note-title" class="form-control form-control-sm mb-2" placeholder="タイトル（任意）" style="border-radius:8px;font-size:.83rem;">
+            <textarea id="ev-modal-note-content" class="form-control form-control-sm" rows="3"
+                      placeholder="業務経験・習得状況など" style="border-radius:8px;font-size:.83rem;resize:vertical;"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer px-4 py-2 justify-content-between" style="border-top:1px solid #f1f5f9;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="ev-modal-skip-btn" style="border-radius:20px;font-size:.82rem;">
+          <i class="bi bi-skip-forward me-1"></i>スキップして申告
+        </button>
+        <button type="button" class="btn btn-sm fw-semibold" id="ev-modal-submit-btn"
+                style="border-radius:20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;min-width:130px;font-size:.82rem;">
+          <i class="bi bi-send me-1"></i>追加して申告
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Evidence declare modal (shared) ────────────────────────────
+let _evDeclSkillId = null;
+let _evDeclCallback = null;
+
+function openEvidenceModal(skillId, callback) {
+  _evDeclSkillId = skillId;
+  _evDeclCallback = callback;
+  ['ev-modal-url-title','ev-modal-url-url','ev-modal-file-title','ev-modal-note-title','ev-modal-note-content'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const fi = document.getElementById('ev-modal-file-input');
+  if (fi) fi.value = '';
+  const urlTabBtn = document.getElementById('ev-modal-tab-url');
+  if (urlTabBtn) bootstrap.Tab.getOrCreateInstance(urlTabBtn).show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('evidenceDeclareModal')).show();
+}
+
+function _evModalGetActiveType() {
+  const pane = document.querySelector('#evidenceDeclareModal .tab-pane.active');
+  if (!pane) return 'url';
+  return pane.id.replace('ev-modal-', '').replace('-pane', '');
+}
+
+async function _evModalSubmitEvidence(type) {
+  const fd = new FormData();
+  fd.append('evidence_type', type);
+  if (type === 'url') {
+    const url = (document.getElementById('ev-modal-url-url').value || '').trim();
+    if (!url) return;
+    fd.append('content', url);
+    fd.append('title', (document.getElementById('ev-modal-url-title').value || '').trim());
+  } else if (type === 'file') {
+    const fi = document.getElementById('ev-modal-file-input');
+    if (!fi || !fi.files.length) return;
+    fd.append('upload_file', fi.files[0]);
+    fd.append('title', (document.getElementById('ev-modal-file-title').value || '').trim());
+  } else {
+    const content = (document.getElementById('ev-modal-note-content').value || '').trim();
+    if (!content) return;
+    fd.append('content', content);
+    fd.append('title', (document.getElementById('ev-modal-note-title').value || '').trim());
+  }
+  try { await fetch('/skills/' + _evDeclSkillId + '/evidence/add', { method: 'POST', body: fd }); } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('evidenceDeclareModal');
+  const skipBtn = document.getElementById('ev-modal-skip-btn');
+  const submitBtn = document.getElementById('ev-modal-submit-btn');
+  if (!modal) return;
+
+  if (skipBtn) {
+    skipBtn.addEventListener('click', function() {
+      bootstrap.Modal.getInstance(modal).hide();
+      if (_evDeclCallback) _evDeclCallback();
+    });
+  }
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async function() {
+      this.disabled = true;
+      await _evModalSubmitEvidence(_evModalGetActiveType());
+      bootstrap.Modal.getInstance(modal).hide();
+      if (_evDeclCallback) { _evDeclCallback(); }
+      this.disabled = false;
+    });
+  }
+});
+
+// ─── 未申告ダーティフラグ ────────────────────────────────────────
+function markDeclareFlag() {
+  try { localStorage.setItem('skillmap_has_pending', '1'); } catch(e) {}
+}
+function clearDeclareFlag() {
+  try { localStorage.removeItem('skillmap_has_pending'); } catch(e) {}
+}
+</script>
 </body>
 </html>

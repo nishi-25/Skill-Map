@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response, StreamingResponse
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 import models
 import auth
@@ -36,7 +36,7 @@ def _build_stats_tree(areas, done_sub_ids: set) -> list:
         acquired = sum(1 for sid in sub_ids if sid in done_sub_ids)
         is_leaf = not area.children
 
-        # リーフエリアのスキルデータ: エリアに含まれるスキルの全サブスキルを収集
+        # リーフエリアのスキルデータ: エリアに割り当てられたサブスキルのみ収集
         skills_data = []
         if is_leaf:
             seen_skills: dict = {}
@@ -45,21 +45,21 @@ def _build_stats_tree(areas, done_sub_ids: set) -> list:
                 if ss and ss.skill and not ss.skill.is_archived:
                     skill_id = ss.skill_id
                     if skill_id not in seen_skills:
-                        skill = ss.skill
-                        all_subs = sorted(skill.sub_skills, key=lambda x: (x.order_index, x.id))
+                        catalog_total = len(ss.skill.sub_skills)
+                        catalog_done = sum(1 for s in ss.skill.sub_skills if s.id in done_sub_ids)
                         seen_skills[skill_id] = {
-                            "skill": skill,
-                            "sub_skills": [
-                                {
-                                    "id": sub.id,
-                                    "name": sub.name,
-                                    "description": sub.description or "",
-                                    "tier": sub.tier or "basic",
-                                    "can_do": sub.id in done_sub_ids,
-                                }
-                                for sub in all_subs
-                            ],
+                            "skill": ss.skill,
+                            "sub_skills": [],
+                            "catalog_total": catalog_total,
+                            "catalog_done": catalog_done,
                         }
+                    seen_skills[skill_id]["sub_skills"].append({
+                        "id": ss.id,
+                        "name": ss.name,
+                        "description": ss.description or "",
+                        "tier": ss.tier or "basic",
+                        "can_do": ss.id in done_sub_ids,
+                    })
             skills_data = list(seen_skills.values())
 
         result.append({
@@ -107,8 +107,24 @@ def business_map_view(request: Request, parent_id: int = 0, db: Session = Depend
         db.query(models.BusinessMapArea)
         .filter(models.BusinessMapArea.parent_id == (parent_id or None))
         .order_by(models.BusinessMapArea.order_index)
+        .options(
+            joinedload(models.BusinessMapArea.area_sub_skills)
+            .joinedload(models.BusinessMapAreaSkill.sub_skill)
+            .joinedload(models.SubSkill.skill),
+        )
         .all()
     )
+
+    # admin / manager は全エリアを表示。一般ユーザーはグループフィルタを適用
+    if user.role not in ("admin", "manager"):
+        user_group_ids = {m.group_id for m in user.group_memberships}
+        def _is_visible(area: "models.BusinessMapArea") -> bool:
+            # グループ未設定のエリアは全員に表示
+            if not area.groups:
+                return True
+            # グループ設定済みは所属グループが一致する場合のみ
+            return any(g.id in user_group_ids for g in area.groups)
+        areas = [a for a in areas if _is_visible(a)]
 
     # 自分が「できる」と回答したサブスキル（acquired判定用）
     done_sub_ids = {
@@ -121,16 +137,6 @@ def business_map_view(request: Request, parent_id: int = 0, db: Session = Depend
 
     tree = _build_stats_tree(areas, done_sub_ids)
 
-    # ユーザーのエビデンスをスキルIDでインデックス化
-    evidence_map: dict = {}
-    for ev in (
-        db.query(models.SkillEvidence)
-        .filter(models.SkillEvidence.user_id == user.id)
-        .order_by(models.SkillEvidence.created_at)
-        .all()
-    ):
-        evidence_map.setdefault(ev.skill_id, []).append(ev)
-
     return templates.TemplateResponse(request, "business_map_view.html", {
         "current_user": user,
         "tree": tree,
@@ -140,7 +146,6 @@ def business_map_view(request: Request, parent_id: int = 0, db: Session = Depend
         "LEVEL_COLORS": models.LEVEL_COLORS,
         "SKILL_TIERS": models.SKILL_TIERS,
         "TIER_COLORS": models.TIER_COLORS,
-        "evidence_map": evidence_map,
     })
 
 
@@ -177,6 +182,101 @@ async def business_map_area_declare(area_id: int, request: Request, db: Session 
 
     db.commit()
     return RedirectResponse(next_url, status_code=303)
+
+
+@router.post("/skills/business-map/area/{area_id}/skill/{skill_id}/declare")
+async def bm_area_skill_declare(
+    area_id: int, skill_id: int, request: Request, db: Session = Depends(get_db)
+):
+    """業務マップから特定エリアのスキルのサブスキルを申告（エリア割り当て分のみ更新）"""
+    user = auth.require_approved(request, db)
+
+    form_data = await request.form()
+    redirect_to = str(form_data.get("redirect_to", "/skills/business-map"))
+    if not redirect_to.startswith("/"):
+        redirect_to = "/skills/business-map"
+
+    area = db.query(models.BusinessMapArea).filter(models.BusinessMapArea.id == area_id).first()
+    if not area:
+        return RedirectResponse(redirect_to, status_code=303)
+
+    # このエリアに割り当てられたスキルのサブスキルIDのみを対象にする
+    area_ss_ids = {
+        a_sk.sub_skill_id
+        for a_sk in area.area_sub_skills
+        if a_sk.sub_skill and a_sk.sub_skill.skill_id == skill_id
+    }
+
+    checked_ids: set = set()
+    for v in form_data.getlist("sub_skill_ids"):
+        try:
+            checked_ids.add(int(v))
+        except (ValueError, TypeError):
+            pass
+
+    # エリアのサブスキルのみ更新（他エリア由来のサブスキルはそのまま維持）
+    for ss_id in area_ss_ids:
+        can_do = ss_id in checked_ids
+        existing = (
+            db.query(models.UserSubSkillLevel)
+            .filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.sub_skill_id == ss_id,
+            )
+            .first()
+        )
+        if existing:
+            existing.can_do = can_do
+        else:
+            db.add(models.UserSubSkillLevel(user_id=user.id, sub_skill_id=ss_id, can_do=can_do))
+
+    db.flush()
+
+    # スキル全体（全サブスキル）からレベルを再計算
+    all_subs = db.query(models.SubSkill).filter(models.SubSkill.skill_id == skill_id).all()
+    total = len(all_subs)
+    if total:
+        all_ss_ids = {ss.id for ss in all_subs}
+        done_count = (
+            db.query(models.UserSubSkillLevel)
+            .filter(
+                models.UserSubSkillLevel.user_id == user.id,
+                models.UserSubSkillLevel.sub_skill_id.in_(all_ss_ids),
+                models.UserSubSkillLevel.can_do == True,
+            )
+            .count()
+        )
+        ratio = done_count / total
+        if not done_count:
+            level = 0
+        elif ratio <= 0.40:
+            level = 1
+        elif ratio <= 0.70:
+            level = 2
+        elif ratio < 1.00:
+            level = 3
+        else:
+            level = 4
+
+        existing_usl = (
+            db.query(models.UserSkillLevel)
+            .filter(
+                models.UserSkillLevel.user_id == user.id,
+                models.UserSkillLevel.skill_id == skill_id,
+            )
+            .first()
+        )
+        if existing_usl:
+            existing_usl.level = level
+            if existing_usl.approval_status != "approved":
+                existing_usl.approval_status = "pending"
+        else:
+            db.add(models.UserSkillLevel(
+                user_id=user.id, skill_id=skill_id, level=level, approval_status="pending"
+            ))
+
+    db.commit()
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 # ════════════════════════════════════════════════════════════════

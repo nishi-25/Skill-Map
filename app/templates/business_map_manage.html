@@ -84,25 +84,32 @@
     {% macro render_area_node(area, depth) %}
     <div class="bm-node-wrap{% if depth > 1 %} bm-node-nested{% endif %}" data-area-id="{{ area.id }}" {% if depth > 1 %}style="margin-left:calc({{ depth - 1 }} * 1.25rem);"{% endif %}>
       <div class="card bm-area-card{% if depth > 1 %} bm-area-card-nested{% endif %}" style="border-radius:14px;border-left:{{ 4 if depth == 1 else 3 }}px solid {{ area.color }};">
-        <div class="card-header bg-transparent d-flex align-items-center gap-2 bm-area-handle" style="border-bottom:1px solid #f1f5f9;">
-          <i class="bi bi-grip-vertical text-muted"></i>
+        <div class="card-header bg-transparent d-flex align-items-center gap-2 bm-area-handle collapsed"
+             style="border-bottom:1px solid #f1f5f9;cursor:pointer;"
+             data-bs-toggle="collapse" data-bs-target="#bm-body-{{ area.id }}">
+          <span class="bm-drag-handle" onclick="event.stopPropagation()">
+            <i class="bi bi-grip-vertical text-muted"></i>
+          </span>
           <span style="width:12px;height:12px;border-radius:50%;background:{{ area.color }};flex-shrink:0;"></span>
           <span class="fw-bold flex-grow-1 text-truncate" style="font-size:.9rem;">{{ area.name }}</span>
+          <i class="bi bi-chevron-down bm-area-caret text-muted" style="font-size:.85rem;flex-shrink:0;"></i>
           <button type="button" class="btn btn-xs btn-outline-success" style="border-radius:20px;"
                   title="子カテゴリを追加"
-                  onclick='openAreaModal(0, "", "", "#6366f1", {{ area.id }}, {{ area.name|tojson }})'>
+                  onclick='event.stopPropagation();openAreaModal(0, "", "", "#6366f1", {{ area.id }}, {{ area.name|tojson }})'>
             <i class="bi bi-plus-lg"></i>
           </button>
           <button type="button" class="btn btn-xs btn-outline-primary" style="border-radius:20px;" title="編集"
-                  onclick='openAreaModal({{ area.id }}, {{ area.name|tojson }}, {{ (area.description or "")|tojson }}, {{ area.color|tojson }}, {{ area.parent_id or 0 }})'>
+                  onclick='event.stopPropagation();openAreaModal({{ area.id }}, {{ area.name|tojson }}, {{ (area.description or "")|tojson }}, {{ area.color|tojson }}, {{ area.parent_id or 0 }})'>
             <i class="bi bi-pencil"></i>
           </button>
           <form method="post" action="/business-map/areas/{{ area.id }}/delete"
+                onclick="event.stopPropagation()"
                 onsubmit="return confirm('「{{ area.name }}」を削除しますか？配下のカテゴリとサブスキルの割り当てもすべて削除されます。')">
             <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;" title="削除"><i class="bi bi-trash"></i></button>
           </form>
         </div>
-        <div class="card-body py-2 px-2">
+        <div id="bm-body-{{ area.id }}" class="collapse">
+          <div class="card-body py-2 px-2">
           {% if area.description %}
           <p class="text-muted small mb-2" style="font-size:.78rem;">{{ area.description }}</p>
           {% endif %}
@@ -126,6 +133,7 @@
             左のサブスキル一覧からドラッグして追加
           </p>
           {% endif %}
+          </div>
         </div>
       </div>
     </div>
@@ -308,7 +316,7 @@ function bmShowEmptyHintIfEmpty(areaSkillsEl) {
 // カテゴリの並び替え（各階層ごとに独立したSortableを設定）
 document.querySelectorAll('.bm-children').forEach(container => {
   new Sortable(container, {
-    handle: '.bm-area-handle',
+    handle: '.bm-drag-handle',
     animation: 150,
     ghostClass: 'sortable-ghost',
     onEnd: function() {
@@ -448,6 +456,7 @@ document.addEventListener('click', function(e) {
   });
 });
 
+
 </script>
 
 <style>
@@ -460,8 +469,11 @@ document.addEventListener('click', function(e) {
 .bm-area-card-nested { font-size: .92em; }
 .bm-area-card-nested .card-header { padding-top: .4rem; padding-bottom: .4rem; }
 .bm-area-card { height: 100%; }
-.bm-area-handle { cursor: grab; }
-.bm-area-handle:active { cursor: grabbing; }
+.bm-area-handle { cursor: pointer; }
+.bm-drag-handle { cursor: grab; display:inline-flex; align-items:center; padding:.1rem .15rem; }
+.bm-drag-handle:active { cursor: grabbing; }
+.bm-area-caret { transition: transform .2s; }
+.bm-area-handle:not(.collapsed) .bm-area-caret { transform: rotate(180deg); }
 .bm-skill-chip {
   display: inline-flex;
   align-items: center;

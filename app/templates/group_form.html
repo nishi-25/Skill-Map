@@ -259,22 +259,7 @@
             <div class="text-muted small">Manager権限のユーザーがいません</div>
             {% endif %}
           </div>
-          <div class="mb-4">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-diagram-3 me-1" style="color:#f97316;"></i>親グループ
-            </label>
-            <select name="parent_id" class="form-select" id="parentSelect" onchange="onParentChange()">
-              <option value="0">なし（ルートグループ）</option>
-              {% for g in all_groups %}
-              <option value="{{ g.id }}"
-                {% if group and group.parent_id == g.id %}selected{% endif %}>
-                {{ g.name }}
-                {% if g.parent %}(親: {{ g.parent.name }}){% endif %}
-              </option>
-              {% endfor %}
-            </select>
-            <div class="form-text" style="font-size:.75rem;">親グループのスキルが自動的に継承されます</div>
-          </div>
+          <input type="hidden" name="parent_id" value="0">
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-fill fw-semibold">
               <i class="bi bi-check-lg me-1"></i>{{ '更新する' if group else '作成する' }}
@@ -286,68 +271,118 @@
     </div>
   </div>
 
-  <!-- スキル割当 -->
+  <!-- スキル割当 / 業務マップ割当 (タブ切り替え) -->
   <div class="col-lg-7">
     <div class="card">
-      <div class="card-header bg-white d-flex align-items-center justify-content-between py-2">
-        <span class="fw-semibold" style="font-size:.9rem;">
-          <i class="bi bi-lightning-charge-fill me-1" style="color:#f59e0b;"></i>対象スキル割当
-        </span>
-        <div class="d-flex align-items-center gap-2">
-          <span class="select-count" id="inheritedCount" style="color:#0ea5e9;display:none;">0件継承</span>
-          <span class="select-count" id="selectedCount">0件選択中</span>
-        </div>
+      <div class="card-header bg-white px-3 pt-2 pb-0">
+        <ul class="nav nav-tabs card-header-tabs" id="groupAssignTabs">
+          <li class="nav-item">
+            <button class="nav-link active fw-semibold" style="font-size:.88rem;"
+                    data-bs-toggle="tab" data-bs-target="#tab-skills" type="button">
+              <i class="bi bi-lightning-charge-fill me-1" style="color:#f59e0b;"></i>スキルカタログ
+              <span class="select-count ms-1" id="selectedCount" style="font-size:.72rem;">0件</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fw-semibold" style="font-size:.88rem;"
+                    data-bs-toggle="tab" data-bs-target="#tab-areas" type="button">
+              <i class="bi bi-diagram-3 me-1" style="color:#6366f1;"></i>業務マップ
+              {% set area_checked = assigned_area_ids | length %}
+              {% if area_checked %}<span class="badge ms-1" style="background:#6366f1;font-size:.65rem;">{{ area_checked }}</span>{% endif %}
+            </button>
+          </li>
+        </ul>
       </div>
-      <div class="card-body" style="max-height:520px;overflow-y:auto;">
-        <div class="d-flex gap-2 mb-3 flex-wrap">
-          <div class="input-group input-group-sm" style="max-width:240px;">
-            <span class="input-group-text" style="border-radius:20px 0 0 20px;"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" id="skillSearchInput" placeholder="スキル・カテゴリーを検索..."
-                   style="border-radius:0 20px 20px 0;font-size:.78rem;" oninput="filterSkills()">
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.78rem;" onclick="selectAll(true)">
-            <i class="bi bi-check-all me-1"></i>全選択
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;" onclick="selectAll(false)">
-            <i class="bi bi-x-lg me-1"></i>全解除
-          </button>
-        </div>
-        <div class="skill-check-grid" id="skillCheckGrid">
-          {% for cat in all_categories %}
-          {% set cat_skills = skills_by_cat.get(cat.id, []) %}
-          {% if cat_skills %}
-          <div class="cat-section" data-cat-name="{{ cat.name }}">
-            <div class="cat-header">
-              <span>
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ cat.color }};margin-right:6px;"></span>
-                {{ cat.name }}
-              </span>
-              <button type="button" class="btn btn-sm p-0 text-primary" style="font-size:.7rem;" onclick="toggleCategory({{ cat.id }})">全選択</button>
+      <div class="tab-content">
+
+        <!-- ── スキルカタログタブ ── -->
+        <div class="tab-pane fade show active" id="tab-skills">
+          <div class="card-body" style="max-height:520px;overflow-y:auto;">
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+              <div class="input-group input-group-sm" style="max-width:240px;">
+                <span class="input-group-text" style="border-radius:20px 0 0 20px;"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="skillSearchInput" placeholder="スキル・カテゴリーを検索..."
+                       style="border-radius:0 20px 20px 0;font-size:.78rem;" oninput="filterSkills()">
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.78rem;" onclick="selectAll(true)">
+                <i class="bi bi-check-all me-1"></i>全選択
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;font-size:.78rem;" onclick="selectAll(false)">
+                <i class="bi bi-x-lg me-1"></i>全解除
+              </button>
             </div>
-            {% for sk in cat_skills %}
-            <div class="form-check skill-item" data-skill-name="{{ sk.name }}" data-cat-name="{{ cat.name }}" data-skill-id="{{ sk.id }}">
-              {% if sk.id in inherited_skill_ids %}
-              <input class="form-check-input" type="checkbox" checked disabled
-                     style="opacity:.5;" id="sk_{{ sk.id }}_inh">
-              <label class="form-check-label text-muted" for="sk_{{ sk.id }}_inh">
-                {{ sk.name }} <span class="badge bg-info" style="font-size:.6rem;vertical-align:middle;">継承</span>
-              </label>
-              {% else %}
-              <input class="form-check-input skill-check" type="checkbox"
-                     name="skill_ids" value="{{ sk.id }}" form="groupForm"
-                     id="sk_{{ sk.id }}" data-cat="{{ cat.id }}"
-                     {% if group and sk.id in assigned_skill_ids %}checked{% endif %}>
-              <label class="form-check-label" for="sk_{{ sk.id }}">{{ sk.name }}</label>
+            <div class="skill-check-grid" id="skillCheckGrid">
+              {% for cat in all_categories %}
+              {% set cat_skills = skills_by_cat.get(cat.id, []) %}
+              {% if cat_skills %}
+              <div class="cat-section" data-cat-name="{{ cat.name }}">
+                <div class="cat-header">
+                  <span>
+                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ cat.color }};margin-right:6px;"></span>
+                    {{ cat.name }}
+                  </span>
+                  <button type="button" class="btn btn-sm p-0 text-primary" style="font-size:.7rem;" onclick="toggleCategory({{ cat.id }})">全選択</button>
+                </div>
+                {% for sk in cat_skills %}
+                <div class="form-check skill-item" data-skill-name="{{ sk.name }}" data-cat-name="{{ cat.name }}" data-skill-id="{{ sk.id }}">
+                  {% if sk.id in inherited_skill_ids %}
+                  <input class="form-check-input" type="checkbox" checked disabled
+                         style="opacity:.5;" id="sk_{{ sk.id }}_inh">
+                  <label class="form-check-label text-muted" for="sk_{{ sk.id }}_inh">
+                    {{ sk.name }} <span class="badge bg-info" style="font-size:.6rem;vertical-align:middle;">継承</span>
+                  </label>
+                  {% else %}
+                  <input class="form-check-input skill-check" type="checkbox"
+                         name="skill_ids" value="{{ sk.id }}" form="groupForm"
+                         id="sk_{{ sk.id }}" data-cat="{{ cat.id }}"
+                         {% if group and sk.id in assigned_skill_ids %}checked{% endif %}>
+                  <label class="form-check-label" for="sk_{{ sk.id }}">{{ sk.name }}</label>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
               {% endif %}
+              {% endfor %}
             </div>
-            {% endfor %}
+            <div id="noResults" class="text-center text-muted py-3 small" style="display:none;">
+              <i class="bi bi-search me-1"></i>該当するスキルが見つかりません
+            </div>
           </div>
-          {% endif %}
-          {% endfor %}
         </div>
-        <div id="noResults" class="text-center text-muted py-3 small" style="display:none;">
-          <i class="bi bi-search me-1"></i>該当するスキルが見つかりません
+
+        <!-- ── 業務マップタブ ── -->
+        <div class="tab-pane fade" id="tab-areas">
+          <div class="card-body">
+            {% if root_areas %}
+            <p class="text-muted small mb-3" style="font-size:.78rem;">
+              <i class="bi bi-info-circle me-1"></i>チェックしたエリアがこのグループのメンバーに表示されます。未選択のエリアは全員に表示されます。
+            </p>
+            <div class="d-flex flex-column gap-2">
+              {% for area in root_areas %}
+              <div class="form-check" style="font-size:.9rem;">
+                <input class="form-check-input" type="checkbox"
+                       name="area_ids" value="{{ area.id }}" form="groupForm"
+                       id="area_{{ area.id }}"
+                       {% if area.id in assigned_area_ids %}checked{% endif %}>
+                <label class="form-check-label d-flex align-items-center gap-2" for="area_{{ area.id }}" style="cursor:pointer;">
+                  <span style="width:10px;height:10px;border-radius:50%;background:{{ area.color }};flex-shrink:0;display:inline-block;"></span>
+                  <span class="fw-semibold">{{ area.name }}</span>
+                  {% if area.description %}
+                  <span class="text-muted" style="font-size:.78rem;">— {{ area.description }}</span>
+                  {% endif %}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5 small">
+              <i class="bi bi-diagram-3 d-block mb-2 fs-3" style="color:#c7d2fe;"></i>
+              業務マップがまだ作成されていません
+            </div>
+            {% endif %}
+          </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -392,81 +427,6 @@ function filterSkills() {
     totalVisible += sectionVisible;
   });
   document.getElementById('noResults').style.display = totalVisible === 0 ? '' : 'none';
-}
-function onParentChange() {
-  const parentId = document.getElementById('parentSelect').value;
-  if (!parentId || parentId === '0') {
-    // 親なし → 継承スキルをクリア
-    document.querySelectorAll('.inherited-item').forEach(el => {
-      el.classList.remove('inherited-item');
-      const inp = el.querySelector('input[disabled]');
-      if (inp) {
-        // 戻す: disabled → 有効なcheckbox に
-        inp.disabled = false;
-        inp.checked = false;
-        inp.style.opacity = '';
-        inp.classList.add('skill-check');
-        inp.name = 'skill_ids';
-        inp.value = el.dataset.skillId;
-        inp.setAttribute('form', 'groupForm');
-        const label = el.querySelector('label');
-        if (label) {
-          label.classList.remove('text-muted');
-          const badge = label.querySelector('.badge');
-          if (badge) badge.remove();
-        }
-      }
-    });
-    updateCount();
-    return;
-  }
-  // API で親グループのスキルIDを取得して反映
-  fetch(`/groups/api/${parentId}/inherited-skills`)
-    .then(r => r.json())
-    .then(data => {
-      const inheritedIds = new Set(data.skill_ids.map(String));
-      document.querySelectorAll('.skill-item').forEach(item => {
-        const sid = item.dataset.skillId;
-        const isInherited = inheritedIds.has(sid);
-        if (isInherited) {
-          item.classList.add('inherited-item');
-          // チェックボックスを継承表示に切り替え
-          let inp = item.querySelector('input');
-          if (inp) {
-            inp.disabled = true;
-            inp.checked = true;
-            inp.style.opacity = '.5';
-            inp.classList.remove('skill-check');
-            inp.removeAttribute('name');
-            const label = item.querySelector('label');
-            if (label) {
-              label.classList.add('text-muted');
-              if (!label.querySelector('.badge')) {
-                label.insertAdjacentHTML('beforeend', ' <span class="badge bg-info" style="font-size:.6rem;vertical-align:middle;">継承</span>');
-              }
-            }
-          }
-        } else {
-          item.classList.remove('inherited-item');
-          let inp = item.querySelector('input');
-          if (inp && inp.disabled) {
-            inp.disabled = false;
-            inp.checked = false;
-            inp.style.opacity = '';
-            inp.classList.add('skill-check');
-            inp.name = 'skill_ids';
-            inp.setAttribute('form', 'groupForm');
-            const label = item.querySelector('label');
-            if (label) {
-              label.classList.remove('text-muted');
-              const badge = label.querySelector('.badge');
-              if (badge) badge.remove();
-            }
-          }
-        }
-      });
-      updateCount();
-    });
 }
 document.querySelectorAll('.skill-check').forEach(cb => cb.addEventListener('change', updateCount));
 document.addEventListener('DOMContentLoaded', updateCount);

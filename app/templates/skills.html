@@ -2239,6 +2239,24 @@
     form.submit();
   }
 
+  // submitRpDeclare をエビデンスモーダル経由に変更
+  (function() {
+    const _orig = submitRpDeclare;
+    window.submitRpDeclare = function(skillId) {
+      openEvidenceModal(skillId, function() {
+        clearDeclareFlag();
+        _orig(skillId);
+      });
+    };
+  })();
+
+  // サブスキルチェック変更 → dirty flag
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('rp-sub-check')) {
+      markDeclareFlag();
+    }
+  });
+
   // 左ペイン: 検索フィルタ
   // d-flex に !important が付いているので d-none クラスで制御する
   let _activeTierFilter = '';

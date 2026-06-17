@@ -110,7 +110,12 @@ def group_new_get(request: Request, db: Session = Depends(get_db)):
         models.User.is_approved == True,
     ).all()
     all_categories, skills_by_cat = _get_skills_by_cat(db)
-    all_groups = db.query(models.Group).order_by(models.Group.name).all()
+    root_areas = (
+        db.query(models.BusinessMapArea)
+        .filter(models.BusinessMapArea.parent_id.is_(None))
+        .order_by(models.BusinessMapArea.order_index)
+        .all()
+    )
     return templates.TemplateResponse(request, "group_form.html", {
         "current_user": user, "group": None,
         "managers": managers, "error": None,
@@ -119,7 +124,9 @@ def group_new_get(request: Request, db: Session = Depends(get_db)):
         "skills_by_cat": skills_by_cat,
         "assigned_skill_ids": set(),
         "inherited_skill_ids": set(),
-        "all_groups": all_groups,
+        "all_groups": [],
+        "root_areas": root_areas,
+        "assigned_area_ids": set(),
     })
 
 
@@ -128,14 +135,13 @@ async def group_new_post(
     request: Request,
     name: str = Form(...),
     description: str = Form(""),
-    parent_id: int = Form(0),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
     form = await request.form()
     skill_ids   = [int(v) for v in form.getlist("skill_ids")]
     manager_ids = [int(v) for v in form.getlist("manager_ids")]
-    all_groups  = db.query(models.Group).order_by(models.Group.name).all()
+    area_ids    = [int(v) for v in form.getlist("area_ids")]
 
     if db.query(models.Group).filter(models.Group.name == name).first():
         managers = db.query(models.User).filter(
@@ -143,13 +149,21 @@ async def group_new_post(
             models.User.is_approved == True,
         ).all()
         all_categories, skills_by_cat = _get_skills_by_cat(db)
+        root_areas = (
+            db.query(models.BusinessMapArea)
+            .filter(models.BusinessMapArea.parent_id.is_(None))
+            .order_by(models.BusinessMapArea.order_index)
+            .all()
+        )
         return templates.TemplateResponse(request, "group_form.html", {
             "current_user": user, "group": None,
             "managers": managers, "selected_manager_ids": set(manager_ids),
             "error": "そのグループ名は既に使用されています",
             "all_categories": all_categories, "skills_by_cat": skills_by_cat,
             "assigned_skill_ids": set(skill_ids), "inherited_skill_ids": set(),
-            "all_groups": all_groups,
+            "all_groups": [],
+            "root_areas": root_areas,
+            "assigned_area_ids": set(area_ids),
         })
 
     # Managerが作る場合は自身を含める
@@ -161,7 +175,7 @@ async def group_new_post(
         name=name,
         description=description or None,
         manager_id=primary_manager,
-        parent_id=parent_id if parent_id else None,
+        parent_id=None,
     )
     db.add(group)
     db.flush()
@@ -173,6 +187,15 @@ async def group_new_post(
 
     if skill_ids:
         group.skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all()
+
+    # 業務マップエリア割当
+    db.execute(
+        models.business_map_area_groups.delete().where(
+            models.business_map_area_groups.c.group_id == group.id
+        )
+    )
+    for aid in area_ids:
+        db.execute(models.business_map_area_groups.insert().values(area_id=aid, group_id=group.id))
 
     db.commit()
     return RedirectResponse("/groups", status_code=303)
@@ -192,10 +215,20 @@ def group_edit_get(gid: int, request: Request, db: Session = Depends(get_db)):
     ).all()
     all_categories, skills_by_cat = _get_skills_by_cat(db)
     assigned_skill_ids = {sk.id for sk in group.skills}
-    inherited_skill_ids = _get_ancestor_skill_ids(group)
-    # 親候補: 自分自身と自分の子孫は除外
-    all_groups = [g for g in db.query(models.Group).order_by(models.Group.name).all()
-                  if g.id != gid and not _is_descendant_of(g.id, gid, db)]
+    root_areas = (
+        db.query(models.BusinessMapArea)
+        .filter(models.BusinessMapArea.parent_id.is_(None))
+        .order_by(models.BusinessMapArea.order_index)
+        .all()
+    )
+    assigned_area_ids = {
+        row.area_id
+        for row in db.execute(
+            models.business_map_area_groups.select().where(
+                models.business_map_area_groups.c.group_id == gid
+            )
+        ).fetchall()
+    }
     return templates.TemplateResponse(request, "group_form.html", {
         "current_user": user, "group": group,
         "managers": managers, "error": None,
@@ -203,8 +236,10 @@ def group_edit_get(gid: int, request: Request, db: Session = Depends(get_db)):
         "all_categories": all_categories,
         "skills_by_cat": skills_by_cat,
         "assigned_skill_ids": assigned_skill_ids,
-        "inherited_skill_ids": inherited_skill_ids,
-        "all_groups": all_groups,
+        "inherited_skill_ids": set(),
+        "all_groups": [],
+        "root_areas": root_areas,
+        "assigned_area_ids": assigned_area_ids,
     })
 
 
@@ -214,8 +249,6 @@ async def group_edit_post(
     request: Request,
     name: str = Form(...),
     description: str = Form(""),
-    manager_id: int = Form(0),
-    parent_id: int = Form(0),
     db: Session = Depends(get_db),
 ):
     user = auth.require_manager_or_admin(request, db)
@@ -226,6 +259,7 @@ async def group_edit_post(
     form = await request.form()
     skill_ids   = [int(v) for v in form.getlist("skill_ids")]
     manager_ids = [int(v) for v in form.getlist("manager_ids")]
+    area_ids    = [int(v) for v in form.getlist("area_ids")]
 
     dup = db.query(models.Group).filter(
         models.Group.name == name, models.Group.id != gid
@@ -236,25 +270,26 @@ async def group_edit_post(
             models.User.is_approved == True,
         ).all()
         all_categories, skills_by_cat = _get_skills_by_cat(db)
-        all_groups = [g for g in db.query(models.Group).order_by(models.Group.name).all()
-                      if g.id != gid and not _is_descendant_of(g.id, gid, db)]
+        root_areas = (
+            db.query(models.BusinessMapArea)
+            .filter(models.BusinessMapArea.parent_id.is_(None))
+            .order_by(models.BusinessMapArea.order_index)
+            .all()
+        )
         return templates.TemplateResponse(request, "group_form.html", {
             "current_user": user, "group": group,
             "managers": managers, "selected_manager_ids": set(manager_ids),
             "error": "そのグループ名は既に使用されています",
             "all_categories": all_categories, "skills_by_cat": skills_by_cat,
             "assigned_skill_ids": set(skill_ids),
-            "inherited_skill_ids": _get_ancestor_skill_ids(group),
-            "all_groups": all_groups,
+            "inherited_skill_ids": set(),
+            "all_groups": [],
+            "root_areas": root_areas,
+            "assigned_area_ids": set(area_ids),
         })
     group.name = name
     group.description = description or None
-
-    # 循環防止: 自分自身 or 自分の子孫を親にしない
-    if parent_id and parent_id != gid and not _is_descendant_of(parent_id, gid, db):
-        group.parent_id = parent_id
-    else:
-        group.parent_id = None
+    group.parent_id = None
 
     # Manager更新（admin/manager どちらでも操作可）
     if manager_ids:
@@ -267,6 +302,15 @@ async def group_edit_post(
 
     # スキル割当の更新
     group.skills = db.query(models.Skill).filter(models.Skill.id.in_(skill_ids)).all() if skill_ids else []
+
+    # 業務マップエリア割当の更新（既存を全削除してから再登録）
+    db.execute(
+        models.business_map_area_groups.delete().where(
+            models.business_map_area_groups.c.group_id == gid
+        )
+    )
+    for aid in area_ids:
+        db.execute(models.business_map_area_groups.insert().values(area_id=aid, group_id=gid))
 
     db.commit()
     return RedirectResponse("/groups", status_code=303)

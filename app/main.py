@@ -274,6 +274,7 @@ def _startup():
         _migrate_skill_history_table()
         _migrate_avatar_column(db)
         _migrate_group_skills_table()
+        _migrate_business_map_area_groups_table()
         _migrate_group_transfers_table()
         _migrate_group_parent_column()
         _migrate_tag_archive()
@@ -1539,6 +1540,14 @@ def _migrate_group_skills_table():
     insp = sa_inspect(database.engine)
     if "group_skills" not in insp.get_table_names():
         models.group_skills.create(bind=database.engine)
+
+
+def _migrate_business_map_area_groups_table():
+    """business_map_area_groups テーブルが存在しなければ作成"""
+    from sqlalchemy import inspect as sa_inspect
+    insp = sa_inspect(database.engine)
+    if "business_map_area_groups" not in insp.get_table_names():
+        models.business_map_area_groups.create(bind=database.engine)
 
 
 def _migrate_group_transfers_table():

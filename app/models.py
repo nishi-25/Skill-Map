@@ -432,6 +432,17 @@ class SkillTag(Base):
 
 # ─── 業務マップ ───────────────────────────────────────────────────
 
+# 業務エリア × グループ 中間テーブル（ルートエリアのみ対象）
+business_map_area_groups = Table(
+    "business_map_area_groups",
+    Base.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("area_id", Integer, ForeignKey("business_map_areas.id", ondelete="CASCADE"), nullable=False),
+    Column("group_id", Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False),
+    UniqueConstraint("area_id", "group_id", name="uq_bm_area_group"),
+)
+
+
 class BusinessMapArea(Base):
     __tablename__ = "business_map_areas"
 
@@ -452,6 +463,7 @@ class BusinessMapArea(Base):
                                             order_by="BusinessMapArea.order_index"),
                            foreign_keys=[parent_id])
     creator = relationship("User", foreign_keys=[created_by])
+    groups = relationship("Group", secondary="business_map_area_groups", lazy="selectin")
 
 
 class BusinessMapAreaSkill(Base):

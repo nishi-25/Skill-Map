@@ -14,6 +14,30 @@
   {% endif %}
 </div>
 
+<!-- ─── 未申告通知バナー ─── -->
+{% if view_mode == 'self' %}
+<div id="sm-pending-notice" class="alert alert-warning alert-dismissible d-flex align-items-center gap-2 mb-3"
+     style="display:none;border-radius:12px;border-left:4px solid #f59e0b;font-size:.85rem;">
+  <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;flex-shrink:0;"></i>
+  <div class="flex-fill">
+    <span class="fw-semibold">申告が未送信のスキルがあります。</span>
+    チェックを入れたまま「申告する」ボタンを押し忘れた可能性があります。
+    <a href="/skills/business-map" class="alert-link">業務マップ</a>または
+    <a href="/skills" class="alert-link">スキルマップ</a>で確認してください。
+  </div>
+  <button type="button" class="btn-close" onclick="clearDeclareFlag();this.closest('.alert').style.display='none';" aria-label="Close"></button>
+</div>
+<script>
+(function(){
+  try {
+    if (localStorage.getItem('skillmap_has_pending')) {
+      document.getElementById('sm-pending-notice').style.display = '';
+    }
+  } catch(e) {}
+})();
+</script>
+{% endif %}
+
 <!-- ═══ フィルターバー ═══ -->
 {% if all_users or all_groups %}
 <div class="card mb-4" style="border-left:3px solid #f97316;">
