@@ -1021,3 +1021,156 @@ def exam_evidence_download(assignment_id: int, evidence_id: int, request: Reques
         raise HTTPException(status_code=403)
 
     return FileResponse(ev.file_path, filename=ev.original_filename or "evidence")
+
+
+# ── 試験 エクスポート / インポート ─────────────────────────────────────────────
+
+@router.get("/export")
+def exams_export(request: Request, db: Session = Depends(get_db)):
+    """試験定義（問題・採点基準含む）を全件JSONエクスポート（Admin専用）"""
+    import json as _json
+    from fastapi.responses import Response as _Response
+    from datetime import datetime as _dt
+    auth.require_admin(request, db)
+
+    exams = db.query(models.Exam).order_by(models.Exam.id).all()
+    data = {
+        "exported_at": _dt.now().isoformat(),
+        "exams": [
+            {
+                "title": e.title,
+                "description": e.description or "",
+                "has_written": e.has_written,
+                "has_practical": e.has_practical,
+                "time_limit_minutes": e.time_limit_minutes,
+                "pass_score": e.pass_score,
+                "is_archived": e.is_archived,
+                "target_skill_name": e.target_skill.name if e.target_skill else None,
+                "target_tier": e.target_tier,
+                "required_completion_rate": e.required_completion_rate,
+                "questions": [
+                    {
+                        "question_text": q.question_text,
+                        "question_type": q.question_type,
+                        "choices": _json.loads(q.choices) if q.choices else [],
+                        "correct_indices": _json.loads(q.correct_indices) if q.correct_indices else [],
+                        "points": q.points,
+                        "order_index": q.order_index,
+                    }
+                    for q in e.questions
+                ],
+                "criteria": [
+                    {
+                        "title": c.title,
+                        "description": c.description or "",
+                        "max_score": c.max_score,
+                        "order_index": c.order_index,
+                    }
+                    for c in e.criteria
+                ],
+            }
+            for e in exams
+        ],
+    }
+    body = _json.dumps(data, ensure_ascii=False, indent=2)
+    filename = f"skillmap_exams_{_dt.now().strftime('%Y%m%d')}.json"
+    return _Response(
+        content=body.encode("utf-8"),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/import")
+async def exams_import(
+    request: Request,
+    file: UploadFile = File(...),
+    mode: str = Form("add"),
+    db: Session = Depends(get_db),
+):
+    """試験定義をJSONからインポート（Admin専用）"""
+    import json as _json
+    user = auth.require_admin(request, db)
+
+    content = await file.read()
+    try:
+        data = _json.loads(content.decode("utf-8-sig"))
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSONの解析に失敗しました"}, status_code=400)
+
+    exams_data = data.get("exams", [])
+    if not isinstance(exams_data, list):
+        return JSONResponse({"ok": False, "error": "exams フィールドが見つかりません"}, status_code=400)
+
+    # スキル名 → ID マップ
+    skill_map = {s.name: s.id for s in db.query(models.Skill).all()}
+
+    added = updated = skipped = 0
+    for item in exams_data:
+        title = (item.get("title") or "").strip()
+        if not title:
+            continue
+        existing = db.query(models.Exam).filter(models.Exam.title == title).first()
+
+        if existing:
+            if mode == "update":
+                existing.description = item.get("description") or None
+                existing.has_written = item.get("has_written", True)
+                existing.has_practical = item.get("has_practical", True)
+                existing.time_limit_minutes = item.get("time_limit_minutes")
+                existing.pass_score = item.get("pass_score")
+                existing.target_skill_id = skill_map.get(item.get("target_skill_name"))
+                existing.target_tier = item.get("target_tier")
+                existing.required_completion_rate = item.get("required_completion_rate")
+                # 既存の問題・基準を一括置換
+                db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == existing.id).delete()
+                db.query(models.ExamCriterion).filter(models.ExamCriterion.exam_id == existing.id).delete()
+                _add_questions_and_criteria(existing.id, item, db)
+                updated += 1
+            else:
+                skipped += 1
+            continue
+
+        exam = models.Exam(
+            title=title,
+            description=item.get("description") or None,
+            exam_type="mixed",
+            has_written=item.get("has_written", True),
+            has_practical=item.get("has_practical", True),
+            time_limit_minutes=item.get("time_limit_minutes"),
+            pass_score=item.get("pass_score"),
+            is_archived=item.get("is_archived", False),
+            target_skill_id=skill_map.get(item.get("target_skill_name")),
+            target_tier=item.get("target_tier"),
+            required_completion_rate=item.get("required_completion_rate"),
+            created_by=user.id,
+        )
+        db.add(exam)
+        db.flush()
+        _add_questions_and_criteria(exam.id, item, db)
+        added += 1
+
+    db.commit()
+    return JSONResponse({"ok": True, "added": added, "updated": updated, "skipped": skipped})
+
+
+def _add_questions_and_criteria(exam_id: int, item: dict, db):
+    import json as _json
+    for q in item.get("questions", []):
+        db.add(models.ExamQuestion(
+            exam_id=exam_id,
+            question_text=q.get("question_text", ""),
+            question_type=q.get("question_type", "single"),
+            choices=_json.dumps(q.get("choices", []), ensure_ascii=False),
+            correct_indices=_json.dumps(q.get("correct_indices", []), ensure_ascii=False),
+            points=q.get("points", 1),
+            order_index=q.get("order_index", 0),
+        ))
+    for c in item.get("criteria", []):
+        db.add(models.ExamCriterion(
+            exam_id=exam_id,
+            title=c.get("title", ""),
+            description=c.get("description") or None,
+            max_score=c.get("max_score", 10),
+            order_index=c.get("order_index", 0),
+        ))

@@ -320,6 +320,7 @@ class EducationalLink(Base):
     description = Column(Text, nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     skill_id    = Column(Integer, ForeignKey("skills.id"), nullable=True)
+    area_id     = Column(Integer, ForeignKey("learning_path_areas.id", ondelete="CASCADE"), nullable=True)
     step_order  = Column(Integer, nullable=True)
     created_by  = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at  = Column(DateTime, server_default=func.now())
@@ -328,6 +329,39 @@ class EducationalLink(Base):
     category = relationship("Category", foreign_keys=[category_id])
     skill    = relationship("Skill",    foreign_keys=[skill_id])
     creator  = relationship("User",     foreign_keys=[created_by])
+    area     = relationship("LearningPathArea", back_populates="steps")
+
+
+# ─── 学習パスエリア（フリー作成） ────────────────────────────────────
+
+class LearningPathArea(Base):
+    __tablename__ = "learning_path_areas"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    name        = Column(String(200), nullable=False)
+    description = Column(String(500), nullable=True)
+    parent_id   = Column(Integer, ForeignKey("learning_path_areas.id", ondelete="CASCADE"), nullable=True)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    skill_id    = Column(Integer, ForeignKey("skills.id"), nullable=True)
+    order_index = Column(Integer, default=0)
+    created_by  = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at  = Column(DateTime, server_default=func.now())
+
+    category = relationship("Category", foreign_keys=[category_id])
+    skill    = relationship("Skill",    foreign_keys=[skill_id])
+    creator  = relationship("User",     foreign_keys=[created_by])
+    steps    = relationship("EducationalLink", back_populates="area",
+                            cascade="all, delete-orphan",
+                            order_by="EducationalLink.step_order")
+    children = relationship("LearningPathArea",
+                            foreign_keys="[LearningPathArea.parent_id]",
+                            back_populates="parent",
+                            cascade="all, delete-orphan",
+                            order_by="LearningPathArea.order_index")
+    parent   = relationship("LearningPathArea",
+                            foreign_keys="[LearningPathArea.parent_id]",
+                            back_populates="children",
+                            remote_side="[LearningPathArea.id]")
 
 
 # ─── 学習進捗 ────────────────────────────────────────────────────

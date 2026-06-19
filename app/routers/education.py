@@ -13,6 +13,26 @@ from routers.groups import _get_all_group_skill_ids
 router = APIRouter()
 
 
+def _build_free_areas_tree(areas, completed_ids):
+    result = []
+    for area in areas:
+        steps = sorted(area.steps, key=lambda x: (x.step_order is None, x.step_order or 0))
+        done_count = sum(1 for s in steps if s.id in completed_ids)
+        children = _build_free_areas_tree(
+            sorted(area.children, key=lambda a: (a.order_index, a.id)),
+            completed_ids,
+        )
+        result.append({
+            "area": area,
+            "steps": steps,
+            "completed_ids": completed_ids,
+            "done_count": done_count,
+            "total": len(steps),
+            "children": children,
+        })
+    return result
+
+
 def _get_user_scope(user, db) -> dict | None:
     """User ロールの場合、参加グループに基づくスキルID・カテゴリIDを返す。
     Manager/Admin の場合は None（制限なし）。
@@ -46,9 +66,10 @@ def education_list(request: Request, db: Session = Depends(get_db)):
     user = auth.require_approved(request, db)
     scope = _get_user_scope(user, db)
 
-    # スキルに紐づくリソースをスコープ込みで取得
+    # スキルに紐づくリソースをスコープ込みで取得（フリーエリア所属のリンクは除外）
     path_query = db.query(models.EducationalLink).filter(
-        models.EducationalLink.skill_id.isnot(None)
+        models.EducationalLink.skill_id.isnot(None),
+        models.EducationalLink.area_id.is_(None),
     )
     if scope is not None:
         if scope["no_group"] or not scope["skill_ids"]:
@@ -99,12 +120,22 @@ def education_list(request: Request, db: Session = Depends(get_db)):
             seen[s.category_id] = s.category
     filter_categories = sorted(seen.values(), key=lambda c: c.name)
 
+    # フリーエリア（LearningPathArea）をツリーとして取得
+    top_areas = (
+        db.query(models.LearningPathArea)
+        .filter(models.LearningPathArea.parent_id.is_(None))
+        .order_by(models.LearningPathArea.order_index, models.LearningPathArea.id)
+        .all()
+    )
+    free_areas = _build_free_areas_tree(top_areas, completed_ids)
+
     return templates.TemplateResponse(request, "education.html", {
         "current_user": user,
         "is_scoped": scope is not None,
         "no_group":  scope is not None and scope.get("no_group", False),
         "path_groups": path_groups,
         "filter_categories": filter_categories,
+        "free_areas": free_areas,
     })
 
 
@@ -340,6 +371,216 @@ async def education_path_reorder(
         link.step_order = step_order or None
         db.commit()
     return RedirectResponse(f"/education/path/{skill_id}", status_code=303)
+
+
+# ── 学習パス フリーエリア管理 ─────────────────────────────────────────────────
+
+@router.get("/education/area/new", response_class=HTMLResponse)
+def education_area_new_get(request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    categories = db.query(models.Category).order_by(models.Category.name).all()
+    skills = db.query(models.Skill).order_by(models.Skill.category_id, models.Skill.name).all()
+    return templates.TemplateResponse(request, "education_area_form.html", {
+        "current_user": user,
+        "area": None,
+        "categories": categories,
+        "skills": skills,
+        "error": None,
+    })
+
+
+@router.post("/education/area/new")
+async def education_area_new_post(
+    request: Request,
+    name: str = Form(""),
+    category_id: int = Form(0),
+    skill_id: int = Form(0),
+    parent_id: int = Form(0),
+    next: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    name = name.strip()
+
+    # 名称未指定時はカテゴリ・スキル名を自動使用
+    if not name:
+        if skill_id:
+            sk = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+            name = sk.name if sk else ""
+        elif category_id:
+            cat = db.query(models.Category).filter(models.Category.id == category_id).first()
+            name = cat.name if cat else ""
+
+    if not name:
+        categories = db.query(models.Category).order_by(models.Category.name).all()
+        skills = db.query(models.Skill).order_by(models.Skill.name).all()
+        return templates.TemplateResponse(request, "education_area_form.html", {
+            "current_user": user, "area": None,
+            "categories": categories, "skills": skills,
+            "error": "エリア名、またはカテゴリ・スキルのいずれかを指定してください",
+        })
+
+    count = db.query(models.LearningPathArea).count()
+    area = models.LearningPathArea(
+        name=name,
+        parent_id=parent_id or None,
+        category_id=category_id or None,
+        skill_id=skill_id or None,
+        order_index=count,
+        created_by=user.id,
+    )
+    db.add(area)
+    db.commit()
+    redirect_to = next if next.startswith("/") else f"/education/area/{area.id}"
+    return RedirectResponse(redirect_to, status_code=303)
+
+
+@router.get("/education/area/{area_id}/edit", response_class=HTMLResponse)
+def education_area_edit_get(area_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    area = db.query(models.LearningPathArea).filter(models.LearningPathArea.id == area_id).first()
+    if not area:
+        return RedirectResponse("/education", status_code=303)
+    categories = db.query(models.Category).order_by(models.Category.name).all()
+    skills = db.query(models.Skill).order_by(models.Skill.category_id, models.Skill.name).all()
+    return templates.TemplateResponse(request, "education_area_form.html", {
+        "current_user": user,
+        "area": area,
+        "categories": categories,
+        "skills": skills,
+        "error": None,
+    })
+
+
+@router.post("/education/area/{area_id}/edit")
+async def education_area_edit_post(
+    area_id: int,
+    request: Request,
+    name: str = Form(""),
+    description: str = Form(""),
+    category_id: int = Form(0),
+    skill_id: int = Form(0),
+    next_url: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    area = db.query(models.LearningPathArea).filter(models.LearningPathArea.id == area_id).first()
+    if not area:
+        return RedirectResponse("/education", status_code=303)
+
+    name = name.strip()
+    if not name:
+        if skill_id:
+            sk = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+            name = sk.name if sk else area.name
+        elif category_id:
+            cat = db.query(models.Category).filter(models.Category.id == category_id).first()
+            name = cat.name if cat else area.name
+
+    if not name:
+        categories = db.query(models.Category).order_by(models.Category.name).all()
+        skills = db.query(models.Skill).order_by(models.Skill.name).all()
+        return templates.TemplateResponse(request, "education_area_form.html", {
+            "current_user": user, "area": area,
+            "categories": categories, "skills": skills,
+            "error": "エリア名、またはカテゴリ・スキルのいずれかを指定してください",
+        })
+
+    area.name = name
+    area.description = description.strip() or None
+    area.category_id = category_id or None
+    area.skill_id = skill_id or None
+    db.commit()
+    redirect_to = next_url.strip() if next_url.strip() else f"/education/area/{area_id}"
+    return RedirectResponse(redirect_to, status_code=303)
+
+
+@router.get("/education/area/{area_id}", response_class=HTMLResponse)
+def education_area_get(area_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    area = db.query(models.LearningPathArea).filter(models.LearningPathArea.id == area_id).first()
+    if not area:
+        return RedirectResponse("/education", status_code=303)
+    steps = sorted(area.steps, key=lambda x: (x.step_order is None, x.step_order or 0))
+    return templates.TemplateResponse(request, "education_area.html", {
+        "current_user": user,
+        "area": area,
+        "steps": steps,
+        "error": None,
+    })
+
+
+@router.post("/education/area/{area_id}/add")
+async def education_area_add_step(
+    area_id: int,
+    request: Request,
+    title: str = Form(...),
+    url: str = Form(...),
+    description: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    area = db.query(models.LearningPathArea).filter(models.LearningPathArea.id == area_id).first()
+    if not area:
+        return RedirectResponse("/education", status_code=303)
+
+    if not title.strip() or not url.strip():
+        steps = sorted(area.steps, key=lambda x: (x.step_order is None, x.step_order or 0))
+        return templates.TemplateResponse(request, "education_area.html", {
+            "current_user": user, "area": area, "steps": steps,
+            "error": "タイトルとURLは必須です",
+        })
+
+    existing = [s for s in area.steps if s.step_order is not None]
+    next_order = max((s.step_order for s in existing), default=0) + 1
+
+    link = models.EducationalLink(
+        title=title.strip(),
+        url=url.strip(),
+        description=description.strip() or None,
+        area_id=area_id,
+        category_id=area.category_id,
+        skill_id=area.skill_id,
+        step_order=next_order,
+        created_by=user.id,
+    )
+    db.add(link)
+    db.commit()
+    return RedirectResponse(f"/education/area/{area_id}", status_code=303)
+
+
+@router.post("/education/area/{area_id}/step/{step_id}/delete")
+def education_area_delete_step(area_id: int, step_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    link = db.query(models.EducationalLink).filter(models.EducationalLink.id == step_id).first()
+    if link:
+        db.delete(link)
+        db.commit()
+    return RedirectResponse(f"/education/area/{area_id}", status_code=303)
+
+
+@router.post("/education/area/{area_id}/step/{step_id}/reorder")
+async def education_area_reorder_step(
+    area_id: int, step_id: int, request: Request,
+    step_order: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = auth.require_manager_or_admin(request, db)
+    link = db.query(models.EducationalLink).filter(models.EducationalLink.id == step_id).first()
+    if link:
+        link.step_order = step_order or None
+        db.commit()
+    return RedirectResponse(f"/education/area/{area_id}", status_code=303)
+
+
+@router.post("/education/area/{area_id}/delete")
+def education_area_delete(area_id: int, request: Request, db: Session = Depends(get_db)):
+    user = auth.require_manager_or_admin(request, db)
+    area = db.query(models.LearningPathArea).filter(models.LearningPathArea.id == area_id).first()
+    if area:
+        db.delete(area)
+        db.commit()
+    return RedirectResponse("/education", status_code=303)
 
 
 # ── 学習パス 一括エクスポート / インポート（データ管理ページ用） ──────────────

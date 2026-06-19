@@ -8,9 +8,12 @@
     <p class="text-muted mb-0 small">スキルごとの学習ステップを確認・記録できます</p>
   </div>
   {% if current_user.role in ('admin','manager') %}
-  <a href="/education/new" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
-    <i class="bi bi-plus-lg me-1"></i>リソースを追加
-  </a>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:20px;padding:.4rem 1.2rem;"
+            onclick="openEduAreaModal(0, '')">
+      <i class="bi bi-folder-plus me-1"></i>エリアを作成
+    </button>
+  </div>
   {% endif %}
 </div>
 
@@ -66,8 +69,10 @@
   {% endif %}
 {% endif %}
 
-{% if path_groups %}
 {% set is_mgr = current_user.role in ('admin','manager') %}
+{% set is_mgr2 = is_mgr %}
+
+{% if path_groups %}
 
 {# ── カテゴリーフィルター ── #}
 {% if filter_categories %}
@@ -94,13 +99,11 @@
 {% set total = g.total %}
 {% set all_done = (done_count == total and total > 0 and not is_mgr) %}
 {% set in_progress = (done_count > 0 and not all_done and not is_mgr) %}
-{# カードを最初から開く: in_progress は展開、それ以外は折りたたみ #}
 {% set body_open = in_progress %}
 
 <div class="card mb-3 skill-path-card" data-category-id="{{ skill.category_id or 0 }}"
      style="border-radius:14px;overflow:hidden;border:{% if all_done %}1.5px solid #86efac{% elif in_progress %}1.5px solid #fed7aa{% else %}1px solid #e2e8f0{% endif %};">
 
-  {# ── ヘッダー ── #}
   <div class="card-header d-flex align-items-center gap-2 flex-wrap"
        style="background:{% if all_done %}#f0fdf4{% elif in_progress %}#fff7ed{% else %}#f8fafc{% endif %};
               border-bottom:2px solid {% if all_done %}#86efac{% elif in_progress %}#fed7aa{% else %}#e2e8f0{% endif %};
@@ -117,7 +120,6 @@
     <span class="badge" style="background:{{ skill.category.color }};font-size:.65rem;">{{ skill.category.name }}</span>
     {% endif %}
 
-    {# ── 進捗バッジ ── #}
     {% if not is_mgr %}
       {% if all_done %}
       <span class="badge ms-1" style="background:#dcfce7;color:#16a34a;font-size:.68rem;border-radius:20px;">
@@ -134,7 +136,6 @@
       <span class="badge ms-1 bg-light text-muted border" style="font-size:.68rem;border-radius:20px;">{{ total }} ステップ</span>
     {% endif %}
 
-    {# インラインプログレスバー (進行中のみ) #}
     {% if in_progress and total > 0 %}
     <div style="flex:1;min-width:60px;max-width:100px;height:5px;background:#fed7aa;border-radius:3px;overflow:hidden;">
       <div style="height:100%;width:{{ (done_count / total * 100)|int }}%;background:#f97316;border-radius:3px;"></div>
@@ -148,11 +149,11 @@
               onclick="event.stopPropagation();openAddStep({{ skill.id }},'{{ skill.name|replace("'","\\'") }}')">
         <i class="bi bi-plus-lg"></i>
       </button>
-      <a href="/education/path/{{ skill.id }}"
-         class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.72rem;padding:.2rem .6rem;"
-         onclick="event.stopPropagation()">
-        <i class="bi bi-pencil-square me-1"></i>管理
-      </a>
+      <button class="btn btn-sm btn-outline-primary" style="border-radius:20px;font-size:.72rem;padding:.2rem .6rem;"
+              title="編集"
+              onclick="event.stopPropagation();window.location.href='/education/path/{{ skill.id }}';">
+        <i class="bi bi-pencil-square me-1"></i>編集
+      </button>
       {% endif %}
       <i class="bi bi-chevron-down" id="chev-{{ skill.id }}"
          style="color:#94a3b8;font-size:.8rem;transition:transform .2s;flex-shrink:0;
@@ -160,7 +161,6 @@
     </div>
   </div>
 
-  {# ── ステップリスト ── #}
   <div id="skill-body-{{ skill.id }}" class="collapse{% if body_open %} show{% endif %}">
     <div class="card-body py-3 px-3">
       {% set ns2 = namespace(found_current=False) %}
@@ -171,24 +171,15 @@
         {% set is_last = loop.last %}
 
         <div class="d-flex gap-3 {% if not is_last %}mb-2{% endif %}">
-          {# ── ステップ番号インジケーター ── #}
           <div class="d-flex flex-column align-items-center" style="min-width:32px;">
             <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
                         justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;
-                        {% if is_done %}
-                          background:#dcfce7;color:#16a34a;
-                        {% elif is_current %}
-                          background:#f97316;color:#fff;box-shadow:0 0 0 3px #fed7aa;
-                        {% else %}
-                          background:#f1f5f9;color:#94a3b8;
-                        {% endif %}">
-              {% if is_done %}
-                <i class="bi bi-check2" style="font-size:.85rem;"></i>
-              {% elif is_current %}
-                <i class="bi bi-play-fill" style="font-size:.8rem;"></i>
-              {% else %}
-                {{ lnk.step_order or '-' }}
-              {% endif %}
+                        {% if is_done %}background:#dcfce7;color:#16a34a;
+                        {% elif is_current %}background:#f97316;color:#fff;box-shadow:0 0 0 3px #fed7aa;
+                        {% else %}background:#f1f5f9;color:#94a3b8;{% endif %}">
+              {% if is_done %}<i class="bi bi-check2" style="font-size:.85rem;"></i>
+              {% elif is_current %}<i class="bi bi-play-fill" style="font-size:.8rem;"></i>
+              {% else %}{{ lnk.step_order or '-' }}{% endif %}
             </div>
             {% if not is_last %}
             <div style="width:2px;flex:1;min-height:12px;margin-top:3px;
@@ -196,14 +187,12 @@
             {% endif %}
           </div>
 
-          {# ── コンテンツカード ── #}
           <div class="flex-fill mb-1">
             <div class="card" style="border-radius:10px;
                  border:1px solid {% if is_done %}#bbf7d0{% elif is_current %}#fed7aa{% else %}#e2e8f0{% endif %};
                  {% if is_done %}background:#f0fdf4;{% elif is_current %}background:#fffbeb;border-left:3px solid #f97316;{% endif %}">
               <div class="card-body py-2 px-3">
                 <div class="d-flex align-items-center gap-2">
-                  {# ファビコン #}
                   <div style="width:24px;height:24px;border-radius:6px;flex-shrink:0;overflow:hidden;
                               display:flex;align-items:center;justify-content:center;
                               background:{% if is_done %}#dcfce7{% else %}#f8fafc{% endif %};
@@ -213,7 +202,6 @@
                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
                     <i class="bi bi-link-45deg" style="color:#94a3b8;font-size:.75rem;display:none;"></i>
                   </div>
-                  {# テキスト #}
                   <div class="flex-fill min-width-0">
                     <div class="fw-semibold" style="font-size:.87rem;line-height:1.3;
                          {% if is_done %}color:#4b7a5a;text-decoration:line-through;text-decoration-color:#86efac;{% elif is_current %}color:#92400e;{% endif %}">
@@ -224,7 +212,6 @@
                     <div class="text-muted" style="font-size:.75rem;line-height:1.3;">{{ lnk.description }}</div>
                     {% endif %}
                   </div>
-                  {# アクションボタン #}
                   <div class="d-flex gap-1 align-items-center flex-shrink-0">
                     <a href="{{ lnk.url }}" target="_blank" rel="noopener"
                        class="btn btn-sm" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;
@@ -274,18 +261,219 @@
 {% endfor %}
 
 {% else %}
+{% if not free_areas %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
     <i class="bi bi-signpost-split fs-1 d-block mb-3" style="color:#fed7aa;"></i>
     <h5>学習パスがまだ登録されていません</h5>
     {% if current_user.role in ('admin','manager') %}
-    <p class="small">スキルに紐づく学習パスを設定するには「管理」ページからステップを追加してください。</p>
+    <p class="small">スキルに紐づく学習パスを設定するには「編集」ページからステップを追加してください。</p>
     {% else %}
     <p class="small">管理者またはマネージャーが学習パスを設定するとここに表示されます。</p>
     {% endif %}
   </div>
 </div>
 {% endif %}
+{% endif %}
+
+{# ── フリーエリア（階層型） ── #}
+{% macro render_edu_area(fa, depth) %}
+{% set area = fa.area %}
+{% set steps = fa.steps %}
+{% set children = fa.children %}
+{% set completed_ids = fa.completed_ids %}
+{% set done_count = fa.done_count %}
+{% set total = fa.total %}
+{% set all_done = (done_count == total and total > 0 and not is_mgr2) %}
+{% set in_progress = (done_count > 0 and not all_done and not is_mgr2) %}
+{% set body_open = in_progress %}
+
+<div class="card mb-2{% if depth > 0 %} ms-4{% endif %}"
+     style="border-radius:12px;overflow:hidden;
+            border:{% if all_done %}1.5px solid #86efac{% elif in_progress %}1.5px solid #fed7aa{% else %}1px solid #e2e8f0{% endif %};">
+
+  <div class="card-header d-flex align-items-center gap-2 flex-wrap"
+       style="background:{% if all_done %}#f0fdf4{% elif in_progress %}#fff7ed{% else %}#f8fafc{% endif %};
+              border-bottom:2px solid {% if all_done %}#86efac{% elif in_progress %}#fed7aa{% else %}#e2e8f0{% endif %};
+              padding:.6rem 1rem;">
+
+    <i class="bi bi-signpost-split" style="color:#f97316;font-size:.9rem;flex-shrink:0;"></i>
+    <div style="flex:1;min-width:0;">
+      <span class="fw-bold" style="font-size:.9rem;">{{ area.name }}</span>
+      {% if area.category %}
+      <span class="badge ms-1" style="background:{{ area.category.color }};font-size:.65rem;">{{ area.category.name }}</span>
+      {% endif %}
+      {% if area.skill %}
+      <span class="badge bg-light text-dark border ms-1" style="font-size:.65rem;">{{ area.skill.name }}</span>
+      {% endif %}
+      {% if children %}
+      <span class="badge bg-light text-muted border ms-1" style="font-size:.65rem;border-radius:20px;">{{ children|length }} エリア</span>
+      {% endif %}
+      {% if not is_mgr2 %}
+        {% if all_done %}
+        <span class="badge ms-1" style="background:#dcfce7;color:#16a34a;font-size:.65rem;border-radius:20px;"><i class="bi bi-check2-all me-1"></i>完了</span>
+        {% elif done_count > 0 %}
+        <span class="badge ms-1" style="background:#fff7ed;color:#f97316;border:1px solid #fed7aa;font-size:.65rem;border-radius:20px;">{{ done_count }}/{{ total }}</span>
+        {% elif total > 0 %}
+        <span class="badge ms-1 bg-light text-muted border" style="font-size:.65rem;border-radius:20px;">{{ total }} ステップ</span>
+        {% endif %}
+      {% else %}
+        {% if total > 0 %}
+        <span class="badge ms-1 bg-light text-muted border" style="font-size:.65rem;border-radius:20px;">{{ total }} ステップ</span>
+        {% endif %}
+      {% endif %}
+      {% if area.description %}
+      <div class="text-muted mt-1" style="font-size:.78rem;line-height:1.3;">{{ area.description }}</div>
+      {% endif %}
+    </div>
+
+    {% if in_progress and total > 0 %}
+    <div style="min-width:60px;max-width:100px;height:5px;background:#fed7aa;border-radius:3px;overflow:hidden;flex-shrink:0;">
+      <div style="height:100%;width:{{ (done_count / total * 100)|int }}%;background:#f97316;border-radius:3px;"></div>
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-1 align-items-center flex-shrink-0">
+      {% if is_mgr2 %}
+      <button class="btn btn-xs btn-outline-success" style="border-radius:20px;" title="ステップを追加"
+              onclick="event.stopPropagation();window.location.href='/education/area/{{ area.id }}';">
+        <i class="bi bi-plus-lg me-1"></i>ステップ追加
+      </button>
+      <button class="btn btn-xs btn-outline-secondary" style="border-radius:20px;" title="エリアを編集"
+              data-area-id="{{ area.id }}"
+              data-area-name="{{ area.name|e }}"
+              data-area-desc="{{ (area.description or '')|e }}"
+              onclick="openEditEduAreaModalFromBtn(this)">
+        <i class="bi bi-pencil me-1"></i>編集
+      </button>
+      <form method="post" action="/education/area/{{ area.id }}/delete"
+            onclick="event.stopPropagation()"
+            onsubmit="return confirm('「{{ area.name }}」を削除しますか？\n配下のエリアとステップもすべて削除されます。')">
+        <button class="btn btn-xs btn-outline-danger" style="border-radius:20px;" title="削除">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+      {% endif %}
+      <button class="btn btn-xs btn-link p-0 ms-1" title="開閉"
+              onclick="event.stopPropagation();toggleEduArea('{{ area.id }}')" style="color:#94a3b8;line-height:1;">
+        <i class="bi bi-chevron-down" id="edu-chev-{{ area.id }}"
+           style="font-size:.8rem;transition:transform .2s;
+                  {% if body_open %}transform:rotate(180deg);{% endif %}"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="fa-body-{{ area.id }}" class="collapse{% if body_open %} show{% endif %}">
+    <div class="card-body py-2 px-3">
+
+      {# 子エリア #}
+      {% for child_fa in children %}
+      {{ render_edu_area(child_fa, depth + 1) }}
+      {% endfor %}
+
+      {# ステップ一覧 #}
+      {% if steps %}
+      {% if children %}<div class="mt-2 pt-2" style="border-top:1px solid #f1f5f9;">{% endif %}
+      {% set ns3 = namespace(found_current=False) %}
+      {% for lnk in steps %}
+        {% set is_done = lnk.id in completed_ids %}
+        {% set is_current = not is_done and not ns3.found_current and not is_mgr2 %}
+        {% if is_current %}{% set ns3.found_current = True %}{% endif %}
+        {% set is_last = loop.last %}
+
+        <div class="d-flex gap-3 {% if not is_last %}mb-2{% endif %}">
+          <div class="d-flex flex-column align-items-center" style="min-width:32px;">
+            <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+                        justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;
+                        {% if is_done %}background:#dcfce7;color:#16a34a;
+                        {% elif is_current %}background:#f97316;color:#fff;box-shadow:0 0 0 3px #fed7aa;
+                        {% else %}background:#f1f5f9;color:#94a3b8;{% endif %}">
+              {% if is_done %}<i class="bi bi-check2" style="font-size:.85rem;"></i>
+              {% elif is_current %}<i class="bi bi-play-fill" style="font-size:.8rem;"></i>
+              {% else %}{{ lnk.step_order or '-' }}{% endif %}
+            </div>
+            {% if not is_last %}
+            <div style="width:2px;flex:1;min-height:12px;margin-top:3px;background:{% if is_done %}#bbf7d0{% else %}#e2e8f0{% endif %};"></div>
+            {% endif %}
+          </div>
+          <div class="flex-fill mb-1">
+            <div class="card" style="border-radius:10px;
+                 border:1px solid {% if is_done %}#bbf7d0{% elif is_current %}#fed7aa{% else %}#e2e8f0{% endif %};
+                 {% if is_done %}background:#f0fdf4;{% elif is_current %}background:#fffbeb;border-left:3px solid #f97316;{% endif %}">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex align-items-center gap-2">
+                  <div style="width:24px;height:24px;border-radius:6px;flex-shrink:0;overflow:hidden;
+                              display:flex;align-items:center;justify-content:center;
+                              background:{% if is_done %}#dcfce7{% else %}#f8fafc{% endif %};
+                              border:1px solid {% if is_done %}#bbf7d0{% else %}#e2e8f0{% endif %};">
+                    <img src="https://www.google.com/s2/favicons?domain={{ lnk.url }}&sz=32"
+                         alt="" style="width:13px;height:13px;"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <i class="bi bi-link-45deg" style="color:#94a3b8;font-size:.75rem;display:none;"></i>
+                  </div>
+                  <div class="flex-fill min-width-0">
+                    <div class="fw-semibold" style="font-size:.87rem;line-height:1.3;
+                         {% if is_done %}color:#4b7a5a;text-decoration:line-through;text-decoration-color:#86efac;
+                         {% elif is_current %}color:#92400e;{% endif %}">
+                      {{ lnk.title }}
+                      {% if is_current %}<span class="badge ms-1" style="background:#f97316;color:#fff;font-size:.6rem;border-radius:20px;vertical-align:middle;">今ここ</span>{% endif %}
+                    </div>
+                    {% if lnk.description %}
+                    <div class="text-muted" style="font-size:.75rem;line-height:1.3;">{{ lnk.description }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="d-flex gap-1 align-items-center flex-shrink-0">
+                    <a href="{{ lnk.url }}" target="_blank" rel="noopener"
+                       class="btn btn-sm" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;
+                              border:1px solid {% if is_done %}#86efac{% else %}#d1d5db{% endif %};
+                              color:{% if is_done %}#16a34a{% else %}#6b7280{% endif %};">
+                      <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    {% if is_mgr2 %}
+                    <form method="post" action="/education/area/{{ area.id }}/step/{{ lnk.id }}/delete"
+                          onsubmit="return confirm('このステップを削除しますか？')">
+                      <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;" title="ステップを削除">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    {% else %}
+                      {% if is_done %}
+                      <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
+                        <button class="btn btn-sm" style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;border:1px solid #86efac;color:#6b7280;" title="未完了に戻す">
+                          <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                      </form>
+                      {% else %}
+                      <form method="post" action="/education/progress/{{ lnk.id }}/toggle">
+                        <button class="btn btn-sm {% if is_current %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                                style="border-radius:20px;font-size:.72rem;padding:.2rem .5rem;" title="完了にする">
+                          <i class="bi bi-check2{% if is_current %}-all{% endif %}"></i>
+                        </button>
+                      </form>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      {% if children %}</div>{% endif %}
+      {% elif not children %}
+      <div class="text-center text-muted py-3">
+        <i class="bi bi-folder2-open fs-2 d-block mb-2" style="color:#c7d2fe;"></i>
+        <p class="small mb-0">ステップがありません。{% if is_mgr2 %}「編集」からステップを追加できます。{% endif %}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% for fa in free_areas %}
+{{ render_edu_area(fa, 0) }}
+{% endfor %}
 
 {# ── ステップ追加モーダル（Manager/Admin 用） ── #}
 {% if current_user.role in ('admin','manager') %}
@@ -336,6 +524,77 @@
     </div>
   </div>
 </div>
+
+{# ── エリア作成モーダル ── #}
+<div class="modal fade" id="eduAreaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;background:#fff7ed;">
+        <h6 class="modal-title fw-bold" id="eduAreaModalTitle">
+          <i class="bi bi-folder-plus me-2" style="color:#f97316;"></i>エリアを作成
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/education/area/new">
+        <input type="hidden" name="next" value="/education">
+        <input type="hidden" name="category_id" value="0">
+        <input type="hidden" name="skill_id" value="0">
+        <input type="hidden" name="parent_id" id="eduAreaParentId" value="0">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">エリア名 <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="eduAreaName" class="form-control" required
+                   style="border-radius:10px;" placeholder="例: HILS基礎 / テスト実施">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold" style="border-radius:20px;">
+            <i class="bi bi-check me-1"></i>作成
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ── エリア編集モーダル（名称・説明文） ── #}
+<div class="modal fade" id="editEduAreaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;background:#f5f3ff;">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-pencil-square me-2" style="color:#6366f1;"></i>エリアを編集
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editEduAreaForm" method="post" action="">
+        <input type="hidden" name="next_url" value="/education">
+        <input type="hidden" name="category_id" value="0">
+        <input type="hidden" name="skill_id" value="0">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">エリア名 <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editEduAreaName" class="form-control" required
+                   style="border-radius:10px;" placeholder="例: HILS基礎 / テスト実施">
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">説明文（任意）</label>
+            <textarea name="description" id="editEduAreaDesc" class="form-control form-control-sm" rows="3"
+                      style="border-radius:10px;resize:vertical;"
+                      placeholder="エリアの概要・目的などを入力できます"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold" style="border-radius:20px;">
+            <i class="bi bi-check me-1"></i>保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endif %}
 {% endblock %}
 
@@ -359,6 +618,18 @@ function rotateChevron(id) {
   el.style.transform = el.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
 }
 
+function rotateEduChevron(id) {
+  rotateChevron(id);
+}
+
+function toggleEduArea(areaId) {
+  const body = document.getElementById('fa-body-' + areaId);
+  if (!body) return;
+  const bsCollapse = bootstrap.Collapse.getOrCreateInstance(body, { toggle: false });
+  bsCollapse.toggle();
+  rotateEduChevron('edu-chev-' + areaId);
+}
+
 function openAddStep(skillId, skillName) {
   document.getElementById('addStepForm').action = `/education/path/${skillId}/add`;
   document.getElementById('modalSkillName').textContent = skillName;
@@ -366,6 +637,40 @@ function openAddStep(skillId, skillName) {
   document.getElementById('modalUrl').value = '';
   document.getElementById('modalFaviconPreview').style.display = 'none';
   new bootstrap.Modal(document.getElementById('addStepModal')).show();
+}
+
+function openEduAreaModal(parentId, parentName) {
+  const nameInput = document.getElementById('eduAreaName');
+  const parentIdInput = document.getElementById('eduAreaParentId');
+  const title = document.getElementById('eduAreaModalTitle');
+  if (!nameInput) return;
+  parentIdInput.value = parentId || 0;
+  nameInput.value = '';
+  if (parentId) {
+    title.innerHTML = `<i class="bi bi-folder-plus me-2" style="color:#f97316;"></i>「${parentName}」にサブエリアを追加`;
+  } else {
+    title.innerHTML = '<i class="bi bi-folder-plus me-2" style="color:#f97316;"></i>エリアを作成';
+  }
+  const modal = new bootstrap.Modal(document.getElementById('eduAreaModal'));
+  modal.show();
+  setTimeout(() => nameInput.focus(), 300);
+}
+
+function openEditEduAreaModalFromBtn(btn) {
+  openEditEduAreaModal(btn.dataset.areaId, btn.dataset.areaName, btn.dataset.areaDesc);
+}
+
+function openEditEduAreaModal(areaId, name, desc) {
+  const modalEl  = document.getElementById('editEduAreaModal');
+  const form     = document.getElementById('editEduAreaForm');
+  const nameInput = document.getElementById('editEduAreaName');
+  const descInput = document.getElementById('editEduAreaDesc');
+  if (!modalEl || !form) return;
+  form.action = `/education/area/${areaId}/edit`;
+  nameInput.value = name || '';
+  descInput.value = desc || '';
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  setTimeout(() => nameInput.focus(), 300);
 }
 
 function previewModalFavicon(url) {

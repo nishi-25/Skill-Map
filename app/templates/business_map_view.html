@@ -2,28 +2,20 @@
 {% block title %}業務マップ - Skill View.{% endblock %}
 
 {% block content %}
-{# SKILL_TIERS / TIER_COLORS はルートから渡される (models.py と統一) #}
+{# SKILL_TIERS / TIER_COLORS はルートから渡される #}
 
 {# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   マクロ: スキル申告フォーム（申告ページと同じUI＋エビデンス）
+   マクロ: サブスキルチェックリスト申告フォーム
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
 {% macro _bm_declare_form(node) %}
-<div class="bm-form-wrap">
-  {% if node.skills_data %}
-  <div class="d-flex justify-content-end mb-2">
-    <button type="button" class="btn btn-outline-secondary btn-sm bm-close-btn"
-            style="border-radius:20px;font-size:.75rem;"
-            data-bs-toggle="collapse" data-bs-target="#bmDeclare-{{ node.area.id }}">
-      <i class="bi bi-chevron-up me-1"></i>閉じる
-    </button>
-  </div>
+{% if node.skills_data %}
   {% for skill_data in node.skills_data %}
   {% set sk = skill_data.skill %}
   {% set subs = skill_data.sub_skills %}
   {% set done_ct = subs | selectattr('can_do') | list | length %}
   {% set total_ct = subs | length %}
   {% set pct_init = (done_ct / total_ct * 100) | int if total_ct else 0 %}
-  <div class="bm-skill-block {% if not loop.last %}mb-3 pb-3 border-bottom{% endif %}"
+  <div class="bm-skill-block {% if not loop.last %}mb-3 pb-3{% endif %}"
        data-bm-skill-id="{{ sk.id }}" data-bm-skill-total="{{ total_ct }}"
        data-bm-catalog-total="{{ skill_data.catalog_total }}"
        data-bm-catalog-done="{{ skill_data.catalog_done }}"
@@ -31,100 +23,107 @@
 
     {# スキルヘッダー #}
     <div class="d-flex align-items-center gap-2 mb-2">
-      {% if sk.category %}<span style="width:8px;height:8px;border-radius:50%;background:{{ sk.category.color }};flex-shrink:0;"></span>{% endif %}
-      <span class="fw-bold" style="font-size:.9rem;">{{ sk.name }}</span>
-      {% if sk.category %}<span class="badge ms-1" style="background:{{ sk.category.color }};font-size:.65rem;">{{ sk.category.name }}</span>{% endif %}
-      <span class="text-muted ms-auto" style="font-size:.78rem;">{{ done_ct }}/{{ total_ct }}</span>
+      {% if sk.category %}<span class="bm-cat-dot" style="background:{{ sk.category.color }};"></span>{% endif %}
+      <span class="fw-semibold" style="font-size:.88rem;">{{ sk.name }}</span>
+      {% if sk.category %}<span class="badge ms-auto" style="background:{{ sk.category.color }};font-size:.6rem;">{{ sk.category.name }}</span>{% endif %}
     </div>
 
-    {# レベルバー #}
-    <div class="d-flex align-items-center gap-2 mb-2 px-1">
-      <div class="progress flex-grow-1" style="height:6px;border-radius:3px;background:#f1f5f9;">
-        <div id="bm-bar-{{ sk.id }}" class="progress-bar"
-             style="width:{{ pct_init }}%;background:{% if pct_init==100 %}#22c55e{% elif pct_init>0 %}#f97316{% else %}#cbd5e1{% endif %};border-radius:3px;transition:width .3s;"></div>
+    {# 進捗バー #}
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div class="progress flex-grow-1" style="height:5px;border-radius:3px;background:#f1f5f9;">
+        <div id="bm-bar-{{ sk.id }}" class="progress-bar" style="width:{{ pct_init }}%;background:{% if pct_init==100 %}#22c55e{% elif pct_init>0 %}#f97316{% else %}#cbd5e1{% endif %};border-radius:3px;transition:width .3s;"></div>
       </div>
-      <span id="bm-pct-{{ sk.id }}" class="text-muted" style="font-size:.75rem;min-width:2.8em;text-align:right;">{{ pct_init }}%</span>
-      <span id="bm-badge-{{ sk.id }}" class="badge bg-secondary" style="font-size:.7rem;">—</span>
-      <span id="bm-lname-{{ sk.id }}" class="text-muted" style="font-size:.78rem;min-width:3.5em;">未経験</span>
+      <span id="bm-pct-{{ sk.id }}" class="text-muted" style="font-size:.72rem;min-width:2.5em;text-align:right;">{{ pct_init }}%</span>
+      <span id="bm-lname-{{ sk.id }}" class="text-muted" style="font-size:.72rem;min-width:3em;">{{ done_ct }}/{{ total_ct }}</span>
     </div>
 
     {# 申告フォーム #}
     <form method="post" action="/skills/business-map/area/{{ node.area.id }}/skill/{{ sk.id }}/declare">
       <input type="hidden" name="redirect_to" value="/skills/business-map">
-      <div class="list-group list-group-flush bm-ss-list mb-2">
+      <div class="bm-ss-checklist mb-3">
         {% for ss in subs %}
-        <label class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2 px-2 bm-ss-row" style="cursor:pointer;">
+        <label class="bm-ss-row d-flex align-items-start gap-2">
           <input class="form-check-input mt-1 flex-shrink-0 bm-check-{{ sk.id }}"
                  type="checkbox" name="sub_skill_ids" value="{{ ss.id }}"
                  {% if ss.can_do %}checked{% endif %}
                  onchange="bmRecalc({{ sk.id }}, {{ total_ct }});markDeclareFlag();">
           <span class="flex-fill">
-            <span style="font-size:.85rem;font-weight:500;">{{ ss.name }}</span>
-            <span class="badge ms-1 bg-{{ TIER_COLORS.get(ss.tier,'secondary') }}" style="font-size:.62rem;vertical-align:middle;">{{ SKILL_TIERS.get(ss.tier,ss.tier) }}</span>
-            {% if ss.description %}<span class="d-block text-muted" style="font-size:.75rem;margin-top:.1rem;line-height:1.35;">{{ ss.description }}</span>{% endif %}
+            <span style="font-size:.84rem;font-weight:500;line-height:1.4;">{{ ss.name }}</span>
+            <span class="badge ms-1 bg-{{ TIER_COLORS.get(ss.tier,'secondary') }}" style="font-size:.58rem;vertical-align:middle;">{{ SKILL_TIERS.get(ss.tier,ss.tier) }}</span>
+            {% if ss.description %}<span class="d-block text-muted" style="font-size:.73rem;margin-top:.1rem;line-height:1.35;">{{ ss.description }}</span>{% endif %}
           </span>
           <i class="bi bi-check-circle-fill text-success bm-check-icon-{{ ss.id }}"
-             style="font-size:.95rem;margin-top:2px;flex-shrink:0;{% if not ss.can_do %}opacity:0;{% endif %}transition:opacity .15s;"></i>
+             style="font-size:.9rem;margin-top:3px;flex-shrink:0;{% if not ss.can_do %}opacity:0;{% endif %}transition:opacity .15s;"></i>
         </label>
         {% endfor %}
       </div>
-      <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
-        <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;font-size:.75rem;"
+      <div class="d-flex gap-2 align-items-center">
+        <button type="button" class="btn btn-xs btn-outline-secondary" style="border-radius:20px;font-size:.72rem;"
                 onclick="bmCheckAll({{ sk.id }}, {{ total_ct }}, true)"><i class="bi bi-check2-all me-1"></i>全選択</button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;font-size:.75rem;"
-                onclick="bmCheckAll({{ sk.id }}, {{ total_ct }}, false)"><i class="bi bi-x-square me-1"></i>全解除</button>
-        <button type="button" class="btn btn-sm fw-semibold ms-auto"
-                style="border-radius:20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;min-width:90px;"
+        <button type="button" class="btn btn-xs btn-outline-secondary" style="border-radius:20px;font-size:.72rem;"
+                onclick="bmCheckAll({{ sk.id }}, {{ total_ct }}, false)"><i class="bi bi-x me-1"></i>全解除</button>
+        <button type="button" class="btn btn-sm fw-semibold ms-auto bm-submit-btn"
                 onclick="bmOpenDeclareModal({{ sk.id }}, this.closest('form'))">
           <i class="bi bi-send me-1"></i>申告する
         </button>
       </div>
     </form>
 
+    {% if not loop.last %}<hr class="my-3" style="border-color:#f1f5f9;">{% endif %}
   </div>
   {% endfor %}
-  {% else %}
+{% else %}
   <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>このエリアにはサブスキルが割り当てられていません。</p>
-  {% endif %}
-</div>
+{% endif %}
 {% endmacro %}
 
 {# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   マクロ: リーフエリアの申告パネル（L1/L2 リーフ用）
-   行全体をクリックで申告フォームを開く
+   マクロ: リーフエリアのカード（ワンクリック申告）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
-{% macro _bm_declare_panel(node) %}
-<div class="bm-declare-panel">
-  {% if node.skills_data %}
-  <div class="bm-row-toggle collapsed d-flex align-items-center gap-2 py-1 px-1"
-       style="cursor:pointer;border-radius:8px;"
-       data-bs-toggle="collapse"
-       data-bs-target="#bmDeclare-{{ node.area.id }}">
-    <div class="progress bm-panel-bar flex-grow-1">
-      <div class="progress-bar" style="width:{{ node.pct }}%;background:{% if node.pct==100 %}#22c55e{% elif node.acquired > 0 %}#f97316{% else %}#94a3b8{% endif %};"></div>
+{% macro _bm_leaf_card(node, accent) %}
+{% set pct = node.pct %}
+{% set color_class = 'bm-done' if pct == 100 else ('bm-wip' if node.acquired > 0 else 'bm-empty') %}
+<div class="bm-leaf-card {{ color_class }} mb-2">
+  <div class="bm-leaf-head d-flex align-items-center gap-2"
+       data-bs-toggle="collapse" data-bs-target="#bm-leaf-{{ node.area.id }}"
+       style="border-left:3px solid {{ accent }}; cursor:pointer;">
+    <div class="flex-grow-1 min-w-0">
+      <div class="fw-semibold" style="font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ node.area.name }}</div>
+      {% if node.area.description %}
+      <div class="text-muted" style="font-size:.73rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ node.area.description }}</div>
+      {% endif %}
     </div>
-    <span class="text-muted" style="font-size:.78rem;white-space:nowrap;">{{ node.acquired }}/{{ node.total }}</span>
-    <span class="text-primary small" style="white-space:nowrap;"><i class="bi bi-pencil-square me-1"></i>申告する</span>
-    <i class="bi bi-chevron-down bm-chevron text-muted" style="font-size:.8rem;flex-shrink:0;"></i>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+      <div class="bm-mini-bar">
+        <div class="bm-mini-bar-inner" style="width:{{ pct }}%;background:{% if pct==100 %}#22c55e{% elif node.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div>
+      </div>
+      <span class="bm-stat-sm">{{ node.acquired }}/{{ node.total }}</span>
+      {% if pct == 100 %}
+      <span class="bm-badge-done"><i class="bi bi-check-circle-fill me-1"></i>完了</span>
+      {% elif node.acquired > 0 %}
+      <span class="bm-badge-wip">進行中</span>
+      {% else %}
+      <span class="bm-badge-empty">未申告</span>
+      {% endif %}
+      <i class="bi bi-chevron-down bm-lf-chev" style="font-size:.75rem;color:#94a3b8;"></i>
+    </div>
   </div>
-  <div id="bmDeclare-{{ node.area.id }}" class="collapse mt-2">
-    {{ _bm_declare_form(node) }}
+  <div id="bm-leaf-{{ node.area.id }}" class="collapse">
+    <div class="bm-leaf-body">
+      {{ _bm_declare_form(node) }}
+    </div>
   </div>
-  {% else %}
-  <p class="text-muted small mb-0 px-1"><i class="bi bi-info-circle me-1"></i>このエリアにはサブスキルが割り当てられていません。</p>
-  {% endif %}
 </div>
 {% endmacro %}
 
-<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+{# ページヘッダー #}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
-    <h1>
-      <a href="/skills/start" class="text-decoration-none" style="color:#f97316;">
-        <i class="bi bi-arrow-left-circle me-2" style="font-size:1.1rem;"></i>
-      </a>
+    <h1 style="font-size:1.3rem;">
+      <a href="/skills/start" class="text-decoration-none me-1" style="color:#f97316;"><i class="bi bi-arrow-left-circle" style="font-size:1.1rem;"></i></a>
       <i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>業務マップ
     </h1>
-    <p class="text-muted mb-0 small">行をクリックしてサブスキルをその場で申告できます</p>
+    <p class="text-muted mb-0 small">業務エリアごとに習得済みのスキルを申告できます</p>
   </div>
   {% if current_user.role in ('admin', 'manager') %}
   <a href="/business-map/manage" class="btn btn-outline-secondary btn-sm" style="border-radius:20px;">
@@ -141,7 +140,7 @@
     {% if not loop.last %}
     <li class="breadcrumb-item"><a href="/skills/business-map?parent_id={{ b.id }}" class="text-decoration-none">{{ b.name }}</a></li>
     {% else %}
-    <li class="breadcrumb-item active" aria-current="page">{{ b.name }}</li>
+    <li class="breadcrumb-item active">{{ b.name }}</li>
     {% endif %}
     {% endfor %}
   </ol>
@@ -149,108 +148,111 @@
 {% endif %}
 
 {% if tree %}
-<div class="accordion bm-accordion" id="bmRootAccordion">
-  {% for node in tree %}
-  {% set pct1 = node.pct %}
-  <div class="accordion-item bm-l1-item mb-2">
-    <h2 class="accordion-header">
-      <button class="accordion-button bm-l1-btn {% if not loop.first %}collapsed{% endif %}"
-              type="button" data-bs-toggle="collapse"
-              data-bs-target="#bmC1-{{ node.area.id }}"
-              aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
-              style="background:{{ node.area.color }}0f;">
-        <span class="bm-num" style="background:{{ node.area.color }};color:#fff;">{{ loop.index }}</span>
-        <span class="flex-grow-1 fw-semibold ms-2" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ node.area.name }}</span>
-        <div class="d-flex align-items-center gap-2 ms-2 me-1 flex-shrink-0">
-          <div class="bm-bar" style="width:72px;">
-            <div class="bm-bar-inner" style="width:{{ pct1 }}%;background:{% if pct1==100 %}#22c55e{% elif node.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div>
-          </div>
-          <span class="bm-stat">{{ node.acquired }}/{{ node.total }}</span>
-        </div>
-      </button>
-    </h2>
-    <div id="bmC1-{{ node.area.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}">
-      <div class="accordion-body p-2 pt-1">
-        {% if node.area.description %}
-        <p class="text-muted small mb-2 px-1" style="font-size:.8rem;">{{ node.area.description }}</p>
-        {% endif %}
 
-        {% if node.is_leaf %}
-        {{ _bm_declare_panel(node) }}
-        {% else %}
-        <div class="accordion accordion-flush bm-l2-accordion" id="bmL2Acc-{{ node.area.id }}">
-          {% for node2 in node.children %}
-          {% set pct2 = node2.pct %}
-          {% set dot2 = node2.area.color or node.area.color %}
-          <div class="accordion-item bm-l2-item">
-            <h2 class="accordion-header">
-              <button class="accordion-button bm-l2-btn collapsed" type="button"
-                      data-bs-toggle="collapse" data-bs-target="#bmC2-{{ node2.area.id }}" aria-expanded="false">
-                <span class="bm-dot" style="background:{{ dot2 }};flex-shrink:0;"></span>
-                <span class="flex-grow-1 ms-2" style="font-size:.88rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ node2.area.name }}</span>
-                <div class="d-flex align-items-center gap-2 ms-2 me-1 flex-shrink-0">
-                  <div class="bm-bar" style="width:54px;">
-                    <div class="bm-bar-inner" style="width:{{ pct2 }}%;background:{% if pct2==100 %}#22c55e{% elif node2.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div>
-                  </div>
-                  <span class="bm-stat">{{ node2.acquired }}/{{ node2.total }}</span>
-                </div>
-              </button>
-            </h2>
-            <div id="bmC2-{{ node2.area.id }}" class="accordion-collapse collapse">
-              <div class="accordion-body p-2">
-                {% if node2.is_leaf %}
-                {{ _bm_declare_panel(node2) }}
-                {% else %}
-                {# ─── L3 リスト（行クリックで申告パネルを開く） ─── #}
-                <div class="bm-l3-list">
-                  {% for node3 in node2.children %}
-                  {% set pct3 = node3.pct %}
-                  {% set dot3 = node3.area.color or dot2 %}
-                  <div class="bm-l3-item">
-                    {# 行全体がクリッカブルなトグル #}
-                    {% if node3.is_leaf %}
-                    <div class="d-flex align-items-center gap-2 py-2 px-2 bm-row-toggle collapsed"
-                         style="cursor:pointer;"
-                         data-bs-toggle="collapse"
-                         data-bs-target="#bmDeclare-{{ node3.area.id }}">
-                    {% else %}
-                    <div class="d-flex align-items-center gap-2 py-2 px-2">
-                    {% endif %}
-                      <span class="bm-dot-sm" style="background:{{ dot3 }};flex-shrink:0;"></span>
-                      <span class="flex-grow-1" style="font-size:.84rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ node3.area.name }}</span>
-                      <div class="bm-bar flex-shrink-0" style="width:48px;">
-                        <div class="bm-bar-inner" style="width:{{ pct3 }}%;background:{% if pct3==100 %}#22c55e{% elif node3.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div>
-                      </div>
-                      <span class="text-muted flex-shrink-0" style="font-size:.75rem;min-width:2.8em;text-align:right;">{{ node3.acquired }}/{{ node3.total }}</span>
-                      {% if node3.is_leaf %}
-                      <i class="bi bi-chevron-down bm-chevron text-muted flex-shrink-0" style="font-size:.8rem;"></i>
-                      {% else %}
-                      <a href="/skills/business-map?parent_id={{ node3.area.id }}"
-                         class="btn bm-declare-btn flex-shrink-0" onclick="event.stopPropagation()">
-                        開く <i class="bi bi-chevron-right"></i>
-                      </a>
-                      {% endif %}
-                    </div>
-                    {% if node3.is_leaf %}
-                    <div id="bmDeclare-{{ node3.area.id }}" class="collapse">
-                      <div class="px-2 pb-3">{{ _bm_declare_form(node3) }}</div>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endfor %}
-                </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
+{# ── 全体進捗サマリー ── #}
+{% set total_all = tree | sum(attribute='total') %}
+{% set acq_all   = tree | sum(attribute='acquired') %}
+{% set pct_all   = (acq_all / total_all * 100) | int if total_all else 0 %}
+<div class="bm-summary-bar mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-1">
+    <span class="fw-semibold" style="font-size:.88rem;">全体進捗</span>
+    <span style="font-size:.82rem;color:#64748b;">{{ acq_all }} / {{ total_all }} サブスキル</span>
+  </div>
+  <div class="progress" style="height:8px;border-radius:4px;background:#e2e8f0;">
+    <div class="progress-bar" style="width:{{ pct_all }}%;background:{% if pct_all==100 %}#22c55e{% elif pct_all>0 %}#6366f1{% else %}#cbd5e1{% endif %};border-radius:4px;transition:width .4s;"></div>
+  </div>
+  <div class="d-flex gap-3 mt-2 flex-wrap">
+    {% for node in tree %}
+    {% set p = node.pct %}
+    <div class="d-flex align-items-center gap-1">
+      <span class="bm-cat-dot" style="background:{{ node.area.color }};"></span>
+      <span style="font-size:.72rem;color:#64748b;">{{ node.area.name }} {{ p }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── 各L1セクション ── #}
+{% for node in tree %}
+{% set accent = node.area.color or '#6366f1' %}
+{% set pct1 = node.pct %}
+
+<div class="bm-section mb-3">
+  {# セクションヘッダー #}
+  <div class="bm-section-head d-flex align-items-center gap-3 mb-3"
+       data-bs-toggle="collapse" data-bs-target="#bm-sec-{{ node.area.id }}"
+       aria-expanded="true" style="cursor:pointer;">
+    <span class="bm-num" style="background:{{ accent }};">{{ loop.index }}</span>
+    <span class="fw-bold" style="font-size:1rem;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ node.area.name }}</span>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+      <div class="bm-bar" style="width:80px;">
+        <div class="bm-bar-inner" style="width:{{ pct1 }}%;background:{% if pct1==100 %}#22c55e{% elif node.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div>
       </div>
+      <span class="bm-stat">{{ node.acquired }}/{{ node.total }}</span>
+      <span style="font-size:.8rem;font-weight:600;color:{% if pct1==100 %}#22c55e{% elif pct1>0 %}#f97316{% else %}#94a3b8{% endif %};">{{ pct1 }}%</span>
+      <i class="bi bi-chevron-down bm-sec-chev" style="font-size:.85rem;color:#94a3b8;"></i>
     </div>
   </div>
-  {% endfor %}
+  {% if node.area.description %}
+  <p class="text-muted small mb-2 ms-1" style="font-size:.8rem;">{{ node.area.description }}</p>
+  {% endif %}
+
+  <div id="bm-sec-{{ node.area.id }}" class="collapse show">
+    {% if node.is_leaf %}
+    <div class="ps-1">{{ _bm_leaf_card(node, accent) }}</div>
+    {% else %}
+    {% for node2 in node.children %}
+    {% set accent2 = node2.area.color or accent %}
+    {% set pct2 = node2.pct %}
+
+    {% if node2.is_leaf %}
+    {# L2がリーフ #}
+    <div class="mb-2">
+      <div class="bm-l2-label d-flex align-items-center gap-2 mb-1">
+        <span class="bm-dot" style="background:{{ accent2 }};"></span>
+        <span class="fw-semibold" style="font-size:.86rem;flex-grow:1;">{{ node2.area.name }}</span>
+        <span class="bm-stat">{{ node2.acquired }}/{{ node2.total }}</span>
+        <span style="font-size:.73rem;font-weight:600;color:{% if pct2==100 %}#22c55e{% elif pct2>0 %}#f97316{% else %}#94a3b8{% endif %};">{{ pct2 }}%</span>
+      </div>
+      <div class="ps-3">{{ _bm_leaf_card(node2, accent2) }}</div>
+    </div>
+    {% else %}
+    {# L2に子あり #}
+    <div class="bm-l2-group mb-2">
+      <div class="bm-l2-label d-flex align-items-center gap-2 mb-1"
+           data-bs-toggle="collapse" data-bs-target="#bm-l2-{{ node2.area.id }}"
+           aria-expanded="true" style="cursor:pointer;">
+        <span class="bm-dot" style="background:{{ accent2 }};"></span>
+        <span class="fw-semibold" style="font-size:.86rem;flex-grow:1;">{{ node2.area.name }}</span>
+        <div class="bm-bar flex-shrink-0" style="width:56px;">
+          <div class="bm-bar-inner" style="width:{{ pct2 }}%;background:{% if pct2==100 %}#22c55e{% elif node2.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div>
+        </div>
+        <span class="bm-stat flex-shrink-0">{{ node2.acquired }}/{{ node2.total }}</span>
+        <i class="bi bi-chevron-down bm-l2-chev" style="font-size:.72rem;color:#94a3b8;flex-shrink:0;"></i>
+      </div>
+      <div id="bm-l2-{{ node2.area.id }}" class="collapse show ps-3">
+        {% for node3 in node2.children %}
+        {% set accent3 = node3.area.color or accent2 %}
+        {% if node3.is_leaf %}
+        {{ _bm_leaf_card(node3, accent3) }}
+        {% else %}
+        <div class="d-flex align-items-center gap-2 p-2 mb-1 rounded" style="background:#f8fafc;border:1px solid #f1f5f9;">
+          <span class="bm-dot-sm" style="background:{{ accent3 }};"></span>
+          <span class="flex-grow-1" style="font-size:.84rem;">{{ node3.area.name }}</span>
+          <a href="/skills/business-map?parent_id={{ node3.area.id }}" class="btn btn-xs btn-outline-primary" style="border-radius:20px;font-size:.72rem;">
+            開く <i class="bi bi-chevron-right"></i>
+          </a>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+  </div>
 </div>
+{% endfor %}
 
 {% else %}
 <div class="card">
@@ -274,88 +276,96 @@
 {% endif %}
 
 <style>
-.bm-accordion { display: flex; flex-direction: column; }
-.bm-l1-item { border-radius:14px !important; overflow:hidden; border:1px solid #e2e8f0 !important; box-shadow:0 1px 4px rgba(0,0,0,.05); }
-.bm-l1-btn { font-size:.95rem; padding:.7rem 1rem; border-radius:0 !important; box-shadow:none !important; }
-.bm-l1-btn:not(.collapsed) { border-bottom:1px solid #f1f5f9; }
-.bm-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; font-size:.78rem; font-weight:700; flex-shrink:0; }
-.bm-l2-accordion { border:none; }
-.bm-l2-item { border-bottom:1px solid #f1f5f9 !important; }
-.bm-l2-item:last-child { border-bottom:none !important; }
-.bm-l2-btn { font-size:.88rem; padding:.5rem .75rem; background:#fafafa !important; box-shadow:none !important; }
-.bm-l2-btn:not(.collapsed) { background:#f8fafc !important; }
-.bm-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
-.bm-l3-list { border-radius:8px; overflow:hidden; background:#fff; }
-.bm-l3-item { border-bottom:1px solid #f8fafc; }
-.bm-l3-item:last-child { border-bottom:none; }
-.bm-l3-item > .bm-row-toggle:hover { background:#f8fafc; }
-.bm-dot-sm { width:7px; height:7px; border-radius:50%; display:inline-block; }
-.bm-declare-btn { font-size:.72rem; padding:.2rem .55rem; border-radius:20px; border:1px solid #6366f1; color:#6366f1; white-space:nowrap; line-height:1.4; }
-.bm-declare-btn:hover { background:#6366f1; color:#fff; }
-/* チェブロン回転 */
-.bm-chevron { transition:transform .2s; }
-.bm-row-toggle:not(.collapsed) .bm-chevron { transform:rotate(180deg); }
-.bm-ev-toggle:not(.collapsed) .bm-chevron { transform:rotate(180deg); }
-/* バー */
+/* ── サマリーバー ── */
+.bm-summary-bar { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+/* ── セクション ── */
+.bm-section { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.bm-section-head:hover { opacity:.85; }
+.bm-sec-chev { transition:transform .2s; }
+.bm-section-head[aria-expanded="false"] .bm-sec-chev { transform:rotate(-90deg); }
+/* L2 ラベル */
+.bm-l2-label { border-radius:8px; padding:.3rem .5rem; }
+.bm-l2-label[style*="cursor"]:hover { background:#f8fafc; }
+.bm-l2-chev { transition:transform .2s; }
+.bm-l2-label[aria-expanded="false"] .bm-l2-chev { transform:rotate(-90deg); }
+/* ── リーフカード ── */
+.bm-leaf-card { border-radius:10px; border:1px solid #e2e8f0; overflow:hidden; background:#fff; }
+.bm-leaf-card.bm-done  { border-color:#bbf7d0; }
+.bm-leaf-card.bm-wip   { border-color:#fed7aa; }
+.bm-leaf-head { padding:.65rem .85rem; background:#fafafa; }
+.bm-leaf-card.bm-done .bm-leaf-head { background:#f0fdf4; }
+.bm-leaf-card.bm-wip  .bm-leaf-head { background:#fff7ed; }
+.bm-leaf-head:hover { filter:brightness(.98); }
+.bm-lf-chev { transition:transform .2s; }
+.bm-leaf-head.collapsed .bm-lf-chev { transform:rotate(-90deg); }
+.bm-leaf-body { padding:.85rem 1rem; border-top:1px solid #f1f5f9; }
+/* ── ミニバー ── */
+.bm-mini-bar { width:48px; height:5px; border-radius:3px; background:#f1f5f9; overflow:hidden; flex-shrink:0; }
+.bm-mini-bar-inner { height:100%; border-radius:3px; transition:width .4s; }
+/* ── バッジ ── */
+.bm-badge-done  { font-size:.65rem; font-weight:600; color:#16a34a; white-space:nowrap; }
+.bm-badge-wip   { font-size:.65rem; font-weight:600; color:#ea580c; white-space:nowrap; }
+.bm-badge-empty { font-size:.65rem; color:#94a3b8; white-space:nowrap; }
+/* ── バー ── */
 .bm-bar { height:6px; border-radius:3px; background:#f1f5f9; overflow:hidden; flex-shrink:0; }
 .bm-bar-inner { height:100%; border-radius:3px; transition:width .4s; }
 .bm-stat { font-size:.75rem; color:#94a3b8; white-space:nowrap; min-width:2.8em; text-align:right; }
-/* パネル */
-.bm-declare-panel { padding:.25rem .5rem; }
-.bm-panel-bar { height:6px; border-radius:3px; background:#f1f5f9; }
-/* 申告フォーム */
-.bm-form-wrap { background:#f8fafc; border-radius:12px; padding:1rem; border:1px solid #e2e8f0; }
-.bm-ss-list { border-radius:8px; overflow:hidden; border:1px solid #f1f5f9; background:#fff; }
-.bm-ss-row { border-left:3px solid transparent !important; transition:background .12s,border-color .12s; font-size:.85rem; }
-.bm-ss-row:has(input:checked) { background:rgba(249,115,22,.04) !important; border-left-color:#f97316 !important; }
-/* エビデンス */
-.bm-ev-section { margin-top:.5rem; }
-.bm-ev-card { background:#fff; border:1px solid #f1f5f9; border-radius:8px; padding:.75rem; }
-.bm-ev-item { background:#f8fafc; border:1px solid #f1f5f9; }
+.bm-stat-sm { font-size:.72rem; color:#94a3b8; white-space:nowrap; }
+/* ── ドット ── */
+.bm-cat-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.bm-dot { width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.bm-dot-sm { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+/* ── 番号 ── */
+.bm-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; font-size:.75rem; font-weight:700; color:#fff; flex-shrink:0; }
+/* ── チェックリスト ── */
+.bm-ss-checklist { border:1px solid #f1f5f9; border-radius:8px; overflow:hidden; background:#fff; }
+.bm-ss-row { display:flex; align-items:flex-start; gap:.5rem; padding:.55rem .7rem; border-bottom:1px solid #f8fafc; cursor:pointer; transition:background .1s; }
+.bm-ss-row:last-child { border-bottom:none; }
+.bm-ss-row:hover { background:#f8fafc; }
+.bm-ss-row:has(input:checked) { background:rgba(249,115,22,.04); }
+/* ── 申告ボタン ── */
+.bm-submit-btn { background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none; border-radius:20px; font-size:.8rem; padding:.35rem .9rem; }
+.bm-submit-btn:hover { background:linear-gradient(135deg,#4f46e5,#4338ca); color:#fff; }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const BM_SKILL_LEVELS = {{ SKILL_LEVELS | tojson }};
-const BM_BADGE_CLASS  = {0:'bg-secondary',1:'bg-info text-dark',2:'bg-primary',3:'bg-warning text-dark',4:'bg-danger'};
 
 function bmCalcLevel(done, total) {
   if (!total || !done) return 0;
   const r = done / total;
   if (r <= 0.40) return 1; if (r <= 0.70) return 2; if (r < 1.00) return 3; return 4;
 }
+
 function bmRecalc(skillId, areaTotal) {
   const block = document.querySelector(`[data-bm-skill-id="${skillId}"]`);
-  // カタログ全体数と初期済み件数をdata属性から取得（正確なレベル計算に使用）
-  const catalogTotal = block ? parseInt(block.dataset.bmCatalogTotal || areaTotal) : areaTotal;
-  const catalogDoneInit = block ? parseInt(block.dataset.bmCatalogDone || 0) : 0;
-  const areaDoneInit = block ? parseInt(block.dataset.bmAreaDoneInit || 0) : 0;
-  const outsideDone = catalogDoneInit - areaDoneInit; // エリア外カタログ申告数
+  const catalogTotal    = block ? parseInt(block.dataset.bmCatalogTotal  || areaTotal) : areaTotal;
+  const catalogDoneInit = block ? parseInt(block.dataset.bmCatalogDone   || 0)         : 0;
+  const areaDoneInit    = block ? parseInt(block.dataset.bmAreaDoneInit  || 0)         : 0;
+  const outsideDone     = catalogDoneInit - areaDoneInit;
 
   const checks = document.querySelectorAll(`.bm-check-${skillId}`);
   let areaDone = 0;
   checks.forEach(cb => {
     const icon = document.querySelector(`.bm-check-icon-${cb.value}`);
-    if (cb.checked) { areaDone++; if (icon) icon.style.opacity='1'; }
-    else            {             if (icon) icon.style.opacity='0'; }
+    if (cb.checked) { areaDone++; if (icon) icon.style.opacity = '1'; }
+    else            {             if (icon) icon.style.opacity = '0'; }
   });
   const areaPct = areaTotal > 0 ? Math.round(areaDone / areaTotal * 100) : 0;
   const bar   = document.getElementById(`bm-bar-${skillId}`);
   const pctEl = document.getElementById(`bm-pct-${skillId}`);
-  const badge = document.getElementById(`bm-badge-${skillId}`);
   const lname = document.getElementById(`bm-lname-${skillId}`);
   if (!bar) return;
-  bar.style.width = areaPct+'%';
-  bar.style.background = areaPct===100 ? '#22c55e' : areaPct>0 ? '#f97316' : '#cbd5e1';
-  if (pctEl) pctEl.textContent = areaPct+'%';
-  // レベルはカタログ全体(outsideDone + areaDone) / catalogTotal で計算
-  const level = bmCalcLevel(outsideDone + areaDone, catalogTotal);
-  if (badge) { badge.className='badge '+(BM_BADGE_CLASS[level]||'bg-secondary'); badge.textContent=level>0?`Lv.${level}`:'—'; }
-  if (lname) lname.textContent = BM_SKILL_LEVELS[level]||'未経験';
+  bar.style.width      = areaPct + '%';
+  bar.style.background = areaPct === 100 ? '#22c55e' : areaPct > 0 ? '#f97316' : '#cbd5e1';
+  if (pctEl) pctEl.textContent = areaPct + '%';
+  if (lname) lname.textContent = areaDone + '/' + areaTotal;
 }
+
 function bmCheckAll(skillId, total, val) {
-  document.querySelectorAll(`.bm-check-${skillId}`).forEach(cb => { cb.checked=val; });
+  document.querySelectorAll(`.bm-check-${skillId}`).forEach(cb => { cb.checked = val; });
   bmRecalc(skillId, total);
   markDeclareFlag();
 }
@@ -368,8 +378,20 @@ function bmOpenDeclareModal(skillId, form) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  // 初期レベル計算
   document.querySelectorAll('[data-bm-skill-id]').forEach(el => {
     bmRecalc(el.dataset.bmSkillId, parseInt(el.dataset.bmSkillTotal));
+  });
+
+  // リーフカードのchevron初期状態（閉じている）
+  document.querySelectorAll('.bm-leaf-head').forEach(head => {
+    head.classList.add('collapsed');
+    const targetId = head.dataset.bsTarget;
+    if (!targetId) return;
+    const target = document.querySelector(targetId);
+    if (!target) return;
+    target.addEventListener('show.bs.collapse', () => head.classList.remove('collapsed'));
+    target.addEventListener('hide.bs.collapse', () => head.classList.add('collapsed'));
   });
 });
 </script>

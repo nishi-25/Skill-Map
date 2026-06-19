@@ -285,6 +285,8 @@ def data_settings_get(request: Request, db: Session = Depends(get_db)):
         "certification_catalog_count": db.query(models.CertificationCatalog).count(),
         "business_map_area_count": db.query(models.BusinessMapArea).count(),
         "todo_count": db.query(models.AdminTodo).count(),
+        "wiki_count": db.query(models.WikiPage).count(),
+        "exam_count": db.query(models.Exam).filter(models.Exam.is_archived == False).count(),
         "promo_video_exists": os.path.isfile(PROMO_VIDEO_PATH),
         "ai_enabled":   cfg.get("ai_summary_enabled", False),
         "ai_provider":  cfg.get("ai_provider", "anthropic"),

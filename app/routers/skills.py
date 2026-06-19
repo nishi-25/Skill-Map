@@ -2181,23 +2181,23 @@ def skill_matrix(
         member_ids = [m.user_id for m in group.memberships] if group else []
         users = (db.query(models.User)
                  .filter(models.User.id.in_(member_ids),
-                         models.User.role != "admin")
+                         models.User.role == "user")
                  .order_by(models.User.display_name, models.User.username)
                  .all()) if member_ids else []
     else:
         if is_manager:
-            # Manager: 担当グループのメンバーのみ（Admin 除外）
+            # Manager: 担当グループのメンバーのみ（User権限のみ）
             users = (db.query(models.User)
                      .filter(models.User.id.in_(managed_member_ids),
                              models.User.is_approved == True,
-                             models.User.role != "admin")
+                             models.User.role == "user")
                      .order_by(models.User.display_name, models.User.username)
                      .all()) if managed_member_ids else []
         else:
-            # Admin: 自分以外の全承認済みユーザー（Admin 除外）
+            # Admin: 全承認済みUser権限ユーザーのみ
             users = (db.query(models.User)
                      .filter(models.User.is_approved == True,
-                             models.User.role != "admin")
+                             models.User.role == "user")
                      .order_by(models.User.display_name, models.User.username)
                      .all())
 
@@ -2238,6 +2238,81 @@ def skill_matrix(
                   .order_by(models.Group.name).all())
     else:
         groups = db.query(models.Group).order_by(models.Group.name).all()
+
+    # ── 業務マップ習得率データ ──
+    # 全ユーザーの完了サブスキルIDを取得
+    if user_ids:
+        all_sub_levels = (
+            db.query(models.UserSubSkillLevel)
+            .filter(
+                models.UserSubSkillLevel.user_id.in_(user_ids),
+                models.UserSubSkillLevel.can_do == True,
+            )
+            .all()
+        )
+        sub_done_by_user: dict[int, set[int]] = {}
+        for r in all_sub_levels:
+            sub_done_by_user.setdefault(r.user_id, set()).add(r.sub_skill_id)
+    else:
+        sub_done_by_user = {}
+
+    def _collect_area_sub_ids(area):
+        if not area.children:
+            return {a_sk.sub_skill_id for a_sk in area.area_sub_skills}
+        ids: set = set()
+        for child in area.children:
+            ids |= _collect_area_sub_ids(child)
+        return ids
+
+    def _build_bm_rows(areas, depth=0):
+        rows = []
+        for area in sorted(areas, key=lambda a: a.order_index):
+            sub_ids = _collect_area_sub_ids(area)
+            if not sub_ids:
+                continue
+            total = len(sub_ids)
+            user_rates = {}
+            for u in users:
+                done = len(sub_ids & sub_done_by_user.get(u.id, set()))
+                user_rates[u.id] = {
+                    "done": done,
+                    "total": total,
+                    "pct": int(done / total * 100) if total else 0,
+                }
+            is_leaf = not bool(area.children)
+            rows.append({
+                "area": area,
+                "total": total,
+                "depth": depth,
+                "user_rates": user_rates,
+                "is_leaf": is_leaf,
+            })
+            if area.children:
+                rows.extend(_build_bm_rows(area.children, depth + 1))
+        return rows
+
+    top_areas = (
+        db.query(models.BusinessMapArea)
+        .filter(models.BusinessMapArea.parent_id == None)
+        .order_by(models.BusinessMapArea.order_index)
+        .all()
+    )
+    bm_area_rows = _build_bm_rows(top_areas)
+
+    # BM チャート用データ（L1エリアのみ、JSON化可能な形式）
+    bm_chart_data = [
+        {
+            "name": row["area"].name,
+            "id": row["area"].id,
+            "user_rates": {str(uid): r["pct"] for uid, r in row["user_rates"].items()},
+        }
+        for row in bm_area_rows
+        if row["depth"] == 0
+    ]
+    bm_user_list = [
+        {"id": u.id, "name": u.display_name or u.username}
+        for u in users
+    ]
 
     # ── 分析データ ──
     from datetime import timedelta
@@ -2350,6 +2425,7 @@ def skill_matrix(
             "total":       len(skills),
             "strong":      strong,
             "weak":        weak,
+            "group_ids":   [m.group_id for m in u.group_memberships],
         })
 
     from config import get_config as _gcfg
@@ -2373,6 +2449,9 @@ def skill_matrix(
         "user_avg_ranking": user_avg_ranking,
         "member_analysis": member_analysis,
         "ai_summary_enabled": _cfg.get("ai_summary_enabled", False),
+        "bm_area_rows": bm_area_rows,
+        "bm_chart_data": bm_chart_data,
+        "bm_user_list": bm_user_list,
     })
 
 

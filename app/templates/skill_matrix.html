@@ -59,6 +59,34 @@
   </div>
 </div>
 
+<!-- タブ切り替え -->
+<ul class="nav nav-tabs mb-3" id="matrixTabs">
+  <li class="nav-item">
+    <button class="nav-link active fw-semibold" id="tab-skill-btn" data-bs-toggle="tab" data-bs-target="#tab-skill" type="button">
+      <i class="bi bi-grid-3x3-gap me-1" style="color:#f97316;"></i>スキル別
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link fw-semibold" id="tab-bm-btn" data-bs-toggle="tab" data-bs-target="#tab-bm" type="button">
+      <i class="bi bi-diagram-3 me-1" style="color:#6366f1;"></i>業務別
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+<script>
+(function(){
+  const p = new URLSearchParams(location.search);
+  if (p.get('tab') === 'bm') {
+    document.addEventListener('DOMContentLoaded', function(){
+      const btn = document.getElementById('tab-bm-btn');
+      if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+    });
+  }
+})();
+</script>
+<div class="tab-pane fade show active" id="tab-skill">
+
 <!-- フィルター -->
 <div class="card mb-3">
   <div class="card-body py-2">
@@ -163,21 +191,15 @@
 
 <!-- ════ 分析チャート ════ -->
 {% if users and skills %}
-<div class="mb-3 analytics-toggle">
-  <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#analyticsPanel" aria-expanded="false">
-    <i class="bi bi-bar-chart-line me-1"></i>分析チャートを表示
-  </button>
-</div>
-
-<div class="collapse mb-4" id="analyticsPanel">
+<div class="mb-4">
   <div class="row g-4">
-    <!-- 1) 成長トレンド（折れ線グラフ） -->
-    <div class="col-lg-8">
+    <!-- 1) 成長トレンド（折れ線グラフ）-->
+    <div class="col-12">
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
           <i class="bi bi-graph-up-arrow" style="color:#22c55e;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.growth_trend">成長トレンド（月別）</span>
-          <span class="text-muted ms-auto" style="font-size:.7rem;">チーム全体の月別変更平均レベル</span>
+          <span class="fw-semibold" style="font-size:.88rem;">成長トレンド（月別）</span>
+          <span class="text-muted ms-auto" style="font-size:.7rem;">チーム全体の月別承認レベル推移</span>
         </div>
         <div class="card-body">
           {% if growth_trend %}
@@ -194,29 +216,14 @@
       </div>
     </div>
 
-    <!-- 2) レベル分布（ドーナツ） -->
-    <div class="col-lg-4">
-      <div class="card chart-card">
-        <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
-          <i class="bi bi-pie-chart-fill" style="color:#f97316;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.level_dist">レベル分布</span>
-        </div>
-        <div class="card-body">
-          <div class="chart-canvas-wrap" style="height:250px;">
-            <canvas id="levelDistChart"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3) カテゴリー別レーダー -->
+    <!-- 2) カテゴリー別レーダー -->
     <div class="col-lg-6">
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
           <i class="bi bi-diagram-3-fill" style="color:#8b5cf6;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.cat_radar">カテゴリー別スキルレベル</span>
+          <span class="fw-semibold" style="font-size:.88rem;">カテゴリー別スキルレベル</span>
           <select id="radarUserSelect" class="form-select form-select-sm ms-auto" style="max-width:180px;border-radius:20px;font-size:.78rem;">
-            <option value="__team__">チーム平均</option>
+            <option value="__team__">グループ平均</option>
             {% for u in users %}
             <option value="{{ u.display_name or u.username }}">{{ u.display_name or u.username }}</option>
             {% endfor %}
@@ -236,12 +243,12 @@
       </div>
     </div>
 
-    <!-- 4) ユーザー別スキル充実度（横棒） -->
+    <!-- 3) ユーザー別平均スキルレベル（横棒）-->
     <div class="col-lg-6">
       <div class="card chart-card">
         <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
           <i class="bi bi-trophy-fill" style="color:#f59e0b;"></i>
-          <span class="fw-semibold" style="font-size:.88rem;" data-i18n="lbl.user_ranking">ユーザー別平均スキルレベル</span>
+          <span class="fw-semibold" style="font-size:.88rem;">ユーザー別平均スキルレベル</span>
         </div>
         <div class="card-body">
           {% if user_avg_ranking %}
@@ -355,6 +362,7 @@
         </td>
         {% set cat_cov = cat_coverage.get(ns_cat.name, {}) %}
         <td class="text-center" style="background:#fef3c7;font-size:.72rem;">
+          {% if cat_cov %}
           <div class="fw-bold" style="color:{% if cat_cov.pct >= 80 %}#16a34a{% elif cat_cov.pct >= 40 %}#d97706{% else %}#dc2626{% endif %};">
             {{ cat_cov.covered }}/{{ cat_cov.total }}
           </div>
@@ -363,6 +371,9 @@
           </div>
           {% if cat_cov.experts %}
           <span class="badge mt-1" style="background:#ede9fe;color:#6d28d9;font-size:.6rem;" title="指導可(Lv3)以上の人数">専門 {{ cat_cov.experts }}名</span>
+          {% endif %}
+          {% else %}
+          <span class="text-muted" style="font-size:.7rem;">-</span>
           {% endif %}
         </td>
       </tr>
@@ -465,6 +476,7 @@
         </td>
         {% set cat_cov = cat_coverage.get(ns_cat.name, {}) %}
         <td class="text-center" style="background:#fef3c7;font-size:.72rem;">
+          {% if cat_cov %}
           <div class="fw-bold" style="color:{% if cat_cov.pct >= 80 %}#16a34a{% elif cat_cov.pct >= 40 %}#d97706{% else %}#dc2626{% endif %};">
             {{ cat_cov.covered }}/{{ cat_cov.total }}
           </div>
@@ -473,6 +485,9 @@
           </div>
           {% if cat_cov.experts %}
           <span class="badge mt-1" style="background:#ede9fe;color:#6d28d9;font-size:.6rem;" title="指導可(Lv3)以上の人数">専門 {{ cat_cov.experts }}名</span>
+          {% endif %}
+          {% else %}
+          <span class="text-muted" style="font-size:.7rem;">-</span>
           {% endif %}
         </td>
       </tr>
@@ -606,42 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
   })();
   {% endif %}
 
-  // ── 2) レベル分布ドーナツ ──
-  (function() {
-    const dist = {{ level_dist | tojson }};
-    const ctx = document.getElementById('levelDistChart');
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: LEVEL_LABELS,
-        datasets: [{
-          data: [dist['0']||0, dist['1']||0, dist['2']||0, dist['3']||0, dist['4']||0],
-          backgroundColor: [LEVEL_COLORS_MAP['0'], LEVEL_COLORS_MAP['1'], LEVEL_COLORS_MAP['2'], LEVEL_COLORS_MAP['3'], LEVEL_COLORS_MAP['4']],
-          borderWidth: 2,
-          borderColor: '#fff',
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '55%',
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) {
-                const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
-                const pct = total ? (ctx.parsed / total * 100).toFixed(1) : 0;
-                return `${ctx.label}: ${ctx.parsed}件 (${pct}%)`;
-              }
-            }
-          }
-        }
-      }
-    });
-  })();
-
-  // ── 3) カテゴリー別レーダー ──
+  // ── 2) カテゴリー別レーダー ──
   {% if cat_names_ordered %}
   (function() {
     const catNames = {{ cat_names_ordered | tojson }};
@@ -738,7 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
   })();
   {% endif %}
 
-  // ── 4) ユーザー別平均（横棒） ──
+  // ── 3) ユーザー別平均（横棒） ──
   {% if user_avg_ranking %}
   (function() {
     const ranking = {{ user_avg_ranking | tojson }};
@@ -791,18 +771,26 @@ document.addEventListener('DOMContentLoaded', function() {
   })();
   {% endif %}
 
-  // ── トグルボタンのテキスト切替 ──
-  const panel = document.getElementById('analyticsPanel');
-  const toggleBtn = panel?.previousElementSibling?.querySelector('button');
-  if (panel && toggleBtn) {
-    panel.addEventListener('show.bs.collapse', () => {
-      toggleBtn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>分析チャートを閉じる';
-    });
-    panel.addEventListener('hide.bs.collapse', () => {
-      toggleBtn.innerHTML = '<i class="bi bi-bar-chart-line me-1"></i>分析チャートを表示';
-    });
-  }
 });
+
+// ── メンバーカードのグループフィルター ──
+function filterMemberCards(groupId) {
+  const cols = document.querySelectorAll('.member-card-col');
+  let visible = 0;
+  cols.forEach(col => {
+    if (!groupId) {
+      col.style.display = '';
+      visible++;
+    } else {
+      const ids = col.dataset.groupIds ? col.dataset.groupIds.split(',') : [];
+      const show = ids.includes(String(groupId));
+      col.style.display = show ? '' : 'none';
+      if (show) visible++;
+    }
+  });
+  const counter = document.getElementById('memberCount');
+  if (counter) counter.textContent = visible + '名';
+}
 
 /* ── ツールチップ初期化 ── */
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
@@ -920,13 +908,24 @@ function copySummary() {
 {# ══════════════ メンバー別強み・弱み分析 ══════════════ #}
 {% if member_analysis %}
 <div class="mt-4">
-  <div class="d-flex align-items-center gap-2 mb-3">
+  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
     <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2" style="color:#f97316;"></i>メンバー別 強み・弱み分析</h5>
-    <span class="badge bg-light text-muted border" style="font-size:.72rem;">{{ member_analysis|length }}名</span>
+    <span class="badge bg-light text-muted border" style="font-size:.72rem;" id="memberCount">{{ member_analysis|length }}名</span>
+    {% if groups %}
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <i class="bi bi-funnel text-muted" style="font-size:.85rem;"></i>
+      <select id="memberGroupFilter" class="form-select form-select-sm" style="max-width:200px;border-radius:20px;font-size:.82rem;" onchange="filterMemberCards(this.value)">
+        <option value="">すべてのグループ</option>
+        {% for g in groups %}
+        <option value="{{ g.id }}">{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
   </div>
-  <div class="row g-3">
+  <div class="row g-3" id="memberCardsRow">
     {% for m in member_analysis %}
-    <div class="col-md-6 col-xl-4">
+    <div class="col-md-6 col-xl-4 member-card-col" data-group-ids="{{ m.group_ids | join(',') }}">
       <div class="card h-100" style="border-radius:14px;border:1px solid #e2e8f0;">
         <!-- ヘッダー -->
         <div class="card-header d-flex align-items-center gap-3 py-2" style="background:#fff;border-bottom:2px solid #f97316;border-radius:14px 14px 0 0;">
@@ -1000,6 +999,442 @@ function copySummary() {
     {% endfor %}
   </div>
 </div>
+{% endif %}
+
+</div>{# end tab-skill #}
+
+<!-- ════ 業務別タブ ════ -->
+<div class="tab-pane fade" id="tab-bm">
+
+<!-- フィルター (業務別) -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+      <input type="hidden" name="tab" value="bm">
+      <i class="bi bi-funnel-fill text-muted me-1"></i>
+      <select name="group_id" class="form-select form-select-sm" style="max-width:200px;border-radius:20px;" onchange="this.form.submit()">
+        <option value="0">すべてのユーザー</option>
+        {% for g in groups %}
+        <option value="{{ g.id }}" {% if sel_group == g.id %}selected{% endif %}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+      {% if sel_group %}
+      <a href="/skills/matrix?tab=bm" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">クリア</a>
+      {% endif %}
+      <div class="ms-auto matrix-legend">
+        <span class="text-muted fw-semibold me-1">習得率:</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#f1f5f9;border:1px solid #e2e8f0;"></span><span class="text-muted">0%</span></span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#fef3c7;"></span>1-24%</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#fbbf24;"></span>25-49%</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#f97316;"></span>50-74%</span>
+        <span class="leg-item"><span class="leg-swatch" style="background:#dc2626;"></span>75-100%</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if bm_area_rows and users %}
+{# L1エリアのみ統計計算 #}
+{% set bm_l1_rows = bm_area_rows | selectattr('depth', 'equalto', 0) | list %}
+{% set ns_bm_stat = namespace(sum=0, count=0, full=0) %}
+{% for u in users %}
+  {% set ns_u_bm = namespace(psum=0, pcnt=0) %}
+  {% for row in bm_l1_rows %}
+    {% set r = row.user_rates.get(u.id) %}
+    {% if r %}{% set ns_u_bm.psum = ns_u_bm.psum + r.pct %}{% set ns_u_bm.pcnt = ns_u_bm.pcnt + 1 %}{% endif %}
+  {% endfor %}
+  {% if ns_u_bm.pcnt > 0 %}
+    {% set ns_bm_stat.sum = ns_bm_stat.sum + ns_u_bm.psum / ns_u_bm.pcnt %}
+    {% set ns_bm_stat.count = ns_bm_stat.count + 1 %}
+    {% if (ns_u_bm.psum / ns_u_bm.pcnt) >= 100 %}{% set ns_bm_stat.full = ns_bm_stat.full + 1 %}{% endif %}
+  {% endif %}
+{% endfor %}
+{% set bm_team_avg_pct = (ns_bm_stat.sum / ns_bm_stat.count)|round(0)|int if ns_bm_stat.count > 0 else 0 %}
+
+<!-- 統計バー (業務別) -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f0f4ff,#e0e7ff);color:#6366f1;"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ users|length }}</div>
+          <div class="text-muted" style="font-size:.78rem;">対象社員</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f0f4ff,#e0e7ff);color:#818cf8;"><i class="bi bi-diagram-3-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ bm_l1_rows|length }}</div>
+          <div class="text-muted" style="font-size:.78rem;">業務エリア数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-bar-chart-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ bm_team_avg_pct }}%</div>
+          <div class="text-muted" style="font-size:.78rem;">グループ平均達成率</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-trophy-fill"></i></div>
+        <div>
+          <div class="fw-bold fs-4" style="line-height:1;">{{ ns_bm_stat.full }}</div>
+          <div class="text-muted" style="font-size:.78rem;">全完了ユーザー</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 分析チャート (業務別) -->
+<div class="mb-4">
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card chart-card">
+        <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
+          <i class="bi bi-diagram-3-fill" style="color:#6366f1;"></i>
+          <span class="fw-semibold" style="font-size:.88rem;">エリア別 グループ平均達成率</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-canvas-wrap" style="height:{{ [bm_l1_rows|length * 40, 180]|max }}px;">
+            <canvas id="bmAreaChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card chart-card">
+        <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
+          <i class="bi bi-trophy-fill" style="color:#f59e0b;"></i>
+          <span class="fw-semibold" style="font-size:.88rem;">ユーザー別 平均達成率</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-canvas-wrap" style="height:{{ [users|length * 36, 180]|max }}px;">
+            <canvas id="bmUserChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card chart-card">
+        <div class="card-header bg-white d-flex align-items-center gap-2 py-2">
+          <i class="bi bi-diagram-3-fill" style="color:#8b5cf6;"></i>
+          <span class="fw-semibold" style="font-size:.88rem;">エリア別達成率レーダー</span>
+          <select id="bmRadarUserSelect" class="form-select form-select-sm ms-auto" style="max-width:180px;border-radius:20px;font-size:.78rem;">
+            <option value="__team__">グループ平均</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.display_name or u.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="card-body">
+          <div class="chart-canvas-wrap">
+            <canvas id="bmRadarChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="matrix-scroll">
+  <table class="matrix-table mb-0">
+    <thead>
+      <tr>
+        <th class="skill-col" style="border-bottom:2px solid #6366f1;vertical-align:bottom;">
+          <span style="font-size:.72rem;color:#64748b;">業務エリア ＼ 社員</span>
+        </th>
+        {% for u in users %}
+        {% set st = user_stats[u.id] %}
+        <th class="user-header">
+          {% if u.avatar_path %}
+          <img src="{{ u.avatar_path }}" alt="" class="user-avatar" style="object-fit:cover;border:2px solid #c7d2fe;">
+          {% else %}
+          <div class="user-avatar" style="background:linear-gradient(135deg,#6366f1,#818cf8);">
+            <span style="color:#fff;">{{ (u.display_name or u.username)[0].upper() }}</span>
+          </div>
+          {% endif %}
+          <span class="user-name" title="{{ u.display_name or u.username }}">{{ u.display_name or u.username }}</span>
+        </th>
+        {% endfor %}
+        <th style="text-align:center;vertical-align:bottom;font-size:.68rem;white-space:nowrap;min-width:50px;">グループ<br>平均</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in bm_area_rows %}
+      {% set area = row.area %}
+      {% set depth = row.depth %}
+      {% set total = row.total %}
+      {% set user_rates = row.user_rates %}
+      {% set is_leaf = row.is_leaf %}
+
+      {# チーム平均 #}
+      {% set ns_bm = namespace(sum=0, count=0) %}
+      {% for u in users %}
+        {% set r = user_rates.get(u.id, {}) %}
+        {% set pct = r.pct if r else 0 %}
+        {% if pct > 0 %}{% set ns_bm.sum = ns_bm.sum + pct %}{% set ns_bm.count = ns_bm.count + 1 %}{% endif %}
+      {% endfor %}
+      {% set team_avg_pct = (ns_bm.sum / ns_bm.count)|round(0)|int if ns_bm.count > 0 else 0 %}
+
+      {% if is_leaf %}
+      {# ── 最下層（リーフ）: フルカラーで習得率を強調表示 ── #}
+      <tr style="border-left:3px solid {% if depth == 0 %}#6366f1{% else %}#818cf8{% endif %};">
+        <td class="skill-col" style="font-size:.76rem;
+             {% if depth == 0 %}font-weight:700;{% else %}padding-left:{{ 1.5 + depth * 1.2 }}rem;{% endif %}">
+          {% if depth > 0 %}<i class="bi bi-arrow-return-right me-1" style="color:#818cf8;font-size:.65rem;"></i>{% endif %}
+          {{ area.name }}
+          <span class="ms-1 text-muted" style="font-size:.62rem;">{{ total }}項目</span>
+        </td>
+        {% for u in users %}
+        {% set r = user_rates.get(u.id, {}) %}
+        {% set pct = r.pct if r else 0 %}
+        {% set done = r.done if r else 0 %}
+        <td class="lv-cell" style="background:
+          {%- if pct >= 100 %}#dc2626;color:#fff
+          {%- elif pct >= 75 %}#f97316;color:#fff
+          {%- elif pct >= 50 %}#fbbf24;color:#713f12
+          {%- elif pct >= 25 %}#fef3c7;color:#92400e
+          {%- elif pct > 0 %}#fafafa;color:#475569
+          {%- else %}#f8fafc;color:#cbd5e1
+          {%- endif %};"
+          title="{{ u.display_name or u.username }}: {{ done }}/{{ total }} ({{ pct }}%)">
+          <div style="font-size:.78rem;font-weight:700;line-height:1;">
+            {{ pct if pct > 0 else '-' }}{% if pct > 0 %}<span style="font-size:.55rem;">%</span>{% endif %}
+          </div>
+          {% if pct > 0 %}
+          <div style="font-size:.6rem;font-weight:500;line-height:1;margin-top:1px;opacity:.85;">{{ done }}/{{ total }}</div>
+          {% endif %}
+        </td>
+        {% endfor %}
+        <td class="text-center" style="font-size:.72rem;font-weight:700;background:#f5f3ff;">
+          {% if team_avg_pct > 0 %}
+          <span style="color:{% if team_avg_pct >= 75 %}#dc2626{% elif team_avg_pct >= 50 %}#f97316{% elif team_avg_pct >= 25 %}#d97706{% else %}#94a3b8{% endif %};">
+            {{ team_avg_pct }}%
+          </span>
+          {% else %}<span class="text-muted">-</span>{% endif %}
+        </td>
+      </tr>
+
+      {% else %}
+      {# ── 上位階層: 薄めで集計値のみ（ミニプログレスバー） ── #}
+      <tr style="background:#f8fafc;border-left:3px solid {% if depth == 0 %}#a5b4fc{% else %}#ddd6fe{% endif %};">
+        <td class="skill-col" style="font-size:.76rem;color:#64748b;
+             {% if depth == 0 %}font-weight:700;{% else %}padding-left:{{ 1.5 + depth * 1.2 }}rem;{% endif %}">
+          {% if depth > 0 %}<i class="bi bi-arrow-return-right me-1" style="color:#c4b5fd;font-size:.65rem;"></i>{% endif %}
+          <span style="opacity:.75;">{{ area.name }}</span>
+          <span class="ms-1" style="font-size:.6rem;color:#94a3b8;">{{ total }}項目（集計）</span>
+        </td>
+        {% for u in users %}
+        {% set r = user_rates.get(u.id, {}) %}
+        {% set pct = r.pct if r else 0 %}
+        {% set done = r.done if r else 0 %}
+        <td class="text-center" style="background:#f8fafc;padding:.3rem .4rem;"
+            title="{{ u.display_name or u.username }}: {{ done }}/{{ total }} ({{ pct }}%)">
+          {% if pct > 0 %}
+          <div style="font-size:.7rem;color:#64748b;line-height:1;">{{ pct }}<span style="font-size:.55rem;">%</span></div>
+          <div style="height:3px;background:#e2e8f0;border-radius:2px;margin-top:2px;overflow:hidden;">
+            <div style="height:100%;border-radius:2px;width:{{ pct }}%;background:
+              {%- if pct >= 75 %}#a5b4fc
+              {%- elif pct >= 50 %}#c4b5fd
+              {%- elif pct >= 25 %}#ddd6fe
+              {%- else %}#ede9fe
+              {%- endif %};"></div>
+          </div>
+          {% else %}
+          <span style="font-size:.65rem;color:#cbd5e1;">-</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+        <td class="text-center" style="font-size:.7rem;background:#f1f5f9;color:#94a3b8;">
+          {% if team_avg_pct > 0 %}<span>{{ team_avg_pct }}%</span>{% else %}<span>-</span>{% endif %}
+        </td>
+      </tr>
+      {% endif %}
+
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-diagram-3 fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>業務マップデータがありません</h5>
+    <p class="small">業務マップにエリアとサブスキルが登録されると表示されます。</p>
+  </div>
+</div>
+{% endif %}
+</div>{# end tab-bm #}
+
+</div>{# end tab-content #}
+
+{% if bm_chart_data and users %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const bmAreas = {{ bm_chart_data | tojson }};
+  const bmUsers = {{ bm_user_list | tojson }};
+
+  function bmTeamAvg(areas, users) {
+    return areas.map(area => {
+      const vals = users.map(u => area.user_rates[String(u.id)] || 0);
+      const filled = vals.filter(v => v > 0);
+      return filled.length ? Math.round(filled.reduce((a, b) => a + b, 0) / filled.length) : 0;
+    });
+  }
+
+  // ── 1) エリア別チーム平均達成率（横棒） ──
+  (function() {
+    const ctx = document.getElementById('bmAreaChart');
+    if (!ctx) return;
+    const avgs = bmTeamAvg(bmAreas, bmUsers);
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: bmAreas.map(a => a.name),
+        datasets: [{
+          label: 'チーム平均達成率',
+          data: avgs,
+          backgroundColor: avgs.map(v => v >= 75 ? '#dc2626' : v >= 50 ? '#f97316' : v >= 25 ? '#fbbf24' : '#fef3c7'),
+          borderRadius: 4,
+          barThickness: 22,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        scales: {
+          x: { min: 0, max: 100, ticks: { stepSize: 25, callback: v => v + '%' },
+               title: { display: true, text: '達成率 (%)', font: { size: 11 } },
+               grid: { color: 'rgba(0,0,0,.04)' } },
+          y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `チーム平均: ${ctx.parsed.x}%` } }
+        }
+      }
+    });
+  })();
+
+  // ── 2) ユーザー別平均達成率（横棒） ──
+  (function() {
+    const ctx = document.getElementById('bmUserChart');
+    if (!ctx) return;
+    const combined = bmUsers.map(u => {
+      const vals = bmAreas.map(a => a.user_rates[String(u.id)] || 0);
+      const filled = vals.filter(v => v > 0);
+      return { name: u.name, avg: filled.length ? Math.round(filled.reduce((a, b) => a + b, 0) / filled.length) : 0 };
+    }).sort((a, b) => b.avg - a.avg);
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: combined.map(c => c.name),
+        datasets: [{
+          label: '平均達成率',
+          data: combined.map(c => c.avg),
+          backgroundColor: combined.map(c => c.avg >= 75 ? '#dc2626' : c.avg >= 50 ? '#f97316' : c.avg >= 25 ? '#fbbf24' : '#fef3c7'),
+          borderRadius: 4,
+          barThickness: 22,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        scales: {
+          x: { min: 0, max: 100, ticks: { stepSize: 25, callback: v => v + '%' },
+               title: { display: true, text: '達成率 (%)', font: { size: 11 } },
+               grid: { color: 'rgba(0,0,0,.04)' } },
+          y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `平均達成率: ${ctx.parsed.x}%` } }
+        }
+      }
+    });
+  })();
+
+  // ── 3) エリア別達成率レーダー ──
+  (function() {
+    const ctx = document.getElementById('bmRadarChart');
+    if (!ctx) return;
+    let bmRadarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: bmAreas.map(a => a.name),
+        datasets: [{
+          label: 'グループ平均',
+          data: bmTeamAvg(bmAreas, bmUsers),
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99,102,241,0.15)',
+          borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#6366f1',
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, font: { size: 10 }, backdropColor: 'transparent', callback: v => v + '%' },
+            pointLabels: { font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,.06)' },
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
+          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.r}%` } }
+        }
+      }
+    });
+
+    document.getElementById('bmRadarUserSelect').addEventListener('change', function() {
+      const val = this.value;
+      let datasets;
+      if (val === '__team__') {
+        datasets = [{
+          label: 'グループ平均',
+          data: bmTeamAvg(bmAreas, bmUsers),
+          borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.15)',
+          borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#6366f1',
+        }];
+      } else {
+        const uid = parseInt(val);
+        const uname = (bmUsers.find(u => u.id === uid) || {}).name || val;
+        datasets = [
+          {
+            label: uname,
+            data: bmAreas.map(a => a.user_rates[String(uid)] || 0),
+            borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)',
+            borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#f59e0b',
+          },
+          {
+            label: 'グループ平均',
+            data: bmTeamAvg(bmAreas, bmUsers),
+            borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)',
+            borderWidth: 1.5, borderDash: [4, 3], pointRadius: 3, pointBackgroundColor: '#6366f1',
+          }
+        ];
+      }
+      bmRadarChart.data.datasets = datasets;
+      bmRadarChart.update();
+    });
+  })();
+
+});
+</script>
 {% endif %}
 
 {% endblock %}

@@ -315,6 +315,7 @@ def _startup():
         _sync_tier_names(db)
         _seed_certification_catalog(db)
         _migrate_wiki_visibility_column()
+        _migrate_learning_path_areas()
     finally:
         db.close()
 
@@ -1432,6 +1433,25 @@ def _migrate_wiki_visibility_column():
         with database.engine.begin() as conn:
             conn.execute(_txt("ALTER TABLE wiki_pages ADD COLUMN visibility VARCHAR(20) DEFAULT 'private' NOT NULL"))
             conn.execute(_txt("UPDATE wiki_pages SET visibility = 'group' WHERE group_id IS NOT NULL"))
+
+
+def _migrate_learning_path_areas():
+    """learning_path_areas テーブル作成 + educational_links に area_id カラム追加 + parent_id カラム追加"""
+    from sqlalchemy import inspect as sa_inspect, text as _txt
+    insp = sa_inspect(database.engine)
+    if "learning_path_areas" not in insp.get_table_names():
+        models.LearningPathArea.__table__.create(bind=database.engine)
+    cols = [c["name"] for c in insp.get_columns("educational_links")]
+    if "area_id" not in cols:
+        with database.engine.begin() as conn:
+            conn.execute(_txt("ALTER TABLE educational_links ADD COLUMN area_id INTEGER REFERENCES learning_path_areas(id) ON DELETE CASCADE"))
+    area_cols = [c["name"] for c in insp.get_columns("learning_path_areas")]
+    if "parent_id" not in area_cols:
+        with database.engine.begin() as conn:
+            conn.execute(_txt("ALTER TABLE learning_path_areas ADD COLUMN parent_id INTEGER REFERENCES learning_path_areas(id) ON DELETE CASCADE"))
+    if "description" not in area_cols:
+        with database.engine.begin() as conn:
+            conn.execute(_txt("ALTER TABLE learning_path_areas ADD COLUMN description VARCHAR(500)"))
 
 
 def _migrate_announcements_table():

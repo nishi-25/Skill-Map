@@ -276,3 +276,93 @@ def wiki_delete(wiki_id: int, request: Request, db: Session = Depends(get_db)):
     db.delete(page)
     db.commit()
     return RedirectResponse("/wiki", status_code=303)
+
+
+# ── Wiki エクスポート / インポート ─────────────────────────────────────────────
+
+@router.get("/export")
+def wiki_export(request: Request, db: Session = Depends(get_db)):
+    """Wikiページ全件をJSONエクスポート（Admin専用）"""
+    import json as _json
+    from fastapi.responses import Response as _Response
+    from datetime import datetime as _dt
+    auth.require_admin(request, db)
+
+    pages = db.query(models.WikiPage).order_by(models.WikiPage.id).all()
+    data = {
+        "exported_at": _dt.now().isoformat(),
+        "wiki_pages": [
+            {
+                "title": p.title,
+                "content": p.content,
+                "visibility": p.visibility,
+                "group_name": p.group.name if p.group else None,
+                "edit_mode": p.edit_mode,
+                "created_by_username": p.creator.username if p.creator else None,
+            }
+            for p in pages
+        ],
+    }
+    body = _json.dumps(data, ensure_ascii=False, indent=2)
+    filename = f"skillmap_wiki_{_dt.now().strftime('%Y%m%d')}.json"
+    return _Response(
+        content=body.encode("utf-8"),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/import")
+async def wiki_import(
+    request: Request,
+    file: UploadFile = File(...),
+    mode: str = Form("add"),
+    db: Session = Depends(get_db),
+):
+    """WikiページをJSONからインポート（Admin専用）"""
+    import json as _json
+    user = auth.require_admin(request, db)
+
+    content = await file.read()
+    try:
+        data = _json.loads(content.decode("utf-8-sig"))
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSONの解析に失敗しました"}, status_code=400)
+
+    pages_data = data.get("wiki_pages", [])
+    if not isinstance(pages_data, list):
+        return JSONResponse({"ok": False, "error": "wiki_pages フィールドが見つかりません"}, status_code=400)
+
+    # グループ名 → ID マップ
+    group_map = {g.name: g.id for g in db.query(models.Group).all()}
+
+    added = updated = skipped = 0
+    for item in pages_data:
+        title = (item.get("title") or "").strip()
+        if not title:
+            continue
+        group_id = group_map.get(item.get("group_name")) if item.get("group_name") else None
+        existing = db.query(models.WikiPage).filter(models.WikiPage.title == title).first()
+
+        if existing:
+            if mode == "update":
+                existing.content = item.get("content", "")
+                existing.visibility = item.get("visibility", "private")
+                existing.group_id = group_id
+                existing.edit_mode = item.get("edit_mode", "owner")
+                updated += 1
+            else:
+                skipped += 1
+        else:
+            db.add(models.WikiPage(
+                title=title,
+                content=item.get("content", ""),
+                visibility=item.get("visibility", "private"),
+                group_id=group_id,
+                edit_mode=item.get("edit_mode", "owner"),
+                created_by=user.id,
+            ))
+            added += 1
+
+    db.commit()
+    return JSONResponse({"ok": True, "added": added, "updated": updated, "skipped": skipped})

@@ -18,9 +18,14 @@ router = APIRouter()
 
 
 def _collect_leaf_subskill_ids(area: "models.BusinessMapArea") -> set:
-    """配下（再帰的）の最下層カテゴリに割り当てられた全サブスキルIDを収集"""
+    """配下（再帰的）の最下層カテゴリに割り当てられた全サブスキルIDを収集
+    アーカイブ済みスキルに属するサブスキルは除外して表示と一致させる"""
     if not area.children:
-        return {a_sk.sub_skill_id for a_sk in area.area_sub_skills}
+        return {
+            a_sk.sub_skill_id
+            for a_sk in area.area_sub_skills
+            if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived
+        }
     ids: set = set()
     for child in area.children:
         ids |= _collect_leaf_subskill_ids(child)
