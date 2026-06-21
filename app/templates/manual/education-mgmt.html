@@ -1,0 +1,17 @@
+{% extends "manual/_layout.html" %}
+{% block title %}教育リソース管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>教育リソース管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-mortarboard-fill text-primary"></i>教育リソース管理
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<h2 id="education-mgmt"><i class="bi bi-plus-circle"></i>リソースの追加</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「リンクを追加」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>タイトル・URL（必須）、説明を入力 — URLを入力するとファビコンが自動表示されます</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>カテゴリーを選択するとスキルの候補が絞り込まれます。関連スキルを指定すると検索しやすくなります</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>「追加する」をクリックして保存</span></div>
+
+<h2 id="area-form"><i class="bi bi-folder-plus"></i>エリア（学習パスのグルーピング）</h2>
+<p>学習パスをカテゴリーやスキル単位でまとめる「エリア」を作成できます。「エリアを追加」から、名前（空欄ならカテゴリー/スキル名から自動設定）・関連カテゴリー・関連スキルを設定します。スキルの選択肢は選んだカテゴリーに応じて絞り込まれます。</p>
+{% endblock %}

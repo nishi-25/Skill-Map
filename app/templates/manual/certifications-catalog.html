@@ -1,0 +1,19 @@
+{% extends "manual/_layout.html" %}
+{% block title %}資格マスタ管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>資格マスタ管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-collection-fill text-primary"></i>資格マスタ管理
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>メンバーが資格登録時に選択できる「マスタカタログ」を管理します。サイドバーの「資格マスタ管理」（Adminのみナビ表示。Managerは直接URLでアクセス可能）から開きます。</p>
+
+<h2 id="cert-catalog"><i class="bi bi-plus-circle"></i>マスタ項目の追加・編集</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「資格を追加」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>資格名・発行団体・カテゴリー名・説明を入力</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>「スコアあり」にチェックすると、メンバーの登録画面にスコア入力欄が表示されます（TOEICなど）</span></div>
+<div class="step-item"><span class="step-badge">4</span><span><strong>ティア</strong>（難易度: 基礎・中級・上級）を設定 — スキルのティアと同じ3段階で、資格の難易度を分類できます</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>「アーカイブ」にすると、メンバーの登録画面の選択肢から非表示になります（既に登録済みのデータは削除されません）。</div>
+
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i><strong>Admin専用:</strong> マスタカタログ全体のJSONエクスポート・インポートはAdminのみ実行できます。</div>
+{% endblock %}

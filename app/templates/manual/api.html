@@ -1,0 +1,200 @@
+{% extends "manual/_layout.html" %}
+{% import "manual/_macros.html" as m %}
+{% block title %}APIリファレンス{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>APIリファレンス</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-code-slash text-primary"></i>APIリファレンス</h1>
+<p>JSON形式で利用できる <code>/api/*</code> エンドポイントのリファレンスです。各エンドポイントの説明・必要なロール・Pythonサンプルコードを掲載しています。</p>
+
+<div class="tip-box" id="auth-model">
+  <i class="bi bi-shield-lock me-1"></i><strong>認証モデル:</strong> このAPIはブラウザのセッションCookieで認証します。APIキーやBearerトークンはありません。Pythonから呼び出す場合は <code>requests.Session()</code> でログインし、同じセッションで以降のリクエストを送ってください。
+</div>
+
+<div class="tip-box" id="try-it-out">
+  <i class="bi bi-box-arrow-up-right me-1"></i><strong>動作確認（Try it out）:</strong> 各エンドポイントの「ここで試す」リンクをクリックすると、FastAPI標準のSwagger UI（<a href="/docs" target="_blank">/docs</a>）の該当オペレーションが新しいタブで開きます。ブラウザでこのアプリにログイン済みであれば、Swagger UI側で「Authorize」操作をしなくてもセッションCookieが自動的に送信され、「Try it out」→「Execute」で実際にAPIを実行できます。
+</div>
+
+<h2 id="tag-search"><i class="bi bi-search"></i>Search</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/search</code></td><td>全ロール</td><td>スキル名・メンバー名・グループ名を横断検索</td>
+      <td><a href="/docs#/Search/search_api" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+session.post(f"{BASE_URL}/login", data={"username": "...", "password": "..."})
+
+resp = session.get(f"{BASE_URL}/api/search", params={"q": "Python"})
+print(resp.json())   # => {"results": [{"type": "skill", "label": "Python", ...}, ...]}') }}
+
+<h2 id="tag-dashboard"><i class="bi bi-speedometer2"></i>Dashboard</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/dashboard/stats</code></td><td>全ロール</td><td>ダッシュボード統計（スキル分布・承認待ち件数など）</td>
+      <td><a href="/docs#/Dashboard/get_dashboard_stats" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/dashboard/trend</code></td><td>全ロール</td><td>週次の成長トレンドデータ</td>
+      <td><a href="/docs#/Dashboard/get_dashboard_trend" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+
+# (1) ログイン（フォーム送信、Cookieはsessionに自動保存される）
+session.post(f"{BASE_URL}/login", data={
+    "username": "your_username",
+    "password": "your_password",
+})
+
+# (2) 認証が必要なAPIを呼び出す（同じsessionなのでCookieが自動送信される）
+resp = session.get(f"{BASE_URL}/api/dashboard/stats", params={"group_id": 0})
+print(resp.json())') }}
+
+<h2 id="tag-skills"><i class="bi bi-lightning-charge-fill"></i>Skills</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/skills/{skill_id}/level</code></td><td>全ロール</td><td>自分のスキルレベルを申告・更新（User権限は承認者必須）</td>
+      <td><a href="/docs#/Skills/post_skill_level" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/skills/{skill_id}/panel</code></td><td>全ロール</td><td>スキル詳細パネル（サブスキル・根拠・上書き情報）</td>
+      <td><a href="/docs#/Skills/get_skill_panel" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/my-skills/{skill_id}/detail</code></td><td>全ロール</td><td>自分のスキル詳細を取得</td>
+      <td><a href="/docs#/Skills/get_my_skill_detail" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/skills/timeline/{target_user_id}</code></td><td>全ロール（他人を指定するにはManager以上）</td><td>成長タイムラインのデータ取得</td>
+      <td><a href="/docs#/Skills/get_skill_timeline" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/users/{target_user_id}/skill-summary</code></td><td>Manager以上</td><td>指定ユーザーのスキルサマリー（AI要約含む）</td>
+      <td><a href="/docs#/Skills/get_user_skill_summary" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/skills/{skill_id}/request-revoke</code></td><td>全ロール</td><td>承認済みスキルの取り消しを申請</td>
+      <td><a href="/docs#/Skills/request_revoke_skill" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/skills/{skill_id}/cancel-revoke</code></td><td>全ロール</td><td>取り消し申請の取り下げ</td>
+      <td><a href="/docs#/Skills/cancel_revoke_skill" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+session.post(f"{BASE_URL}/login", data={"username": "...", "password": "..."})
+
+# スキルレベルを更新（Form送信。Adminは即承認、Userは承認待ちになる）
+resp = session.post(f"{BASE_URL}/api/skills/123/level", data={
+    "level": 2,
+    "approver_id": 5,   # User権限の場合は必須
+})
+print(resp.json())
+# => {"ok": true, "skill_id": 123, "level": 2, ..., "approval_status": "pending"}') }}
+<p class="text-muted small">他のSkills系エンドポイントもGET/POST + Cookieセッションの同じパターンで呼び出せます。</p>
+
+<h2 id="tag-approvals"><i class="bi bi-check2-square"></i>Approvals</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/approvals/{record_id}/sub-skills</code></td><td>Manager以上</td><td>承認待ち申告のサブスキル内訳を取得</td>
+      <td><a href="/docs#/Approvals/get_approval_sub_skills" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/approvals/{record_id}/edit</code></td><td>Manager以上</td><td>承認前にレベル・コメントを編集</td>
+      <td><a href="/docs#/Approvals/edit_approval" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/approvals/{record_id}/revoke</code></td><td>Manager以上</td><td>承認済みの申告を取り消す</td>
+      <td><a href="/docs#/Approvals/revoke_approval" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/approvals/bulk-action</code></td><td>Manager以上</td><td>複数の申告を一括承認・差し戻し</td>
+      <td><a href="/docs#/Approvals/bulk_approval_action" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/approvals/my/{record_id}/withdraw</code></td><td>全ロール</td><td>自分の承認待ち申請を取り下げる</td>
+      <td><a href="/docs#/Approvals/withdraw_my_approval" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+session.post(f"{BASE_URL}/login", data={"username": "manager1", "password": "..."})
+
+# 複数の承認待ち申告を一括承認
+resp = session.post(f"{BASE_URL}/api/approvals/bulk-action", data={
+    "record_ids": "101,102,103",
+    "action": "approve",
+})
+print(resp.json())') }}
+
+<h2 id="tag-groups"><i class="bi bi-people-fill"></i>Groups</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/groups/api/{gid}/inherited-skills</code></td><td>Manager（担当のみ）/ Admin（全体）</td><td>親グループから継承される必須スキル一覧</td>
+      <td><a href="/docs#/Groups/get_group_inherited_skills" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+session.post(f"{BASE_URL}/login", data={"username": "manager1", "password": "..."})
+
+resp = session.get(f"{BASE_URL}/groups/api/3/inherited-skills")
+print(resp.json())') }}
+
+<h2 id="tag-tickets"><i class="bi bi-chat-dots-fill"></i>Tickets</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/tickets</code></td><td>全ロール</td><td>問い合わせ・要望を新規作成</td>
+      <td><a href="/docs#/Tickets/create_ticket" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/tickets/{tid}/message</code></td><td>全ロール（自分のチケットのみ）/ Admin</td><td>チケットにメッセージを投稿</td>
+      <td><a href="/docs#/Tickets/post_ticket_message" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/tickets/{tid}/status</code></td><td>Admin</td><td>チケットのステータスを更新</td>
+      <td><a href="/docs#/Tickets/update_ticket_status" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/tickets/unread-count</code></td><td>全ロール</td><td>未読チケット件数</td>
+      <td><a href="/docs#/Tickets/get_ticket_unread_count" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/tickets/my-recent</code></td><td>全ロール</td><td>自分の直近のチケット</td>
+      <td><a href="/docs#/Tickets/get_my_recent_tickets" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/tickets/my-list</code></td><td>全ロール</td><td>自分のチケット一覧</td>
+      <td><a href="/docs#/Tickets/get_my_ticket_list" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/tickets/{tid}/detail</code></td><td>全ロール（自分のチケットのみ）/ Admin</td><td>チケット詳細</td>
+      <td><a href="/docs#/Tickets/get_ticket_detail" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/tickets/{tid}/delete</code></td><td>Admin</td><td>チケットを削除</td>
+      <td><a href="/docs#/Tickets/delete_ticket" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+session.post(f"{BASE_URL}/login", data={"username": "...", "password": "..."})
+
+resp = session.post(f"{BASE_URL}/api/tickets", data={
+    "type": "feature_request",
+    "priority": "normal",
+    "title": "ダークモードのコントラストを改善してほしい",
+    "body": "現状ダークモードで文字が読みにくい箇所があります。",
+})
+print(resp.json())') }}
+
+<h2 id="tag-announcements"><i class="bi bi-megaphone-fill"></i>Announcements</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>Method</th><th>Path</th><th>必要ロール</th><th>説明</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/announcements/popup</code></td><td>全ロール</td><td>表示すべきポップアップお知らせを取得</td>
+      <td><a href="/docs#/Announcements/get_announcement_popup" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/announcements/suppress-popup</code></td><td>全ロール</td><td>ポップアップ表示を抑制</td>
+      <td><a href="/docs#/Announcements/suppress_announcement_popup" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/announcements/enable-popup</code></td><td>全ロール</td><td>ポップアップ表示を再度有効化</td>
+      <td><a href="/docs#/Announcements/enable_announcement_popup" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+    <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/announcements/latest</code></td><td>全ロール</td><td>最新のお知らせを取得</td>
+      <td><a href="/docs#/Announcements/get_latest_announcement" target="_blank" class="btn btn-sm btn-outline-primary">ここで試す</a></td></tr>
+  </tbody>
+</table>
+{{ m.python_sample('import requests
+
+BASE_URL = "http://localhost:8190"
+session = requests.Session()
+session.post(f"{BASE_URL}/login", data={"username": "...", "password": "..."})
+
+resp = session.get(f"{BASE_URL}/api/announcements/latest")
+print(resp.json())') }}
+
+<div class="tip-box"><i class="bi bi-book me-1"></i>全エンドポイントの正式なスキーマは <a href="/docs" target="_blank">/docs</a>（Swagger UI）または <a href="/redoc" target="_blank">/redoc</a> で確認できます。</div>
+{% endblock %}

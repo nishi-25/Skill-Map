@@ -1,0 +1,20 @@
+{% extends "manual/_layout.html" %}
+{% block title %}試験を受ける{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>User機能</span> / <span>試験を受ける</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-pencil-square text-primary"></i>試験を受ける
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>サイドバーの「試験」から、自分に割り当てられた試験の一覧（未受験・受験中・採点待ち・採点済み）を確認できます。</p>
+
+<h2 id="exam-take"><i class="bi bi-journal-check"></i>試験を受ける手順</h2>
+<div class="step-item"><span class="step-badge">1</span><span>一覧から受験する試験をクリックすると受験画面が開きます（制限時間がある場合はカウントダウンが表示されます）</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>受験にスキル習熟度などの条件（受験資格）が設定されている場合、満たしていないと受験を開始できません</span></div>
+<div class="step-item"><span class="step-badge">3</span><span><strong>学科がある場合:</strong> 選択問題（単一選択・複数選択）に回答し、「学科を提出」をクリック。提出すると自動採点されます</span></div>
+<div class="step-item"><span class="step-badge">4</span><span><strong>実技がある場合:</strong> 採点基準（参考表示）を確認しながら、成果物や作業記録などのエビデンスファイルをアップロード</span></div>
+<div class="step-item"><span class="step-badge">5</span><span>「提出する」をクリックして最終提出。実技がある試験はManager/Adminの採点待ちになります</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>学科のみの試験は提出した瞬間に自動採点され、合否がすぐに確定します。実技を含む試験はManager/Adminが採点基準に沿って採点するまで「採点待ち」のままです。</div>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>採点済み（status=graded）になった試験は、回答・エビデンスの追加や削除ができなくなります。</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "manual/_layout.html" %}
+{% import "manual/_macros.html" as m %}
+{% block title %}ユースケース: Userの操作フロー{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>ユースケース</span> / <span>Userの操作フロー</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-person-walking text-primary"></i>ユースケース: Userの操作フロー
+  <span class="role-badge role-user">User</span>
+</h1>
+<p id="usecase-user">一般User権限のメンバーが、自分のスキルを申告して承認されるまでの一連の流れを順番に説明します。各機能の詳しい説明は<a href="/manual/skillmap">スキルマップ（自己申告）</a>や<a href="/manual/my-approvals">自分の申請状況</a>のページも参照してください。</p>
+
+{% call m.step_card(1, "ログインする", "/login") %}
+<p>発行されたユーザー名・パスワードでログインします。初回ログイン後はロール別のガイドツアーが自動で始まります。</p>
+{% call m.mockup_browser("skillview.local/login") %}
+{{ m.mockup_row("ユーザー名") }}
+{{ m.mockup_row("パスワード") }}
+<button class="mockup-btn mockup-btn-block">ログイン</button>
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(2, "ダッシュボードで自分の状況を確認する", "/dashboard") %}
+<p>ログイン後、自分のスキル件数・平均レベル・最近の変化が表示されます。まずここで全体像を把握します。</p>
+{% call m.mockup_browser("skillview.local/dashboard") %}
+<div class="d-flex gap-2 mb-2">
+  <span class="mockup-badge" style="background:#0ea5e9;">申告スキル 12</span>
+  <span class="mockup-badge" style="background:#22c55e;">平均レベル 1.8</span>
+</div>
+<div class="mockup-skeleton">レーダーチャート</div>
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(3, "スキルマップで申告したいスキルを探す", "/skills") %}
+<p>サイドバーの「スキルマップ」から、難易度ティア別またはカテゴリー別にスキル一覧を確認します。</p>
+{% call m.mockup_browser("skillview.local/skills") %}
+{{ m.mockup_row("環境構築ができる") }}
+{{ m.mockup_row("コードレビューができる") }}
+{{ m.mockup_row("設計をリードできる") }}
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(4, "スキルを選んで申告画面を開く", "/skills/{id}/declare") %}
+<p>スキル名をクリックすると申告画面が開きます。サブスキルのチェックリストが表示されます。</p>
+{% call m.mockup_browser("skillview.local/skills/42/declare") %}
+{{ m.mockup_row("環境構築ができる") }}
+{{ m.mockup_row("コードレビューができる") }}
+{{ m.mockup_row("設計をリードできる") }}
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(5, "サブスキルにチェックを入れる → レベルが自動算出される", "/skills/{id}/declare") %}
+<p>チェックを入れた割合に応じて、レベルが自動的に計算されます。チェックするたびにリアルタイムで更新されます。</p>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="text-muted small mb-1">チェック前</div>
+    {% call m.mockup_browser("skillview.local/skills/42/declare") %}
+    {{ m.mockup_row("環境構築ができる") }}
+    {{ m.mockup_row("コードレビューができる") }}
+    {{ m.mockup_row("設計をリードできる") }}
+    <span class="mockup-badge mt-2" style="background:#94a3b8;">未経験</span>
+    {% endcall %}
+  </div>
+  <div class="col-md-6">
+    <div class="text-muted small mb-1">2つチェック後</div>
+    {% call m.mockup_browser("skillview.local/skills/42/declare") %}
+    {{ m.mockup_row("環境構築ができる", checked=True) }}
+    {{ m.mockup_row("コードレビューができる", checked=True) }}
+    {{ m.mockup_row("設計をリードできる") }}
+    <span class="mockup-badge mt-2" style="background:#f97316;">実務可</span>
+    {% endcall %}
+  </div>
+</div>
+{% endcall %}
+
+{% call m.step_card(6, "必要であれば手動でレベルを上書きする", "/skills/{id}/declare") %}
+<p>自動算出されたレベルと実感が違う場合は、理由を記入して手動で上書きできます（理由の入力は必須です）。</p>
+{% call m.mockup_browser("skillview.local/skills/42/declare") %}
+<div class="text-muted small mb-1">上書き理由（必須）</div>
+<div class="mockup-skeleton" style="height:40px;">「前職での実務経験3年のため」</div>
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(7, "承認者を選んで申請する", "/skills/{id}/declare") %}
+<p>承認者（自分のグループのManager/Admin）をドロップダウンから選び、「申請する」をクリックします。</p>
+{% call m.mockup_browser("skillview.local/skills/42/declare") %}
+<div class="text-muted small mb-1">承認者を選択</div>
+<div class="mockup-skeleton" style="height:36px;">田中マネージャー ▾</div>
+<button class="mockup-btn mockup-btn-block">申請する</button>
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(8, "申請状況を確認する", "/approvals/my") %}
+<p>「自分の申請状況」ページで、承認待ち・承認済み・差し戻しの状態を確認できます。</p>
+{% call m.mockup_browser("skillview.local/approvals/my") %}
+<div class="d-flex flex-column gap-2">
+  <div><span class="mockup-badge" style="background:#f59e0b;">承認待ち</span> 環境構築ができる</div>
+  <div><span class="mockup-badge" style="background:#22c55e;">承認済み</span> コードレビューができる</div>
+</div>
+{% endcall %}
+{% endcall %}
+
+{% call m.step_card(9, "差し戻された場合は再申告する", "/approvals/my") %}
+<p>承認者からコメント付きで差し戻された場合は、内容を確認してレベルを修正し、再度申請します。</p>
+{% call m.mockup_browser("skillview.local/approvals/my") %}
+<div><span class="mockup-badge" style="background:#ef4444;">差し戻し</span> 設計をリードできる</div>
+<div class="mockup-skeleton mt-2" style="height:40px;">コメント: 「もう少し実例が必要です」</div>
+<button class="mockup-btn mockup-btn-block">再申告する</button>
+{% endcall %}
+{% endcall %}
+
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>各ステップの詳しい仕様は <a href="/manual/skillmap">スキルマップ（自己申告）</a>、<a href="/manual/my-approvals">自分の申請状況</a> のページを参照してください。</div>
+<div class="tip-box"><i class="bi bi-stars me-1"></i>このほか、<a href="/manual/business-map">業務マップから申告する</a>方法、<a href="/manual/certifications">資格の登録</a>、<a href="/manual/exams-my">試験を受ける</a>、<a href="/manual/wiki">Wiki</a>もUser権限から利用できます。</div>
+{% endblock %}

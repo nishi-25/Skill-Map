@@ -1,0 +1,20 @@
+{% extends "manual/_layout.html" %}
+{% block title %}資格マトリクス{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>資格マトリクス</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-patch-check text-primary"></i>資格マトリクス
+  <span class="role-badge role-manager">Manager（担当グループのみ）</span>
+  <span class="role-badge role-admin">Admin（全体）</span>
+</h1>
+<p>メンバーが登録した資格を集計して確認できるページです。サイドバーの「資格マトリクス」から開きます。</p>
+
+<h2 id="cert-matrix"><i class="bi bi-bar-chart-line"></i>見方</h2>
+<ul style="font-size:.88rem;">
+  <li><strong>サマリーカード</strong> — 対象メンバー数・資格保有者数・登録資格総数・1人あたりの平均件数</li>
+  <li><strong>資格別の保有者数グラフ</strong> — どの資格を何人が持っているか。バーをクリックすると保有者名とスコアが表示されます</li>
+  <li><strong>保有件数の分布</strong> — メンバーごとに0件/1件/2件/3件以上の資格を持っているかの円グラフ</li>
+  <li><strong>メンバー一覧</strong> — 各メンバーの資格登録数と「確認」リンク（個別の資格内容を閲覧、編集はできません）</li>
+</ul>
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i><strong>Admin/Managerの違い:</strong> Managerは自分が管理するグループのメンバーのみ表示されます。Adminは全メンバーを閲覧できます。</div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>このページは閲覧専用です。資格の登録・編集・削除は本人のみが行えます（<a href="/manual/certifications">資格登録</a>を参照）。</div>
+{% endblock %}

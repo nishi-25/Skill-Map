@@ -1,0 +1,89 @@
+{% extends "manual/_layout.html" %}
+{% block title %}運用・保守{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Admin専用</span> / <span>運用・保守</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-tools text-primary"></i>運用・保守
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+
+<h2 id="docker-ops"><i class="bi bi-box"></i>Docker 運用</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>操作</th><th>コマンド</th></tr></thead>
+  <tbody>
+    <tr><td>ビルド</td><td><code>DOCKER_BUILDKIT=0 docker build -t skill-map:latest .</code></td></tr>
+    <tr><td>起動</td><td><code>docker compose up -d</code></td></tr>
+    <tr><td>停止</td><td><code>docker compose down</code></td></tr>
+    <tr><td>再起動</td><td><code>docker compose restart</code></td></tr>
+    <tr><td>ログ確認</td><td><code>docker logs skillmap --tail 50</code></td></tr>
+    <tr><td>コンテナに入る</td><td><code>docker exec -it skillmap /bin/sh</code></td></tr>
+  </tbody>
+</table>
+
+<h3>データの永続化</h3>
+<p style="font-size:.9rem;">データベース（SQLite）とアバター画像は Docker ボリューム <code>skillmap_data</code> に保存されます。<code>docker compose down</code> ではデータは保持されます。</p>
+<div class="danger-box"><i class="bi bi-exclamation-octagon me-1"></i><strong>注意:</strong> <code>docker compose down -v</code> を実行するとボリュームが削除され、全データが失われます。</div>
+
+<h3>バックアップ</h3>
+<pre># データベースのバックアップ
+docker cp skillmap:/app/data/skillmap.db ./backup_skillmap.db
+
+# 復元
+docker cp ./backup_skillmap.db skillmap:/app/data/skillmap.db
+docker compose restart</pre>
+
+<h3>アクセスURL</h3>
+<p style="font-size:.9rem;">デフォルトでは <code>http://localhost:8190</code> でアクセスできます。ポートは <code>docker-compose.yml</code> で変更可能です。</p>
+
+<h2 id="catalog-init"><i class="bi bi-arrow-counterclockwise"></i>カタログ初期化</h2>
+<p>スキルカタログページの「カタログを初期化」ボタンで、現在のカテゴリ・スキル・スキル申告データをすべて削除し、デフォルトカタログ（10カテゴリ・73スキル）に戻します。</p>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>この操作はスキル申告データも削除されます。実行前にCSVエクスポートでバックアップを取ることを推奨します。</div>
+
+<h2 id="troubleshooting"><i class="bi bi-wrench"></i>トラブルシューティング</h2>
+<div class="accordion" id="troubleAccordion">
+  <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
+    <h3 class="accordion-header" style="margin:0;">
+      <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#t1">
+        コンテナが起動しない
+      </button>
+    </h3>
+    <div id="t1" class="accordion-collapse collapse" data-bs-parent="#troubleAccordion">
+      <div class="accordion-body" style="font-size:.88rem;">
+        <ul class="mb-0">
+          <li><code>docker logs skillmap</code> でエラーログを確認してください。</li>
+          <li>ポート 8190 が他のプロセスで使用されていないか確認してください。</li>
+          <li>ビルド時に DNS エラーが出る場合は <code>DOCKER_BUILDKIT=0</code> を付けてビルドしてください。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
+    <h3 class="accordion-header" style="margin:0;">
+      <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#t2">
+        パスワードリセットメールが届かない
+      </button>
+    </h3>
+    <div id="t2" class="accordion-collapse collapse" data-bs-parent="#troubleAccordion">
+      <div class="accordion-body" style="font-size:.88rem;">
+        <ul class="mb-0">
+          <li>メール設定（SMTP）が正しく設定されているか確認してください。</li>
+          <li>Gmail の場合、アプリパスワードが正しいか確認してください。</li>
+          <li>ユーザーのメールアドレスが登録されているか確認してください。</li>
+          <li>迷惑メールフォルダを確認してください。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="accordion-item border-0 mb-2" style="border-radius:10px;overflow:hidden;">
+    <h3 class="accordion-header" style="margin:0;">
+      <button class="accordion-button collapsed fw-semibold" style="font-size:.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#t3">
+        データベースのマイグレーションエラー
+      </button>
+    </h3>
+    <div id="t3" class="accordion-collapse collapse" data-bs-parent="#troubleAccordion">
+      <div class="accordion-body" style="font-size:.88rem;">
+        アプリは起動時に自動でDBマイグレーションを実行します。エラーが出る場合は、ログを確認し、必要に応じてバックアップしてからコンテナを再作成してください。
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

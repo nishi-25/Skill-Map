@@ -1,0 +1,27 @@
+{% extends "manual/_layout.html" %}
+{% block title %}スキルカタログ管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>スキルカタログ管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-collection text-primary"></i>スキルカタログ管理
+  <span class="role-badge role-manager">Manager（担当グループのみ）</span>
+  <span class="role-badge role-admin">Admin（全体）</span>
+</h1>
+
+<h2 id="add-skill"><i class="bi bi-plus-circle"></i>スキルの追加</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「スキルを追加」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>スキル名・カテゴリー・難易度ティア・説明を入力して保存</span></div>
+<p class="text-muted" style="font-size:.85rem;">ティアはスキルの難易度を表す分類です。組織に合わせて名称をカスタマイズできます（ティア設定画面）。</p>
+
+<h2 id="bulk-import"><i class="bi bi-upload"></i>一括インポート（CSV/Excel/Markdown/JSON）</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「CSVインポート」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>形式タブ（CSV/Excel/Markdown/JSON）を選択</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>「テンプレート」ボタンでサンプルファイルをダウンロード</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>テンプレートを編集してアップロード → 「インポート実行」</span></div>
+
+<h2><i class="bi bi-funnel"></i>絞り込み・ソート</h2>
+<p>キーワード・カテゴリー・ティア・アーカイブ状態でフィルタリングできます。テーブルヘッダークリックで複数条件ソートが可能です。</p>
+
+<h2><i class="bi bi-check2-square"></i>一括操作</h2>
+<p>チェックボックスで複数スキルを選択し、「アーカイブ」「カテゴリ変更」「難易度変更」を一括実行できます。</p>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>Adminのみ「カタログを初期化」ボタンでデフォルトカタログに戻せます（既存のスキル申告データも削除されます）。詳しくは<a href="/manual/admin/maintenance">運用・保守</a>を参照してください。</div>
+{% endblock %}

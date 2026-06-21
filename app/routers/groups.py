@@ -394,7 +394,13 @@ def group_member_remove(
 
 # ─── 継承スキル API ──────────────────────────────────────────────
 
-@router.get("/api/{gid}/inherited-skills")
+@router.get(
+    "/api/{gid}/inherited-skills",
+    tags=["Groups"],
+    operation_id="get_group_inherited_skills",
+    summary="グループの継承スキル一覧を取得",
+    description="親グループから継承される必須スキルのID一覧を返します。\n\n**権限**: Manager以上（Managerは担当グループのみ、Adminは全グループ）。",
+)
 def inherited_skills_api(gid: int, request: Request, db: Session = Depends(get_db)):
     """指定グループとその祖先の全スキルIDを返す（フォームの動的更新用）"""
     from fastapi.responses import JSONResponse

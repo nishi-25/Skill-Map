@@ -20,6 +20,7 @@ from routers import groups as groups_router
 from routers import tickets as tickets_router
 from routers import education as education_router
 from routers import announcements as announcements_router
+from routers import manual as manual_router
 from routers import certifications as certifications_router
 from routers import exams as exams_router
 from routers import business_map as business_map_router
@@ -40,7 +41,7 @@ with database.engine.connect() as _conn:
     except Exception:
         pass  # カラム既存の場合は無視
 
-app = FastAPI(title="Skill View.")
+app = FastAPI(title="Skill View.", swagger_ui_parameters={"deepLinking": True})
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -51,6 +52,8 @@ app.include_router(groups_router.router)
 app.include_router(tickets_router.router)
 app.include_router(education_router.router)
 app.include_router(announcements_router.router)
+app.include_router(manual_router.router)
+app.include_router(manual_router.search_router)
 app.include_router(certifications_router.router)
 app.include_router(exams_router.router)
 app.include_router(business_map_router.router)
@@ -160,17 +163,30 @@ app.add_middleware(PendingApprovalMiddleware)
 # ─── 例外ハンドラ ──────────────────────────────────────────────
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    # /api/* (groups.py の /groups/api/... も含む) はHTMLページではなくJSON APIなので、
+    # 未ログイン・権限不足のときもリダイレクト/HTMLエラーページではなくJSONエラーを返す。
+    # (Swagger UIの「Try it out」など、ブラウザのfetchがリダイレクトを自動追従して
+    #  ログインページのHTMLを200として誤受信してしまう問題を避けるため)
+    is_api = "/api/" in request.url.path
     if exc.status_code == 302:
+        if is_api:
+            return JSONResponse({"detail": "ログインが必要です"}, status_code=401)
         location = exc.headers.get("Location", "/login")
         return RedirectResponse(url=location)
     if exc.status_code == 403:
+        if is_api:
+            return JSONResponse({"detail": exc.detail or "アクセス権限がありません"}, status_code=403)
         return templates.TemplateResponse(request, "error.html", {
             "code": 403, "message": exc.detail or "アクセス権限がありません"
         }, status_code=403)
     if exc.status_code == 404:
+        if is_api:
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         return templates.TemplateResponse(request, "error.html", {
             "code": 404, "message": "ページが見つかりません"
         }, status_code=404)
+    if is_api:
+        return JSONResponse({"detail": str(exc.detail)}, status_code=exc.status_code)
     return templates.TemplateResponse(request, "error.html", {
         "code": exc.status_code, "message": str(exc.detail)
     }, status_code=exc.status_code)
@@ -1869,46 +1885,7 @@ def logout():
     return response
 
 
-# ─── マニュアル ──────────────────────────────────────────────
-@app.get("/manual", response_class=HTMLResponse)
-def manual_page(request: Request, db: Session = Depends(get_db)):
-    current_user = auth.get_current_user(request, db)
-    return templates.TemplateResponse(request, "manual.html", {
-        "current_user": current_user,
-    })
-
-
-@app.get("/manual/admin", response_class=HTMLResponse)
-def manual_admin_page(request: Request, db: Session = Depends(get_db)):
-    current_user = auth.get_current_user(request, db)
-    return templates.TemplateResponse(request, "manual_admin.html", {
-        "current_user": current_user,
-        "unlocked": False,
-        "error": None,
-    })
-
-
-@app.post("/manual/admin", response_class=HTMLResponse)
-async def manual_admin_verify(request: Request, db: Session = Depends(get_db)):
-    current_user = auth.get_current_user(request, db)
-    form = await request.form()
-    password = form.get("password", "")
-
-    # Admin ユーザーのパスワードで認証
-    admin_user = (db.query(models.User)
-                  .filter(models.User.role == "admin")
-                  .first())
-    if admin_user and auth.verify_password(password, admin_user.password_hash):
-        return templates.TemplateResponse(request, "manual_admin.html", {
-            "current_user": current_user,
-            "unlocked": True,
-            "error": None,
-        })
-    return templates.TemplateResponse(request, "manual_admin.html", {
-        "current_user": current_user,
-        "unlocked": False,
-        "error": "パスワードが正しくありません",
-    })
+# ─── マニュアル → routers/manual.py ──────────────────────────────
 
 
 # ─── ダッシュボード ──────────────────────────────────────────────
@@ -3013,7 +2990,13 @@ def demo_page(request: Request):
 # ─── グローバル検索 API ──────────────────────────────────────────
 from fastapi.responses import JSONResponse as _JSONResponse
 
-@app.get("/api/search")
+@app.get(
+    "/api/search",
+    tags=["Search"],
+    operation_id="search_api",
+    summary="スキル・メンバー・グループを横断検索",
+    description="スキル名・メンバー名・グループ名を部分一致で横断検索します。\n\n**権限**: 全ロール。グループの検索結果はManager/Adminにのみ含まれます。",
+)
 def api_search(q: str = "", request: Request = None, db: Session = Depends(get_db)):
     """スキル名・ユーザー名・グループ名を横断検索"""
     user = auth.require_approved(request, db)
@@ -3056,7 +3039,13 @@ def api_search(q: str = "", request: Request = None, db: Session = Depends(get_d
 # ─── ダッシュボード トレンド API ──────────────────────────────────
 from datetime import datetime, timedelta
 
-@app.get("/api/dashboard/trend")
+@app.get(
+    "/api/dashboard/trend",
+    tags=["Dashboard"],
+    operation_id="get_dashboard_trend",
+    summary="週次スキル成長トレンドを取得",
+    description="過去12週間のスキルレベルアップ件数を週次集計で返します。\n\n**権限**: 全ロール。`user_id`/`group_id`で他人・他グループを指定するにはManager以上の権限が必要です。",
+)
 def api_dashboard_trend(
     group_id: int = 0,
     user_id: int = 0,

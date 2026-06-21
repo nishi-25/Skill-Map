@@ -1,0 +1,33 @@
+{% extends "manual/_layout.html" %}
+{% block title %}Wiki{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>全ユーザー共通</span> / <span>Wiki</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-journal-text text-primary"></i>Wiki
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>個人メモやチームのナレッジをMarkdownで記録できる機能です。「個人メモ」「全体」「グループ」タブで一覧が分かれて表示されます。</p>
+
+<h2 id="wiki-create"><i class="bi bi-plus-circle"></i>ページの作成</h2>
+<div class="step-item"><span class="step-badge">1</span><span>サイドバーの「Wiki」→「新規作成」をクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>タイトルと本文（Markdown）を入力。ツールバーで見出し・リスト・引用・コード・リンク・画像を挿入できます</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>「プレビュー」ボタンで実際の表示を確認できます</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>公開範囲を選択: <strong>個人メモ</strong>（自分のみ）/ <strong>全体</strong>（全員に公開）/ <strong>グループ</strong>（所属グループのメンバーのみ）</span></div>
+<div class="step-item"><span class="step-badge">5</span><span>公開範囲を「全体」または「グループ」にした場合、「メンバーも編集可」を選ぶと作成者以外も編集できるようになります</span></div>
+<div class="tip-box"><i class="bi bi-image me-1"></i>本文中に画像をドラッグ＆ドロップ、またはツールバーの画像ボタンからアップロードすると、自動でMarkdown形式で挿入されます。</div>
+
+<h2 id="wiki-permission"><i class="bi bi-shield-lock"></i>編集・削除権限</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>操作</th><th>誰ができるか</th></tr></thead>
+  <tbody>
+    <tr><td>閲覧</td><td>作成者・Admin・「全体」公開なら全員・「グループ」公開なら所属メンバー</td></tr>
+    <tr><td>編集</td><td>作成者・Admin・「メンバーも編集可」に設定された共有ページの対象メンバー</td></tr>
+    <tr><td>削除</td><td>作成者・Adminのみ（共同編集者でも削除はできません）</td></tr>
+    <tr><td>公開範囲・編集権限の変更</td><td>作成者・Adminのみ</td></tr>
+  </tbody>
+</table>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>「メンバーも編集可」にしても、公開範囲・編集モード自体を変更できるのは作成者とAdminだけです。</div>
+
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i><strong>Admin専用:</strong> 全ページのJSON一括エクスポート・インポートができます（管理パネルではなくWikiのエクスポート/インポート操作から）。</div>
+{% endblock %}

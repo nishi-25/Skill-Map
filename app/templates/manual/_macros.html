@@ -1,0 +1,44 @@
+{# Pythonサンプルコードブロック #}
+{% macro python_sample(code) %}
+<div class="code-sample">
+  <div class="code-sample-toolbar">
+    <span>Python</span>
+    <button class="copy-btn" onclick="copyCodeSample(this)"><i class="bi bi-clipboard"></i> コピー</button>
+  </div>
+  <pre><code class="language-python">{{ code }}</code></pre>
+</div>
+{% endmacro %}
+
+{# ユースケースのステップカード。本文は caller() で渡す #}
+{% macro step_card(num, title, route) %}
+<div class="usecase-step">
+  <div class="usecase-step-number">{{ num }}</div>
+  <div class="usecase-step-body">
+    <h3>{{ title }}</h3>
+    {% if route %}<div class="usecase-step-meta"><code>{{ route }}</code></div>{% endif %}
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+{# 簡易ブラウザ風モックアップ。中身は caller() で渡す #}
+{% macro mockup_browser(address) %}
+<div class="mockup-browser">
+  <div class="mockup-browser-bar">
+    <span class="mockup-dot" style="background:#ff5f57;"></span>
+    <span class="mockup-dot" style="background:#febc2e;"></span>
+    <span class="mockup-dot" style="background:#28c840;"></span>
+    <div class="mockup-address-bar">{{ address }}</div>
+  </div>
+  <div class="mockup-browser-body">
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+{# モックアップ内のチェックボックス行 #}
+{% macro mockup_row(label, checked=False) %}
+<div class="mockup-row">
+  <span class="mockup-checkbox{% if checked %} checked{% endif %}"></span> {{ label }}
+</div>
+{% endmacro %}

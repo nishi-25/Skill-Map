@@ -1,0 +1,16 @@
+{% extends "manual/_layout.html" %}
+{% block title %}自分の申請状況{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>User機能</span> / <span>自分の申請状況</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-send text-primary"></i>自分の申請状況
+  <span class="role-badge role-user">User</span>
+</h1>
+<h2 id="status">申告したスキルの状況確認</h2>
+<p>申告したスキルの承認状況を一覧で確認できます。</p>
+<ul style="font-size:.88rem;">
+  <li><strong>承認待ち</strong> — 承認者のレビュー待ち</li>
+  <li><strong>承認済み</strong> — スキルが正式に登録されました</li>
+  <li><strong>差し戻し</strong> — 承認者からコメントがついています。内容を確認して再申請しましょう</li>
+</ul>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>差し戻された場合は承認者のコメントを確認し、必要に応じてレベルを修正して再申請してください。</div>
+{% endblock %}

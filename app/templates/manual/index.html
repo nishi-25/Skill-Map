@@ -1,0 +1,132 @@
+{% extends "manual/_layout.html" %}
+{% block title %}システム概要{% endblock %}
+{% block breadcrumb %}<span>マニュアル</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-map text-primary"></i>Skill View. 利用マニュアル</h1>
+<div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+  <span class="text-muted" style="font-size:.82rem;">— 対象ロールを各ページに表示しています</span>
+</div>
+
+<div class="manual-hero-search">
+  <h2><i class="bi bi-search"></i>マニュアルを検索</h2>
+  <div class="manual-hero-search-box">
+    <i class="bi bi-search search-icon"></i>
+    <input type="text" id="manualHomeSearchInput" placeholder="キーワードを入力（例: 承認, API, ダークモード, 業務マップ）" autocomplete="off"
+           oninput="manualHomeDoSearch(this.value)">
+  </div>
+  <div id="manualHomeSearchResults" class="manual-hero-search-results"></div>
+  <div class="manual-hero-search-hint">入力すると該当するページの候補が表示されます。クリックで該当セクションへ移動します。</div>
+</div>
+
+<p>「Skill View.」は、チームメンバーのスキルレベルを記録・可視化・管理するWebアプリケーションです。メンバーが自分のスキルを申告し、上長が承認することでチーム全体のスキルマップが形成されます。</p>
+
+<div class="row g-3 mt-1 mb-4">
+  {% for icon, color, title, desc in [
+    ('bi-lightning-charge-fill','#f97316','スキル自己申告','0〜4の5段階でスキルレベルを申告'),
+    ('bi-check2-square','#22c55e','承認ワークフロー','Manager/AdminがレビューしてOK/NG'),
+    ('bi-grid-3x3-gap','#dc2626','スキルマトリクス','メンバー×スキルのヒートマップで可視化'),
+    ('bi-people-fill','#6366f1','グループ管理','部署・チームごとのギャップ分析'),
+    ('bi-mortarboard-fill','#d97706','教育リソース','スキルに紐づく学習教材のリンク集'),
+    ('bi-chat-dots-fill','#0ea5e9','問い合わせ','チャット形式のサポート機能'),
+    ('bi-diagram-3','#0891b2','業務マップ','業務エリア単位でスキルを探して申告'),
+    ('bi-patch-check-fill','#16a34a','資格管理','取得資格の登録とチームの資格マトリクス'),
+    ('bi-pencil-square','#9333ea','試験','学科・実技試験の実施と採点'),
+    ('bi-journal-text','#475569','Wiki','個人メモ・チームのナレッジ共有'),
+  ] %}
+  <div class="col-sm-6 col-md-4">
+    <div class="d-flex gap-2 align-items-start p-2 rounded" style="background:var(--input-bg);">
+      <i class="bi {{ icon }}" style="color:{{ color }};font-size:1.2rem;flex-shrink:0;margin-top:2px;"></i>
+      <div>
+        <div class="fw-semibold" style="font-size:.85rem;">{{ title }}</div>
+        <div class="text-muted" style="font-size:.75rem;">{{ desc }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2><i class="bi bi-signpost-split text-primary"></i>このマニュアルの使い方</h2>
+<p>左側の目次からセクションごとのページに移動できます。サイドバー上部の検索ボックス（<code>Ctrl/Cmd+K</code>でフォーカス）からも、どのページからでもキーワード検索できます。</p>
+
+<div class="row g-3 mt-2">
+  <div class="col-md-4">
+    <a href="/manual/quickstart" class="text-decoration-none">
+      <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid #f97316;">
+        <div class="fw-bold mb-1"><i class="bi bi-play-circle-fill text-primary me-1"></i>クイックスタート</div>
+        <div class="text-muted" style="font-size:.8rem;">初めて使う方はまずこちら</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/manual/usecase/user" class="text-decoration-none">
+      <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid #0ea5e9;">
+        <div class="fw-bold mb-1"><i class="bi bi-person-walking text-primary me-1"></i>Userの操作フロー</div>
+        <div class="text-muted" style="font-size:.8rem;">スキル申告から承認確認までの一連の流れ</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/manual/usecase/manager" class="text-decoration-none">
+      <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid #22c55e;">
+        <div class="fw-bold mb-1"><i class="bi bi-person-gear text-primary me-1"></i>Managerの操作フロー</div>
+        <div class="text-muted" style="font-size:.8rem;">承認・チーム管理の一連の流れ</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/manual/roles" class="text-decoration-none">
+      <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid #6366f1;">
+        <div class="fw-bold mb-1"><i class="bi bi-person-badge text-primary me-1"></i>ロール・権限一覧</div>
+        <div class="text-muted" style="font-size:.8rem;">User/Manager/Adminでできることの一覧</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/manual/api" class="text-decoration-none">
+      <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid #7c3aed;">
+        <div class="fw-bold mb-1"><i class="bi bi-code-slash text-primary me-1"></i>APIリファレンス</div>
+        <div class="text-muted" style="font-size:.8rem;">Pythonサンプルと動作確認</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/manual/faq" class="text-decoration-none">
+      <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid #d97706;">
+        <div class="fw-bold mb-1"><i class="bi bi-question-circle text-primary me-1"></i>よくある質問</div>
+        <div class="text-muted" style="font-size:.8rem;">トラブル時はまず確認</div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let _homeSearchTimer = null;
+function manualHomeDoSearch(q) {
+  const box = document.getElementById('manualHomeSearchResults');
+  q = (q || '').trim();
+  if (!q) { box.innerHTML = ''; return; }
+  clearTimeout(_homeSearchTimer);
+  _homeSearchTimer = setTimeout(() => {
+    fetch('/api/manual/search?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.results || data.results.length === 0) {
+          box.innerHTML = '<div class="manual-hero-search-empty">「' + q + '」に一致するページが見つかりませんでした</div>';
+        } else {
+          box.innerHTML = data.results.map(r => `
+            <a href="${r.page_url}#${r.anchor}" class="manual-hero-search-item">
+              <div class="manual-hero-search-item-title">${r.title}</div>
+              <div class="manual-hero-search-item-breadcrumb">${r.breadcrumb}</div>
+              <div class="manual-hero-search-item-snippet">${r.snippet}</div>
+            </a>`).join('');
+        }
+      })
+      .catch(() => { box.innerHTML = ''; });
+  }, 200);
+}
+</script>
+{% endblock %}

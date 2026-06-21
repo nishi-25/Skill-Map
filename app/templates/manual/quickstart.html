@@ -1,0 +1,30 @@
+{% extends "manual/_layout.html" %}
+{% block title %}クイックスタート{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>はじめに</span> / <span>クイックスタート</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-play-circle-fill text-primary"></i>クイックスタート</h1>
+<p>初回ログイン後にロール別のガイドツアーが自動起動します。サイドバー下部の「クイックスタート」ボタンからいつでも再実行できます。</p>
+<div class="row g-3">
+  {% for role, color, steps in [
+    ('User', '#0ea5e9', 'ダッシュボード → スキル申告 → 申請状況 → タイムライン → 教育リソース → 問い合わせ → 検索 → プロフィール（全10ステップ）'),
+    ('Manager', '#22c55e', 'ダッシュボード → 承認依頼 → マトリクス → カタログ → グループ → 教育 → 問い合わせ → 検索（全10ステップ）'),
+    ('Admin', '#dc2626', 'ダッシュボード → 承認 → マトリクス → カタログ → グループ → 教育 → 管理パネル → ユーザー管理 → チケット → メール（全12ステップ）'),
+  ] %}
+  <div class="col-md-4">
+    <div class="p-3 rounded h-100" style="background:var(--input-bg);border-left:4px solid {{ color }};">
+      <div class="fw-bold mb-1"><span class="badge" style="background:{{ color }};">{{ role }}</span></div>
+      <div class="text-muted" style="font-size:.75rem;">{{ steps }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div class="tip-box mt-3"><i class="bi bi-info-circle me-1"></i>ツアー中は Esc キーでいつでもスキップできます。「次へ」で次のステップに進み、「前へ」で戻ることができます。</div>
+
+<h2><i class="bi bi-signpost text-primary"></i>次に読むページ</h2>
+<p>ガイドツアーで概要をつかんだら、ロール別の操作フローページで実際の手順を確認しましょう。</p>
+<ul>
+  <li><a href="/manual/usecase/user">ユースケース: Userの操作フロー</a></li>
+  <li><a href="/manual/usecase/manager">ユースケース: Managerの操作フロー</a></li>
+  <li><a href="/manual/skillmap">スキルマップ（自己申告）の詳しい使い方</a></li>
+</ul>
+{% endblock %}

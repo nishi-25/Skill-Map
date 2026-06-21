@@ -1072,7 +1072,13 @@ def reject_skill(
     return RedirectResponse("/approvals", status_code=303)
 
 
-@router.post("/api/approvals/{record_id}/revoke")
+@router.post(
+    "/api/approvals/{record_id}/revoke",
+    tags=["Approvals"],
+    operation_id="revoke_approval",
+    summary="承認済みレコードをpendingに戻す",
+    description="承認済み・差し戻し済みのスキルレベルレコードをpending状態に戻します。\n\n**権限**: Manager以上。",
+)
 def revoke_approval(
     record_id: int,
     request: Request,
@@ -1096,7 +1102,13 @@ def revoke_approval(
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/approvals/{record_id}/edit")
+@router.post(
+    "/api/approvals/{record_id}/edit",
+    tags=["Approvals"],
+    operation_id="edit_approval",
+    summary="承認前にレベル・コメントを編集",
+    description="承認待ちレコードのレベルとコメントを編集します。\n\n**権限**: Manager以上。",
+)
 def edit_approval(
     record_id: int,
     request: Request,
@@ -1124,7 +1136,13 @@ def edit_approval(
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/approvals/bulk-action")
+@router.post(
+    "/api/approvals/bulk-action",
+    tags=["Approvals"],
+    operation_id="bulk_approval_action",
+    summary="複数の申告を一括承認・差し戻し",
+    description="複数の承認待ちレコードをまとめて承認または差し戻しします。\n\n**権限**: Manager以上（Managerは担当グループのみ）。",
+)
 def bulk_approval_action(
     request: Request,
     action: str = Form(...),
@@ -1186,7 +1204,13 @@ def bulk_approval_action(
     return JSONResponse({"ok": True, "processed": processed})
 
 
-@router.get("/api/approvals/{record_id}/sub-skills")
+@router.get(
+    "/api/approvals/{record_id}/sub-skills",
+    tags=["Approvals"],
+    operation_id="get_approval_sub_skills",
+    summary="承認待ち申告のサブスキル内訳を取得",
+    description="承認画面で、申請者が選択しているサブスキルの状況をJSONで返します。\n\n**権限**: Manager以上（Managerは自分が承認者のレコードのみ）。",
+)
 def approval_sub_skills_api(record_id: int, request: Request, db: Session = Depends(get_db)):
     """承認画面用：申請者が選択しているサブスキルの状況をJSONで返す（Admin/Manager）"""
     user = auth.require_manager_or_admin(request, db)
@@ -1281,7 +1305,13 @@ def my_approvals(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.get("/api/my-skills/{skill_id}/detail")
+@router.get(
+    "/api/my-skills/{skill_id}/detail",
+    tags=["Skills"],
+    operation_id="get_my_skill_detail",
+    summary="自分のスキル申請の詳細を取得",
+    description="自分の申請状況画面用に、申請したサブスキルの選択状況とエビデンスをJSONで返します。\n\n**権限**: 全ロール（自分自身のデータのみ）。",
+)
 def my_skill_detail_api(skill_id: int, request: Request, db: Session = Depends(get_db)):
     """自分の申請状況画面用：申請したサブスキルの選択状況とエビデンスをJSONで返す"""
     user = auth.require_approved(request, db)
@@ -1334,7 +1364,17 @@ def my_skill_detail_api(skill_id: int, request: Request, db: Session = Depends(g
 # JSON API（AJAX 用）
 # ════════════════════════════════════════════════════════════════
 
-@router.post("/api/skills/{skill_id}/level")
+@router.post(
+    "/api/skills/{skill_id}/level",
+    tags=["Skills"],
+    operation_id="post_skill_level",
+    summary="自分のスキルレベルを申告・更新",
+    description=(
+        "指定スキルの自己評価レベルを登録・更新します。\n\n"
+        "**権限**: 全ロール。Admin/Managerが自分自身に対して行った場合は自動承認されます。"
+        "User権限の場合は`approver_id`が必須で、承認待ち（pending）状態になります。"
+    ),
+)
 def api_set_skill_level(
     skill_id: int,
     request: Request,
@@ -1431,7 +1471,13 @@ def api_set_skill_level(
         })
 
 
-@router.post("/api/approvals/my/{record_id}/withdraw")
+@router.post(
+    "/api/approvals/my/{record_id}/withdraw",
+    tags=["Approvals"],
+    operation_id="withdraw_my_approval",
+    summary="自分の承認待ち申請を取り下げる",
+    description="自分が出した承認待ち（pending）の申請レコードを削除して取り下げます。\n\n**権限**: 全ロール（自分自身の申請のみ）。",
+)
 def withdraw_my_approval(record_id: int, request: Request, db: Session = Depends(get_db)):
     """自分の承認待ち申請を取り下げる（レコード削除）"""
     user = auth.require_approved(request, db)
@@ -1451,7 +1497,13 @@ def withdraw_my_approval(record_id: int, request: Request, db: Session = Depends
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/skills/{skill_id}/request-revoke")
+@router.post(
+    "/api/skills/{skill_id}/request-revoke",
+    tags=["Skills"],
+    operation_id="request_revoke_skill",
+    summary="承認済みスキルの取り消しを申請",
+    description="自分の承認済みスキルレベルについて、取り消し（revoke_pending）を申請します。\n\n**権限**: 全ロール（自分自身のスキルのみ）。",
+)
 def request_revoke_skill(
     skill_id: int,
     request: Request,
@@ -1478,7 +1530,13 @@ def request_revoke_skill(
     return JSONResponse({"ok": True, "approval_status": "revoke_pending"})
 
 
-@router.post("/api/skills/{skill_id}/cancel-revoke")
+@router.post(
+    "/api/skills/{skill_id}/cancel-revoke",
+    tags=["Skills"],
+    operation_id="cancel_revoke_skill",
+    summary="スキル取り消し申請の取り下げ",
+    description="取り消し申請（revoke_pending）を取り下げ、承認済みの状態に戻します。\n\n**権限**: 全ロール（自分自身のスキルのみ）。",
+)
 def cancel_revoke_skill(skill_id: int, request: Request, db: Session = Depends(get_db)):
     """取り消し申請を取り下げ、承認済みの状態に戻す"""
     user = auth.require_approved(request, db)
@@ -1519,7 +1577,13 @@ def calc_level_from_ratio(done: int, total: int) -> int:
     return 4       # 上級
 
 
-@router.get("/api/skills/{skill_id}/panel")
+@router.get(
+    "/api/skills/{skill_id}/panel",
+    tags=["Skills"],
+    operation_id="get_skill_panel",
+    summary="スキル詳細パネルのデータを取得",
+    description="スキルマップ2ペインUIの右ペインに表示するサブスキル・根拠・上書き情報をJSONで返します。`view_as`で代理閲覧にも対応します。\n\n**権限**: 全ロール。他人を`view_as`で指定するにはManager以上の権限が必要です。",
+)
 def skill_panel_api(skill_id: int, request: Request, view_as: int = 0, area_id: int = 0, db: Session = Depends(get_db)):
     """2ペインUI用：右ペインに必要なデータをJSONで返す。view_as で代理閲覧対応。"""
     from fastapi.responses import JSONResponse as _JSONResponse
@@ -2105,7 +2169,13 @@ def skill_evidence_download(evidence_id: int, request: Request, db: Session = De
     return FileResponse(ev.file_path, filename=ev.original_filename or "download")
 
 
-@router.get("/api/dashboard/stats")
+@router.get(
+    "/api/dashboard/stats",
+    tags=["Dashboard"],
+    operation_id="get_dashboard_stats",
+    summary="ダッシュボード統計を取得",
+    description="ログインユーザーのダッシュボード統計（スキル分布・承認待ち件数など）を取得します。\n\n**権限**: 全ロール（User/Manager/Admin）。",
+)
 def api_dashboard_stats(request: Request, db: Session = Depends(get_db)):
     """AJAX: ダッシュボード用の集計 JSON を返す"""
     user = auth.require_approved(request, db)
@@ -2674,7 +2744,13 @@ def skill_timeline(
     })
 
 
-@router.get("/api/skills/timeline/{target_user_id}")
+@router.get(
+    "/api/skills/timeline/{target_user_id}",
+    tags=["Skills"],
+    operation_id="get_skill_timeline",
+    summary="スキル成長タイムラインを取得",
+    description="指定ユーザーのスキルレベル変化の履歴をJSONで返します。\n\n**権限**: 全ロール（自分自身）。他人を指定するにはManager以上の権限が必要です。",
+)
 def api_skill_timeline(
     target_user_id: int,
     request: Request,
@@ -3497,7 +3573,13 @@ async def bulk_import(
 # AI スキル要約
 # ════════════════════════════════════════════════════════════════
 
-@router.get("/api/users/{target_user_id}/skill-summary")
+@router.get(
+    "/api/users/{target_user_id}/skill-summary",
+    tags=["Skills"],
+    operation_id="get_user_skill_summary",
+    summary="ユーザーのスキルをAIで自然言語要約",
+    description="設定済みのAIプロバイダー（Anthropic等）を使って、指定ユーザーのスキル状況を自然言語で要約します。\n\n**権限**: Manager以上。",
+)
 async def skill_summary_api(
     target_user_id: int,
     request: Request,

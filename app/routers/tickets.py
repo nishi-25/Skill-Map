@@ -54,7 +54,13 @@ def tickets_list(
 
 # ─── 作成（AJAX） ──────────────────────────────────────────────────
 
-@router.post("/api/tickets")
+@router.post(
+    "/api/tickets",
+    tags=["Tickets"],
+    operation_id="create_ticket",
+    summary="問い合わせ・要望を新規作成",
+    description="種別（問い合わせ/要望）・優先度・タイトル・本文を指定してチケットを作成します。\n\n**権限**: 全ロール。",
+)
 async def create_ticket(
     request: Request,
     title: str = Form(...),
@@ -121,7 +127,13 @@ def ticket_detail(tid: int, request: Request, db: Session = Depends(get_db)):
 
 # ─── メッセージ送信（AJAX） ────────────────────────────────────────
 
-@router.post("/api/tickets/{tid}/message")
+@router.post(
+    "/api/tickets/{tid}/message",
+    tags=["Tickets"],
+    operation_id="post_ticket_message",
+    summary="チケットにメッセージを投稿",
+    description="既存チケットのスレッドにメッセージを追加します。\n\n**権限**: 全ロール（自分のチケットのみ）/ Admin（全チケット）。",
+)
 def send_message(
     tid: int,
     request: Request,
@@ -168,7 +180,13 @@ def send_message(
 
 # ─── ステータス変更（Admin） ───────────────────────────────────────
 
-@router.post("/api/tickets/{tid}/status")
+@router.post(
+    "/api/tickets/{tid}/status",
+    tags=["Tickets"],
+    operation_id="update_ticket_status",
+    summary="チケットのステータスを更新",
+    description="チケットのステータス（対応中・解決済み・クローズ等）を更新します。\n\n**権限**: Admin。",
+)
 def update_status(
     tid: int,
     request: Request,
@@ -195,7 +213,13 @@ def update_status(
 
 # ─── 未読件数 API ─────────────────────────────────────────────────
 
-@router.get("/api/tickets/unread-count")
+@router.get(
+    "/api/tickets/unread-count",
+    tags=["Tickets"],
+    operation_id="get_ticket_unread_count",
+    summary="未読チケット件数を取得",
+    description="サイドバーのバッジ表示用に、未対応・未読のチケット件数を返します。\n\n**権限**: 全ロール。",
+)
 def unread_count(request: Request, db: Session = Depends(get_db)):
     user = auth.require_approved(request, db)
     if user.role == "admin":
@@ -214,7 +238,13 @@ def unread_count(request: Request, db: Session = Depends(get_db)):
 
 # ─── ユーザーの最近のチケット（バブルメニュー用） ─────────────────
 
-@router.get("/api/tickets/my-recent")
+@router.get(
+    "/api/tickets/my-recent",
+    tags=["Tickets"],
+    operation_id="get_my_recent_tickets",
+    summary="自分の直近のチケットを取得",
+    description="チャットウィジェットのバブルメニュー用に、自分の直近5件のチケットを返します。\n\n**権限**: 全ロール（自分のチケットのみ）。",
+)
 def my_recent_tickets(request: Request, db: Session = Depends(get_db)):
     user = auth.require_approved(request, db)
     tickets = db.query(models.Ticket).filter(
@@ -235,7 +265,13 @@ def my_recent_tickets(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.get("/api/tickets/my-list")
+@router.get(
+    "/api/tickets/my-list",
+    tags=["Tickets"],
+    operation_id="get_my_ticket_list",
+    summary="自分のチケット一覧を取得",
+    description="チャットウィジェット用に、自分の全チケットと最新メッセージを返します。\n\n**権限**: 全ロール（自分のチケットのみ）。",
+)
 def my_ticket_list(request: Request, db: Session = Depends(get_db)):
     """チャットウィジェット用: 自分のチケット一覧 + 最新メッセージ"""
     user = auth.require_approved(request, db)
@@ -261,7 +297,13 @@ def my_ticket_list(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"tickets": result})
 
 
-@router.get("/api/tickets/{tid}/detail")
+@router.get(
+    "/api/tickets/{tid}/detail",
+    tags=["Tickets"],
+    operation_id="get_ticket_detail",
+    summary="チケット詳細を取得",
+    description="チャットウィジェット用に、チケット詳細とメッセージ一覧を返します。\n\n**権限**: 全ロール（自分のチケットのみ）/ Admin（全チケット）。",
+)
 def ticket_detail_json(tid: int, request: Request, db: Session = Depends(get_db)):
     """チャットウィジェット用: チケット詳細 + メッセージ一覧"""
     user = auth.require_approved(request, db)
@@ -306,7 +348,13 @@ def ticket_detail_json(tid: int, request: Request, db: Session = Depends(get_db)
 
 # ─── チケット削除 ─────────────────────────────────────────────────
 
-@router.post("/api/tickets/{tid}/delete")
+@router.post(
+    "/api/tickets/{tid}/delete",
+    tags=["Tickets"],
+    operation_id="delete_ticket",
+    summary="チケットを削除",
+    description="チケットを削除します。\n\n**権限**: Admin（全件）/ 投稿者本人（自分のチケットのみ）。",
+)
 def delete_ticket(tid: int, request: Request, db: Session = Depends(get_db)):
     """チケット削除: Admin は全件、投稿者本人は自分のチケットのみ削除可能"""
     user = auth.require_approved(request, db)

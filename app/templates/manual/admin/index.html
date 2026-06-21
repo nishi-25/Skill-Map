@@ -1,0 +1,31 @@
+{% extends "manual/_layout.html" %}
+{% block title %}管理者の役割{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Admin専用</span> / <span>管理者の役割</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-shield-check text-primary"></i>管理者の役割
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>システム全体のサマリーと新規登録ユーザーの承認待ち一覧は <a href="/admin">管理パネル</a> から確認できます。</p>
+<div class="success-box"><i class="bi bi-person-check me-1"></i>新しいユーザーが登録するとここに表示されます。承認するとそのユーザーがログインできるようになります。</div>
+
+<h2 id="admin-overview"><i class="bi bi-shield-check"></i>AdminとManagerの権限比較</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>機能</th><th class="text-center">Admin</th><th class="text-center">Manager</th></tr></thead>
+  <tbody>
+    <tr><td>ユーザー承認・ロール変更</td><td class="text-center"><i class="bi bi-check-lg check"></i></td><td class="text-center text-muted">—</td></tr>
+    <tr><td>スキルカタログ / カテゴリー管理</td><td class="text-center"><i class="bi bi-check-lg check"></i></td><td class="text-center"><i class="bi bi-check-lg check"></i></td></tr>
+    <tr><td>スキル承認</td><td class="text-center"><i class="bi bi-check-lg check"></i> 全員</td><td class="text-center"><i class="bi bi-check-lg check"></i> 担当グループのみ</td></tr>
+    <tr><td>グループ管理</td><td class="text-center"><i class="bi bi-check-lg check"></i> 全体</td><td class="text-center"><i class="bi bi-check-lg check"></i> 担当のみ</td></tr>
+    <tr><td>スキルマトリクス閲覧</td><td class="text-center"><i class="bi bi-check-lg check"></i> 全員</td><td class="text-center"><i class="bi bi-check-lg check"></i> 担当グループのみ</td></tr>
+    <tr><td>通知設定 / データ管理 / AI設定</td><td class="text-center"><i class="bi bi-check-lg check"></i></td><td class="text-center text-muted">—</td></tr>
+    <tr><td>メンバー詳細閲覧</td><td class="text-center"><i class="bi bi-check-lg check"></i> 全員</td><td class="text-center"><i class="bi bi-check-lg check"></i> 担当グループのみ</td></tr>
+  </tbody>
+</table>
+
+<h2><i class="bi bi-signpost"></i>関連ページ</h2>
+<ul>
+  <li><a href="/manual/admin/users">ユーザー管理・パスワードリセット</a></li>
+  <li><a href="/manual/admin/mail">メール設定</a></li>
+  <li><a href="/manual/admin/maintenance">運用・保守（Docker / 初期化 / トラブルシューティング）</a></li>
+</ul>
+{% endblock %}

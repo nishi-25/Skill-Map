@@ -1,0 +1,18 @@
+{% extends "manual/_layout.html" %}
+{% block title %}教育リソース{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>User機能</span> / <span>教育リソース</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-mortarboard-fill text-primary"></i>教育リソース
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<h2 id="education">学習リンク集の使い方</h2>
+<p>Manager/Adminが登録した学習サイト・教材へのリンク集です。カテゴリー別にグループ化されています。</p>
+<ul style="font-size:.88rem;">
+  <li>キーワード検索・カテゴリーフィルター・スキルフィルターで絞り込めます</li>
+  <li>「サイトを開く」ボタンで新しいタブに外部リンクが開きます</li>
+  <li>各カードにカテゴリーバッジと関連スキルが表示されます</li>
+</ul>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>リソースの登録・編集はManager/Adminのみ可能です。詳しくは<a href="/manual/education-mgmt">教育リソース管理</a>を参照してください。</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "manual/_layout.html" %}
+{% block title %}問い合わせ・要望{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>全ユーザー共通</span> / <span>問い合わせ・要望</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-chat-dots-fill text-primary"></i>問い合わせ・要望
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+
+<h2 id="new-ticket"><i class="bi bi-plus-circle"></i>新規作成（User/Manager）</h2>
+<div class="step-item"><span class="step-badge">1</span><span>画面右下のオレンジ色チャットアイコンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「新しい問い合わせ」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>種別（問い合わせ/要望）・優先度・タイトル・詳細を入力して「送信する」</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>Adminが返信すると赤いバッジで通知されます</span></div>
+
+<h2 id="admin-response"><i class="bi bi-reply"></i>Adminの対応</h2>
+<p>サイドバーの「問い合わせ・要望」ページで全チケットを管理できます。未対応・対応中のチケットは赤く強調表示されます。ステータスを「解決済み」か「クローズ」にするとアラートが消えます。</p>
+<div class="tip-box"><i class="bi bi-arrow-repeat me-1"></i>チャット画面は5秒ごとに自動更新されます。ブラウザのリロードは不要です。</div>
+
+<h2 id="feature-requests"><i class="bi bi-star-fill"></i>要望の管理</h2>
+<p>種別を「要望」にすると、管理ページ上部の「要望リスト」に優先度順でピン留め表示されます。忘れずに対応できます。</p>
+{% endblock %}

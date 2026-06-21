@@ -1,0 +1,22 @@
+{% extends "manual/_layout.html" %}
+{% block title %}承認依頼{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>承認依頼</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-check2-square text-primary"></i>承認依頼
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+
+<h2 id="single-approval"><i class="bi bi-person-check"></i>個別承認・差し戻し</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「承認」ボタンをクリック — 任意でコメントを入力して承認</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「差し戻し」ボタンをクリック → 理由をインライン入力 → 「送信」で差し戻し</span></div>
+
+<h2 id="bulk-approval"><i class="bi bi-check-all"></i>一括承認・差し戻し</h2>
+<div class="step-item"><span class="step-badge">1</span><span>各行の左端チェックボックスで複数選択（ヘッダーの「全選択」で一括選択）</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「選択を承認」または「選択を差し戻し」ボタンをクリック</span></div>
+
+<h2><i class="bi bi-funnel"></i>フィルター</h2>
+<p>申請者名で絞り込み・カテゴリーでの絞り込みが可能です。件数バッジで未処理数を確認できます。</p>
+
+<div class="admin-note" id="admin-scope"><i class="bi bi-shield-check me-1"></i><strong>Admin/Managerの対象範囲:</strong> Managerは担当グループのメンバーの申告のみ承認できます。Adminは全メンバーの申告を承認できます。なお、Admin・Manager自身がスキルレベルを設定した場合は承認フロー不要で自動承認されます。</div>
+{% endblock %}

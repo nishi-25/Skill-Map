@@ -1,0 +1,47 @@
+{% extends "manual/_layout.html" %}
+{% block title %}ロール・権限一覧{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>はじめに</span> / <span>ロール・権限一覧</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-person-badge text-primary"></i>ロール・権限一覧</h1>
+<p>このアプリには User / Manager / Admin の3つのロールがあります。ロールによって利用できる機能が異なります。</p>
+<table class="table feature-table">
+  <thead><tr><th>機能</th><th class="text-center">User</th><th class="text-center">Manager</th><th class="text-center">Admin</th></tr></thead>
+  <tbody>
+    {% for row in [
+      ('ダッシュボード閲覧','✓','✓','✓'),
+      ('スキル自己申告','✓','✓','✓'),
+      ('自分の申請状況','✓','✓','✓'),
+      ('成長タイムライン','✓','✓','✓'),
+      ('教育リソース閲覧','✓','✓','✓'),
+      ('問い合わせ送信','✓','✓','✓'),
+      ('Wiki（個人メモ・全体/グループ公開）','✓','✓','✓'),
+      ('業務マップからのスキル申告','✓','✓','✓'),
+      ('資格登録（自分の資格）','✓','✓','✓'),
+      ('試験を受ける','✓','✓','✓'),
+      ('承認依頼（申告承認）','✗','✓（担当グループ）','✓（全員）'),
+      ('スキルマトリクス','✗','✓','✓'),
+      ('スキルカタログ管理','✗','✓（担当グループ）','✓（全）'),
+      ('カテゴリー・タグ管理','✗','✓','✓'),
+      ('グループ管理','✗','✓（担当）','✓（全）'),
+      ('教育リソース追加・編集','✗','✓','✓'),
+      ('業務マップ管理（エリア作成・スキル割当）','✗','✓','✓'),
+      ('資格マトリクス閲覧','✗','✓（担当グループ）','✓（全）'),
+      ('資格マスタ管理','✗','✓','✓'),
+      ('試験の作成・割り当て・採点','✗','✓（担当グループ）','✓（全）'),
+      ('問い合わせ対応','✗','✗','✓'),
+      ('ユーザー管理・承認','✗','✗','✓'),
+      ('メール設定','✗','✗','✓'),
+      ('カタログ初期化','✗','✗','✓'),
+      ('資格マスタ・試験・業務マップ・Wikiのエクスポート/インポート','✗','✗','✓'),
+    ] %}
+    <tr>
+      <td>{{ row[0] }}</td>
+      <td class="text-center">{% if row[1]=='✓' %}<i class="bi bi-check-circle-fill check"></i>{% elif row[1]=='✗' %}<i class="bi bi-x-circle cross"></i>{% else %}<span class="text-muted small">{{ row[1] }}</span>{% endif %}</td>
+      <td class="text-center">{% if row[2]=='✓' %}<i class="bi bi-check-circle-fill check"></i>{% elif row[2]=='✗' %}<i class="bi bi-x-circle cross"></i>{% else %}<span class="text-muted small">{{ row[2] }}</span>{% endif %}</td>
+      <td class="text-center">{% if row[3]=='✓' %}<i class="bi bi-check-circle-fill check"></i>{% elif row[3]=='✗' %}<i class="bi bi-x-circle cross"></i>{% else %}<span class="text-muted small">{{ row[3] }}</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>Admin専用の機能詳細は<a href="/manual/admin">Admin専用マニュアル</a>（Adminロールでログイン中のみ閲覧可）で確認できます。</div>
+{% endblock %}

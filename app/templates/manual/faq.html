@@ -1,0 +1,24 @@
+{% extends "manual/_layout.html" %}
+{% block title %}よくある質問{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>その他</span> / <span>よくある質問</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-question-circle text-primary"></i>よくある質問</h1>
+<div id="faq">
+{% for q, a in [
+  ('スキルを申告しても承認されません', 'Managerまたは承認者に申告の連絡をしてください。承認者のメール設定が有効な場合、通知が届いているはずです。「自分の申請状況」ページで申告の状態を確認してください。'),
+  ('申告したスキルが差し戻されました', '「自分の申請状況」でコメントを確認し、内容を踏まえてレベルを修正した上で再申告してください。'),
+  ('グループに自分が追加されません', 'Admin/Managerのみグループへの追加ができます。担当Managerに連絡してください。'),
+  ('チャットバブルが赤くなっています', 'Admin側から返信があります。チャットアイコンをクリックして確認してください。'),
+  ('カタログに自分のスキルが表示されません（Manager）', 'グループ編集画面の「対象スキル割当」で、担当グループにスキルが割り当てられているか確認してください。'),
+  ('ダッシュボードにデータが表示されません', 'まだスキル申告・承認が行われていないか、グループにメンバーが追加されていない可能性があります。'),
+  ('クイックスタートを再度見たい', 'サイドバー下部の「クイックスタート」ボタンをクリックしてください。ロールに応じたツアーが起動します。'),
+] %}
+<div class="mb-3">
+  <div class="fw-semibold d-flex gap-2 align-items-start" style="font-size:.9rem;">
+    <i class="bi bi-question-circle-fill text-primary" style="flex-shrink:0;margin-top:2px;"></i>{{ q }}
+  </div>
+  <div class="ms-4 text-muted" style="font-size:.85rem;line-height:1.6;">{{ a }}</div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

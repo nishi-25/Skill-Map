@@ -1,0 +1,32 @@
+{% extends "manual/_layout.html" %}
+{% block title %}メール設定{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Admin専用</span> / <span>メール設定</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-envelope-at text-primary"></i>メール設定
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>SMTPサーバーを設定することで、以下のメール通知が自動送信されます。</p>
+<ul style="font-size:.88rem;">
+  <li>ユーザー登録承認通知</li>
+  <li>スキル承認・差し戻し通知</li>
+  <li>パスワードリセットリンク</li>
+</ul>
+
+<h2 id="smtp-settings"><i class="bi bi-wrench"></i>設定項目</h2>
+<table class="table table-sm feature-table">
+  <thead class="table-light"><tr><th>項目</th><th>説明</th><th>例</th></tr></thead>
+  <tbody>
+    <tr><td>SMTP ホスト</td><td>メールサーバーのアドレス</td><td><code>smtp.gmail.com</code></td></tr>
+    <tr><td>SMTP ポート</td><td>メールサーバーのポート番号</td><td><code>587</code></td></tr>
+    <tr><td>SMTP ユーザー</td><td>認証用のメールアドレス</td><td><code>example@gmail.com</code></td></tr>
+    <tr><td>SMTP パスワード</td><td>認証用のパスワード / アプリパスワード</td><td>—</td></tr>
+    <tr><td>差出人名</td><td>メールの差出人として表示される名前</td><td><code>Skill View.</code></td></tr>
+    <tr><td>アプリURL</td><td>パスワードリセットメール内のリンク先</td><td><code>https://skillmap.example.com</code></td></tr>
+  </tbody>
+</table>
+
+<h2>設定手順</h2>
+<div class="step-item"><span class="step-badge">1</span><span>SMTPホスト・ポート・ユーザー名・パスワードを入力</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「設定を保存」後、「テスト送信」で動作確認</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>Gmailの場合は2段階認証を有効にし、「アプリパスワード」を発行してSMTPパスワードに設定してください。ポートはTLSなら587、SSLなら465が一般的です。</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "manual/_layout.html" %}
+{% block title %}ログイン・初期設定{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>はじめに</span> / <span>ログイン・初期設定</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-box-arrow-in-right text-primary"></i>ログイン・初期設定</h1>
+
+<h2 id="new-registration"><i class="bi bi-person-plus"></i>新規登録</h2>
+<div class="step-item"><span class="step-badge">1</span><span>ログイン画面の「新規登録」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>ユーザー名・メールアドレス・パスワードを入力して送信</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>管理者（Admin）が承認するまでログインできません。承認後にメール通知が届きます（メール設定が有効な場合）</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>ログイン画面の「デモを確認する」ボタンでログインなしにサンプルデータを閲覧できます。</div>
+
+<h2 id="forgot-password"><i class="bi bi-key"></i>パスワードを忘れた場合</h2>
+<div class="step-item"><span class="step-badge">1</span><span>ログイン画面の「ユーザー名・パスワードをお忘れの方」をクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>登録済みメールアドレスを入力するとリセット用リンクが届きます</span></div>
+{% endblock %}

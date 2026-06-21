@@ -144,7 +144,13 @@ def announcement_delete(ann_id: int, request: Request, db: Session = Depends(get
     return RedirectResponse("/announcements", status_code=303)
 
 
-@router.get("/api/announcements/popup")
+@router.get(
+    "/api/announcements/popup",
+    tags=["Announcements"],
+    operation_id="get_announcement_popup",
+    summary="表示すべきポップアップお知らせを取得",
+    description="未読のお知らせをポップアップ表示用に返します。ポップアップを抑制設定済みのユーザーには空配列を返します。\n\n**権限**: 全ロール。",
+)
 def announcements_popup(request: Request, db: Session = Depends(get_db)):
     """ポップアップ用: 未読のお知らせを返す（suppress設定済みユーザーは空を返す）"""
     user = auth.get_current_user(request, db)
@@ -179,7 +185,13 @@ def announcements_popup(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.post("/api/announcements/suppress-popup")
+@router.post(
+    "/api/announcements/suppress-popup",
+    tags=["Announcements"],
+    operation_id="suppress_announcement_popup",
+    summary="ポップアップ表示を抑制",
+    description="今後お知らせポップアップを表示しないように設定します。\n\n**権限**: 全ロール。",
+)
 def suppress_popup(request: Request, db: Session = Depends(get_db)):
     """ポップアップを今後表示しない設定"""
     user = auth.require_approved(request, db)
@@ -188,7 +200,13 @@ def suppress_popup(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/announcements/enable-popup")
+@router.post(
+    "/api/announcements/enable-popup",
+    tags=["Announcements"],
+    operation_id="enable_announcement_popup",
+    summary="ポップアップ表示を再度有効化",
+    description="抑制していたお知らせポップアップの表示を再度有効にします。\n\n**権限**: 全ロール。",
+)
 def enable_popup(request: Request, db: Session = Depends(get_db)):
     """ポップアップ表示を再有効化"""
     user = auth.require_approved(request, db)
@@ -197,7 +215,13 @@ def enable_popup(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"ok": True})
 
 
-@router.get("/api/announcements/latest")
+@router.get(
+    "/api/announcements/latest",
+    tags=["Announcements"],
+    operation_id="get_latest_announcement",
+    summary="最新のお知らせ一覧を取得",
+    description="ベルアイコン用に、公開中のお知らせ一覧を返します。\n\n**権限**: 全ロール。",
+)
 def announcements_latest(request: Request, db: Session = Depends(get_db)):
     """ベルアイコン用: 公開中のお知らせ一覧を返す"""
     user = auth.require_approved(request, db)

@@ -1,0 +1,24 @@
+{% extends "manual/_layout.html" %}
+{% block title %}業務マップ管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>業務マップ管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-diagram-3-fill text-primary"></i>業務マップ管理
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>業務マップは、既存のスキルカタログ（カテゴリー）とは独立した「業務エリア」の階層を作り、サブスキルを業務の単位で並べ替えて見せるための機能です。</p>
+
+<h2 id="business-map-areas"><i class="bi bi-diagram-3"></i>業務エリアの作成・管理</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「業務マップ管理」ページで「エリアを追加」をクリックし、エリア名・説明・カラーを設定</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>親エリアを指定すると階層構造（大分類 → 中分類 → 個別エリア）になります</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>右側のスキルプール（カテゴリー別）から、ドラッグ＆ドロップでサブスキルをエリアに割り当てる</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>エリアの並び順・エリア内のサブスキルの並び順もドラッグ＆ドロップで変更可能</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>業務エリアは特定のグループに限定して表示することもできます。設定すると、そのグループに所属しないUserには表示されません。</div>
+
+<h2 id="business-map-import"><i class="bi bi-upload"></i>インポート・エクスポート</h2>
+<p>JSON・Excel（2シート）・CSV（ZIP）の3形式で、業務エリアの階層構造とスキル割当を一括エクスポート/インポートできます。</p>
+<div class="step-item"><span class="step-badge">1</span><span>「テンプレートをダウンロード」で列構成のサンプルファイルを取得</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>テンプレートを編集してアップロード。スキル・サブスキルは名前で照合されるため、カタログ側に同名のスキルが必要です</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>インポートモードは「追加」（既存と重複する項目はスキップ）と「全置換」（既存データを削除してから再作成）から選択</span></div>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>「全置換」は既存の業務マップデータを全て削除します。実行前にエクスポートでバックアップを取ることを推奨します。</div>
+{% endblock %}

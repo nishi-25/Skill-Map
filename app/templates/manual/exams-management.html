@@ -1,0 +1,29 @@
+{% extends "manual/_layout.html" %}
+{% block title %}試験管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>試験管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-clipboard-check text-primary"></i>試験管理
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>試験の作成・問題/採点基準の設定・受験者の割り当て・採点を行う管理ページです。サイドバーの「試験管理」から開きます。</p>
+
+<h2 id="exam-create"><i class="bi bi-plus-circle"></i>試験の作成</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「試験を作成」をクリックし、タイトル・説明・制限時間・合格点（%）を入力</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「学科あり」「実技あり」を選択（両方チェックすると学科→実技の2段階になります）</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>必要であれば「受験資格」を設定 — 特定スキルが一定の習熟度（ティア×達成率）に達したメンバーだけ受験可能にできます</span></div>
+<div class="step-item"><span class="step-badge">4</span><span><strong>学科がある場合:</strong> 「問題」タブで選択問題（単一選択/複数選択）と正解・配点を設定</span></div>
+<div class="step-item"><span class="step-badge">5</span><span><strong>実技がある場合:</strong> 「採点基準」タブで採点項目（タイトル・説明・満点）を設定。受験者が提出したエビデンスをこの基準で採点します</span></div>
+
+<h2 id="exam-assign-grade"><i class="bi bi-people"></i>受験者の割り当て・採点</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「割り当て」ページで対象ユーザーを選択（Adminは全員、Managerは担当グループのメンバーのみ）。受験資格を満たしているかも一覧で確認できます</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>期限（任意）を設定して割り当てると、対象者の「試験」ページに表示されます</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>「結果」ページで提出状況を確認。実技を含む試験は「採点」ボタンから採点画面を開く</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>採点画面で各採点基準にスコアとコメントを入力し、全体へのフィードバックを記入して確定</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>学科のみの試験はユーザーが提出した時点で自動採点・確定されるため、Manager/Adminの採点操作は不要です。</div>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>既に割り当て済みのユーザーに再度割り当てると、それまでの回答・採点・エビデンスはリセットされ、再受験扱いになります。</div>
+
+<h2><i class="bi bi-arrow-down-up"></i>エクスポート・インポート</h2>
+<p>試験の定義（タイトル・問題・採点基準など）をJSONで一括エクスポート/インポートできます（受験結果は含まれません）。</p>
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i><strong>Admin専用:</strong> エクスポート・インポートはAdminのみ実行できます。</div>
+{% endblock %}

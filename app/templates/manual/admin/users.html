@@ -1,0 +1,63 @@
+{% extends "manual/_layout.html" %}
+{% block title %}ユーザー管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Admin専用</span> / <span>ユーザー管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-people text-primary"></i>ユーザー管理
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>「管理」→「ユーザー管理」から、全ユーザーの管理を行います。</p>
+
+<h2 id="approve-users">新規ユーザーの承認</h2>
+<div class="step-item"><span class="step-badge">1</span><span>ユーザー管理ページで「未承認」のユーザーを確認します。バッジに承認待ち件数が表示されます。</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「承認」ボタンをクリックしてユーザーを有効化します。</span></div>
+
+<h2>ロール変更</h2>
+<div class="step-item"><span class="step-badge">1</span><span>ユーザー一覧でロールを変更したいユーザーを見つけます。</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>「Manager に変更」または「User に変更」ボタンでロールを切り替えます。user / manager / admin の3段階で変更できます。</span></div>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i><strong>注意:</strong> ロールを変更するとアクセスできる機能が即座に変わります。慎重に操作してください。</div>
+
+<h2>アカウント削除</h2>
+<p>ユーザーと関連データを削除します（操作は取り消せません）。</p>
+
+<h2 id="password-reset-docker">パスワードリセット</h2>
+<h3>メール経由のリセット（推奨）</h3>
+<p style="font-size:.9rem;">メール設定が完了していて、ユーザーがメールアドレスを登録している場合は、ログイン画面の「パスワードをお忘れの方」からリセット可能です。画面からAdminが直接「パスワードリセット」「仮パスワード発行」を行うこともできます。</p>
+
+<h3>管理者による手動リセット（Dockerコマンド）</h3>
+<p style="font-size:.9rem;">メールが使えない場合やメールアドレス未登録のユーザーに対して、Dockerコンテナ内でスクリプトを実行してリセットします。</p>
+<div class="step-item"><span class="step-badge">1</span><span>サーバーに SSH でアクセスします。</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>以下のコマンドでリセットスクリプトを実行します。</span></div>
+<pre>docker exec -it skillmap python -c "
+import database, models, auth
+db = next(database.get_db())
+user = db.query(models.User).filter(models.User.username == 'ユーザー名').first()
+if user:
+    user.password_hash = auth.hash_password('新しいパスワード')
+    db.commit()
+    print(f'{user.username} のパスワードをリセットしました')
+else:
+    print('ユーザーが見つかりません')
+"</pre>
+<div class="step-item"><span class="step-badge">3</span><span><code>ユーザー名</code> と <code>新しいパスワード</code> を対象ユーザーのものに置き換えてください。</span></div>
+<div class="danger-box"><i class="bi bi-exclamation-octagon me-1"></i><strong>重要:</strong> パスワードは6文字以上で設定してください。リセット後、ユーザーにパスワードを安全な方法で通知してください。</div>
+
+<h3>Admin パスワードのリセット</h3>
+<p style="font-size:.9rem;">Admin アカウントのパスワードを忘れた場合も同様にリセットできます。</p>
+<pre>docker exec -it skillmap python -c "
+import database, models, auth
+db = next(database.get_db())
+admin = db.query(models.User).filter(models.User.role == 'admin').first()
+if admin:
+    admin.password_hash = auth.hash_password('新しいAdminパスワード')
+    db.commit()
+    print(f'Admin ({admin.username}) のパスワードをリセットしました')
+"</pre>
+
+<h3>全ユーザーの一覧確認</h3>
+<pre>docker exec -it skillmap python -c "
+import database, models
+db = next(database.get_db())
+for u in db.query(models.User).all():
+    print(f'ID:{u.id}  {u.username}  role={u.role}  approved={u.is_approved}  email={u.email or \"未設定\"} ')
+"</pre>
+{% endblock %}

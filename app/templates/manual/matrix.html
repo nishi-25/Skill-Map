@@ -1,0 +1,44 @@
+{% extends "manual/_layout.html" %}
+{% block title %}スキルマトリクス{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>スキルマトリクス</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-grid-3x3-gap text-primary"></i>スキルマトリクス
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>メンバー × スキルのヒートマップです。暖色（黄→橙→赤）ほど理解度が高いことを示します。ページ上部のタブで2つの切り口を切り替えられます。</p>
+
+<h2 id="tabs"><i class="bi bi-ui-radios"></i>タブの切り替え</h2>
+<ul style="font-size:.88rem;">
+  <li><strong>スキル別</strong>（既定タブ）— 以下で説明する、メンバー×スキル/カテゴリーの通常のヒートマップ</li>
+  <li><strong>業務別</strong> — <a href="/manual/business-map-manage">業務マップ</a>のエリア階層を行に、メンバーを列にした、エリアごとの達成率ヒートマップ（0% / 1〜24% / 25〜49% / 50〜74% / 75〜100%の5段階で色分け）。グループでの絞り込みも可能です</li>
+</ul>
+
+<h2 id="heatmap">理解度の色定義（スキル別タブ）</h2>
+<div class="d-flex gap-2 flex-wrap mb-2">
+  {% for bg, text, label in [('#f1f5f9','#94a3b8','未申告'),('#fef3c7','#92400e','入門'),('#fbbf24','#713f12','実務可'),('#f97316','#fff','指導可'),('#dc2626','#fff','エキスパート')] %}
+  <span style="background:{{ bg }};color:{{ text }};padding:.2em .6em;border-radius:6px;font-size:.75rem;font-weight:600;">{{ label }}</span>
+  {% endfor %}
+</div>
+
+<h2 id="charts"><i class="bi bi-bar-chart-line"></i>分析チャート</h2>
+<p>「分析チャートを表示」ボタンをクリックすると以下のグラフが表示されます。</p>
+<ul style="font-size:.88rem;">
+  <li><strong>成長トレンド（月別）</strong> — 月ごとの平均レベル変化</li>
+  <li><strong>レベル分布</strong> — ドーナツグラフ</li>
+  <li><strong>カテゴリー別レーダー</strong> — ユーザー切替可能</li>
+  <li><strong>ユーザー別平均レベル</strong> — 横棒グラフ</li>
+</ul>
+
+<h2><i class="bi bi-funnel"></i>フィルタリング</h2>
+<ul style="font-size:.88rem;">
+  <li><strong>グループ</strong> — 特定のグループのメンバーのみ表示</li>
+  <li><strong>カテゴリー</strong> — 特定カテゴリーのスキルのみ表示</li>
+  <li><strong>ティア</strong> — 特定の難易度のスキルのみ表示</li>
+</ul>
+
+<h2><i class="bi bi-sort-alpha-down"></i>ソート機能</h2>
+<p>テーブルヘッダーをクリックすると昇降順ソートができます。複数条件ソートも対応しています。カテゴリー昇順→難易度昇順のように優先順位をつけて並べ替えられます。</p>
+
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i><strong>Admin/Managerの違い:</strong> Managerは担当グループのメンバーのみが表示されます。Adminは全メンバーを閲覧できます。</div>
+{% endblock %}

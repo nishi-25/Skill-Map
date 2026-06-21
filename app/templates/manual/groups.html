@@ -1,0 +1,27 @@
+{% extends "manual/_layout.html" %}
+{% block title %}グループ管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>グループ管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-people-fill text-primary"></i>グループ管理
+  <span class="role-badge role-manager">Manager（担当のみ）</span>
+  <span class="role-badge role-admin">Admin（全体）</span>
+</h1>
+
+<h2 id="create-group"><i class="bi bi-plus-circle"></i>グループ作成</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「グループ作成」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>グループ名と説明を入力</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>担当Managerを検索欄で検索して複数選択（追加済みManagerは下部に表示）</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>親グループを設定すると階層構造になり、親のスキルが継承されます</span></div>
+<div class="step-item"><span class="step-badge">5</span><span>「対象スキル割当」で必須スキルを設定するとギャップ分析が有効になります</span></div>
+
+<h2 id="manage-members"><i class="bi bi-person-plus-fill"></i>メンバー追加</h2>
+<div class="step-item"><span class="step-badge">1</span><span>グループカードの「メンバー管理」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>ページ上部の「メンバーを追加」ボタン → モーダルで複数選択して一括追加</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>追加候補に表示されるのは「承認済みかつUser権限」のユーザーのみです。Manager・Adminのアカウントは一般メンバーとして候補に出ません。</div>
+
+<h2><i class="bi bi-diagram-3"></i>表示ビュー</h2>
+<p>「カード」「ツリー」ボタンで表示を切り替えられます。ツリービューでは親子階層が視覚的に確認できます。</p>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>担当Manager検索欄でManagerを複数設定できます。設定したManagerだけが担当グループを管理できます。</div>
+
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i><strong>階層構造の例:</strong> 「開発部」を親グループにし、「フロントエンドチーム」「バックエンドチーム」を子グループに設定すると、開発部の共通スキルが両チームに自動的に継承されます。メンバーは複数のグループに所属できます。</div>
+{% endblock %}

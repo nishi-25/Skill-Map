@@ -1,0 +1,18 @@
+{% extends "manual/_layout.html" %}
+{% block title %}カテゴリー管理{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>カテゴリー管理</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-tags text-primary"></i>カテゴリー管理
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<h2 id="categories">カテゴリーの追加・編集・削除</h2>
+<p>スキルを分類するカテゴリーの追加・編集・削除ができます。</p>
+<ul style="font-size:.88rem;">
+  <li><strong>カードビュー</strong> — カラーカードで各カテゴリーのスキル一覧を確認</li>
+  <li><strong>行（リスト）ビュー</strong> — テーブル形式でコンパクトに一覧表示</li>
+</ul>
+<p>右上のビュー切替ボタン（グリッド/リスト）で表示を切り替えられます。設定はブラウザに保存されます。</p>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>カテゴリーを削除すると、そのカテゴリーに属するスキルは「未分類」になります。</div>
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i>ダッシュボードやスキルマトリクスのレーダーチャートはカテゴリー単位で表示されます。カテゴリー構成はチーム全体の分析の見え方に影響します。</div>
+{% endblock %}

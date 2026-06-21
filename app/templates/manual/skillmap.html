@@ -1,0 +1,32 @@
+{% extends "manual/_layout.html" %}
+{% block title %}スキルマップ（自己申告）{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>User機能</span> / <span>スキルマップ（自己申告）</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-lightning-charge-fill text-primary"></i>スキルマップ（自己申告）
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+
+<h2 id="entry"><i class="bi bi-signpost-split"></i>入口（直接選択 / 業務マップ）</h2>
+<p>サイドバーの「スキルマップ」をクリックすると、まず探し方を選ぶ入口ページが表示されます。「直接スキルを選択」が以下で説明する従来の方法、「業務マップから選択」は業務エリア単位でスキルを探す別の入口です（<a href="/manual/business-map">業務マップで選択する</a>を参照）。どちらから申告しても同じデータ・同じ承認フローになります。</p>
+
+<h2 id="declare-steps"><i class="bi bi-list-check"></i>スキルの申告手順（直接選択）</h2>
+<div class="step-item"><span class="step-badge">1</span><span>入口ページで「直接スキルを選択」をクリック — 難易度ティア（初級・基礎・中級・上級）のカードが表示されます</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>ティアカードをクリックしてスキル一覧を開く。または「全スキルを一覧表示」で全ティアを一画面に表示</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>各スキルの●ドットをクリック、またはプルダウンでレベルを選択</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>【一般Userの場合】承認者（Manager/Admin）を選択して「申請する」をクリック</span></div>
+<div class="step-item"><span class="step-badge">5</span><span>【Admin/Managerの場合】選択後に即時自動承認されます</span></div>
+
+<h2 id="level-definition">レベル定義</h2>
+<table class="table table-sm feature-table">
+  <tr><td><span class="badge bg-secondary">0</span></td><td>未経験</td><td>該当スキルの経験なし</td></tr>
+  <tr><td><span class="badge bg-info">1</span></td><td>入門</td><td>概念・基礎知識を学習中</td></tr>
+  <tr><td><span class="badge bg-primary">2</span></td><td>実務可</td><td>基本的な操作・作業ができる</td></tr>
+  <tr><td><span class="badge bg-warning text-dark">3</span></td><td>指導可</td><td>一人で業務に活用でき、他者をサポートできる</td></tr>
+  <tr><td><span class="badge bg-danger">4</span></td><td>エキスパート</td><td>他者への指導・高度な設計ができる</td></tr>
+</table>
+<div class="tip-box"><i class="bi bi-filter me-1"></i>カテゴリー・グループでスキルを絞り込めます。スキル名で検索も可能です。</div>
+
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>実際の操作の流れを通して確認したい場合は<a href="/manual/usecase/user">ユースケース: Userの操作フロー</a>も参考にしてください。</div>
+{% endblock %}

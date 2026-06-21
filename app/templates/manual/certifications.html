@@ -1,0 +1,22 @@
+{% extends "manual/_layout.html" %}
+{% block title %}資格登録{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>User機能</span> / <span>資格登録</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-patch-check-fill text-primary"></i>資格登録
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>取得した資格・認定を自分で登録できる機能です。サイドバーの「資格登録」から自分の登録済み資格一覧を確認できます。</p>
+
+<h2 id="cert-register"><i class="bi bi-plus-circle"></i>資格の登録</h2>
+<div class="step-item"><span class="step-badge">1</span><span>「資格を登録」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>マスタカタログに登録済みの資格は選択するだけで名称・発行団体が自動入力されます。カタログにない資格は「自由入力」で名称を入力します</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>発行日・有効期限・証明書番号・スコア（TOEICなどスコアのある資格の場合）・メモを入力</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>証明書ファイル（画像・PDFなど）を添付できます</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>添付ファイルは本人と、自分が所属するグループの担当Manager・Adminのみダウンロードできます。</div>
+
+<h2 id="cert-edit"><i class="bi bi-pencil-square"></i>資格の編集・削除</h2>
+<p>登録した資格カードの「編集」「削除」ボタンから変更できます。</p>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>編集・削除ができるのは登録した本人のみです。Manager/Adminも他人の資格データを編集・削除することはできません（確認のみ可能です。詳しくは<a href="/manual/certifications-matrix">資格マトリクス</a>を参照）。</div>
+{% endblock %}
