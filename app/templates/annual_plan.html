@@ -3,30 +3,42 @@
 
 {% block content %}
 
+{% set view_tabs = [('year', '年'), ('month', '月'), ('week', '週'), ('day', '日')] %}
+{% set today_shortcut_label = {'year': '今年', 'month': '今月', 'week': '今週', 'day': '今日'}[view] %}
+
 {# ページヘッダー #}
-<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
   <div>
     <h1 style="font-size:1.3rem;"><i class="bi bi-calendar-check me-2" style="color:#6366f1;"></i>年間計画</h1>
-    <p class="text-muted mb-0 small">いつスキルを習得する／業務エリアを完了する／資格を取得する／試験に合格するかを計画できます</p>
+    <p class="text-muted mb-0 small">スキル（サブスキル単位）・業務エリア・資格・試験をいつ取り組むか計画できます。左の一覧からカレンダーへドラッグ&ドロップ、またはクリックで登録できます</p>
+  </div>
+  <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:20px;" onclick="apOpenAddFor(null, null, null, {{ (anchor_iso if view != 'year' else '') | tojson }})">
+    <i class="bi bi-plus-lg me-1"></i>計画を追加
+  </button>
+</div>
+
+{# ツールバー: ビュー切替 ＋ 期間ナビゲーション #}
+<div class="ap-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="btn-group" role="group">
+    {% for v, label in view_tabs %}
+    <a href="/annual-plan?view={{ v }}&date={{ anchor_iso }}" class="btn btn-sm {{ 'btn-primary' if view == v else 'btn-outline-secondary' }}">{{ label }}</a>
+    {% endfor %}
   </div>
   <div class="d-flex align-items-center gap-2">
-    <a href="/annual-plan?year={{ year - 1 }}" class="btn btn-outline-secondary btn-sm" style="border-radius:50%;width:32px;height:32px;padding:0;"><i class="bi bi-chevron-left"></i></a>
-    <span class="fw-bold" style="font-size:1.1rem;min-width:4.5em;text-align:center;">{{ year }}年</span>
-    <a href="/annual-plan?year={{ year + 1 }}" class="btn btn-outline-secondary btn-sm" style="border-radius:50%;width:32px;height:32px;padding:0;"><i class="bi bi-chevron-right"></i></a>
-    {% if year != today.year %}
-    <a href="/annual-plan" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">今年</a>
+    <a href="/annual-plan?view={{ view }}&date={{ prev_iso }}" class="btn btn-outline-secondary btn-sm" style="border-radius:50%;width:32px;height:32px;padding:0;"><i class="bi bi-chevron-left"></i></a>
+    <span class="fw-bold" style="font-size:1.05rem;min-width:8em;text-align:center;">{{ period_label }}</span>
+    <a href="/annual-plan?view={{ view }}&date={{ next_iso }}" class="btn btn-outline-secondary btn-sm" style="border-radius:50%;width:32px;height:32px;padding:0;"><i class="bi bi-chevron-right"></i></a>
+    {% if not is_current %}
+    <a href="/annual-plan?view={{ view }}&date={{ today_iso }}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">{{ today_shortcut_label }}</a>
     {% endif %}
-    <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:20px;" onclick="new bootstrap.Modal(document.getElementById('apAddModal')).show()">
-      <i class="bi bi-plus-lg me-1"></i>計画を追加
-    </button>
   </div>
 </div>
 
 {# サマリーバー ＋ 凡例 #}
-<div class="ap-summary-bar mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+<div class="ap-summary-bar mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
   <div class="d-flex gap-4 flex-wrap">
     <div>
-      <span class="text-muted small">計画数</span>
+      <span class="text-muted small">この期間の計画数</span>
       <div class="fs-4 fw-bold">{{ total_count }}</div>
     </div>
     <div>
@@ -45,44 +57,222 @@
   </div>
 </div>
 
-{# 年間カレンダー ── 12ヶ月を並べたミニカレンダー #}
-<div class="ap-calendar-grid">
-  {% for m in calendar_months %}
-  <div class="ap-month-card">
-    <div class="ap-month-header {% if year==today.year and m.month==today.month %}ap-month-current{% endif %}">{{ m.label }}</div>
-    <div class="ap-week-row ap-weekday-row">
-      {% for wd in ['日','月','火','水','木','金','土'] %}
-      <div class="ap-day-cell ap-weekday">{{ wd }}</div>
+{# 全ビュー共通: 左にドラッグ用プール、右にカレンダー本体 #}
+<div class="row g-3">
+  <div class="col-lg-3">
+    <div class="card ap-pool-card">
+      <div class="card-body">
+        <input type="text" id="apPoolSearch" class="form-control form-control-sm mb-3" placeholder="スキル・業務・資格・試験を検索..." oninput="apFilterPool()" style="border-radius:20px;">
+
+        <div class="ap-pool-section">
+          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
+            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
+            <i class="bi bi-lightning-charge" style="color:#6366f1;"></i>
+            <span class="fw-semibold small">スキル</span>
+          </div>
+          <div class="ap-pool-section-body">
+            {% for cat_name, cat_data in skills_by_category.items() %}
+            <div class="ap-pool-cat ap-collapsed">
+              <div class="ap-pool-cat-header" onclick="apToggleCat(this)">
+                <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
+                {% if cat_data.category %}<span class="ap-cat-dot" style="background:{{ cat_data.category.color }};"></span>{% endif %}
+                <span class="text-muted small">{{ cat_name }}</span>
+                <span class="badge bg-light text-muted" style="font-size:.68rem;">{{ cat_data.skills|length }}</span>
+              </div>
+              <div class="ap-pool-list ap-pool-parent-list">
+                {% for sk in cat_data.skills %}
+                <div class="ap-pool-cat ap-collapsed" data-plan-type="skill" data-id="{{ sk.id }}" data-label="{{ sk.name }}" data-search="{{ sk.name|lower }}">
+                  <div class="ap-pool-cat-header" onclick="apToggleCat(this)" title="ドラッグでスキル全体（カタログ単位）を登録、クリックで配下のサブスキルを展開/折りたたみ">
+                    <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
+                    <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                    <span class="ap-chip-label">{{ sk.name }}</span>
+                    {% if sk.sub_skills %}<span class="badge bg-light text-muted" style="font-size:.62rem;">{{ sk.sub_skills|length }}</span>{% endif %}
+                  </div>
+                  {% if sk.sub_skills %}
+                  <div class="ap-pool-list">
+                    {% for ss in sk.sub_skills %}
+                    <div class="ap-pool-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}" data-label="{{ sk.name }} › {{ ss.name }}" data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}" onclick="apHandleChipClick(this)" title="ドラッグ、またはクリックで登録（サブスキル単位）">
+                      <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                      <span class="ap-chip-label">{{ ss.name }}</span>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="ap-pool-section">
+          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
+            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
+            <i class="bi bi-diagram-3" style="color:#10b981;"></i>
+            <span class="fw-semibold small">業務</span>
+          </div>
+          <div class="ap-pool-section-body">
+            <div class="ap-pool-list ap-pool-parent-list">
+              {% for area in area_pool %}
+              <div class="ap-pool-cat ap-collapsed" data-plan-type="business_area" data-id="{{ area.id }}" data-label="{{ area.label }}" data-search="{{ area.label|lower }}">
+                <div class="ap-pool-cat-header" onclick="apToggleCat(this)" title="ドラッグで業務エリア全体を登録、クリックで配下のサブスキルを展開/折りたたみ">
+                  <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
+                  <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                  <span class="ap-chip-label">{{ area.label }}</span>
+                  {% if area.sub_skills %}<span class="badge bg-light text-muted" style="font-size:.62rem;">{{ area.sub_skills|length }}</span>{% endif %}
+                </div>
+                {% if area.sub_skills %}
+                <div class="ap-pool-list">
+                  {% for ss in area.sub_skills %}
+                  <div class="ap-pool-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}" data-label="{{ ss.skill_name }} › {{ ss.name }}" data-search="{{ (ss.skill_name ~ ' ' ~ ss.name)|lower }}" onclick="apHandleChipClick(this)" title="ドラッグ、またはクリックで登録（サブスキル単位）">
+                    <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                    <span class="ap-chip-label">{{ ss.name }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="ap-pool-section">
+          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
+            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
+            <i class="bi bi-patch-check" style="color:#0ea5e9;"></i>
+            <span class="fw-semibold small">資格</span>
+          </div>
+          <div class="ap-pool-section-body">
+            <div class="ap-pool-list">
+              {% for c in cert_catalog %}
+              <div class="ap-pool-chip" data-plan-type="certification" data-id="{{ c.id }}" data-label="{{ c.name }}" data-search="{{ c.name|lower }}" onclick="apHandleChipClick(this)" title="ドラッグ、またはクリックで登録">
+                <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                <span class="ap-chip-label">{{ c.name }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="ap-pool-section">
+          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
+            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
+            <i class="bi bi-clipboard-check" style="color:#f59e0b;"></i>
+            <span class="fw-semibold small">試験</span>
+          </div>
+          <div class="ap-pool-section-body">
+            <div class="ap-pool-list">
+              {% for e in exams %}
+              <div class="ap-pool-chip" data-plan-type="exam" data-id="{{ e.id }}" data-label="{{ e.title }}" data-search="{{ e.title|lower }}" onclick="apHandleChipClick(this)" title="ドラッグ、またはクリックで登録">
+                <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                <span class="ap-chip-label">{{ e.title }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-9">
+    {% if view == 'year' %}
+    {# 年間カレンダー ── 12ヶ月を並べたミニカレンダー #}
+    <div class="ap-calendar-grid">
+      {% for m in calendar_months %}
+      <div class="ap-month-card">
+        <div class="ap-month-header {% if anchor_iso[:4]|int == today.year and m.month == today.month %}ap-month-current{% endif %}">{{ m.label }}</div>
+        <div class="ap-week-row ap-weekday-row">
+          {% for wd in ['日','月','火','水','木','金','土'] %}
+          <div class="ap-day-cell ap-weekday">{{ wd }}</div>
+          {% endfor %}
+        </div>
+        {% for week in m.weeks %}
+        <div class="ap-week-row">
+          {% for cell in week %}
+          {% if cell is none %}
+          <div class="ap-day-cell ap-day-empty"></div>
+          {% else %}
+          {% set is_today = (cell.date_iso == today_iso) %}
+          <div class="ap-day-cell ap-drop-cell {% if is_today %}ap-day-today{% endif %} {% if cell.entries %}ap-day-has-items{% endif %}"
+               data-date="{{ cell.date_iso }}" data-items='{{ cell.entries | tojson }}' onclick="apCellClick(this)">
+            <span class="ap-day-num">{{ cell.day }}</span>
+            {% if cell.entries %}
+            <div class="ap-day-dots">
+              {% for it in cell.entries[:3] %}
+              <span class="ap-dot {% if it.achieved %}ap-dot-done{% elif it.is_overdue %}ap-dot-overdue{% else %}ap-dot-pending{% endif %}"></span>
+              {% endfor %}
+              {% if cell.entries|length > 3 %}<span class="ap-dot-more">+{{ cell.entries|length - 3 }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
       {% endfor %}
     </div>
-    {% for week in m.weeks %}
-    <div class="ap-week-row">
-      {% for cell in week %}
-      {% if cell is none %}
-      <div class="ap-day-cell ap-day-empty"></div>
-      {% else %}
-      {% set is_today = (year==today.year and m.month==today.month and cell.day==today.day) %}
-      <div class="ap-day-cell {% if is_today %}ap-day-today{% endif %} {% if cell.entries %}ap-day-has-items{% endif %}"
-           {% if cell.entries %}data-items='{{ cell.entries | tojson }}' data-date="{{ '%04d/%02d/%02d'|format(year, m.month, cell.day) }}" onclick="apShowDayFromCell(this)"{% endif %}>
-        <span class="ap-day-num">{{ cell.day }}</span>
-        {% if cell.entries %}
-        <div class="ap-day-dots">
-          {% for it in cell.entries[:3] %}
-          <span class="ap-dot {% if it.achieved %}ap-dot-done{% elif it.is_overdue %}ap-dot-overdue{% else %}ap-dot-pending{% endif %}"></span>
-          {% endfor %}
-          {% if cell.entries|length > 3 %}<span class="ap-dot-more">+{{ cell.entries|length - 3 }}</span>{% endif %}
+
+    {% elif view == 'month' %}
+    <div class="ap-bigmonth-card">
+      <div class="ap-week-row ap-weekday-row">
+        {% for wd in ['日','月','火','水','木','金','土'] %}
+        <div class="ap-day-cell ap-weekday">{{ wd }}</div>
+        {% endfor %}
+      </div>
+      {% for week in month_weeks.weeks %}
+      <div class="ap-week-row">
+        {% for cell in week %}
+        {% if cell is none %}
+        <div class="ap-day-cell ap-day-empty"></div>
+        {% else %}
+        {% set is_today = (cell.date_iso == today_iso) %}
+        <div class="ap-day-cell ap-drop-cell {% if is_today %}ap-day-today{% endif %}"
+             data-date="{{ cell.date_iso }}" data-items='{{ cell.entries | tojson }}' onclick="apCellClick(this)">
+          <span class="ap-day-num">{{ cell.day }}</span>
+          <div class="ap-day-pills">
+            {% for it in cell.entries[:3] %}
+            <div class="ap-pill {% if it.achieved %}ap-pill-done{% elif it.is_overdue %}ap-pill-overdue{% else %}ap-pill-pending{% endif %}">
+              <i class="bi {{ PLAN_TYPE_ICONS[it.plan_type] }}"></i><span class="ap-pill-label">{{ it.label }}</span>
+            </div>
+            {% endfor %}
+            {% if cell.entries|length > 3 %}<div class="ap-pill-more">+{{ cell.entries|length - 3 }}件</div>{% endif %}
+          </div>
         </div>
         {% endif %}
+        {% endfor %}
       </div>
-      {% endif %}
       {% endfor %}
     </div>
-    {% endfor %}
+
+    {% elif view == 'week' %}
+    <div class="ap-week-board">
+      {% for d in week_days %}
+      <div class="ap-week-col {% if d.is_today %}ap-week-col-today{% endif %}">
+        <div class="ap-week-col-header" onclick="apOpenAddFor(null, null, null, '{{ d.date_iso }}')" title="この日に登録">
+          <span class="ap-week-col-weekday">{{ d.weekday }}</span>
+          <span class="ap-week-col-daynum">{{ d.label }}</span>
+        </div>
+        <div class="ap-drop-cell ap-week-col-body" data-date="{{ d.date_iso }}" data-inline-items='{{ d.entries | tojson }}'></div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}{# day #}
+    <div class="ap-day-board">
+      <div class="ap-day-board-header" onclick="apOpenAddFor(null, null, null, '{{ anchor_iso }}')" title="この日に登録">
+        <i class="bi bi-calendar-event me-2" style="color:#6366f1;"></i>{{ period_label }}
+      </div>
+      <div class="ap-drop-cell ap-day-board-body" data-date="{{ anchor_iso }}" data-inline-items='{{ day_entries | tojson }}'></div>
+    </div>
+    {% endif %}
   </div>
-  {% endfor %}
 </div>
 
-{# ── 日付詳細モーダル（カレンダーの日をクリックすると表示） ── #}
+{# ── 日付詳細モーダル（年／月ビューの日をクリックすると表示） ── #}
 <div class="modal fade" id="apDayModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px;border:none;">
@@ -148,9 +338,25 @@
           </div>
         </form>
 
-        {# 業務エリア完了／資格取得／試験合格 共通フォーム #}
+        {# サブスキル習得／業務エリア完了／資格取得／試験合格 共通フォーム #}
         <form id="apItemForm" method="post" action="/annual-plan/items/new" class="d-none">
           <input type="hidden" name="plan_type" id="apItemPlanType" value="business_area">
+          <div class="mb-3 d-none" id="apSubSkillPicker">
+            <label class="form-label fw-semibold small">対象のサブスキル</label>
+            <select name="target_id" class="form-select" style="border-radius:10px;">
+              {% for cat_name, cat_data in skills_by_category.items() %}
+              {% for sk in cat_data.skills %}
+              {% if sk.sub_skills %}
+              <optgroup label="{{ sk.name }}">
+                {% for ss in sk.sub_skills %}
+                <option value="{{ ss.id }}">{{ ss.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endif %}
+              {% endfor %}
+              {% endfor %}
+            </select>
+          </div>
           <div class="mb-3" id="apAreaPicker">
             <label class="form-label fw-semibold small">対象の業務エリア</label>
             <select name="target_id" class="form-select" style="border-radius:10px;">
@@ -224,7 +430,7 @@
 <style>
 .ap-summary-bar { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
 
-/* ── 年間カレンダー ── */
+/* ── 年間カレンダー（ミニ月） ── */
 .ap-calendar-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:1rem; }
 .ap-month-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:.75rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
 .ap-month-header { font-weight:700; font-size:.88rem; margin-bottom:.5rem; padding:.15rem .4rem; border-radius:8px; }
@@ -248,17 +454,81 @@
 .ap-dot-pending { background:#94a3b8; }
 .ap-dot-more { font-size:.55rem; color:#94a3b8; line-height:1; }
 
-/* ── 日付詳細モーダルの中身 ── */
-.ap-day-item { border:1px solid #f1f5f9; border-radius:10px; padding:.6rem .75rem; margin-bottom:.5rem; }
+/* ── 月ビュー（大きいセル） ── */
+.ap-bigmonth-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:.75rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.ap-bigmonth-card .ap-day-cell { min-height:96px; align-items:stretch; padding:.4rem; font-size:.78rem; border:1px solid #f1f5f9; }
+.ap-bigmonth-card .ap-day-num { width:auto; height:auto; align-self:flex-start; }
+.ap-bigmonth-card .ap-day-cell.ap-day-today .ap-day-num { padding:0 .4rem; border-radius:10px; }
+.ap-bigmonth-card .ap-drop-cell { cursor:pointer; }
+.ap-bigmonth-card .ap-drop-cell:hover { background:#f8fafc; }
+.ap-day-pills { display:flex; flex-direction:column; gap:2px; margin-top:.25rem; }
+.ap-pill { display:flex; align-items:center; gap:4px; padding:.1rem .4rem; border-radius:6px; font-size:.68rem; overflow:hidden; }
+.ap-pill i { font-size:.65rem; flex-shrink:0; }
+.ap-pill-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ap-pill-done { background:#f0fdf4; color:#15803d; }
+.ap-pill-overdue { background:#fef2f2; color:#b91c1c; }
+.ap-pill-pending { background:#f1f5f9; color:#475569; }
+.ap-pill-more { font-size:.65rem; color:#94a3b8; padding-left:.2rem; }
+
+/* ── 週ビュー ── */
+.ap-week-board { display:grid; grid-template-columns: repeat(7, 1fr); gap:.6rem; align-items:start; }
+.ap-week-col { background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); min-height:420px; min-width:0; display:flex; flex-direction:column; }
+.ap-week-col-header { padding:.5rem; text-align:center; cursor:pointer; border-bottom:1px solid #f1f5f9; }
+.ap-week-col-header:hover { background:#f8fafc; }
+.ap-week-col-weekday { display:block; font-size:.68rem; color:#94a3b8; font-weight:600; }
+.ap-week-col-daynum { display:block; font-size:.95rem; font-weight:700; color:#334155; }
+.ap-week-col-today .ap-week-col-header { background:#eef2ff; }
+.ap-week-col-today .ap-week-col-daynum { color:#4338ca; }
+.ap-week-col-body { flex:1; padding:.5rem; display:flex; flex-direction:column; gap:.4rem; }
+
+/* ── 日ビュー ── */
+.ap-day-board { background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.ap-day-board-header { padding:.75rem 1rem; font-weight:700; cursor:pointer; border-bottom:1px solid #f1f5f9; }
+.ap-day-board-header:hover { background:#f8fafc; }
+.ap-day-board-body { padding:1rem; display:flex; flex-direction:column; gap:.5rem; min-height:200px; }
+
+/* ── 日付詳細モーダル／インライン表示の中身 ── */
+.ap-day-item { border:1px solid #f1f5f9; border-radius:10px; padding:.6rem .75rem; }
 .ap-day-item.ap-day-item-overdue { background:#fef2f2; border-color:#fecaca; }
 .ap-day-item.ap-day-item-done { background:#f0fdf4; border-color:#bbf7d0; }
+.ap-empty-hint { padding:.5rem 0; }
+
+/* ── ドラッグ用プールパネル ── */
+.ap-pool-card { max-height:calc(100vh - 14rem); overflow-y:auto; }
+.ap-pool-section { margin-bottom:.75rem; }
+.ap-pool-section-header { display:flex; align-items:center; gap:.4rem; cursor:pointer; padding:.3rem .2rem; border-radius:8px; user-select:none; }
+.ap-pool-section-header:hover { background:#f1f5f9; }
+.ap-pool-section.ap-collapsed .ap-pool-section-body { display:none; }
+.ap-pool-section.ap-collapsed .ap-section-toggle-icon { transform:rotate(-90deg); }
+.ap-pool-cat-header { display:flex; align-items:center; gap:.4rem; cursor:pointer; padding:.25rem .3rem; border-radius:6px; user-select:none; }
+.ap-pool-cat-header:hover { background:#f1f5f9; }
+.ap-pool-cat.ap-collapsed .ap-pool-list { display:none; }
+.ap-pool-cat.ap-collapsed .ap-cat-toggle-icon { transform:rotate(0deg); }
+.ap-pool-cat:not(.ap-collapsed) .ap-cat-toggle-icon { transform:rotate(90deg); }
+.ap-cat-toggle-icon, .ap-section-toggle-icon { transition: transform .15s; font-size:.7rem; }
+.ap-cat-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.ap-pool-list { display:flex; flex-direction:column; gap:.4rem; padding:.3rem 0 .5rem .2rem; }
+.ap-pool-list .ap-pool-list { padding-left:.75rem; }
+.ap-pool-chip {
+  display:flex; align-items:center; gap:6px; padding:.3rem .6rem; border-radius:20px;
+  border:1px solid #e2e8f0; background:#f8fafc; font-size:.78rem; cursor:grab; user-select:none;
+}
+.ap-pool-chip:active { cursor:grabbing; }
+.ap-chip-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.sortable-ghost { opacity:.4; background:#e0f2fe !important; }
+/* スキル／業務エリア単位ドラッグ中は配下のサブスキル一覧を隠し、ヘッダーのみ表示する */
+.sortable-drag .ap-pool-list, .sortable-ghost .ap-pool-list { display:none !important; }
+.sortable-drag { box-shadow:0 8px 24px rgba(0,0,0,.2); }
 </style>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const AP_PLAN_TYPE_LABELS = {{ PLAN_TYPES | tojson }};
 const AP_PLAN_TYPE_ICONS = {{ PLAN_TYPE_ICONS | tojson }};
+const AP_SKILL_GOALS = {{ skill_goal_by_id | tojson }};
+const AP_CURRENT_URL = window.location.pathname + window.location.search;
 
 function apOnTypeChange() {
   const type = document.getElementById('apPlanType').value;
@@ -266,7 +536,7 @@ function apOnTypeChange() {
   document.getElementById('apItemForm').classList.toggle('d-none', type === 'skill');
   document.getElementById('apItemPlanType').value = type;
 
-  const pickers = { business_area: 'apAreaPicker', certification: 'apCertPicker', exam: 'apExamPicker' };
+  const pickers = { sub_skill: 'apSubSkillPicker', business_area: 'apAreaPicker', certification: 'apCertPicker', exam: 'apExamPicker' };
   Object.entries(pickers).forEach(([t, elId]) => {
     const wrap = document.getElementById(elId);
     const select = wrap.querySelector('select');
@@ -282,11 +552,48 @@ function apSubmitActiveForm() {
     const skillSelect = document.getElementById('apSkillSelect');
     if (!skillSelect.value) { alert('対象スキルを選択してください'); return; }
     const form = document.getElementById('apSkillForm');
+    form.querySelector('[name=next]').value = AP_CURRENT_URL;
     form.requestSubmit ? form.requestSubmit() : form.submit();
   } else {
     const form = document.getElementById('apItemForm');
     form.requestSubmit ? form.requestSubmit() : form.submit();
   }
+}
+
+// 種別・対象・日付をプリフィルして「計画を追加」モーダルを開く（ドラッグ&ドロップ／チップクリック／空セルクリック／ツールバーから共通利用）
+function apOpenAddFor(planType, id, label, dateIso) {
+  const typeSelect = document.getElementById('apPlanType');
+  if (planType) typeSelect.value = planType;
+  apOnTypeChange();
+
+  if (planType === 'skill' && id) {
+    const form = document.getElementById('apSkillForm');
+    document.getElementById('apSkillSelect').value = id;
+    form.action = '/skills/' + id + '/goal';
+    const existing = AP_SKILL_GOALS[id];
+    const levelSelect = form.querySelector('[name=target_level]');
+    const noteInput = form.querySelector('[name=note]');
+    if (existing) {
+      levelSelect.value = existing.target_level;
+      noteInput.value = existing.note || '';
+    } else {
+      noteInput.value = '';
+    }
+    if (dateIso) form.querySelector('[name=target_date]').value = dateIso;
+  } else if (id && (planType === 'sub_skill' || planType === 'business_area' || planType === 'certification' || planType === 'exam')) {
+    const pickers = { sub_skill: 'apSubSkillPicker', business_area: 'apAreaPicker', certification: 'apCertPicker', exam: 'apExamPicker' };
+    const select = document.getElementById(pickers[planType]).querySelector('select');
+    select.value = id;
+    if (dateIso) document.getElementById('apItemForm').querySelector('[name=target_date]').value = dateIso;
+  } else if (dateIso) {
+    document.querySelectorAll('#apAddModal input[name=target_date]').forEach(inp => { inp.value = dateIso; });
+  }
+
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('apAddModal')).show();
+}
+
+function apHandleChipClick(chip) {
+  apOpenAddFor(chip.dataset.planType, chip.dataset.id, chip.dataset.label, null);
 }
 
 function apOpenEdit(actionUrl, targetDate, note) {
@@ -304,11 +611,13 @@ function apEscapeHtml(s) {
   return d.innerHTML;
 }
 
-function apShowDayFromCell(cell) {
-  const items = JSON.parse(cell.dataset.items || '[]');
-  document.getElementById('apDayModalTitle').textContent = cell.dataset.date;
-  const body = document.getElementById('apDayModalBody');
-  body.innerHTML = '';
+// 1日分の計画一覧をコンテナへ描画する（日詳細モーダル／週ビュー各カラム／日ビューで共通利用）
+function apRenderEntriesInto(container, items) {
+  container.innerHTML = '';
+  if (!items.length) {
+    container.innerHTML = '<p class="text-muted small mb-0 ap-empty-hint">予定はありません（左の一覧からドラッグ、またはここをクリックして登録）</p>';
+    return;
+  }
   items.forEach(it => {
     const div = document.createElement('div');
     div.className = 'ap-day-item' + (it.achieved ? ' ap-day-item-done' : (it.is_overdue ? ' ap-day-item-overdue' : ''));
@@ -336,7 +645,7 @@ function apShowDayFromCell(cell) {
         ${statusHtml}
       </div>
       <div class="text-muted mb-2" style="font-size:.75rem;">${typeLabel} ／ 目標 ${it.target_date}${it.note ? ' ／ ' + apEscapeHtml(it.note) : ''}</div>
-      <div class="d-flex gap-2 align-items-center" data-actions></div>
+      <div class="d-flex flex-wrap gap-2 align-items-center" data-actions></div>
     `;
     const actionsEl = div.querySelector('[data-actions]');
     actionsEl.innerHTML = actionsHtml;
@@ -346,13 +655,101 @@ function apShowDayFromCell(cell) {
     delForm.action = it.delete_form_action;
     delForm.className = 'd-inline m-0';
     delForm.onsubmit = function() { return confirm('この計画を削除しますか？'); };
-    delForm.innerHTML = `<input type="hidden" name="next" value="/annual-plan?year={{ year }}">
+    delForm.innerHTML = `<input type="hidden" name="next" value="${AP_CURRENT_URL}">
       <button type="submit" class="btn btn-xs btn-outline-danger" style="border-radius:20px;font-size:.7rem;">削除</button>`;
     actionsEl.appendChild(delForm);
 
-    body.appendChild(div);
+    container.appendChild(div);
   });
+}
+
+function apShowDayFromCell(cell) {
+  const items = JSON.parse(cell.dataset.items || '[]');
+  document.getElementById('apDayModalTitle').textContent = cell.dataset.date;
+  apRenderEntriesInto(document.getElementById('apDayModalBody'), items);
   bootstrap.Modal.getOrCreateInstance(document.getElementById('apDayModal')).show();
 }
+
+// 月ビューの日セルクリック: 予定があれば詳細モーダル、空なら登録モーダルを開く
+function apCellClick(cell) {
+  const items = JSON.parse(cell.dataset.items || '[]');
+  if (items.length) {
+    apShowDayFromCell(cell);
+  } else {
+    apOpenAddFor(null, null, null, cell.dataset.date);
+  }
+}
+
+function apToggleSection(headerEl) {
+  headerEl.closest('.ap-pool-section').classList.toggle('ap-collapsed');
+}
+
+function apToggleCat(headerEl) {
+  headerEl.closest('.ap-pool-cat').classList.toggle('ap-collapsed');
+}
+
+function apFilterPool() {
+  const q = document.getElementById('apPoolSearch').value.trim().toLowerCase();
+  // 葉チップ（資格／試験／サブスキル）: 自分の data-search で判定
+  document.querySelectorAll('.ap-pool-chip').forEach(chip => {
+    const match = !q || (chip.dataset.search || '').includes(q);
+    chip.style.display = match ? '' : 'none';
+  });
+  // カテゴリ／スキル／業務エリア（入れ子グループ）: 自分の名前 or 配下の葉チップのいずれかが一致すれば表示
+  document.querySelectorAll('.ap-pool-cat').forEach(catEl => {
+    const selfMatch = !q || (catEl.dataset.search || '').includes(q);
+    const childMatch = [...catEl.querySelectorAll('.ap-pool-chip')].some(c => c.style.display !== 'none');
+    const visible = selfMatch || childMatch;
+    catEl.style.display = visible ? '' : 'none';
+    if (q && visible) catEl.classList.remove('ap-collapsed');
+  });
+}
+
+// 週／日ビューのインライン予定表示を初期描画
+document.querySelectorAll('[data-inline-items]').forEach(el => {
+  let items = [];
+  try { items = JSON.parse(el.dataset.inlineItems || '[]'); } catch (e) {}
+  apRenderEntriesInto(el, items);
+});
+
+// ドラッグ&ドロップ: 左のプールからカレンダーの日付セルへ
+// 葉チップのみのリスト（資格／試験／サブスキル一覧）: チップ自体をドラッグ
+document.querySelectorAll('.ap-pool-list:not(.ap-pool-parent-list)').forEach(pool => {
+  new Sortable(pool, {
+    group: { name: 'ap-pool', pull: 'clone', put: false },
+    sort: false,
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+  });
+});
+
+// 入れ子グループ（スキル／業務エリア）を保持するリスト: ヘッダーを掴んだ時だけグループ全体をドラッグ、それ以外のクリックは展開/折りたたみ
+document.querySelectorAll('.ap-pool-parent-list').forEach(pool => {
+  new Sortable(pool, {
+    group: { name: 'ap-pool', pull: 'clone', put: false },
+    sort: false,
+    animation: 150,
+    handle: '.ap-pool-cat-header',
+    ghostClass: 'sortable-ghost',
+  });
+});
+
+document.querySelectorAll('.ap-drop-cell').forEach(cell => {
+  new Sortable(cell, {
+    group: { name: 'ap-pool', pull: false, put: true },
+    sort: false,
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onAdd: function(evt) {
+      const chip = evt.item;
+      const planType = chip.dataset.planType;
+      const id = chip.dataset.id;
+      const label = chip.dataset.label;
+      const dateIso = evt.to.dataset.date;
+      chip.remove();
+      apOpenAddFor(planType, id, label, dateIso);
+    },
+  });
+});
 </script>
 {% endblock %}

@@ -334,6 +334,7 @@ def _startup():
         _seed_certification_catalog(db)
         _migrate_wiki_visibility_column()
         _migrate_learning_path_areas()
+        _migrate_annual_plan_sub_skill_column()
     finally:
         db.close()
 
@@ -1470,6 +1471,18 @@ def _migrate_learning_path_areas():
     if "description" not in area_cols:
         with database.engine.begin() as conn:
             conn.execute(_txt("ALTER TABLE learning_path_areas ADD COLUMN description VARCHAR(500)"))
+
+
+def _migrate_annual_plan_sub_skill_column():
+    """annual_plan_items にサブスキル単位の計画用 sub_skill_id カラムを追加する"""
+    from sqlalchemy import inspect as sa_inspect, text as _txt
+    insp = sa_inspect(database.engine)
+    if "annual_plan_items" not in insp.get_table_names():
+        return
+    cols = [c["name"] for c in insp.get_columns("annual_plan_items")]
+    if "sub_skill_id" not in cols:
+        with database.engine.begin() as conn:
+            conn.execute(_txt("ALTER TABLE annual_plan_items ADD COLUMN sub_skill_id INTEGER REFERENCES sub_skills(id)"))
 
 
 def _migrate_announcements_table():

@@ -1,5 +1,6 @@
 import calendar as _calendar
-from datetime import date as _date
+from collections import OrderedDict
+from datetime import date as _date, timedelta as _timedelta
 
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -16,12 +17,14 @@ router = APIRouter()
 
 PLAN_TYPE_ICONS = {
     "skill": "bi-lightning-charge",
+    "sub_skill": "bi-lightning-charge-fill",
     "business_area": "bi-diagram-3",
     "certification": "bi-patch-check",
     "exam": "bi-clipboard-check",
 }
 
 _WEEKDAY_LABELS_JA = ["日", "月", "火", "水", "木", "金", "土"]
+VIEW_TYPES = ("year", "month", "week", "day")
 
 
 def _row_to_json_safe(row: dict) -> dict:
@@ -41,30 +44,42 @@ def _row_to_json_safe(row: dict) -> dict:
     }
 
 
-def _build_calendar_months(year: int, all_rows: list) -> list:
-    """指定年の1〜12月分のカレンダー（週ごとの日付マトリクス＋当日の計画一覧）を構築する（日曜始まり）"""
-    rows_by_date: dict = {}
-    for row in all_rows:
-        rows_by_date.setdefault(row["target_date"], []).append(row)
+def _add_months(d: _date, delta: int) -> _date:
+    """日付を月単位でシフトする（日は1日に正規化、年の跨ぎに対応）"""
+    total = d.month - 1 + delta
+    y = d.year + total // 12
+    m = total % 12 + 1
+    return _date(y, m, 1)
 
+
+def _week_start(d: _date) -> _date:
+    """指定日を含む週の開始日（日曜）を返す"""
+    return d - _timedelta(days=(d.weekday() + 1) % 7)
+
+
+def _month_grid(year: int, month: int, rows_by_date: dict) -> dict:
+    """指定月1ヶ月分のカレンダー（週ごとの日付マトリクス＋当日の計画一覧）を構築する（日曜始まり）"""
     cal = _calendar.Calendar(firstweekday=6)
-    months = []
-    for month in range(1, 13):
-        weeks = []
-        for week in cal.monthdayscalendar(year, month):
-            week_cells = []
-            for day in week:
-                if day == 0:
-                    week_cells.append(None)
-                    continue
-                day_rows = rows_by_date.get(_date(year, month, day), [])
-                week_cells.append({
-                    "day": day,
-                    "entries": [_row_to_json_safe(r) for r in day_rows],
-                })
-            weeks.append(week_cells)
-        months.append({"month": month, "label": f"{month}月", "weeks": weeks})
-    return months
+    weeks = []
+    for week in cal.monthdayscalendar(year, month):
+        week_cells = []
+        for day in week:
+            if day == 0:
+                week_cells.append(None)
+                continue
+            day_rows = rows_by_date.get(_date(year, month, day), [])
+            week_cells.append({
+                "day": day,
+                "date_iso": _date(year, month, day).isoformat(),
+                "entries": [_row_to_json_safe(r) for r in day_rows],
+            })
+        weeks.append(week_cells)
+    return {"month": month, "label": f"{month}月", "weeks": weeks}
+
+
+def _build_year_grid(year: int, rows_by_date: dict) -> list:
+    """指定年の1〜12月分のカレンダーを構築する"""
+    return [_month_grid(year, month, rows_by_date) for month in range(1, 13)]
 
 
 def _skill_goal_status(db: Session, user: "models.User", goal: "models.SkillGoal"):
@@ -105,22 +120,24 @@ def _business_area_status(db: Session, user: "models.User", area: "models.Busine
     return True, (max(ts).date() if ts else None)
 
 
-def _certification_status(db: Session, user: "models.User", catalog_id: int):
-    """資格取得の達成可否・達成日を判定する（カタログに紐づく資格登録が存在するか）"""
-    cert = (
+def _certification_status(db: Session, user: "models.User", catalog_id: int, target_date: _date):
+    """資格取得の達成可否・達成日を判定する（目標日までにカタログに紐づく資格が登録されているか）"""
+    certs = (
         db.query(models.Certification)
         .filter(models.Certification.user_id == user.id, models.Certification.catalog_id == catalog_id)
-        .order_by(models.Certification.issued_date)
-        .first()
+        .all()
     )
-    if not cert:
+    on_time = sorted(
+        d for c in certs
+        if (d := (c.issued_date or (c.created_at.date() if c.created_at else None))) and d <= target_date
+    )
+    if not on_time:
         return False, None
-    achieved_at = cert.issued_date or (cert.created_at.date() if cert.created_at else None)
-    return True, achieved_at
+    return True, on_time[0]
 
 
-def _exam_status(db: Session, user: "models.User", exam_id: int):
-    """試験合格の達成可否・達成日を判定する"""
+def _exam_status(db: Session, user: "models.User", exam_id: int, target_date: _date):
+    """試験合格の達成可否・達成日を判定する（目標日までに合格しているか。exam+userは一意のため最大1件）"""
     a = (
         db.query(models.ExamAssignment)
         .filter(
@@ -128,12 +145,13 @@ def _exam_status(db: Session, user: "models.User", exam_id: int):
             models.ExamAssignment.exam_id == exam_id,
             models.ExamAssignment.passed == True,
         )
-        .order_by(models.ExamAssignment.graded_at)
         .first()
     )
     if not a:
         return False, None
     achieved_at = a.graded_at.date() if a.graded_at else (a.submitted_at.date() if a.submitted_at else None)
+    if not achieved_at or achieved_at > target_date:
+        return False, None
     return True, achieved_at
 
 
@@ -146,34 +164,30 @@ def _area_breadcrumb_label(area: "models.BusinessMapArea") -> str:
     return " > ".join(reversed(chain))
 
 
-@router.get("/annual-plan", response_class=HTMLResponse)
-def annual_plan_view(request: Request, year: int = 0, db: Session = Depends(get_db)):
-    user = auth.require_approved(request, db)
+def _collect_all_rows(db: Session, user: "models.User") -> list:
+    """ユーザーの全計画行（スキル目標／サブスキル習得／業務エリア完了／資格取得／試験合格）を年で絞り込まず収集する"""
     today = _date.today()
-    target_year = year or today.year
-
-    done_sub_ids = {
-        r.sub_skill_id
+    done_sub_ts = {
+        r.sub_skill_id: r.updated_at
         for r in db.query(models.UserSubSkillLevel).filter(
             models.UserSubSkillLevel.user_id == user.id,
             models.UserSubSkillLevel.can_do == True,
         ).all()
     }
+    done_sub_ids = set(done_sub_ts.keys())
 
-    rows_by_type: dict = {k: [] for k in models.PLAN_TYPES}
+    rows = []
 
-    # ── スキル習得（既存の SkillGoal を利用） ──
     goals = db.query(models.SkillGoal).filter(models.SkillGoal.user_id == user.id).all()
     for g in goals:
-        if not g.target_date or g.target_date.year != target_year or not g.skill:
+        if not g.target_date or not g.skill:
             continue
         achieved, achieved_at = _skill_goal_status(db, user, g)
-        rows_by_type["skill"].append({
+        rows.append({
             "id": g.id,
             "plan_type": "skill",
             "label": g.skill.name,
             "target_date": g.target_date,
-            "month": g.target_date.month,
             "note": g.note,
             "achieved": achieved,
             "achieved_at": achieved_at,
@@ -183,13 +197,18 @@ def annual_plan_view(request: Request, year: int = 0, db: Session = Depends(get_
             "editable": False,  # 目標レベルの変更はスキル申告ページから行う
         })
 
-    # ── 業務エリア完了／資格取得／試験合格（AnnualPlanItem） ──
     items = db.query(models.AnnualPlanItem).filter(models.AnnualPlanItem.user_id == user.id).all()
     for it in items:
-        if it.target_date.year != target_year:
-            continue
-
-        if it.plan_type == "business_area":
+        if it.plan_type == "sub_skill":
+            ss = it.sub_skill
+            if not ss or not ss.skill or ss.skill.is_archived:
+                continue
+            achieved = ss.id in done_sub_ids
+            ts = done_sub_ts.get(ss.id)
+            achieved_at = ts.date() if achieved and ts else None
+            label = f"{ss.skill.name} › {ss.name}"
+            action_url = f"/skills/{ss.skill_id}/declare"
+        elif it.plan_type == "business_area":
             area = it.business_map_area
             if not area:
                 continue
@@ -200,25 +219,24 @@ def annual_plan_view(request: Request, year: int = 0, db: Session = Depends(get_
             cat = it.certification_catalog
             if not cat:
                 continue
-            achieved, achieved_at = _certification_status(db, user, cat.id)
+            achieved, achieved_at = _certification_status(db, user, cat.id, it.target_date)
             label = cat.name
             action_url = "/certifications"
         elif it.plan_type == "exam":
             exam = it.exam
             if not exam:
                 continue
-            achieved, achieved_at = _exam_status(db, user, exam.id)
+            achieved, achieved_at = _exam_status(db, user, exam.id, it.target_date)
             label = exam.title
             action_url = "/exams/my"
         else:
             continue
 
-        rows_by_type[it.plan_type].append({
+        rows.append({
             "id": it.id,
             "plan_type": it.plan_type,
             "label": label,
             "target_date": it.target_date,
-            "month": it.target_date.month,
             "note": it.note,
             "achieved": achieved,
             "achieved_at": achieved_at,
@@ -229,17 +247,101 @@ def annual_plan_view(request: Request, year: int = 0, db: Session = Depends(get_
             "editable": True,
         })
 
-    for k in rows_by_type:
-        rows_by_type[k].sort(key=lambda r: r["target_date"])
+    rows.sort(key=lambda r: r["target_date"])
+    return rows
 
-    all_rows = [r for v in rows_by_type.values() for r in v]
-    total_count = len(all_rows)
-    achieved_count = sum(1 for r in all_rows if r["achieved"])
-    overdue_count = sum(1 for r in all_rows if r["is_overdue"])
-    calendar_months = _build_calendar_months(target_year, all_rows)
 
-    # ── ピッカー用の選択肢 ──
+@router.get("/annual-plan", response_class=HTMLResponse)
+def annual_plan_view(
+    request: Request,
+    view: str = "",
+    date: str = "",
+    year: int = 0,
+    db: Session = Depends(get_db),
+):
+    user = auth.require_approved(request, db)
+    today = _date.today()
+
+    anchor = None
+    if date.strip():
+        try:
+            anchor = _date.fromisoformat(date.strip())
+        except ValueError:
+            anchor = None
+    if anchor is None and year:
+        anchor = _date(year, 1, 1)
+        view = view or "year"
+    if anchor is None:
+        anchor = today
+    if view not in VIEW_TYPES:
+        view = "month"
+
+    all_rows = _collect_all_rows(db, user)
+    rows_by_date: dict = {}
+    for r in all_rows:
+        rows_by_date.setdefault(r["target_date"], []).append(r)
+
+    calendar_months = month_weeks = week_days = day_entries = None
+
+    if view == "year":
+        calendar_months = _build_year_grid(anchor.year, rows_by_date)
+        visible_rows = [r for r in all_rows if r["target_date"].year == anchor.year]
+        period_label = f"{anchor.year}年"
+        prev_anchor = _date(anchor.year - 1, 1, 1)
+        next_anchor = _date(anchor.year + 1, 1, 1)
+        is_current = anchor.year == today.year
+    elif view == "week":
+        wk_start = _week_start(anchor)
+        wk_end = wk_start + _timedelta(days=6)
+        week_days = []
+        for i in range(7):
+            d = wk_start + _timedelta(days=i)
+            week_days.append({
+                "date_iso": d.isoformat(),
+                "label": f"{d.month}/{d.day}",
+                "weekday": _WEEKDAY_LABELS_JA[(d.weekday() + 1) % 7],
+                "is_today": d == today,
+                "entries": [_row_to_json_safe(r) for r in rows_by_date.get(d, [])],
+            })
+        visible_rows = [r for r in all_rows if wk_start <= r["target_date"] <= wk_end]
+        if wk_start.year == wk_end.year:
+            period_label = f"{wk_start.year}年 {wk_start.month}/{wk_start.day} 〜 {wk_end.month}/{wk_end.day}"
+        else:
+            period_label = f"{wk_start.year}/{wk_start.month}/{wk_start.day} 〜 {wk_end.year}/{wk_end.month}/{wk_end.day}"
+        prev_anchor = anchor - _timedelta(days=7)
+        next_anchor = anchor + _timedelta(days=7)
+        is_current = wk_start <= today <= wk_end
+    elif view == "day":
+        day_entries = [_row_to_json_safe(r) for r in rows_by_date.get(anchor, [])]
+        visible_rows = rows_by_date.get(anchor, [])
+        period_label = f"{anchor.year}年{anchor.month}月{anchor.day}日（{_WEEKDAY_LABELS_JA[(anchor.weekday() + 1) % 7]}）"
+        prev_anchor = anchor - _timedelta(days=1)
+        next_anchor = anchor + _timedelta(days=1)
+        is_current = anchor == today
+    else:  # month
+        month_weeks = _month_grid(anchor.year, anchor.month, rows_by_date)
+        visible_rows = [
+            r for r in all_rows
+            if r["target_date"].year == anchor.year and r["target_date"].month == anchor.month
+        ]
+        period_label = f"{anchor.year}年{anchor.month}月"
+        prev_anchor = _add_months(anchor, -1)
+        next_anchor = _add_months(anchor, 1)
+        is_current = anchor.year == today.year and anchor.month == today.month
+
+    total_count = len(visible_rows)
+    achieved_count = sum(1 for r in visible_rows if r["achieved"])
+    overdue_count = sum(1 for r in visible_rows if r["is_overdue"])
+
+    # ── ピッカー／ドラッグプール用の選択肢 ──
     skills = db.query(models.Skill).filter(models.Skill.is_archived == False).order_by(models.Skill.name).all()
+    skills_by_category: "OrderedDict" = OrderedDict()
+    for sk in skills:
+        cat_name = sk.category.name if sk.category else "未分類"
+        if cat_name not in skills_by_category:
+            skills_by_category[cat_name] = {"category": sk.category, "skills": []}
+        skills_by_category[cat_name]["skills"].append(sk)
+
     cert_catalog = (
         db.query(models.CertificationCatalog)
         .filter(models.CertificationCatalog.is_archived == False)
@@ -248,30 +350,50 @@ def annual_plan_view(request: Request, year: int = 0, db: Session = Depends(get_
     )
     exams = db.query(models.Exam).filter(models.Exam.is_archived == False).order_by(models.Exam.title).all()
 
+    goals = db.query(models.SkillGoal).filter(models.SkillGoal.user_id == user.id).all()
+    skill_goal_by_id = {g.skill_id: {"target_level": g.target_level, "note": g.note or ""} for g in goals}
+
     is_visible = _make_area_visibility_predicate(user)
     all_areas = db.query(models.BusinessMapArea).order_by(models.BusinessMapArea.name).all()
-    area_options = [
-        {"id": a.id, "label": _area_breadcrumb_label(a)}
-        for a in all_areas
-        if is_visible is None or is_visible(a)
-    ]
-    area_options.sort(key=lambda x: x["label"])
+    area_pool = []
+    for a in all_areas:
+        if is_visible is not None and not is_visible(a):
+            continue
+        subs = [
+            {"id": a_sk.sub_skill_id, "name": a_sk.sub_skill.name, "skill_name": a_sk.sub_skill.skill.name}
+            for a_sk in a.area_sub_skills
+            if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived
+        ]
+        area_pool.append({"id": a.id, "label": _area_breadcrumb_label(a), "sub_skills": subs})
+    area_pool.sort(key=lambda x: x["label"])
+    area_options = [{"id": x["id"], "label": x["label"]} for x in area_pool]
 
     return templates.TemplateResponse(request, "annual_plan.html", {
         "current_user": user,
-        "year": target_year,
+        "view": view,
+        "anchor_iso": anchor.isoformat(),
+        "today_iso": today.isoformat(),
         "today": today,
-        "rows_by_type": rows_by_type,
+        "period_label": period_label,
+        "is_current": is_current,
+        "prev_iso": prev_anchor.isoformat(),
+        "next_iso": next_anchor.isoformat(),
         "calendar_months": calendar_months,
+        "month_weeks": month_weeks,
+        "week_days": week_days,
+        "day_entries": day_entries,
         "PLAN_TYPES": models.PLAN_TYPES,
         "PLAN_TYPE_ICONS": PLAN_TYPE_ICONS,
         "total_count": total_count,
         "achieved_count": achieved_count,
         "overdue_count": overdue_count,
         "skills": skills,
+        "skills_by_category": skills_by_category,
         "cert_catalog": cert_catalog,
         "exams": exams,
         "area_options": area_options,
+        "area_pool": area_pool,
+        "skill_goal_by_id": skill_goal_by_id,
     })
 
 
@@ -285,7 +407,7 @@ def annual_plan_item_new(
     db: Session = Depends(get_db),
 ):
     user = auth.require_approved(request, db)
-    if plan_type not in ("business_area", "certification", "exam"):
+    if plan_type not in ("sub_skill", "business_area", "certification", "exam"):
         return RedirectResponse("/annual-plan", status_code=303)
     try:
         td = _date.fromisoformat(target_date.strip())
@@ -295,7 +417,9 @@ def annual_plan_item_new(
     item = models.AnnualPlanItem(
         user_id=user.id, plan_type=plan_type, target_date=td, note=note.strip() or None,
     )
-    if plan_type == "business_area":
+    if plan_type == "sub_skill":
+        item.sub_skill_id = target_id
+    elif plan_type == "business_area":
         item.business_map_area_id = target_id
     elif plan_type == "certification":
         item.certification_catalog_id = target_id
@@ -303,7 +427,7 @@ def annual_plan_item_new(
         item.exam_id = target_id
     db.add(item)
     db.commit()
-    return RedirectResponse(f"/annual-plan?year={td.year}", status_code=303)
+    return RedirectResponse(f"/annual-plan?view=month&date={td.isoformat()}", status_code=303)
 
 
 @router.post("/annual-plan/items/{item_id}/edit")
@@ -324,11 +448,11 @@ def annual_plan_item_edit(
     try:
         td = _date.fromisoformat(target_date.strip())
     except ValueError:
-        return RedirectResponse(f"/annual-plan?year={item.target_date.year}", status_code=303)
+        return RedirectResponse(f"/annual-plan?view=month&date={item.target_date.isoformat()}", status_code=303)
     item.target_date = td
     item.note = note.strip() or None
     db.commit()
-    return RedirectResponse(f"/annual-plan?year={td.year}", status_code=303)
+    return RedirectResponse(f"/annual-plan?view=month&date={td.isoformat()}", status_code=303)
 
 
 @router.post("/annual-plan/items/{item_id}/delete")
@@ -338,8 +462,8 @@ def annual_plan_item_delete(item_id: int, request: Request, db: Session = Depend
         models.AnnualPlanItem.id == item_id,
         models.AnnualPlanItem.user_id == user.id,
     ).first()
-    year = item.target_date.year if item else _date.today().year
+    anchor_date = item.target_date.isoformat() if item else _date.today().isoformat()
     if item:
         db.delete(item)
         db.commit()
-    return RedirectResponse(f"/annual-plan?year={year}", status_code=303)
+    return RedirectResponse(f"/annual-plan?view=month&date={anchor_date}", status_code=303)

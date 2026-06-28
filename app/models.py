@@ -850,6 +850,7 @@ class WikiPage(Base):
 
 PLAN_TYPES = {
     "skill": "スキル習得",
+    "sub_skill": "サブスキル習得",
     "business_area": "業務エリア完了",
     "certification": "資格取得",
     "exam": "試験合格",
@@ -857,13 +858,14 @@ PLAN_TYPES = {
 
 
 class AnnualPlanItem(Base):
-    """年間育成計画: 業務エリア完了・資格取得・試験合格の目標日を管理する
-    （スキル習得の目標は既存の SkillGoal をそのまま利用するため、ここには含めない）"""
+    """年間育成計画: サブスキル習得・業務エリア完了・資格取得・試験合格の目標日を管理する
+    （スキル（カタログ単位）の目標は既存の SkillGoal をそのまま利用するため、ここには含めない）"""
     __tablename__ = "annual_plan_items"
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    plan_type = Column(String(20), nullable=False)  # business_area / certification / exam
+    plan_type = Column(String(20), nullable=False)  # sub_skill / business_area / certification / exam
+    sub_skill_id = Column(Integer, ForeignKey("sub_skills.id", ondelete="CASCADE"), nullable=True)
     business_map_area_id = Column(Integer, ForeignKey("business_map_areas.id", ondelete="CASCADE"), nullable=True)
     certification_catalog_id = Column(Integer, ForeignKey("certification_catalog.id", ondelete="CASCADE"), nullable=True)
     exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=True)
@@ -873,6 +875,7 @@ class AnnualPlanItem(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", foreign_keys=[user_id])
+    sub_skill = relationship("SubSkill", foreign_keys=[sub_skill_id])
     business_map_area = relationship("BusinessMapArea", foreign_keys=[business_map_area_id])
     certification_catalog = relationship("CertificationCatalog", foreign_keys=[certification_catalog_id])
     exam = relationship("Exam", foreign_keys=[exam_id])
