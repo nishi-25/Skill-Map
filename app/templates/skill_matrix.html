@@ -71,15 +71,21 @@
       <i class="bi bi-diagram-3 me-1" style="color:#6366f1;"></i>業務別
     </button>
   </li>
+  <li class="nav-item">
+    <button class="nav-link fw-semibold" id="tab-cert-btn" data-bs-toggle="tab" data-bs-target="#tab-cert" type="button">
+      <i class="bi bi-patch-check-fill me-1" style="color:#f97316;"></i>資格別
+    </button>
+  </li>
 </ul>
 
 <div class="tab-content">
 <script>
 (function(){
   const p = new URLSearchParams(location.search);
-  if (p.get('tab') === 'bm') {
+  const tabBtnId = { bm: 'tab-bm-btn', cert: 'tab-cert-btn' }[p.get('tab')];
+  if (tabBtnId) {
     document.addEventListener('DOMContentLoaded', function(){
-      const btn = document.getElementById('tab-bm-btn');
+      const btn = document.getElementById(tabBtnId);
       if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
     });
   }
@@ -1281,6 +1287,143 @@ function copySummary() {
 {% endif %}
 </div>{# end tab-bm #}
 
+<div class="tab-pane fade" id="tab-cert">
+
+{% if cert_members %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card h-100" style="border-radius:14px;border:1px solid #f1f5f9;">
+      <div class="card-body text-center py-3">
+        <div class="text-muted small mb-1"><i class="bi bi-people me-1"></i>メンバー数</div>
+        <div class="fs-4 fw-bold" style="color:#1e293b;">{{ cert_summary.total_members }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100" style="border-radius:14px;border:1px solid #f1f5f9;">
+      <div class="card-body text-center py-3">
+        <div class="text-muted small mb-1"><i class="bi bi-patch-check me-1"></i>資格保有者数</div>
+        <div class="fs-4 fw-bold" style="color:#f97316;">{{ cert_summary.holders_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100" style="border-radius:14px;border:1px solid #f1f5f9;">
+      <div class="card-body text-center py-3">
+        <div class="text-muted small mb-1"><i class="bi bi-collection me-1"></i>総登録資格数</div>
+        <div class="fs-4 fw-bold" style="color:#1e293b;">{{ cert_summary.total_certs }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100" style="border-radius:14px;border:1px solid #f1f5f9;">
+      <div class="card-body text-center py-3">
+        <div class="text-muted small mb-1"><i class="bi bi-bar-chart me-1"></i>1人あたり平均</div>
+        <div class="fs-4 fw-bold" style="color:#1e293b;">{{ cert_summary.avg_certs }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% if cert_catalog_stats %}
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #f97316;">
+        <i class="bi bi-bar-chart-fill me-2" style="color:#f97316;"></i>資格取得状況
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          <i class="bi bi-info-circle me-1"></i>バーをクリックすると、その資格の取得者一覧が表示されます。
+        </p>
+        <div style="position:relative;height:{{ (cert_catalog_stats|length * 36 + 60) }}px;min-height:120px;">
+          <canvas id="certStatsChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="{{ 'col-lg-4' if cert_catalog_stats else 'col-lg-5' }}">
+    <div class="card h-100">
+      <div class="card-header fw-bold" style="background:#fff;border-bottom:2px solid #f97316;">
+        <i class="bi bi-pie-chart-fill me-2" style="color:#f97316;"></i>保有資格数の分布
+      </div>
+      <div class="card-body">
+        <div style="position:relative;height:240px;">
+          <canvas id="certDistChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th>メンバー</th>
+            <th class="text-center">登録資格数</th>
+            <th class="text-center" style="width:120px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in cert_members %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if m.avatar_path %}
+                <img src="{{ m.avatar_path }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fdba74);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:600;">
+                  {{ (m.display_name or m.username)[0].upper() }}
+                </div>
+                {% endif %}
+                <span class="fw-semibold">{{ m.display_name or m.username }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-{{ 'secondary' if cert_counts.get(m.id, 0) == 0 else 'success' }}">{{ cert_counts.get(m.id, 0) }} 件</span>
+            </td>
+            <td class="text-center">
+              <a href="/certifications/members/{{ m.id }}" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">
+                <i class="bi bi-eye me-1"></i>確認
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="certHoldersModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #f97316;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-people-fill me-2" style="color:#f97316;"></i><span id="certHoldersTitle"></span></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="certHoldersList"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" style="border-radius:20px;" data-bs-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-people fs-1 d-block mb-2" style="color:#fed7aa;"></i>
+  <p class="mb-0">表示できるメンバーがいません</p>
+</div>
+{% endif %}
+
+</div>{# end tab-cert #}
+
 </div>{# end tab-content #}
 
 {% if bm_chart_data and users %}
@@ -1434,6 +1577,116 @@ document.addEventListener('DOMContentLoaded', function() {
   })();
 
 });
+</script>
+{% endif %}
+
+{% if cert_members %}
+<script>
+(function() {
+  const ctx = document.getElementById('certDistChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: {{ cert_dist_labels | tojson }},
+      datasets: [{
+        data: {{ cert_dist_counts | tojson }},
+        backgroundColor: ['#e2e8f0', '#fdba74', '#fb923c', '#f97316'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${ctx.raw}名`
+          }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% if cert_catalog_stats %}
+<script>
+const certStats = {{ cert_catalog_stats | tojson }};
+
+function showCertHolders(index) {
+  const stat = certStats[index];
+  if (!stat) return;
+  const avgText = stat.avg_score != null ? `, 平均${stat.avg_score}点` : '';
+  document.getElementById('certHoldersTitle').textContent = `${stat.name}（${stat.count}名${avgText}）`;
+  const list = document.getElementById('certHoldersList');
+  if (stat.holders.length === 0) {
+    list.innerHTML = '<li class="list-group-item text-muted small">取得者はいません</li>';
+  } else {
+    list.innerHTML = stat.holders.map(h =>
+      `<li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>${h.name}${h.score != null ? ` <span class="badge bg-light text-dark border ms-1">${h.score}点</span>` : ''}</span>
+        <a href="/certifications/members/${h.id}" class="btn btn-xs btn-outline-primary" style="border-radius:20px;">詳細</a>
+      </li>`
+    ).join('');
+  }
+  new bootstrap.Modal(document.getElementById('certHoldersModal')).show();
+}
+
+(function() {
+  const ctx = document.getElementById('certStatsChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: certStats.map(c => c.avg_score != null ? `${c.name} (平均${c.avg_score}点)` : c.name),
+      datasets: [{
+        label: '取得者数',
+        data: certStats.map(c => c.count),
+        backgroundColor: 'rgba(249,115,22,.7)',
+        borderColor: '#f97316',
+        borderWidth: 1.5,
+        borderRadius: 6,
+        barThickness: 20,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,.04)' },
+          title: { display: true, text: '取得者数', font: { size: 11 } },
+        },
+        y: {
+          ticks: { font: { size: 11 } },
+          grid: { display: false },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw}名`
+          }
+        }
+      },
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          showCertHolders(elements[0].index);
+        }
+      },
+      onHover: (evt, elements) => {
+        evt.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+      }
+    }
+  });
+})();
 </script>
 {% endif %}
 

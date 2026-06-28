@@ -17,65 +17,143 @@ from template_engine import templates
 router = APIRouter()
 
 
-def _collect_leaf_subskill_ids(area: "models.BusinessMapArea") -> set:
-    """配下（再帰的）の最下層カテゴリに割り当てられた全サブスキルIDを収集
-    アーカイブ済みスキルに属するサブスキルは除外して表示と一致させる"""
-    if not area.children:
-        return {
-            a_sk.sub_skill_id
-            for a_sk in area.area_sub_skills
-            if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived
-        }
-    ids: set = set()
+def _collect_leaf_subskill_ids(area: "models.BusinessMapArea", is_visible=None) -> set:
+    """エリア自身に割り当てられたサブスキル＋配下（再帰的）の全カテゴリに割り当てられたサブスキルIDを収集
+    （子カテゴリを持つエリアにも直接サブスキルが割り当てられている場合があるため、両方を合算する）
+    アーカイブ済みスキルに属するサブスキルは除外して表示と一致させる
+    is_visible を渡すと、グループ制限などで非表示の子カテゴリは合計に含めない"""
+    ids: set = {
+        a_sk.sub_skill_id
+        for a_sk in area.area_sub_skills
+        if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived
+    }
     for child in area.children:
-        ids |= _collect_leaf_subskill_ids(child)
+        if is_visible is not None and not is_visible(child):
+            continue
+        ids |= _collect_leaf_subskill_ids(child, is_visible)
     return ids
 
 
-def _build_stats_tree(areas, done_sub_ids: set) -> list:
-    """エリアリストを再帰的にstats付きツリーに変換する"""
+def _build_area_skills_data(area: "models.BusinessMapArea", done_sub_ids: set) -> list:
+    """エリア自身に直接割り当てられたサブスキルを、スキル単位にグルーピングして返す"""
+    seen_skills: dict = {}
+    for a_sk in sorted(area.area_sub_skills, key=lambda x: x.order_index):
+        ss = a_sk.sub_skill
+        if ss and ss.skill and not ss.skill.is_archived:
+            skill_id = ss.skill_id
+            if skill_id not in seen_skills:
+                catalog_total = len(ss.skill.sub_skills)
+                catalog_done = sum(1 for s in ss.skill.sub_skills if s.id in done_sub_ids)
+                seen_skills[skill_id] = {
+                    "skill": ss.skill,
+                    "sub_skills": [],
+                    "catalog_total": catalog_total,
+                    "catalog_done": catalog_done,
+                }
+            seen_skills[skill_id]["sub_skills"].append({
+                "id": ss.id,
+                "name": ss.name,
+                "description": ss.description or "",
+                "tier": ss.tier or "basic",
+                "can_do": ss.id in done_sub_ids,
+            })
+    return list(seen_skills.values())
+
+
+def _build_stats_tree(areas, done_sub_ids: set, is_visible=None) -> list:
+    """エリアリストを再帰的にstats付きツリーに変換する
+    （子カテゴリと直接割り当てられたサブスキルは排他ではなく両方持てる）
+    is_visible を渡すと、深い階層も含めて再帰的にグループ制限を適用する"""
     result = []
-    for area in sorted(areas, key=lambda a: a.order_index):
-        sub_ids = _collect_leaf_subskill_ids(area)
+    visible_areas = [a for a in areas if is_visible is None or is_visible(a)]
+    for area in sorted(visible_areas, key=lambda a: a.order_index):
+        sub_ids = _collect_leaf_subskill_ids(area, is_visible)
         total = len(sub_ids)
         acquired = sum(1 for sid in sub_ids if sid in done_sub_ids)
-        is_leaf = not area.children
-
-        # リーフエリアのスキルデータ: エリアに割り当てられたサブスキルのみ収集
-        skills_data = []
-        if is_leaf:
-            seen_skills: dict = {}
-            for a_sk in sorted(area.area_sub_skills, key=lambda x: x.order_index):
-                ss = a_sk.sub_skill
-                if ss and ss.skill and not ss.skill.is_archived:
-                    skill_id = ss.skill_id
-                    if skill_id not in seen_skills:
-                        catalog_total = len(ss.skill.sub_skills)
-                        catalog_done = sum(1 for s in ss.skill.sub_skills if s.id in done_sub_ids)
-                        seen_skills[skill_id] = {
-                            "skill": ss.skill,
-                            "sub_skills": [],
-                            "catalog_total": catalog_total,
-                            "catalog_done": catalog_done,
-                        }
-                    seen_skills[skill_id]["sub_skills"].append({
-                        "id": ss.id,
-                        "name": ss.name,
-                        "description": ss.description or "",
-                        "tier": ss.tier or "basic",
-                        "can_do": ss.id in done_sub_ids,
-                    })
-            skills_data = list(seen_skills.values())
 
         result.append({
             "area": area,
             "total": total,
             "acquired": acquired,
             "pct": int(acquired / total * 100) if total else 0,
-            "is_leaf": is_leaf,
-            "children": _build_stats_tree(area.children, done_sub_ids) if not is_leaf else [],
-            "skills_data": skills_data,
+            "is_leaf": not area.children,
+            "children": _build_stats_tree(area.children, done_sub_ids, is_visible),
+            "skills_data": _build_area_skills_data(area, done_sub_ids),
         })
+    return result
+
+
+def _make_area_visibility_predicate(user: "models.User"):
+    """admin/manager は常にNone（フィルタなし）。一般ユーザーはグループ未設定エリアは全員に表示、
+    グループ設定済みエリアは所属グループが一致する場合のみ表示する述語を返す"""
+    if user.role in ("admin", "manager"):
+        return None
+    user_group_ids = {m.group_id for m in user.group_memberships}
+
+    def _is_visible(area: "models.BusinessMapArea") -> bool:
+        if not area.groups:
+            return True
+        return any(g.id in user_group_ids for g in area.groups)
+
+    return _is_visible
+
+
+def _build_full_area_tree(db: Session, done_sub_ids: set, is_visible=None) -> list:
+    """マインドマップ用: parent_idで絞らず全エリアを一括取得し、ルートからのフルツリーを構築する"""
+    all_areas = (
+        db.query(models.BusinessMapArea)
+        .order_by(models.BusinessMapArea.order_index)
+        .options(
+            joinedload(models.BusinessMapArea.area_sub_skills)
+            .joinedload(models.BusinessMapAreaSkill.sub_skill)
+            .joinedload(models.SubSkill.skill),
+        )
+        .all()
+    )
+    roots = [a for a in all_areas if a.parent_id is None]
+    return _build_stats_tree(roots, done_sub_ids, is_visible)
+
+
+def _build_mindmap_graph(tree: list) -> dict:
+    """stats付きツリーをvis-network用のnodes/edges構造に変換する
+    トップレベルのエリア同士は互いに無関係なため、共通の親ノードへは接続しない
+    （実際に親子関係のあるエリア間のみをエッジで結ぶ）"""
+    nodes: list = []
+    edges: list = []
+
+    def _walk(stats_nodes: list, parent_vis_id):
+        for node in stats_nodes:
+            area = node["area"]
+            nodes.append({
+                "id": area.id,
+                "label": area.name,
+                "title": f"{node['acquired']}/{node['total']} ({node['pct']}%)",
+                "color": area.color or "#6366f1",
+                "shape": "dot" if node["is_leaf"] else "box",
+                "group": "leaf" if node["is_leaf"] else "branch",
+                "value": max(node["total"], 1),
+                "pct": node["pct"],
+                "hasOwnSkills": bool(node["skills_data"]),
+                "hasChildren": bool(node["children"]),
+            })
+            if parent_vis_id is not None:
+                edges.append({"from": parent_vis_id, "to": area.id})
+            _walk(node["children"], area.id)
+
+    _walk(tree, None)
+    return {"nodes": nodes, "edges": edges}
+
+
+def _flatten_tree_nodes(tree: list) -> list:
+    """stats付きツリーを再帰的に走査し、フラットなノードのリストを返す（マインドマップの隠しパネル用）"""
+    result: list = []
+
+    def _walk(stats_nodes: list):
+        for node in stats_nodes:
+            result.append(node)
+            _walk(node["children"])
+
+    _walk(tree)
     return result
 
 
@@ -120,16 +198,8 @@ def business_map_view(request: Request, parent_id: int = 0, db: Session = Depend
         .all()
     )
 
-    # admin / manager は全エリアを表示。一般ユーザーはグループフィルタを適用
-    if user.role not in ("admin", "manager"):
-        user_group_ids = {m.group_id for m in user.group_memberships}
-        def _is_visible(area: "models.BusinessMapArea") -> bool:
-            # グループ未設定のエリアは全員に表示
-            if not area.groups:
-                return True
-            # グループ設定済みは所属グループが一致する場合のみ
-            return any(g.id in user_group_ids for g in area.groups)
-        areas = [a for a in areas if _is_visible(a)]
+    # admin / manager は全エリアを表示。一般ユーザーはグループフィルタを適用（深い階層にも再帰的に適用される）
+    is_visible = _make_area_visibility_predicate(user)
 
     # 自分が「できる」と回答したサブスキル（acquired判定用）
     done_sub_ids = {
@@ -140,13 +210,30 @@ def business_map_view(request: Request, parent_id: int = 0, db: Session = Depend
         ).all()
     }
 
-    tree = _build_stats_tree(areas, done_sub_ids)
+    tree = _build_stats_tree(areas, done_sub_ids, is_visible)
+
+    # 現在ドリルダウンしているエリア自身に直接割り当てられたサブスキル（子カテゴリと併用している場合に表示する）
+    current_parent_node = None
+    if current_parent:
+        current_parent_node = {
+            "area": current_parent,
+            "skills_data": _build_area_skills_data(current_parent, done_sub_ids),
+        }
+
+    # マインドマップ表示用: ドリルダウン状態と無関係に、見えるエリア全体を一括構築する
+    full_tree = _build_full_area_tree(db, done_sub_ids, is_visible)
+    mindmap_graph = _build_mindmap_graph(full_tree)
+    mindmap_panel_nodes = _flatten_tree_nodes(full_tree)
 
     return templates.TemplateResponse(request, "business_map_view.html", {
         "current_user": user,
         "tree": tree,
         "current_parent": current_parent,
+        "current_parent_node": current_parent_node,
         "breadcrumbs": breadcrumbs,
+        "mindmap_nodes": mindmap_graph["nodes"],
+        "mindmap_edges": mindmap_graph["edges"],
+        "mindmap_panel_nodes": mindmap_panel_nodes,
         "SKILL_LEVELS": models.SKILL_LEVELS,
         "LEVEL_COLORS": models.LEVEL_COLORS,
         "SKILL_TIERS": models.SKILL_TIERS,
@@ -393,14 +480,29 @@ def business_map_area_delete(area_id: int, request: Request, db: Session = Depen
     return RedirectResponse("/business-map/manage", status_code=303)
 
 
+def _bm_area_is_self_or_descendant(area: "models.BusinessMapArea", candidate_id: int) -> bool:
+    """candidate_id が area 自身またはその子孫かどうか（再親付けによる循環防止用）"""
+    if area.id == candidate_id:
+        return True
+    return any(_bm_area_is_self_or_descendant(child, candidate_id) for child in area.children)
+
+
 @router.post("/business-map/areas/reorder")
 async def business_map_areas_reorder(request: Request, db: Session = Depends(get_db)):
+    """同階層内の並び替え、およびドラッグ&ドロップによる他エリアへの移動（親変更）"""
     auth.require_manager_or_admin(request, db)
     data = await request.json()
+    parent_id = data.get("parent_id") or None
     for i, area_id in enumerate(data.get("ids", [])):
         area = db.query(models.BusinessMapArea).filter(models.BusinessMapArea.id == area_id).first()
-        if area:
-            area.order_index = i
+        if not area:
+            continue
+        area.order_index = i
+        if parent_id != area.parent_id:
+            # 自分自身・自分の子孫への移動は循環参照になるため無視する
+            if parent_id is not None and _bm_area_is_self_or_descendant(area, parent_id):
+                continue
+            area.parent_id = parent_id
     db.commit()
     return {"ok": True}
 

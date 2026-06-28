@@ -12,7 +12,7 @@ import models
 import auth
 from database import get_db
 from template_engine import templates
-from routers.groups import _get_all_group_skill_ids
+from routers.groups import _get_all_group_skill_ids, _get_managed_groups
 
 router = APIRouter()
 
@@ -2217,8 +2217,108 @@ def api_dashboard_stats(request: Request, db: Session = Depends(get_db)):
     })
 
 
+def _build_certification_matrix_data(db: Session, user: "models.User") -> dict:
+    """資格マトリクス（旧 /certifications/members）用データ: メンバーの資格取得状況を集計する"""
+    if user.role == "admin":
+        member_users = (
+            db.query(models.User)
+            .filter(models.User.is_approved == True, models.User.id != user.id)
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+        )
+    else:
+        managed_ids = [g.id for g in _get_managed_groups(user, db)]
+        user_ids = set()
+        if managed_ids:
+            for m in db.query(models.GroupMembership).filter(
+                models.GroupMembership.group_id.in_(managed_ids)
+            ).all():
+                if m.user_id != user.id:
+                    user_ids.add(m.user_id)
+        member_users = (
+            db.query(models.User)
+            .filter(models.User.id.in_(user_ids), models.User.is_approved == True)
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+            if user_ids else []
+        )
+
+    member_ids = [u.id for u in member_users]
+
+    counts = dict(
+        db.query(models.Certification.user_id, func.count(models.Certification.id))
+        .filter(models.Certification.user_id.in_(member_ids))
+        .group_by(models.Certification.user_id)
+        .all()
+    ) if member_ids else {}
+
+    catalog_stats = []
+    if member_ids:
+        users_by_id = {u.id: u for u in member_users}
+        certs = (
+            db.query(models.Certification)
+            .filter(models.Certification.user_id.in_(member_ids))
+            .all()
+        )
+        groups = {}
+        for c in certs:
+            bucket = groups.setdefault(c.name, {"holder_ids": set(), "scores": {}})
+            bucket["holder_ids"].add(c.user_id)
+            if c.score is not None:
+                bucket["scores"][c.user_id] = c.score
+        for cert_name, data in groups.items():
+            scores = data["scores"]
+            holders = [
+                {
+                    "id": uid,
+                    "name": users_by_id[uid].display_name or users_by_id[uid].username,
+                    "score": scores.get(uid),
+                }
+                for uid in data["holder_ids"] if uid in users_by_id
+            ]
+            if scores:
+                holders.sort(key=lambda h: (-(h["score"] if h["score"] is not None else -1), h["name"]))
+                avg_score = round(sum(scores.values()) / len(scores), 1)
+            else:
+                holders.sort(key=lambda h: h["name"])
+                avg_score = None
+            catalog_stats.append({
+                "name": cert_name,
+                "count": len(holders),
+                "holders": holders,
+                "avg_score": avg_score,
+            })
+        catalog_stats.sort(key=lambda x: (-x["count"], x["name"]))
+
+    total_members = len(member_users)
+    total_certs = sum(counts.values())
+    holders_count = sum(1 for c in counts.values() if c > 0)
+    avg_certs = round(total_certs / total_members, 1) if total_members else 0
+
+    dist_labels = ["0件", "1件", "2件", "3件以上"]
+    dist_counts = [0, 0, 0, 0]
+    for m in member_users:
+        n = counts.get(m.id, 0)
+        idx = min(n, 3)
+        dist_counts[idx] += 1
+
+    return {
+        "cert_members": member_users,
+        "cert_counts": counts,
+        "cert_catalog_stats": catalog_stats,
+        "cert_summary": {
+            "total_members": total_members,
+            "holders_count": holders_count,
+            "total_certs": total_certs,
+            "avg_certs": avg_certs,
+        },
+        "cert_dist_labels": dist_labels,
+        "cert_dist_counts": dist_counts,
+    }
+
+
 # ════════════════════════════════════════════════════════════════
-# スキルマトリクス（社員×スキル ヒートマップ）
+# スキルマトリクス（社員×スキル ヒートマップ、資格マトリクスを集約）
 # ════════════════════════════════════════════════════════════════
 
 @router.get("/skills/matrix", response_class=HTMLResponse)
@@ -2500,7 +2600,7 @@ def skill_matrix(
 
     from config import get_config as _gcfg
     _cfg = _gcfg()
-    return templates.TemplateResponse(request, "skill_matrix.html", {
+    context = {
         "current_user": user,
         "users": users,
         "skills": skills,
@@ -2522,7 +2622,9 @@ def skill_matrix(
         "bm_area_rows": bm_area_rows,
         "bm_chart_data": bm_chart_data,
         "bm_user_list": bm_user_list,
-    })
+    }
+    context.update(_build_certification_matrix_data(db, user))
+    return templates.TemplateResponse(request, "skill_matrix.html", context)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -2621,128 +2723,8 @@ def member_skill_detail(
 
 
 # ════════════════════════════════════════════════════════════════
-# スキル成長タイムライン
+# スキル成長タイムライン（API。画面はダッシュボードに統合済み）
 # ════════════════════════════════════════════════════════════════
-
-@router.get("/skills/timeline", response_class=HTMLResponse)
-def skill_timeline(
-    request: Request,
-    user_id: int = 0,
-    page: int = 1,
-    db: Session = Depends(get_db),
-):
-    """スキルの成長を時系列で確認"""
-    current_user = auth.require_approved(request, db)
-    is_privileged = current_user.role in ("admin", "manager")
-
-    # 表示対象ユーザー
-    if user_id and is_privileged:
-        target = db.query(models.User).filter(models.User.id == user_id).first()
-        if not target:
-            target = current_user
-    else:
-        target = current_user
-
-    # ユーザー選択候補（管理者/マネージャー用）
-    all_users = []
-    if is_privileged:
-        all_users = (db.query(models.User)
-                     .filter(models.User.is_approved == True)
-                     .order_by(models.User.display_name, models.User.username)
-                     .all())
-
-    # 成長履歴の取得
-    history = (
-        db.query(models.SkillLevelHistory)
-        .filter(models.SkillLevelHistory.user_id == target.id)
-        .order_by(models.SkillLevelHistory.changed_at.asc())
-        .all()
-    )
-
-    # 最新の承認済みスキルレベル
-    current_levels = (
-        db.query(models.UserSkillLevel)
-        .filter(
-            models.UserSkillLevel.user_id == target.id,
-            models.UserSkillLevel.approval_status == "approved",
-        )
-        .all()
-    )
-
-    # カテゴリーごとの平均レベル推移データを構築
-    from datetime import timedelta
-    cat_timeline: dict[str, list] = {}
-    for rec in history:
-        cat_name = rec.skill.category.name if rec.skill.category else "未分類"
-        if cat_name not in cat_timeline:
-            cat_timeline[cat_name] = []
-        cat_timeline[cat_name].append({
-            "date": (rec.changed_at + timedelta(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
-            "skill": rec.skill.name,
-            "level": rec.level,
-            "prev": rec.previous_level or 0,
-        })
-
-    # スキルごとの成長推移データ
-    skill_timeline: dict[str, list] = {}
-    for rec in history:
-        sname = rec.skill.name
-        if sname not in skill_timeline:
-            skill_timeline[sname] = []
-        skill_timeline[sname].append({
-            "date": (rec.changed_at + timedelta(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
-            "level": rec.level,
-        })
-
-    # 全体平均レベルの推移
-    overall_avg_timeline: list = []
-    _current_levels_map: dict = {}
-    for rec in history:
-        _current_levels_map[rec.skill_id] = rec.level
-        _avg = sum(_current_levels_map.values()) / len(_current_levels_map)
-        overall_avg_timeline.append({
-            "date": (rec.changed_at + timedelta(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
-            "avg": round(_avg, 2),
-        })
-
-    # 達成マイルストーン（指導可Lv3・エキスパートLv4への初到達）
-    milestones: list = []
-    for rec in history:
-        prev = rec.previous_level or 0
-        if prev < 3 <= rec.level or prev < 4 <= rec.level:
-            milestones.append({
-                "date": (rec.changed_at + timedelta(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
-                "skill_name": rec.skill.name,
-                "category_name": rec.skill.category.name if rec.skill.category else None,
-                "level": rec.level,
-            })
-    milestones.reverse()
-
-    # 成長サマリー（履歴はページネーションで全件表示）
-    growth_count = sum(1 for r in history if (r.previous_level or 0) < r.level)
-    PAGE_SIZE = 20
-    total_pages = max(1, (len(history) + PAGE_SIZE - 1) // PAGE_SIZE)
-    page = max(1, min(page, total_pages))
-    history_desc = list(reversed(history))
-    recent_history = history_desc[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
-
-    return templates.TemplateResponse(request, "skill_timeline.html", {
-        "current_user": current_user,
-        "target": target,
-        "all_users": all_users,
-        "history": recent_history,
-        "current_levels": current_levels,
-        "cat_timeline": cat_timeline,
-        "skill_timeline": skill_timeline,
-        "overall_avg_timeline": overall_avg_timeline,
-        "milestones": milestones,
-        "growth_count": growth_count,
-        "total_changes": len(history),
-        "is_privileged": is_privileged,
-        "page": page,
-        "total_pages": total_pages,
-    })
-
 
 @router.get(
     "/api/skills/timeline/{target_user_id}",
@@ -2966,6 +2948,7 @@ def skill_goal_set(
     target_level: int = Form(...),
     target_date: str = Form(default=""),
     note: str = Form(default=""),
+    next: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = auth.require_approved(request, db)
@@ -2991,18 +2974,20 @@ def skill_goal_set(
             note=note.strip() or None,
         ))
     db.commit()
-    return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+    redirect_to = next if next.startswith("/") else f"/skills/{skill_id}/declare"
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 @router.post("/skills/{skill_id}/goal/delete")
-def skill_goal_delete(skill_id: int, request: Request, db: Session = Depends(get_db)):
+def skill_goal_delete(skill_id: int, request: Request, next: str = Form(default=""), db: Session = Depends(get_db)):
     user = auth.require_approved(request, db)
     db.query(models.SkillGoal).filter(
         models.SkillGoal.user_id == user.id,
         models.SkillGoal.skill_id == skill_id,
     ).delete()
     db.commit()
-    return RedirectResponse(f"/skills/{skill_id}/declare", status_code=303)
+    redirect_to = next if next.startswith("/") else f"/skills/{skill_id}/declare"
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 # ════════════════════════════════════════════════════════════════

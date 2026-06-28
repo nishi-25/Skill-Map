@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}年間計画 - Skill View.{% endblock %}
+
+{% block content %}
+
+{# ページヘッダー #}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h1 style="font-size:1.3rem;"><i class="bi bi-calendar-check me-2" style="color:#6366f1;"></i>年間計画</h1>
+    <p class="text-muted mb-0 small">いつスキルを習得する／業務エリアを完了する／資格を取得する／試験に合格するかを計画できます</p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <a href="/annual-plan?year={{ year - 1 }}" class="btn btn-outline-secondary btn-sm" style="border-radius:50%;width:32px;height:32px;padding:0;"><i class="bi bi-chevron-left"></i></a>
+    <span class="fw-bold" style="font-size:1.1rem;min-width:4.5em;text-align:center;">{{ year }}年</span>
+    <a href="/annual-plan?year={{ year + 1 }}" class="btn btn-outline-secondary btn-sm" style="border-radius:50%;width:32px;height:32px;padding:0;"><i class="bi bi-chevron-right"></i></a>
+    {% if year != today.year %}
+    <a href="/annual-plan" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">今年</a>
+    {% endif %}
+    <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:20px;" onclick="new bootstrap.Modal(document.getElementById('apAddModal')).show()">
+      <i class="bi bi-plus-lg me-1"></i>計画を追加
+    </button>
+  </div>
+</div>
+
+{# サマリーバー ＋ 凡例 #}
+<div class="ap-summary-bar mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+  <div class="d-flex gap-4 flex-wrap">
+    <div>
+      <span class="text-muted small">計画数</span>
+      <div class="fs-4 fw-bold">{{ total_count }}</div>
+    </div>
+    <div>
+      <span class="text-muted small">達成</span>
+      <div class="fs-4 fw-bold text-success">{{ achieved_count }}</div>
+    </div>
+    <div>
+      <span class="text-muted small">期限切れ・未達成</span>
+      <div class="fs-4 fw-bold text-danger">{{ overdue_count }}</div>
+    </div>
+  </div>
+  <div class="d-flex gap-3 flex-wrap" style="font-size:.78rem;color:#64748b;">
+    <span><span class="ap-dot ap-dot-done"></span> 達成済み</span>
+    <span><span class="ap-dot ap-dot-overdue"></span> 期限切れ・未達成</span>
+    <span><span class="ap-dot ap-dot-pending"></span> 予定</span>
+  </div>
+</div>
+
+{# 年間カレンダー ── 12ヶ月を並べたミニカレンダー #}
+<div class="ap-calendar-grid">
+  {% for m in calendar_months %}
+  <div class="ap-month-card">
+    <div class="ap-month-header {% if year==today.year and m.month==today.month %}ap-month-current{% endif %}">{{ m.label }}</div>
+    <div class="ap-week-row ap-weekday-row">
+      {% for wd in ['日','月','火','水','木','金','土'] %}
+      <div class="ap-day-cell ap-weekday">{{ wd }}</div>
+      {% endfor %}
+    </div>
+    {% for week in m.weeks %}
+    <div class="ap-week-row">
+      {% for cell in week %}
+      {% if cell is none %}
+      <div class="ap-day-cell ap-day-empty"></div>
+      {% else %}
+      {% set is_today = (year==today.year and m.month==today.month and cell.day==today.day) %}
+      <div class="ap-day-cell {% if is_today %}ap-day-today{% endif %} {% if cell.entries %}ap-day-has-items{% endif %}"
+           {% if cell.entries %}data-items='{{ cell.entries | tojson }}' data-date="{{ '%04d/%02d/%02d'|format(year, m.month, cell.day) }}" onclick="apShowDayFromCell(this)"{% endif %}>
+        <span class="ap-day-num">{{ cell.day }}</span>
+        {% if cell.entries %}
+        <div class="ap-day-dots">
+          {% for it in cell.entries[:3] %}
+          <span class="ap-dot {% if it.achieved %}ap-dot-done{% elif it.is_overdue %}ap-dot-overdue{% else %}ap-dot-pending{% endif %}"></span>
+          {% endfor %}
+          {% if cell.entries|length > 3 %}<span class="ap-dot-more">+{{ cell.entries|length - 3 }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+{# ── 日付詳細モーダル（カレンダーの日をクリックすると表示） ── #}
+<div class="modal fade" id="apDayModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-calendar-event me-2" style="color:#6366f1;"></i><span id="apDayModalTitle"></span></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="apDayModalBody"></div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── 計画追加モーダル ── #}
+<div class="modal fade" id="apAddModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-calendar-plus me-2" style="color:#6366f1;"></i>計画を追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">種別</label>
+          <select id="apPlanType" class="form-select" style="border-radius:10px;" onchange="apOnTypeChange()">
+            {% for k, v in PLAN_TYPES.items() %}
+            <option value="{{ k }}">{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {# スキル習得用フォーム #}
+        <form id="apSkillForm" method="post" action="">
+          <input type="hidden" name="next" value="/annual-plan">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">対象スキル</label>
+            <select id="apSkillSelect" class="form-select" style="border-radius:10px;" onchange="document.getElementById('apSkillForm').action = '/skills/' + this.value + '/goal';" required>
+              <option value="">選択してください</option>
+              {% for sk in skills %}
+              <option value="{{ sk.id }}">{{ sk.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">目標レベル</label>
+            <select name="target_level" class="form-select" style="border-radius:10px;" required>
+              {% for lv, lv_name in SKILL_LEVELS.items() %}
+              {% if lv > 0 %}
+              <option value="{{ lv }}">{{ lv }} - {{ lv_name }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">目標日</label>
+            <input type="date" name="target_date" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">メモ（任意）</label>
+            <input type="text" name="note" class="form-control" style="border-radius:10px;">
+          </div>
+        </form>
+
+        {# 業務エリア完了／資格取得／試験合格 共通フォーム #}
+        <form id="apItemForm" method="post" action="/annual-plan/items/new" class="d-none">
+          <input type="hidden" name="plan_type" id="apItemPlanType" value="business_area">
+          <div class="mb-3" id="apAreaPicker">
+            <label class="form-label fw-semibold small">対象の業務エリア</label>
+            <select name="target_id" class="form-select" style="border-radius:10px;">
+              {% for opt in area_options %}
+              <option value="{{ opt.id }}">{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3 d-none" id="apCertPicker">
+            <label class="form-label fw-semibold small">対象の資格</label>
+            <select name="target_id" class="form-select" style="border-radius:10px;">
+              {% for c in cert_catalog %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3 d-none" id="apExamPicker">
+            <label class="form-label fw-semibold small">対象の試験</label>
+            <select name="target_id" class="form-select" style="border-radius:10px;">
+              {% for e in exams %}
+              <option value="{{ e.id }}">{{ e.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">目標日</label>
+            <input type="date" name="target_date" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">メモ（任意）</label>
+            <input type="text" name="note" class="form-control" style="border-radius:10px;">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;" onclick="apSubmitActiveForm()"><i class="bi bi-check me-1"></i>登録</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── 計画編集モーダル（業務エリア／資格／試験のみ） ── #}
+<div class="modal fade" id="apEditModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2" style="color:#6366f1;"></i>計画を編集</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="apEditForm" method="post" action="">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">目標日</label>
+            <input type="date" name="target_date" id="apEditDate" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">メモ（任意）</label>
+            <input type="text" name="note" id="apEditNote" class="form-control" style="border-radius:10px;">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="border-radius:20px;">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.ap-summary-bar { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+
+/* ── 年間カレンダー ── */
+.ap-calendar-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:1rem; }
+.ap-month-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:.75rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.ap-month-header { font-weight:700; font-size:.88rem; margin-bottom:.5rem; padding:.15rem .4rem; border-radius:8px; }
+.ap-month-header.ap-month-current { background:#eef2ff; color:#4338ca; }
+.ap-week-row { display:grid; grid-template-columns: repeat(7, 1fr); }
+.ap-weekday-row { margin-bottom:.2rem; }
+.ap-weekday { text-align:center; font-size:.65rem; color:#94a3b8; font-weight:600; padding:.2rem 0; }
+.ap-day-cell {
+  position:relative; min-height:34px; display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-start; padding-top:.2rem; border-radius:6px; font-size:.72rem; color:#334155;
+}
+.ap-day-empty { visibility:hidden; }
+.ap-day-today .ap-day-num { background:#6366f1; color:#fff; border-radius:50%; }
+.ap-day-num { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; }
+.ap-day-has-items { cursor:pointer; }
+.ap-day-has-items:hover { background:#f8fafc; }
+.ap-day-dots { display:flex; gap:2px; margin-top:1px; align-items:center; }
+.ap-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
+.ap-dot-done { background:#22c55e; }
+.ap-dot-overdue { background:#ef4444; }
+.ap-dot-pending { background:#94a3b8; }
+.ap-dot-more { font-size:.55rem; color:#94a3b8; line-height:1; }
+
+/* ── 日付詳細モーダルの中身 ── */
+.ap-day-item { border:1px solid #f1f5f9; border-radius:10px; padding:.6rem .75rem; margin-bottom:.5rem; }
+.ap-day-item.ap-day-item-overdue { background:#fef2f2; border-color:#fecaca; }
+.ap-day-item.ap-day-item-done { background:#f0fdf4; border-color:#bbf7d0; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const AP_PLAN_TYPE_LABELS = {{ PLAN_TYPES | tojson }};
+const AP_PLAN_TYPE_ICONS = {{ PLAN_TYPE_ICONS | tojson }};
+
+function apOnTypeChange() {
+  const type = document.getElementById('apPlanType').value;
+  document.getElementById('apSkillForm').classList.toggle('d-none', type !== 'skill');
+  document.getElementById('apItemForm').classList.toggle('d-none', type === 'skill');
+  document.getElementById('apItemPlanType').value = type;
+
+  const pickers = { business_area: 'apAreaPicker', certification: 'apCertPicker', exam: 'apExamPicker' };
+  Object.entries(pickers).forEach(([t, elId]) => {
+    const wrap = document.getElementById(elId);
+    const select = wrap.querySelector('select');
+    const show = (t === type);
+    wrap.classList.toggle('d-none', !show);
+    select.disabled = !show;
+  });
+}
+
+function apSubmitActiveForm() {
+  const type = document.getElementById('apPlanType').value;
+  if (type === 'skill') {
+    const skillSelect = document.getElementById('apSkillSelect');
+    if (!skillSelect.value) { alert('対象スキルを選択してください'); return; }
+    const form = document.getElementById('apSkillForm');
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  } else {
+    const form = document.getElementById('apItemForm');
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  }
+}
+
+function apOpenEdit(actionUrl, targetDate, note) {
+  document.getElementById('apEditForm').action = actionUrl;
+  document.getElementById('apEditDate').value = targetDate;
+  document.getElementById('apEditNote').value = note;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('apEditModal')).show();
+}
+
+document.getElementById('apAddModal').addEventListener('shown.bs.modal', apOnTypeChange);
+
+function apEscapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function apShowDayFromCell(cell) {
+  const items = JSON.parse(cell.dataset.items || '[]');
+  document.getElementById('apDayModalTitle').textContent = cell.dataset.date;
+  const body = document.getElementById('apDayModalBody');
+  body.innerHTML = '';
+  items.forEach(it => {
+    const div = document.createElement('div');
+    div.className = 'ap-day-item' + (it.achieved ? ' ap-day-item-done' : (it.is_overdue ? ' ap-day-item-overdue' : ''));
+    const icon = AP_PLAN_TYPE_ICONS[it.plan_type] || 'bi-flag';
+    const typeLabel = AP_PLAN_TYPE_LABELS[it.plan_type] || '';
+    let statusHtml = '';
+    if (it.achieved) {
+      statusHtml = `<span class="badge bg-success">達成済み${it.achieved_at ? '（' + it.achieved_at + '）' : ''}</span>`;
+    } else if (it.is_overdue) {
+      statusHtml = `<span class="badge bg-danger">期限切れ・未達成</span>`;
+    } else {
+      statusHtml = `<span class="badge bg-secondary">予定</span>`;
+    }
+    let actionsHtml = '';
+    if (it.is_overdue && it.action_url) {
+      actionsHtml += `<a href="${it.action_url}" class="btn btn-xs btn-danger" style="border-radius:20px;font-size:.7rem;">対応する</a>`;
+    }
+    if (it.editable && it.edit_form_action) {
+      actionsHtml += `<button type="button" class="btn btn-xs btn-outline-secondary" style="border-radius:20px;font-size:.7rem;" onclick="apOpenEdit('${it.edit_form_action}', '${it.target_date.replaceAll('/','-')}', '${apEscapeHtml(it.note)}')">編集</button>`;
+    }
+    div.innerHTML = `
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <i class="bi ${icon}" style="color:#6366f1;"></i>
+        <span class="fw-semibold flex-fill">${apEscapeHtml(it.label)}</span>
+        ${statusHtml}
+      </div>
+      <div class="text-muted mb-2" style="font-size:.75rem;">${typeLabel} ／ 目標 ${it.target_date}${it.note ? ' ／ ' + apEscapeHtml(it.note) : ''}</div>
+      <div class="d-flex gap-2 align-items-center" data-actions></div>
+    `;
+    const actionsEl = div.querySelector('[data-actions]');
+    actionsEl.innerHTML = actionsHtml;
+
+    const delForm = document.createElement('form');
+    delForm.method = 'post';
+    delForm.action = it.delete_form_action;
+    delForm.className = 'd-inline m-0';
+    delForm.onsubmit = function() { return confirm('この計画を削除しますか？'); };
+    delForm.innerHTML = `<input type="hidden" name="next" value="/annual-plan?year={{ year }}">
+      <button type="submit" class="btn btn-xs btn-outline-danger" style="border-radius:20px;font-size:.7rem;">削除</button>`;
+    actionsEl.appendChild(delForm);
+
+    body.appendChild(div);
+  });
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('apDayModal')).show();
+}
+</script>
+{% endblock %}

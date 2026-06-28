@@ -25,6 +25,7 @@ from routers import certifications as certifications_router
 from routers import exams as exams_router
 from routers import business_map as business_map_router
 from routers import wiki as wiki_router
+from routers import annual_plan as annual_plan_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,6 +59,7 @@ app.include_router(certifications_router.router)
 app.include_router(exams_router.router)
 app.include_router(business_map_router.router)
 app.include_router(wiki_router.router)
+app.include_router(annual_plan_router.router)
 
 
 # ─── 承認バッジ用ミドルウェア ─────────────────────────────────
@@ -2353,6 +2355,40 @@ def dashboard(
         # 個人モード（self or 指定ユーザー）
         target = target_user if view_mode == "user" else current_user
 
+        # スキル成長推移チャート・達成マイルストーン（旧 成長タイムライン画面から移植）
+        from datetime import timedelta as _td_growth
+        _growth_history = (
+            db.query(models.SkillLevelHistory)
+            .filter(models.SkillLevelHistory.user_id == target.id)
+            .order_by(models.SkillLevelHistory.changed_at.asc())
+            .all()
+        )
+        skill_growth_chart: dict[str, list] = {}
+        for rec in _growth_history:
+            sname = rec.skill.name
+            skill_growth_chart.setdefault(sname, []).append({
+                "date": (rec.changed_at + _td_growth(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
+                "level": rec.level,
+            })
+        skill_growth_avg: list = []
+        _growth_levels_map: dict = {}
+        for rec in _growth_history:
+            _growth_levels_map[rec.skill_id] = rec.level
+            skill_growth_avg.append({
+                "date": (rec.changed_at + _td_growth(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
+                "avg": round(sum(_growth_levels_map.values()) / len(_growth_levels_map), 2),
+            })
+        skill_milestones: list = []
+        for rec in _growth_history:
+            prev = rec.previous_level or 0
+            if prev < 3 <= rec.level or prev < 4 <= rec.level:
+                skill_milestones.append({
+                    "date": (rec.changed_at + _td_growth(hours=9)).strftime("%Y-%m-%d") if rec.changed_at else "",
+                    "skill_name": rec.skill.name,
+                    "level": rec.level,
+                })
+        skill_milestones.reverse()
+
         my_levels = (db.query(models.UserSkillLevel)
                      .filter(
                          models.UserSkillLevel.user_id == target.id,
@@ -2625,6 +2661,9 @@ def dashboard(
             "user_badges": user_badges,
             "BADGE_DEFS": models.BADGE_DEFS,
             "my_groups_info": my_groups_info,
+            "skill_growth_chart": skill_growth_chart,
+            "skill_growth_avg": skill_growth_avg,
+            "skill_milestones": skill_milestones,
         })
 
 

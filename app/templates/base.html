@@ -455,9 +455,12 @@
   </div>
 
   <div class="nav-items" id="navItems" data-pinned-sections="{{ (current_user.nav_pinned_sections if current_user else None) or '[]' }}">
-    <!-- ダッシュボード: どのセクションにも属さず常時表示 -->
+    <!-- ダッシュボード・Wiki: どのセクションにも属さず常時表示 -->
     <a id="navDashboard" href="/dashboard" class="nav-link-item {% if request.url.path == '/dashboard' %}active{% endif %}" data-label="ダッシュボード">
       <i class="bi bi-speedometer2 nav-icon"></i><span class="nav-text" data-i18n="nav.dashboard">ダッシュボード</span>
+    </a>
+    <a id="navWiki" href="/wiki" class="nav-link-item {% if request.url.path.startswith('/wiki') %}active{% endif %}" data-label="Wiki">
+      <i class="bi bi-journal-richtext nav-icon"></i><span class="nav-text">Wiki</span>
     </a>
 
     <div class="nav-section" data-section="main">
@@ -477,11 +480,11 @@
         <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
           <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
         </a>
-        <a id="navCertifications" href="/certifications" class="nav-link-item {% if request.url.path == '/certifications' %}active{% endif %}" data-label="資格登録">
-          <i class="bi bi-patch-check nav-icon"></i><span class="nav-text">資格登録</span>
+        <a id="navAnnualPlan" href="/annual-plan" class="nav-link-item {% if '/annual-plan' in request.url.path %}active{% endif %}" data-label="年間計画">
+          <i class="bi bi-calendar-check nav-icon"></i><span class="nav-text">年間計画</span>
         </a>
-        <a id="navWiki" href="/wiki" class="nav-link-item {% if request.url.path.startswith('/wiki') %}active{% endif %}" data-label="Wiki">
-          <i class="bi bi-journal-richtext nav-icon"></i><span class="nav-text">Wiki</span>
+        <a id="navCertifications" href="/certifications" class="nav-link-item {% if request.url.path == '/certifications' %}active{% endif %}" data-label="資格">
+          <i class="bi bi-patch-check nav-icon"></i><span class="nav-text">資格</span>
         </a>
         <a id="navExamsMy" href="/exams/my" class="nav-link-item {% if '/exams/my' in request.url.path %}active{% endif %}{% if request.state.my_exam_pending_count is defined and request.state.my_exam_pending_count > 0 %} nav-alert{% endif %}" data-label="試験">
           <i class="bi bi-clipboard-check nav-icon"></i><span class="nav-text">試験</span>
@@ -538,14 +541,6 @@
           <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
         </a>
         {% endif %}
-        <a id="navTimeline" href="/skills/timeline" class="nav-link-item {% if '/skills/timeline' in request.url.path %}active{% endif %}" data-label="成長タイムライン">
-          <i class="bi bi-graph-up-arrow nav-icon"></i><span class="nav-text" data-i18n="nav.timeline">成長タイムライン</span>
-        </a>
-        {% if current_user and current_user.role in ('admin', 'manager') %}
-        <a id="navCertMembers" href="/certifications/members" class="nav-link-item {% if '/certifications/members' in request.url.path %}active{% endif %}" data-label="資格マトリクス">
-          <i class="bi bi-patch-check-fill nav-icon"></i><span class="nav-text">資格マトリクス</span>
-        </a>
-        {% endif %}
       </div>
     </div>
 
@@ -572,32 +567,9 @@
         </a>
       </div>
     </div>
-
-    <div class="nav-section" data-section="groups">
-      <div class="nav-section-header">
-        <div class="nav-label" data-i18n="section.groups">グループ</div>
-        <div class="nav-section-controls">
-          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
-            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
-          </button>
-          <i class="bi bi-chevron-right nav-section-chevron"></i>
-        </div>
-      </div>
-      <div class="nav-section-content">
-        <a id="navGroups" href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}" data-label="グループ管理">
-          <i class="bi bi-people-fill nav-icon"></i><span class="nav-text" data-i18n="nav.groups">グループ管理</span>
-        </a>
-        <a id="navExams" href="/exams" class="nav-link-item {% if request.url.path.startswith('/exams') and not request.url.path.startswith('/exams/my') %}active{% endif %}{% if request.state.exam_grading_count is defined and request.state.exam_grading_count > 0 %} nav-alert{% endif %}" data-label="試験管理">
-          <i class="bi bi-clipboard-data nav-icon"></i><span class="nav-text">試験管理</span>
-          {% if request.state.exam_grading_count is defined and request.state.exam_grading_count > 0 %}
-          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.exam_grading_count }}</span>
-          {% endif %}
-        </a>
-      </div>
-    </div>
     {% endif %}
 
-    {% if current_user and current_user.role == 'admin' %}
+    {% if current_user and current_user.role in ('admin', 'manager') %}
     <div class="nav-section" data-section="admin">
       <div class="nav-section-header">
         <div class="nav-label" data-i18n="section.admin">管理</div>
@@ -609,23 +581,52 @@
         </div>
       </div>
       <div class="nav-section-content">
+        {% if current_user.role == 'admin' %}
         <a id="navUsers" href="/admin/users" class="nav-link-item {% if '/admin/users' in request.url.path %}active{% endif %}" data-label="ユーザー管理">
           <i class="bi bi-people nav-icon"></i><span class="nav-text" data-i18n="nav.users">ユーザー管理</span>
           {% if request.state.pending_user_count is defined and request.state.pending_user_count > 0 %}
           <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.pending_user_count }}</span>
           {% endif %}
         </a>
-        <a id="navNotify" href="/admin/settings/notifications" class="nav-link-item {% if '/admin/settings/notifications' in request.url.path or '/admin/settings/mail' in request.url.path %}active{% endif %}" data-label="通知設定">
-          <i class="bi bi-bell nav-icon"></i><span class="nav-text">通知設定</span>
+        {% endif %}
+        <a id="navGroups" href="/groups" class="nav-link-item {% if '/groups' in request.url.path %}active{% endif %}" data-label="グループ管理">
+          <i class="bi bi-people-fill nav-icon"></i><span class="nav-text" data-i18n="nav.groups">グループ管理</span>
         </a>
-        <a id="navData" href="/admin/settings/data" class="nav-link-item {% if '/admin/settings/data' in request.url.path or '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="データ管理">
-          <i class="bi bi-database nav-icon"></i><span class="nav-text">データ管理</span>
+        <a id="navExams" href="/exams" class="nav-link-item {% if request.url.path.startswith('/exams') and not request.url.path.startswith('/exams/my') %}active{% endif %}{% if request.state.exam_grading_count is defined and request.state.exam_grading_count > 0 %} nav-alert{% endif %}" data-label="試験管理">
+          <i class="bi bi-clipboard-data nav-icon"></i><span class="nav-text">試験管理</span>
+          {% if request.state.exam_grading_count is defined and request.state.exam_grading_count > 0 %}
+          <span class="badge rounded-pill" style="background:#ef4444;color:#fff;font-size:.65rem;margin-left:auto;">{{ request.state.exam_grading_count }}</span>
+          {% endif %}
+        </a>
+        {% if current_user.role == 'admin' %}
+        <a id="navCertCatalog" href="/certifications/catalog" class="nav-link-item {% if '/certifications/catalog' in request.url.path %}active{% endif %}" data-label="資格管理">
+          <i class="bi bi-patch-check nav-icon"></i><span class="nav-text">資格管理</span>
         </a>
         <a id="navTodos" href="/admin/todos" class="nav-link-item {% if '/admin/todos' in request.url.path %}active{% endif %}" data-label="ToDoリスト">
           <i class="bi bi-check2-square nav-icon"></i><span class="nav-text">ToDoリスト</span>
         </a>
-        <a id="navCertCatalog" href="/certifications/catalog" class="nav-link-item {% if '/certifications/catalog' in request.url.path %}active{% endif %}" data-label="資格マスタ管理">
-          <i class="bi bi-patch-check nav-icon"></i><span class="nav-text">資格マスタ管理</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if current_user and current_user.role == 'admin' %}
+    <div class="nav-section" data-section="settings">
+      <div class="nav-section-header">
+        <div class="nav-label" data-i18n="section.settings">設定</div>
+        <div class="nav-section-controls">
+          <button type="button" class="nav-section-pin" title="このセクションを常に表示する">
+            <i class="bi bi-pin-angle"></i><i class="bi bi-pin-angle-fill"></i>
+          </button>
+          <i class="bi bi-chevron-right nav-section-chevron"></i>
+        </div>
+      </div>
+      <div class="nav-section-content">
+        <a id="navData" href="/admin/settings/data" class="nav-link-item {% if '/admin/settings/data' in request.url.path or '/admin/settings/ai' in request.url.path %}active{% endif %}" data-label="データ設定">
+          <i class="bi bi-database nav-icon"></i><span class="nav-text">データ設定</span>
+        </a>
+        <a id="navNotify" href="/admin/settings/notifications" class="nav-link-item {% if '/admin/settings/notifications' in request.url.path or '/admin/settings/mail' in request.url.path %}active{% endif %}" data-label="通知設定">
+          <i class="bi bi-bell nav-icon"></i><span class="nav-text">通知設定</span>
         </a>
       </div>
     </div>
@@ -1607,13 +1608,12 @@ window.openNewTicket = function() {
       'section.approval': '承認',
       'section.analytics':'分析',
       'section.catalog':  'カタログ管理',
-      'section.groups':   'グループ',
       'section.admin':    '管理',
+      'section.settings': '設定',
       'section.help':     'ヘルプ',
       'nav.dashboard':    'ダッシュボード',
       'nav.skills':       'スキルマップ',
       'nav.my_approvals': '自分の申請状況',
-      'nav.timeline':     '成長タイムライン',
       'nav.approvals':    '承認依頼',
       'nav.matrix':       'スキルマトリクス',
       'nav.catalog':      'スキルカタログ',
@@ -1740,13 +1740,12 @@ window.openNewTicket = function() {
       'section.approval': 'Approvals',
       'section.analytics':'Analytics',
       'section.catalog':  'Catalog',
-      'section.groups':   'Groups',
       'section.admin':    'Admin',
+      'section.settings': 'Settings',
       'section.help':     'Help',
       'nav.dashboard':    'Dashboard',
       'nav.skills':       'Skill Map',
       'nav.my_approvals': 'My Approvals',
-      'nav.timeline':     'Growth Timeline',
       'nav.approvals':    'Approvals',
       'nav.matrix':       'Skill Matrix',
       'nav.catalog':      'Skill Catalog',

@@ -583,6 +583,33 @@ def education_area_delete(area_id: int, request: Request, db: Session = Depends(
     return RedirectResponse("/education", status_code=303)
 
 
+def _edu_area_is_self_or_descendant(area: "models.LearningPathArea", candidate_id: int) -> bool:
+    """candidate_id が area 自身またはその子孫かどうか（再親付けによる循環防止用）"""
+    if area.id == candidate_id:
+        return True
+    return any(_edu_area_is_self_or_descendant(child, candidate_id) for child in area.children)
+
+
+@router.post("/education/areas/reorder")
+async def education_areas_reorder(request: Request, db: Session = Depends(get_db)):
+    """同階層内の並び替え、およびドラッグ&ドロップによる他エリアへの移動（親変更）"""
+    auth.require_manager_or_admin(request, db)
+    data = await request.json()
+    parent_id = data.get("parent_id") or None
+    for i, area_id in enumerate(data.get("ids", [])):
+        area = db.query(models.LearningPathArea).filter(models.LearningPathArea.id == area_id).first()
+        if not area:
+            continue
+        area.order_index = i
+        if parent_id != area.parent_id:
+            # 自分自身・自分の子孫への移動は循環参照になるため無視する
+            if parent_id is not None and _edu_area_is_self_or_descendant(area, parent_id):
+                continue
+            area.parent_id = parent_id
+    db.commit()
+    return {"ok": True}
+
+
 # ── 学習パス 一括エクスポート / インポート（データ管理ページ用） ──────────────
 
 @router.get("/education/paths/export")

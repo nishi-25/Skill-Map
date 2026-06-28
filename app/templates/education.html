@@ -288,6 +288,7 @@
 {% set in_progress = (done_count > 0 and not all_done and not is_mgr2) %}
 {% set body_open = in_progress %}
 
+<div class="edu-area-wrap{% if depth > 0 %} edu-area-wrap-nested{% endif %}" data-area-id="{{ area.id }}">
 <div class="card mb-2{% if depth > 0 %} ms-4{% endif %}"
      style="border-radius:12px;overflow:hidden;
             border:{% if all_done %}1.5px solid #86efac{% elif in_progress %}1.5px solid #fed7aa{% else %}1px solid #e2e8f0{% endif %};">
@@ -297,6 +298,11 @@
               border-bottom:2px solid {% if all_done %}#86efac{% elif in_progress %}#fed7aa{% else %}#e2e8f0{% endif %};
               padding:.6rem 1rem;">
 
+    {% if is_mgr2 %}
+    <span class="edu-drag-handle" title="ドラッグして並び替え・他エリアへ移動">
+      <i class="bi bi-grip-vertical text-muted"></i>
+    </span>
+    {% endif %}
     <i class="bi bi-signpost-split" style="color:#f97316;font-size:.9rem;flex-shrink:0;"></i>
     <div style="flex:1;min-width:0;">
       <span class="fw-bold" style="font-size:.9rem;">{{ area.name }}</span>
@@ -366,10 +372,12 @@
   <div id="fa-body-{{ area.id }}" class="collapse{% if body_open %} show{% endif %}">
     <div class="card-body py-2 px-3">
 
-      {# 子エリア #}
-      {% for child_fa in children %}
-      {{ render_edu_area(child_fa, depth + 1) }}
-      {% endfor %}
+      {# 子エリア（ドラッグ&ドロップで他エリアの配下に移動できる） #}
+      <div class="edu-children{% if not children and is_mgr2 %} edu-children-empty{% endif %}" data-parent-id="{{ area.id }}">
+        {% for child_fa in children %}
+        {{ render_edu_area(child_fa, depth + 1) }}
+        {% endfor %}
+      </div>
 
       {# ステップ一覧 #}
       {% if steps %}
@@ -469,11 +477,14 @@
     </div>
   </div>
 </div>
+</div>
 {% endmacro %}
 
-{% for fa in free_areas %}
-{{ render_edu_area(fa, 0) }}
-{% endfor %}
+<div class="edu-children" data-parent-id="0">
+  {% for fa in free_areas %}
+  {{ render_edu_area(fa, 0) }}
+  {% endfor %}
+</div>
 
 {# ── ステップ追加モーダル（Manager/Admin 用） ── #}
 {% if current_user.role in ('admin','manager') %}
@@ -596,9 +607,46 @@
   </div>
 </div>
 {% endif %}
+
+<style>
+.edu-children-empty { min-height: 32px; margin-bottom: .5rem; border: 1px dashed #e2e8f0; border-radius: 8px; }
+.edu-drag-handle { cursor: grab; display: inline-flex; align-items: center; padding: .1rem .15rem; flex-shrink: 0; }
+.edu-drag-handle:active { cursor: grabbing; }
+.edu-area-wrap.sortable-ghost { opacity: .4; }
+</style>
 {% endblock %}
 
 {% block scripts %}
+{% if current_user.role in ('admin','manager') %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+// フリーエリアの並び替え・他エリアへの移動（全階層で共通のグループにして相互にドラッグ移動可能にする）
+function eduSyncAreaContainer(container) {
+  const parentId = parseInt(container.dataset.parentId) || 0;
+  const items = [...container.children].filter(el => el.classList.contains('edu-area-wrap'));
+  container.classList.toggle('edu-children-empty', items.length === 0);
+  const ids = items.map(el => parseInt(el.dataset.areaId));
+  fetch('/education/areas/reorder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({parent_id: parentId, ids})
+  });
+}
+
+document.querySelectorAll('.edu-children').forEach(container => {
+  new Sortable(container, {
+    group: 'edu-areas',
+    handle: '.edu-drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onEnd: function(evt) {
+      eduSyncAreaContainer(evt.from);
+      if (evt.to !== evt.from) eduSyncAreaContainer(evt.to);
+    }
+  });
+});
+</script>
+{% endif %}
 <script>
 function filterCat(catId, btn) {
   document.querySelectorAll('.filter-cat-btn').forEach(b => {

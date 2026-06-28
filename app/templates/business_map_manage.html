@@ -113,15 +113,21 @@
           {% if area.description %}
           <p class="text-muted small mb-2" style="font-size:.78rem;">{{ area.description }}</p>
           {% endif %}
-          {% if area.children %}
-          <div class="bm-children" data-parent-id="{{ area.id }}">
+          {# 子カテゴリと、エリア自身へのサブスキル割り当ては併用できる（どちらか一方に限定しない） #}
+          <div class="bm-children{% if not area.children %} bm-children-empty{% endif %}" data-parent-id="{{ area.id }}">
             {% for child in area.children %}
             {{ render_area_node(child, depth + 1) }}
             {% endfor %}
           </div>
-          {% else %}
-          <div class="bm-area-skills" data-area-id="{{ area.id }}">
-            {% for a_sk in area.area_sub_skills if a_sk.sub_skill %}
+          {# アーカイブ済みスキルに属するサブスキルはユーザー向け業務マップでは表示されないため、ここでも除外して件数を一致させる #}
+          {% set ns_vis = namespace(items=[]) %}
+          {% for a_sk in area.area_sub_skills %}
+          {% if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived %}
+          {% set ns_vis.items = ns_vis.items + [a_sk] %}
+          {% endif %}
+          {% endfor %}
+          <div class="bm-area-skills{% if area.children %} mt-2{% endif %}" data-area-id="{{ area.id }}">
+            {% for a_sk in ns_vis.items %}
             <div class="bm-skill-chip" data-subskill-id="{{ a_sk.sub_skill_id }}" data-tier="{{ a_sk.sub_skill.tier }}" title="{{ a_sk.sub_skill.skill.name }} › {{ a_sk.sub_skill.name }}">
               <span class="tier-pill bm-tier-badge tier-{{ a_sk.sub_skill.tier }}">{{ tier_names.get(a_sk.sub_skill.tier, a_sk.sub_skill.tier) }}</span>
               <span class="bm-skill-name">{{ a_sk.sub_skill.skill.name }} › {{ a_sk.sub_skill.name }}</span>
@@ -129,10 +135,9 @@
             </div>
             {% endfor %}
           </div>
-          <p class="text-muted text-center small mb-0 py-2 bm-empty-hint" {% if area.area_sub_skills %}style="display:none;"{% endif %}>
-            左のサブスキル一覧からドラッグして追加
+          <p class="text-muted text-center small mb-0 py-2 bm-empty-hint" {% if ns_vis.items %}style="display:none;"{% endif %}>
+            左のサブスキル一覧からドラッグして追加、他の業務エリアをドラッグして子エリア化
           </p>
-          {% endif %}
           </div>
         </div>
       </div>
@@ -313,21 +318,28 @@ function bmShowEmptyHintIfEmpty(areaSkillsEl) {
   }
 }
 
-// カテゴリの並び替え（各階層ごとに独立したSortableを設定）
+// カテゴリの並び替え・他エリアへの移動（全階層で共通のグループにして相互にドラッグ移動可能にする）
+function bmSyncAreaContainer(container) {
+  const parentId = parseInt(container.dataset.parentId) || 0;
+  const items = [...container.children].filter(el => el.classList.contains('bm-node-wrap'));
+  container.classList.toggle('bm-children-empty', items.length === 0);
+  const ids = items.map(el => parseInt(el.dataset.areaId));
+  fetch('/business-map/areas/reorder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({parent_id: parentId, ids})
+  });
+}
+
 document.querySelectorAll('.bm-children').forEach(container => {
   new Sortable(container, {
+    group: 'bm-areas',
     handle: '.bm-drag-handle',
     animation: 150,
     ghostClass: 'sortable-ghost',
-    onEnd: function() {
-      const ids = [...container.children]
-        .filter(el => el.classList.contains('bm-node-wrap'))
-        .map(el => parseInt(el.dataset.areaId));
-      fetch('/business-map/areas/reorder', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ids})
-      });
+    onEnd: function(evt) {
+      bmSyncAreaContainer(evt.from);
+      if (evt.to !== evt.from) bmSyncAreaContainer(evt.to);
     }
   });
 });
@@ -465,6 +477,7 @@ document.addEventListener('click', function(e) {
   #bmAreasFlow { max-height: calc(100vh - 6rem); overflow-y: auto; padding-right: .5rem; }
 }
 .bm-children { display: flex; flex-direction: column; gap: 1rem; }
+.bm-children-empty { min-height: 36px; border: 1px dashed #e2e8f0; border-radius: 8px; }
 .bm-node-wrap { position: relative; }
 .bm-area-card-nested { font-size: .92em; }
 .bm-area-card-nested .card-header { padding-top: .4rem; padding-bottom: .4rem; }

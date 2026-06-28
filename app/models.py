@@ -844,3 +844,35 @@ class WikiPage(Base):
 
     group = relationship("Group")
     creator = relationship("User", foreign_keys=[created_by])
+
+
+# ─── 年間育成計画 ───────────────────────────────────────────────
+
+PLAN_TYPES = {
+    "skill": "スキル習得",
+    "business_area": "業務エリア完了",
+    "certification": "資格取得",
+    "exam": "試験合格",
+}
+
+
+class AnnualPlanItem(Base):
+    """年間育成計画: 業務エリア完了・資格取得・試験合格の目標日を管理する
+    （スキル習得の目標は既存の SkillGoal をそのまま利用するため、ここには含めない）"""
+    __tablename__ = "annual_plan_items"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    plan_type = Column(String(20), nullable=False)  # business_area / certification / exam
+    business_map_area_id = Column(Integer, ForeignKey("business_map_areas.id", ondelete="CASCADE"), nullable=True)
+    certification_catalog_id = Column(Integer, ForeignKey("certification_catalog.id", ondelete="CASCADE"), nullable=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=True)
+    target_date = Column(Date, nullable=False)
+    note = Column(String(200), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    business_map_area = relationship("BusinessMapArea", foreign_keys=[business_map_area_id])
+    certification_catalog = relationship("CertificationCatalog", foreign_keys=[certification_catalog_id])
+    exam = relationship("Exam", foreign_keys=[exam_id])

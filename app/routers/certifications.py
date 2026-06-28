@@ -6,7 +6,6 @@ from datetime import datetime
 from fastapi import APIRouter, Request, Form, Depends, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 import models
 import auth
@@ -239,108 +238,9 @@ def certification_file(cert_id: int, request: Request, db: Session = Depends(get
 
 @router.get("/members", response_class=HTMLResponse)
 def certification_members(request: Request, db: Session = Depends(get_db)):
-    """所属メンバーの資格情報を確認するためのメンバー一覧"""
-    user = auth.require_manager_or_admin(request, db)
-
-    if user.role == "admin":
-        member_users = (
-            db.query(models.User)
-            .filter(models.User.is_approved == True, models.User.id != user.id)
-            .order_by(models.User.display_name, models.User.username)
-            .all()
-        )
-    else:
-        managed_ids = [g.id for g in _get_managed_groups(user, db)]
-        user_ids = set()
-        if managed_ids:
-            for m in db.query(models.GroupMembership).filter(
-                models.GroupMembership.group_id.in_(managed_ids)
-            ).all():
-                if m.user_id != user.id:
-                    user_ids.add(m.user_id)
-        member_users = (
-            db.query(models.User)
-            .filter(models.User.id.in_(user_ids), models.User.is_approved == True)
-            .order_by(models.User.display_name, models.User.username)
-            .all()
-            if user_ids else []
-        )
-
-    member_ids = [u.id for u in member_users]
-
-    counts = dict(
-        db.query(models.Certification.user_id, func.count(models.Certification.id))
-        .filter(models.Certification.user_id.in_(member_ids))
-        .group_by(models.Certification.user_id)
-        .all()
-    ) if member_ids else {}
-
-    # 棒グラフ用: 資格名ごとの取得者数・取得者一覧を集計
-    catalog_stats = []
-    if member_ids:
-        users_by_id = {u.id: u for u in member_users}
-        certs = (
-            db.query(models.Certification)
-            .filter(models.Certification.user_id.in_(member_ids))
-            .all()
-        )
-        groups = {}
-        for c in certs:
-            bucket = groups.setdefault(c.name, {"holder_ids": set(), "scores": {}})
-            bucket["holder_ids"].add(c.user_id)
-            if c.score is not None:
-                bucket["scores"][c.user_id] = c.score
-        for cert_name, data in groups.items():
-            scores = data["scores"]
-            holders = [
-                {
-                    "id": uid,
-                    "name": users_by_id[uid].display_name or users_by_id[uid].username,
-                    "score": scores.get(uid),
-                }
-                for uid in data["holder_ids"] if uid in users_by_id
-            ]
-            if scores:
-                holders.sort(key=lambda h: (-(h["score"] if h["score"] is not None else -1), h["name"]))
-                avg_score = round(sum(scores.values()) / len(scores), 1)
-            else:
-                holders.sort(key=lambda h: h["name"])
-                avg_score = None
-            catalog_stats.append({
-                "name": cert_name,
-                "count": len(holders),
-                "holders": holders,
-                "avg_score": avg_score,
-            })
-        catalog_stats.sort(key=lambda x: (-x["count"], x["name"]))
-
-    # サマリー: メンバー数・保有者数・総登録数・平均保有数・保有数の分布
-    total_members = len(member_users)
-    total_certs = sum(counts.values())
-    holders_count = sum(1 for c in counts.values() if c > 0)
-    avg_certs = round(total_certs / total_members, 1) if total_members else 0
-
-    dist_labels = ["0件", "1件", "2件", "3件以上"]
-    dist_counts = [0, 0, 0, 0]
-    for m in member_users:
-        n = counts.get(m.id, 0)
-        idx = min(n, 3)
-        dist_counts[idx] += 1
-
-    return templates.TemplateResponse(request, "certification_members.html", {
-        "current_user": user,
-        "members": member_users,
-        "cert_counts": counts,
-        "catalog_stats": catalog_stats,
-        "summary": {
-            "total_members": total_members,
-            "holders_count": holders_count,
-            "total_certs": total_certs,
-            "avg_certs": avg_certs,
-        },
-        "dist_labels": dist_labels,
-        "dist_counts": dist_counts,
-    })
+    """資格マトリクスはスキルマトリクスに統合されたため、そちらへリダイレクトする"""
+    auth.require_manager_or_admin(request, db)
+    return RedirectResponse("/skills/matrix?tab=cert", status_code=303)
 
 
 @router.get("/members/{user_id}", response_class=HTMLResponse)
@@ -350,7 +250,7 @@ def certification_member_detail(user_id: int, request: Request, db: Session = De
 
     target = db.query(models.User).filter(models.User.id == user_id).first()
     if not target:
-        return RedirectResponse("/certifications/members", status_code=303)
+        return RedirectResponse("/skills/matrix?tab=cert", status_code=303)
 
     if user.role == "manager":
         managed_ids = {g.id for g in _get_managed_groups(user, db)}
@@ -363,7 +263,7 @@ def certification_member_detail(user_id: int, request: Request, db: Session = De
             .first()
         )
         if not is_member:
-            return RedirectResponse("/certifications/members", status_code=303)
+            return RedirectResponse("/skills/matrix?tab=cert", status_code=303)
 
     certs = (
         db.query(models.Certification)
