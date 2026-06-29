@@ -1,0 +1,20 @@
+{% extends "manual/_layout.html" %}
+{% block title %}チームの年間計画{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>チームの年間計画</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-people text-primary"></i>チームの年間計画
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>サイドバーの「チームの年間計画」から、メンバーが立てた<a href="/manual/annual-plan">年間計画</a>のうち、目標日を過ぎても達成できていない（期限切れ・未達成の）計画だけを一覧で確認できます。</p>
+
+<h2 id="scope"><i class="bi bi-people-fill"></i>対象範囲</h2>
+<p>Managerは自分が担当するグループのメンバー（共同管理しているグループを含む）のみが表示されます。Adminは全メンバーが表示されます。</p>
+
+<h2 id="cards"><i class="bi bi-card-list"></i>見方</h2>
+<div class="step-item"><span class="step-badge">1</span><span>メンバーは「期限切れ・未達成」の件数が多い順に並びます。期限切れの計画がないメンバーは緑色のバッジで表示されます</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>各メンバーのカードを開くと、期限切れの計画ごとに種別（スキル・サブスキル・業務エリア・資格・試験）・目標日・何日遅れているかが表示されます</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>メンバー名をクリックすると、そのメンバーのスキル詳細ページに移動します</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>上部の検索ボックスでメンバー名を絞り込めます。</div>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>このページは確認のみで、コメントや通知の送信機能はありません。フォローアップは口頭・チャット等の既存手段で行ってください。</div>
+{% endblock %}

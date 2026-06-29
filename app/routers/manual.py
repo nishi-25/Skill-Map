@@ -116,6 +116,11 @@ def manual_annual_plan(request: Request, db: Session = Depends(get_db)):
 
 
 # ─── Manager以上 ──────────────────────────────────────────────
+@router.get("/annual-plan-team", response_class=HTMLResponse)
+def manual_annual_plan_team(request: Request, db: Session = Depends(get_db)):
+    return _page(request, db, "annual-plan-team", "manual/annual-plan-team.html")
+
+
 @router.get("/approvals", response_class=HTMLResponse)
 def manual_approvals(request: Request, db: Session = Depends(get_db)):
     return _page(request, db, "approvals", "manual/approvals.html")

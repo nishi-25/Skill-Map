@@ -28,5 +28,13 @@
 </table>
 <div class="tip-box"><i class="bi bi-filter me-1"></i>カテゴリー・グループでスキルを絞り込めます。スキル名で検索も可能です。</div>
 
+<h2 id="revoke"><i class="bi bi-x-circle"></i>承認済みスキルの取り消し</h2>
+<p>【一般Userの場合】一度承認されたスキルは、誤って下げてしまうのを防ぐため自分でチェックを外して直接レベルを下げることはできません。レベルを下げたい場合は「取り消し申請をする」ボタンから取り消しを申請し、承認者の承認を経て初めて未経験（Lv0）に戻ります。</p>
+<div class="step-item"><span class="step-badge">1</span><span>対象スキルの詳細パネルで「取り消し申請をする」をクリックし、確認ダイアログで「OK」を選ぶ</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>状態が「取消申請中（承認待ち）」になり、承認されるまでそのスキル・サブスキルの編集はできません</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>承認前に取り下げたい場合は「取り消し申請を取り下げる」をクリックすると、承認済みの状態に戻ります</span></div>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>承認済みのサブスキルそのものは個別に解除できません。新しくできるようになったサブスキルを追加でチェックすることは取り消し申請とは関係なく行えます。</div>
+<div class="admin-note"><i class="bi bi-shield-check me-1"></i>Admin/Managerは取り消し申請も自動承認されるため、このフローを経ずに即時レベルが下がります。</div>
+
 <div class="tip-box"><i class="bi bi-info-circle me-1"></i>実際の操作の流れを通して確認したい場合は<a href="/manual/usecase/user">ユースケース: Userの操作フロー</a>も参考にしてください。</div>
 {% endblock %}
