@@ -110,6 +110,11 @@ def manual_exams_my(request: Request, db: Session = Depends(get_db)):
     return _page(request, db, "exams-my", "manual/exams-my.html")
 
 
+@router.get("/annual-plan", response_class=HTMLResponse)
+def manual_annual_plan(request: Request, db: Session = Depends(get_db)):
+    return _page(request, db, "annual-plan", "manual/annual-plan.html")
+
+
 # ─── Manager以上 ──────────────────────────────────────────────
 @router.get("/approvals", response_class=HTMLResponse)
 def manual_approvals(request: Request, db: Session = Depends(get_db)):

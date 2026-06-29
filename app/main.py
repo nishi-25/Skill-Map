@@ -1912,6 +1912,8 @@ def dashboard(
     db: Session = Depends(get_db),
 ):
     current_user = auth.require_approved(request, db)
+    from datetime import datetime as _dt_now
+    generated_at = _dt_now.utcnow()
 
     # ── フィルター対象を決定 ─────────────────────────────────────
     is_privileged = current_user.role in ("admin", "manager")
@@ -2191,6 +2193,7 @@ def dashboard(
             "current_user": current_user,
             "view_mode": view_mode,
             "view_label": view_label,
+            "generated_at": generated_at,
             "target_user": None,
             "target_group": None,
             "all_users": all_users,
@@ -2338,6 +2341,7 @@ def dashboard(
             "current_user": current_user,
             "view_mode": view_mode,
             "view_label": view_label,
+            "generated_at": generated_at,
             "target_group": target_group,
             "all_users": all_users,
             "all_groups": all_groups,
@@ -2642,6 +2646,7 @@ def dashboard(
             "current_user": current_user,
             "view_mode": view_mode,
             "view_label": view_label,
+            "generated_at": generated_at,
             "target_user": target if view_mode == "user" else None,
             "all_users": all_users,
             "all_groups": all_groups,

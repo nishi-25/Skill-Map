@@ -12,6 +12,7 @@ import auth
 from database import get_db
 from template_engine import templates
 from routers.business_map import _collect_leaf_subskill_ids, _make_area_visibility_predicate
+from routers.groups import _get_managed_groups
 
 router = APIRouter()
 
@@ -364,6 +365,8 @@ def annual_plan_view(
             for a_sk in a.area_sub_skills
             if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived
         ]
+        if not subs:
+            continue  # サブスキルが直接割り当てられていない「ただの階層」フォルダは一覧に出さない（展開しても何も出ないため）
         area_pool.append({"id": a.id, "label": _area_breadcrumb_label(a), "sub_skills": subs})
     area_pool.sort(key=lambda x: x["label"])
     area_options = [{"id": x["id"], "label": x["label"]} for x in area_pool]
@@ -467,3 +470,59 @@ def annual_plan_item_delete(item_id: int, request: Request, db: Session = Depend
         db.delete(item)
         db.commit()
     return RedirectResponse(f"/annual-plan?view=month&date={anchor_date}", status_code=303)
+
+
+@router.get("/annual-plan/team", response_class=HTMLResponse)
+def annual_plan_team_view(request: Request, db: Session = Depends(get_db)):
+    """Manager/Admin向け: 担当メンバーの年間計画の遅延状況を一覧確認する"""
+    user = auth.require_manager_or_admin(request, db)
+
+    is_manager = user.role == "manager"
+    if is_manager:
+        managed_group_ids = {g.id for g in _get_managed_groups(user, db)}
+        managed_member_ids = {
+            m.user_id
+            for gid in managed_group_ids
+            for m in db.query(models.GroupMembership).filter(models.GroupMembership.group_id == gid).all()
+        }
+        members = (
+            db.query(models.User)
+            .filter(
+                models.User.id.in_(managed_member_ids),
+                models.User.is_approved == True,
+                models.User.role == "user",
+            )
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+        ) if managed_member_ids else []
+    else:
+        members = (
+            db.query(models.User)
+            .filter(models.User.is_approved == True, models.User.role == "user")
+            .order_by(models.User.display_name, models.User.username)
+            .all()
+        )
+
+    today = _date.today()
+    member_rows = []
+    for m in members:
+        rows = _collect_all_rows(db, m)
+        overdue = sorted((r for r in rows if r["is_overdue"]), key=lambda r: r["target_date"])
+        for r in overdue:
+            r["days_overdue"] = (today - r["target_date"]).days
+        member_rows.append({
+            "user": m,
+            "total": len(rows),
+            "achieved": sum(1 for r in rows if r["achieved"]),
+            "overdue_items": overdue,
+        })
+    member_rows.sort(key=lambda x: -len(x["overdue_items"]))
+
+    return templates.TemplateResponse(request, "annual_plan_team.html", {
+        "current_user": user,
+        "is_manager": is_manager,
+        "member_rows": member_rows,
+        "total_overdue": sum(len(x["overdue_items"]) for x in member_rows),
+        "PLAN_TYPES": models.PLAN_TYPES,
+        "PLAN_TYPE_ICONS": PLAN_TYPE_ICONS,
+    })

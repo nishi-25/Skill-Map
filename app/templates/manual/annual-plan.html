@@ -1,0 +1,35 @@
+{% extends "manual/_layout.html" %}
+{% block title %}年間計画{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>User機能</span> / <span>年間計画</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-calendar-check text-primary"></i>年間計画
+  <span class="role-badge role-user">User</span>
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>サイドバーの「年間計画」から、スキル（サブスキル単位）・業務エリア・資格・試験について「いつまでに達成するか」をカレンダー形式で計画できます。</p>
+
+<h2 id="views"><i class="bi bi-calendar3"></i>表示ビュー（年・月・週・日）</h2>
+<p>画面上部のタブで「年」「月」「週」「日」の4つのビューを切り替えられます。開いた直後は常にその時点の「月」ビューが表示されます。前へ/次への矢印ボタンで月（週・日・年）を移動でき、現在の期間から離れている場合は「今月」などのショートカットボタンで一気に戻れます。</p>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>年ビューは1年分のミニカレンダー、月ビューは1ヶ月を大きく、週・日ビューは予定をその場で全文表示します。どのビューでも左側のドラッグ用一覧（スキル・業務・資格・試験）は共通で使えます。</div>
+
+<h2 id="register"><i class="bi bi-plus-square"></i>計画の登録方法</h2>
+<div class="step-item"><span class="step-badge">1</span><span>左側の一覧から、登録したいスキル・サブスキル・業務エリア・資格・試験のチップをカレンダーの日付へ<strong>ドラッグ&ドロップ</strong>する</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>種別・対象・日付が自動入力された「計画を追加」モーダルが開くので、内容（スキルの場合は目標レベル、メモなど）を確認・入力して「登録」をクリック</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>ドラッグの代わりに、チップを直接クリックしても同じモーダルを開ける（日付は未入力なので自分で選択する）</span></div>
+<div class="step-item"><span class="step-badge">4</span><span>予定のない日付セルをクリックすると、その日付が入力された状態でモーダルが開く</span></div>
+<p>スキルは「スキル全体（カタログ単位）」のヘッダー部分をドラッグすると目標レベル付きのスキル目標として登録され、展開した中の「サブスキル」を個別にドラッグすると、そのサブスキル1件の習得計画として登録されます。業務エリアも同様に、エリア全体のドラッグと、配下のサブスキル単位のドラッグの両方に対応しています。</p>
+
+<h2 id="achievement"><i class="bi bi-patch-check"></i>達成判定のルール</h2>
+<table class="table table-sm feature-table">
+  <tr><td><strong>スキル習得</strong></td><td>スキル申告でそのレベル以上が承認されると達成。期日の前後は問わない</td></tr>
+  <tr><td><strong>サブスキル習得</strong></td><td>該当サブスキルを「できる」にすると達成。期日の前後は問わない</td></tr>
+  <tr><td><strong>業務エリア完了</strong></td><td>配下の全サブスキルが「できる」になると達成。期日の前後は問わない</td></tr>
+  <tr><td><strong>資格取得</strong></td><td><span class="text-danger fw-semibold">目標日までに</span>資格を登録していないと未達成（目標日より後に登録した場合は「期限切れ・未達成」のまま）</td></tr>
+  <tr><td><strong>試験合格</strong></td><td><span class="text-danger fw-semibold">目標日までに</span>合格していないと未達成（目標日より後に合格した場合も「期限切れ・未達成」のまま）</td></tr>
+</table>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>資格・試験は「目標日に遅れて取得・合格した」場合でも達成扱いにはなりません。計画どおりのスケジュールで取り組めたかを管理するための仕様です。</div>
+
+<h2 id="edit-delete"><i class="bi bi-pencil-square"></i>編集・削除</h2>
+<p>カレンダー上の予定（月ビューは日付セルをクリック、週・日ビューはその場に表示されている予定）から「編集」「削除」ができます。スキル習得の目標レベル自体を変更したい場合は、スキル申告ページから変更してください（年間計画では目標日・メモのみ編集できます）。</p>
+{% endblock %}

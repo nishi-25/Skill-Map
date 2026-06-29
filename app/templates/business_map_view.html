@@ -140,6 +140,11 @@
 {% endif %}
 {% endmacro %}
 
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   マクロ: ブロック表示用のブレッドクラム（祖先エリアのパスのみ、自分自身は含まない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+{% macro _bm_ancestor_path(area) %}{% if area.parent %}{% if area.parent.parent %}{{ _bm_ancestor_path(area.parent) }} › {% endif %}{{ area.parent.name }}{% endif %}{% endmacro %}
+
 {# ページヘッダー #}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
@@ -181,6 +186,11 @@
   <li class="nav-item">
     <button class="nav-link fw-semibold" id="tab-bm-mindmap-btn" data-bs-toggle="tab" data-bs-target="#tab-bm-mindmap" type="button">
       <i class="bi bi-diagram-3 me-1" style="color:#6366f1;"></i>マインドマップ表示
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link fw-semibold" id="tab-bm-block-btn" data-bs-toggle="tab" data-bs-target="#tab-bm-block" type="button">
+      <i class="bi bi-grid-3x3-gap-fill me-1" style="color:#f97316;"></i>ブロック表示
     </button>
   </li>
 </ul>
@@ -333,15 +343,7 @@
   <span><i class="bi bi-square-fill" style="color:#94a3b8;"></i> 親エリア（複数エリアを含む）</span>
 </div>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="bmSidePanel" aria-labelledby="bmSidePanelLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="bmSidePanelLabel"></h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="閉じる"></button>
-  </div>
-  <div class="offcanvas-body" id="bmSidePanelBody"></div>
-</div>
-
-{# エリアごとの隠しパネル内容（クリック時にOffcanvasへ移動して表示する） #}
+{# エリアごとの隠しパネル内容（クリック時にOffcanvasへ移動して表示する。ブロック表示タブからも同じパネルを使う） #}
 {% for node in mindmap_panel_nodes %}
 <div id="bm-mm-stash-{{ node.area.id }}" class="d-none" data-area-name="{{ node.area.name }}">
   {% if node.skills_data %}
@@ -379,6 +381,53 @@
 </div>
 {% endif %}
 </div>
+
+{# ── ブロック表示: 業務エリアをカードのグリッドで一覧表示 ── #}
+<div class="tab-pane fade" id="tab-bm-block">
+{% if mindmap_panel_nodes %}
+<div class="bm-block-grid">
+  {% for node in mindmap_panel_nodes %}
+  {% set pct = node.pct %}
+  <div class="bm-block-card" style="border-left:4px solid {{ node.area.color or '#6366f1' }};" onclick="bmMmOpenPanelForNode({{ node.area.id }})">
+    {% set path = _bm_ancestor_path(node.area) %}
+    {% if path %}<div class="bm-block-path text-truncate">{{ path }}</div>{% endif %}
+    <div class="bm-block-name text-truncate">{{ node.area.name }}</div>
+    <div class="d-flex align-items-center gap-2 mt-2">
+      <div class="bm-bar flex-grow-1"><div class="bm-bar-inner" style="width:{{ pct }}%;background:{% if pct==100 %}#22c55e{% elif node.acquired > 0 %}#f97316{% else %}#cbd5e1{% endif %};"></div></div>
+      <span class="bm-stat flex-shrink-0">{{ node.acquired }}/{{ node.total }}</span>
+    </div>
+    <div class="mt-2">
+      {% if pct == 100 %}
+      <span class="bm-badge-done"><i class="bi bi-check-circle-fill me-1"></i>完了</span>
+      {% elif node.acquired > 0 %}
+      <span class="bm-badge-wip">進行中</span>
+      {% else %}
+      <span class="bm-badge-empty">未申告</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-grid-3x3-gap fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>業務マップが未設定です</h5>
+  </div>
+</div>
+{% endif %}
+</div>
+
+</div>
+
+{# オフキャンバス本体（タブの中ではなく tab-content の外に置く。非アクティブなタブは display:none になるため、
+   マインドマップ／ブロック表示のどちらからでも開けるように共通の場所に配置する） #}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="bmSidePanel" aria-labelledby="bmSidePanelLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="bmSidePanelLabel"></h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="閉じる"></button>
+  </div>
+  <div class="offcanvas-body" id="bmSidePanelBody"></div>
 </div>
 
 <style>
@@ -418,6 +467,15 @@
 .bm-lf-chev { transition:transform .2s; }
 .bm-leaf-head.collapsed .bm-lf-chev { transform:rotate(-90deg); }
 .bm-leaf-body { padding:.85rem 1rem; border-top:1px solid #f1f5f9; }
+/* ── ブロック表示 ── */
+.bm-block-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:1rem; }
+.bm-block-card {
+  background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1rem;
+  cursor:pointer; transition:box-shadow .15s, transform .15s;
+}
+.bm-block-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.08); transform:translateY(-2px); }
+.bm-block-path { font-size:.7rem; color:#94a3b8; }
+.bm-block-name { font-weight:600; font-size:.92rem; }
 /* ── ミニバー ── */
 .bm-mini-bar { width:48px; height:5px; border-radius:3px; background:#f1f5f9; overflow:hidden; flex-shrink:0; }
 .bm-mini-bar-inner { height:100%; border-radius:3px; transition:width .4s; }

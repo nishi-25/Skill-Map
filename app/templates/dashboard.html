@@ -5,7 +5,10 @@
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
     <h1><i class="bi bi-speedometer2 me-2" style="color:#f97316;"></i><span data-i18n="page.dashboard">ダッシュボード</span></h1>
-    <p class="text-muted mb-0 small">{{ view_label }}</p>
+    <p class="text-muted mb-0 small">
+      {{ view_label }}
+      {% if generated_at is defined and generated_at %}<span class="ms-1">（{{ generated_at | jst }} 時点のデータ）</span>{% endif %}
+    </p>
   </div>
   {% if view_mode == 'self' %}
   <a href="/skills" class="btn btn-primary btn-sm" style="border-radius:20px;padding:.4rem 1.2rem;">
@@ -165,7 +168,7 @@
 <div class="row g-3 mb-4">
   <!-- 対象メンバー -->
   <div class="col-6 col-lg">
-    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="members" style="cursor:default;">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="members" style="cursor:pointer;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f97316;"><i class="bi bi-people-fill"></i></div>
         <div>
@@ -177,7 +180,7 @@
   </div>
   <!-- 総申告スキル -->
   <div class="col-6 col-lg">
-    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="skills" style="cursor:default;">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="skills" style="cursor:pointer;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#22c55e;"><i class="bi bi-lightning-charge-fill"></i></div>
         <div>
@@ -189,7 +192,7 @@
   </div>
   <!-- 全体平均レベル -->
   <div class="col-6 col-lg">
-    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="level" style="cursor:default;">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="level" style="cursor:pointer;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);color:#f59e0b;"><i class="bi bi-bar-chart-fill"></i></div>
         <div>
@@ -201,7 +204,7 @@
   </div>
   <!-- カタログ総数 -->
   <div class="col-6 col-lg">
-    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="catalog" style="cursor:default;">
+    <div class="stat-card stat-hoverable h-100 d-flex align-items-center" data-detail="catalog" style="cursor:pointer;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);color:#a855f7;"><i class="bi bi-collection-fill"></i></div>
         <div>
@@ -403,8 +406,11 @@
       <div class="card-body">
         <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2" style="color:#0ea5e9;"></i data-i18n="lbl.category_radar">メンバー別 カテゴリーレーダー</h6>
         <div style="position:relative;max-height:320px;">
-          <canvas id="radarChart"></canvas>
+          <canvas id="radarChart" role="img" aria-label="カテゴリー別スキルレベルをメンバー間で比較するレーダーチャート"></canvas>
         </div>
+        {% if total_members is defined and total_members and total_members > 8 %}
+        <p class="text-muted small mb-0 mt-1">上位8名を表示しています（全{{ total_members }}名）</p>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -414,7 +420,7 @@
       <div class="card-body">
         <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>レベル分布</h6>
         <div style="position:relative;max-height:320px;">
-          <canvas id="levelChart"></canvas>
+          <canvas id="levelChart" role="img" aria-label="スキルレベル0から4までの人数分布を示す横棒グラフ"></canvas>
         </div>
       </div>
     </div>
@@ -429,7 +435,7 @@
   </div>
   <div class="card-body">
     <div style="position:relative;height:200px;">
-      <canvas id="weeklyTrendChart"></canvas>
+      <canvas id="weeklyTrendChart" role="img" aria-label="直近12週間の週次レベルアップ件数を示す折れ線グラフ"></canvas>
     </div>
   </div>
 </div>
@@ -632,7 +638,7 @@
     <strong>スキル成長トレンド（カテゴリ別・過去6ヶ月）</strong>
   </div>
   <div class="card-body">
-    <canvas id="trendChart" height="120"></canvas>
+    <canvas id="trendChart" height="120" role="img" aria-label="カテゴリー別平均レベルの過去6ヶ月間の推移を示す折れ線グラフ"></canvas>
   </div>
 </div>
 {% endif %}
@@ -784,7 +790,7 @@
         <div class="tab-pane fade" id="tabCatCoverage" role="tabpanel">
           {% if cat_coverage is defined %}
           <div style="max-height:350px;position:relative;">
-            <canvas id="catCoverageChart"></canvas>
+            <canvas id="catCoverageChart" role="img" aria-label="カテゴリー別スキルカバー率を示す横棒グラフ"></canvas>
           </div>
           {% endif %}
         </div>
@@ -1153,12 +1159,15 @@
           {% endif %}
         </h6>
         <div style="position:relative;max-height:320px;">
-          <canvas id="radarChart"></canvas>
+          <canvas id="radarChart" role="img" aria-label="{% if view_mode == 'group' %}カテゴリー別スキルレベルをメンバー間で比較するレーダーチャート{% else %}カテゴリー別の申告数を示すレーダーチャート{% endif %}"></canvas>
         </div>
         {% if not top_cats and view_mode != 'group' %}
         <div class="text-center text-muted small py-3">
           <i class="bi bi-inbox me-1"></i>データがありません
         </div>
+        {% endif %}
+        {% if view_mode == 'group' and members and members|length > 8 %}
+        <p class="text-muted small mb-0 mt-1">上位8名を表示しています（全{{ members|length }}名）</p>
         {% endif %}
       </div>
     </div>
@@ -1170,7 +1179,7 @@
       <div class="card-body">
         <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>レベル分布</h6>
         <div style="position:relative;max-height:320px;">
-          <canvas id="levelChart"></canvas>
+          <canvas id="levelChart" role="img" aria-label="スキルレベル0から4までの人数分布を示す横棒グラフ"></canvas>
         </div>
       </div>
     </div>
@@ -1410,7 +1419,7 @@
         <strong>スキル成長トレンド（カテゴリ別・過去6ヶ月）</strong>
       </div>
       <div class="card-body">
-        <canvas id="trendChart" height="120"></canvas>
+        <canvas id="trendChart" height="120" role="img" aria-label="カテゴリー別平均レベルの過去6ヶ月間の推移を示す折れ線グラフ"></canvas>
       </div>
     </div>
   </div>
@@ -1498,7 +1507,7 @@
             </select>
           </div>
           <div class="card-body" style="height:300px;">
-            <canvas id="growthChart"></canvas>
+            <canvas id="growthChart" role="img" aria-label="選択したスキルのレベル成長推移を示す折れ線グラフ"></canvas>
           </div>
         </div>
       </div>
@@ -1647,7 +1656,19 @@
     });
   }
 
+  function hidePanel() {
+    hideTimer = setTimeout(() => { panel.style.display = 'none'; panel.dataset.openFor = ''; }, 80);
+  }
+
   document.querySelectorAll('.stat-hoverable[data-detail]').forEach(card => {
+    // キーボード・スクリーンリーダーでも内容を確認できるようにする
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    if (!card.hasAttribute('aria-label')) {
+      const label = card.querySelector('.text-muted');
+      if (label) card.setAttribute('aria-label', label.textContent.trim() + 'の詳細を表示');
+    }
+
     card.addEventListener('mouseenter', function() {
       showPanel(this, this.dataset.detail);
     });
@@ -1655,8 +1676,26 @@
       // ウィンドウスクロール等でパネルがずれないよう毎回再配置
       showPanel(this, this.dataset.detail);
     });
-    card.addEventListener('mouseleave', function() {
-      hideTimer = setTimeout(() => { panel.style.display = 'none'; }, 80);
+    card.addEventListener('mouseleave', hidePanel);
+    card.addEventListener('focus', function() {
+      showPanel(this, this.dataset.detail);
+    });
+    card.addEventListener('blur', hidePanel);
+    card.addEventListener('click', function() {
+      // タッチデバイスではホバーが効かないため、クリックで開閉をトグルする
+      if (panel.style.display !== 'none' && panel.dataset.openFor === this.dataset.detail) {
+        panel.style.display = 'none';
+        panel.dataset.openFor = '';
+      } else {
+        showPanel(this, this.dataset.detail);
+        panel.dataset.openFor = this.dataset.detail;
+      }
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
     });
   });
 })();
@@ -1678,13 +1717,14 @@ document.addEventListener('DOMContentLoaded', () => {
       {bg: 'rgba(34,197,94,.15)', border: '#22c55e'},
       {bg: 'rgba(168,85,247,.15)', border: '#a855f7'},
       {bg: 'rgba(236,72,153,.15)', border: '#ec4899'},
-      {bg: 'rgba(249,115,22,.15)', border: '#f97316'},
+      {bg: 'rgba(20,184,166,.15)', border: '#14b8a6'},
     ];
     const datasets = [];
-    {% for m in members %}
+    {# 色を使い切って別人が同じ色になるのを防ぐため、表示するメンバーを色数（8人）まで絞る #}
+    {% for m in members[:8] %}
     {
       const data = [{% for c in categories %}{{ member_radar.get(m.id, {}).get(c.name, 0) }}{% if not loop.last %},{% endif %}{% endfor %}];
-      const ci = {{ loop.index0 }} % colors.length;
+      const ci = {{ loop.index0 }};
       datasets.push({
         label: '{{ m.display_name or m.username }}',
         data: data,
@@ -1762,29 +1802,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const levelData = [{{ level_dist[0] }}, {{ level_dist[1] }}, {{ level_dist[2] }}, {{ level_dist[3] }}, {{ level_dist[4] }}];
 
   new Chart(levelCtx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels: levelNames,
       datasets: [{
         data: levelData,
-        backgroundColor: levelColors.map(c => c + '22'),
-        borderColor: levelColors,
-        borderWidth: 2,
-        hoverBackgroundColor: levelColors.map(c => c + '44'),
+        backgroundColor: levelColors,
         borderRadius: 4,
+        maxBarThickness: 28,
       }]
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: true,
-      cutout: '55%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { padding: 15, usePointStyle: true, pointStyle: 'circle', font: { size: 12, family: "'Noto Sans JP', sans-serif" } }
-        },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } } },
+        y: { ticks: { font: { size: 12, family: "'Noto Sans JP', sans-serif" } } },
       },
-      animation: { duration: 1000, easing: 'easeOutQuart', animateRotate: true },
+      plugins: {
+        legend: { display: false },
+      },
+      animation: { duration: 800, easing: 'easeOutQuart' },
     }
   });
 

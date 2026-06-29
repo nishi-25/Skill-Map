@@ -525,6 +525,7 @@
       </div>
     </div>
 
+    {% if current_user and current_user.role in ('admin', 'manager') %}
     <div class="nav-section" data-section="analytics">
       <div class="nav-section-header">
         <div class="nav-label" data-i18n="section.analytics">分析</div>
@@ -536,13 +537,15 @@
         </div>
       </div>
       <div class="nav-section-content">
-        {% if current_user and current_user.role in ('admin', 'manager') %}
         <a id="navMatrix" href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}" data-label="スキルマトリクス">
           <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
         </a>
-        {% endif %}
+        <a id="navAnnualPlanTeam" href="/annual-plan/team" class="nav-link-item {% if '/annual-plan/team' in request.url.path %}active{% endif %}" data-label="チームの年間計画">
+          <i class="bi bi-people nav-icon"></i><span class="nav-text">チームの年間計画</span>
+        </a>
       </div>
     </div>
+    {% endif %}
 
     {% if current_user and current_user.role in ('admin', 'manager') %}
     <div class="nav-section" data-section="catalog">
@@ -787,26 +790,9 @@
     document.addEventListener('DOMContentLoaded', _syncNavTooltips);
   })();
 
-  /* ── ナビゲーションのスクロール位置を保持 ── */
-  (function() {
-    const navItems = document.getElementById('navItems');
-    if (!navItems) return;
-    const KEY = 'nav_scroll_top';
-    const saved = sessionStorage.getItem(KEY);
-    if (saved !== null) {
-      navItems.scrollTop = parseInt(saved, 10) || 0;
-    }
-    navItems.addEventListener('scroll', () => {
-      sessionStorage.setItem(KEY, navItems.scrollTop);
-    });
-    navItems.querySelectorAll('a.nav-link-item').forEach(a => {
-      a.addEventListener('click', () => {
-        sessionStorage.setItem(KEY, navItems.scrollTop);
-      });
-    });
-  })();
-
-  /* ── ナビゲーター: セクションの折りたたみ・固定表示 ── */
+  /* ── ナビゲーター: セクションの折りたたみ・固定表示 ──
+     （スクロール位置の復元より先に実行する。セクションは展開前は max-height:0 で
+     高さが無いため、先に展開してナビ全体の高さを確定させないとスクロール復元が無効になる） */
   (function() {
     const navItems = document.getElementById('navItems');
     if (!navItems) return;
@@ -848,6 +834,25 @@
           }).catch(() => {});
         });
       }
+    });
+  })();
+
+  /* ── ナビゲーションのスクロール位置を保持 ── */
+  (function() {
+    const navItems = document.getElementById('navItems');
+    if (!navItems) return;
+    const KEY = 'nav_scroll_top';
+    const saved = sessionStorage.getItem(KEY);
+    if (saved !== null) {
+      navItems.scrollTop = parseInt(saved, 10) || 0;
+    }
+    navItems.addEventListener('scroll', () => {
+      sessionStorage.setItem(KEY, navItems.scrollTop);
+    });
+    navItems.querySelectorAll('a.nav-link-item').forEach(a => {
+      a.addEventListener('click', () => {
+        sessionStorage.setItem(KEY, navItems.scrollTop);
+      });
     });
   })();
 

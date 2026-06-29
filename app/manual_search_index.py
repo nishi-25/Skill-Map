@@ -21,6 +21,7 @@ PAGES = [
     {"key": "education", "url": "/manual/education", "title": "教育リソース", "icon": "bi-mortarboard-fill", "group": "User機能", "min_role": None},
     {"key": "certifications", "url": "/manual/certifications", "title": "資格登録", "icon": "bi-patch-check-fill", "group": "User機能", "min_role": None},
     {"key": "exams-my", "url": "/manual/exams-my", "title": "試験を受ける", "icon": "bi-pencil-square", "group": "User機能", "min_role": None},
+    {"key": "annual-plan", "url": "/manual/annual-plan", "title": "年間計画", "icon": "bi-calendar-check", "group": "User機能", "min_role": None},
 
     {"key": "approvals", "url": "/manual/approvals", "title": "承認依頼", "icon": "bi-check2-square", "group": "Manager以上", "min_role": "manager"},
     {"key": "matrix", "url": "/manual/matrix", "title": "スキルマトリクス", "icon": "bi-grid-3x3-gap", "group": "Manager以上", "min_role": "manager"},
@@ -159,6 +160,12 @@ MANUAL_INDEX = [
     {"page_url": "/manual/exams-my", "anchor": "exam-take", "title": "試験を受ける（学科・実技）", "breadcrumb": "User機能 › 試験を受ける",
      "keywords": "試験 学科 実技 選択問題 エビデンス 提出 採点",
      "snippet": "学科は選択問題に回答して自動採点、実技はエビデンスファイルを提出してManagerが採点します。"},
+    {"page_url": "/manual/annual-plan", "anchor": "register", "title": "年間計画の登録方法（ドラッグ&ドロップ）", "breadcrumb": "User機能 › 年間計画",
+     "keywords": "年間計画 ドラッグ ドロップ カレンダー サブスキル 業務エリア 資格 試験 月 週 日 年",
+     "snippet": "左の一覧からスキル・サブスキル・業務エリア・資格・試験をカレンダーへドラッグ&ドロップして計画を登録できます。"},
+    {"page_url": "/manual/annual-plan", "anchor": "achievement", "title": "年間計画の達成判定ルール", "breadcrumb": "User機能 › 年間計画",
+     "keywords": "年間計画 達成 未達成 期限切れ 目標日 資格 試験",
+     "snippet": "資格・試験は目標日までに取得・合格していないと未達成になります（サブスキル等は期日を問いません）。"},
 
     {"page_url": "/manual/approvals", "anchor": "single-approval", "title": "個別承認・差し戻し", "breadcrumb": "Manager以上 › 承認依頼",
      "keywords": "承認 差し戻し コメント 却下",

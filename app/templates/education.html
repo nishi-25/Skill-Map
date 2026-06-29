@@ -294,9 +294,10 @@
             border:{% if all_done %}1.5px solid #86efac{% elif in_progress %}1.5px solid #fed7aa{% else %}1px solid #e2e8f0{% endif %};">
 
   <div class="card-header d-flex align-items-center gap-2 flex-wrap"
+       onclick="toggleEduArea('{{ area.id }}')"
        style="background:{% if all_done %}#f0fdf4{% elif in_progress %}#fff7ed{% else %}#f8fafc{% endif %};
               border-bottom:2px solid {% if all_done %}#86efac{% elif in_progress %}#fed7aa{% else %}#e2e8f0{% endif %};
-              padding:.6rem 1rem;">
+              padding:.6rem 1rem;cursor:pointer;">
 
     {% if is_mgr2 %}
     <span class="edu-drag-handle" title="ドラッグして並び替え・他エリアへ移動">

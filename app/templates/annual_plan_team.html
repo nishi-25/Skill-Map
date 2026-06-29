@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}チームの年間計画 - Skill View.{% endblock %}
+
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h1 style="font-size:1.3rem;"><i class="bi bi-people me-2" style="color:#6366f1;"></i>チームの年間計画</h1>
+    <p class="text-muted mb-0 small">
+      {% if is_manager %}担当グループのメンバーの年間計画の進捗・遅延を確認できます{% else %}全メンバーの年間計画の進捗・遅延を確認できます{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="ap-team-summary-bar mb-3 d-flex flex-wrap align-items-center gap-4">
+  <div>
+    <span class="text-muted small">メンバー数</span>
+    <div class="fs-4 fw-bold">{{ member_rows|length }}</div>
+  </div>
+  <div>
+    <span class="text-muted small">期限切れ・未達成の合計</span>
+    <div class="fs-4 fw-bold text-danger">{{ total_overdue }}</div>
+  </div>
+  <div class="ms-auto" style="max-width:240px;flex:1;">
+    <input type="text" id="teamSearch" class="form-control form-control-sm" placeholder="メンバー名で検索..." oninput="filterTeamCards()" style="border-radius:20px;">
+  </div>
+</div>
+
+{% if not member_rows %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-people fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+    <h5>表示できるメンバーがいません</h5>
+    {% if is_manager %}<p class="small">担当グループにメンバーが登録されていません。</p>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div id="teamCards" class="d-flex flex-column gap-2">
+  {% for row in member_rows %}
+  {% set u = row.user %}
+  <div class="card ap-team-card {% if row.overdue_items %}ap-team-card-overdue{% endif %}" data-name="{{ (u.display_name or u.username)|lower }}">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="/members/{{ u.id }}/skills" class="fw-semibold text-decoration-none" style="color:#1e293b;">
+          <i class="bi bi-person-circle me-1" style="color:#94a3b8;"></i>{{ u.display_name or u.username }}
+        </a>
+        <span class="badge bg-light text-muted">達成 {{ row.achieved }} / 全 {{ row.total }}</span>
+        {% if row.overdue_items %}
+        <span class="badge" style="background:#ef4444;">期限切れ・未達成 {{ row.overdue_items|length }}件</span>
+        {% else %}
+        <span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">期限切れの計画はありません</span>
+        {% endif %}
+      </div>
+
+      {% if row.overdue_items %}
+      <div class="mt-2 d-flex flex-column gap-1">
+        {% for it in row.overdue_items %}
+        <div class="ap-team-item d-flex align-items-center gap-2 flex-wrap">
+          <i class="bi {{ PLAN_TYPE_ICONS[it.plan_type] }}" style="color:#b91c1c;"></i>
+          <span class="fw-semibold" style="font-size:.86rem;">{{ it.label }}</span>
+          <span class="text-muted" style="font-size:.76rem;">{{ PLAN_TYPES[it.plan_type] }} ／ 目標 {{ it.target_date.strftime('%Y/%m/%d') }}</span>
+          <span class="badge ms-auto" style="background:#ef4444;">{{ it.days_overdue }}日遅れ</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.ap-team-summary-bar { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.ap-team-card { border-radius:12px; border:1px solid #e2e8f0; }
+.ap-team-card-overdue { border-color:#fecaca; }
+.ap-team-item { padding:.4rem .6rem; border-radius:8px; background:#fef2f2; border:1px solid #fecaca; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTeamCards() {
+  const q = document.getElementById('teamSearch').value.trim().toLowerCase();
+  document.querySelectorAll('#teamCards .ap-team-card').forEach(card => {
+    card.style.display = (!q || card.dataset.name.includes(q)) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}
