@@ -12,7 +12,7 @@ search_router = APIRouter(tags=["Manual"])
 
 
 def _manual_ctx(request: Request, db: Session, key: str) -> dict:
-    """マニュアルページ共通のテンプレートコンテキスト(current_user・TOC・前へ/次へ)を組み立てる"""
+    """マニュアルページ共通のテンプレートコンテキスト(current_user・TOC・前へ/次へ・最終更新日)を組み立てる"""
     current_user = auth.get_current_user(request, db)
     prev_page, next_page = get_prev_next(key)
     return {
@@ -20,6 +20,7 @@ def _manual_ctx(request: Request, db: Session, key: str) -> dict:
         "toc_groups": build_toc_groups(current_user),
         "prev_page": prev_page,
         "next_page": next_page,
+        "current_page": PAGES_BY_KEY.get(key),
     }
 
 

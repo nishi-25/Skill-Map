@@ -173,12 +173,34 @@
     .mockup-skeleton { background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 8px, #e2e8f0 8px, #e2e8f0 16px); border-radius: 8px; height: 70px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: .72rem; }
     [data-theme="dark"] .mockup-skeleton { background: repeating-linear-gradient(45deg, #1a1a2e, #1a1a2e 8px, #252540 8px, #252540 16px); color: #64748b; }
 
-    @media (max-width: 991px) { .manual-toc { display: none; } }
+    .manual-last-updated { font-size: .76rem; color: var(--muted); margin: -.4rem 0 .8rem; }
+    .manual-help-cta {
+      background: rgba(249,115,22,.08); border: 1px solid rgba(249,115,22,.25); border-radius: 10px;
+      padding: .65rem 1rem; font-size: .85rem; margin-top: 2rem; display: flex; align-items: center; gap: .4rem;
+    }
+    .manual-help-cta a { color: #ea580c; font-weight: 600; text-decoration: none; }
+    .manual-help-cta a:hover { text-decoration: underline; }
+
+    #manualTocToggle { display: none; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 8px; font-size: 1.1rem; padding: .25rem .55rem; }
+    .manual-toc-backdrop { display: none; }
+    @media (max-width: 991px) {
+      #manualTocToggle { display: inline-flex; align-items: center; }
+      .manual-toc {
+        display: block; position: fixed; left: 0; top: 0; bottom: 0; z-index: 1050; width: 280px;
+        transform: translateX(-100%); transition: transform .2s ease; height: 100vh; top: 0;
+        box-shadow: 4px 0 16px rgba(0,0,0,.18);
+      }
+      .manual-toc.open { transform: translateX(0); }
+      .manual-toc-backdrop.open {
+        display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1040;
+      }
+    }
   </style>
   {% block head %}{% endblock %}
 </head>
 <body>
 <div class="manual-topbar">
+  <button id="manualTocToggle" onclick="manualToggleToc()" title="目次を開く"><i class="bi bi-list"></i></button>
   <a href="/manual" class="brand-link"><i class="bi bi-map" style="font-size:1.2rem;color:#fb923c;"></i>Skill View. マニュアル</a>
   <div class="topbar-actions">
     <button id="manualDarkToggle" onclick="manualToggleDark()" title="ダークモード切替"><i class="bi bi-moon-stars-fill"></i></button>
@@ -190,8 +212,10 @@
   </div>
 </div>
 
+<div class="manual-toc-backdrop" id="manualTocBackdrop" onclick="manualToggleToc()"></div>
+
 <div class="manual-shell">
-  <aside class="manual-toc">
+  <aside class="manual-toc" id="manualToc">
     <div class="manual-search-box">
       <i class="bi bi-search search-icon"></i>
       <input type="text" id="manualSearchInput" placeholder="マニュアル内を検索..." autocomplete="off"
@@ -210,7 +234,15 @@
 
   <main class="manual-content">
     <nav class="manual-breadcrumb">{% block breadcrumb %}{% endblock %}</nav>
+    {% if current_page and current_page.last_updated %}
+    <div class="manual-last-updated"><i class="bi bi-clock-history me-1"></i>最終更新日: {{ current_page.last_updated }}</div>
+    {% endif %}
     {% block content %}{% endblock %}
+    {% if current_user %}
+    <div class="manual-help-cta">
+      <i class="bi bi-life-preserver"></i>このページで解決しない場合は<a href="/tickets">お問い合わせ</a>からご連絡ください。
+    </div>
+    {% endif %}
     <footer class="manual-prevnext">
       {% if prev_page %}<a href="{{ prev_page.url }}" class="pn-prev"><i class="bi bi-arrow-left me-1"></i>{{ prev_page.title }}</a>{% else %}<span></span>{% endif %}
       {% if next_page %}<a href="{{ next_page.url }}" class="pn-next">{{ next_page.title }}<i class="bi bi-arrow-right ms-1"></i></a>{% endif %}
@@ -224,6 +256,11 @@ function manualToggleDark() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   if (isDark) { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode', 'false'); }
   else { document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('darkMode', 'true'); }
+}
+
+function manualToggleToc() {
+  document.getElementById('manualToc').classList.toggle('open');
+  document.getElementById('manualTocBackdrop').classList.toggle('open');
 }
 
 let _manualSearchTimer = null;
