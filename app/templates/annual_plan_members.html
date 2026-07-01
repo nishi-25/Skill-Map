@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+{% block title %}メンバー年間育成計画 - Skill View.{% endblock %}
+
+{% block content %}
+{# ページヘッダー #}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h1 style="font-size:1.3rem;"><i class="bi bi-people me-2" style="color:#6366f1;"></i>メンバー年間育成計画</h1>
+    <p class="text-muted mb-0 small">
+      {% if is_manager %}担当グループのメンバーの年間育成計画を管理・入力できます{% else %}全メンバーの年間育成計画を管理・入力できます{% endif %}
+    </p>
+  </div>
+  {# 年ナビゲーション #}
+  <div class="mem-year-nav">
+    <a href="/annual-plan/members?year={{ prev_year }}" class="mem-year-btn" title="前年"><i class="bi bi-chevron-left"></i></a>
+    <span class="mem-year-label">{{ year }}年</span>
+    <a href="/annual-plan/members?year={{ next_year }}" class="mem-year-btn" title="翌年"><i class="bi bi-chevron-right"></i></a>
+  </div>
+</div>
+
+{# サマリーバー #}
+<div class="mem-summary-bar mb-3 d-flex flex-wrap align-items-center gap-4">
+  <div><span class="text-muted small">メンバー数</span><div class="fs-4 fw-bold">{{ members|length }}</div></div>
+  <div><span class="text-muted small">{{ year }}年の計画件数</span><div class="fs-4 fw-bold">{{ total_items }}</div></div>
+  {% if total_overdue > 0 %}
+  <div><span class="text-muted small">期限切れ・未達成</span><div class="fs-4 fw-bold text-danger">{{ total_overdue }}</div></div>
+  {% endif %}
+  <div class="ms-auto" style="max-width:240px;flex:1;">
+    <input type="text" id="memSearch" class="form-control form-control-sm" placeholder="メンバー名で検索..." oninput="memFilterRows()" style="border-radius:20px;">
+  </div>
+</div>
+
+{% if not members %}
+<div class="card"><div class="card-body text-center py-5 text-muted">
+  <i class="bi bi-people fs-1 d-block mb-3" style="color:#c7d2fe;"></i>
+  <h5>表示できるメンバーがいません</h5>
+  {% if is_manager %}<p class="small">担当グループにメンバーが登録されていません。</p>{% endif %}
+</div></div>
+{% else %}
+
+<div class="row g-3">
+  {# ── 左: ドラッグ用プールパネル（タブ切替）── #}
+  <div class="col-lg-2">
+    <div class="card mem-pool-card">
+      <div class="card-body p-2">
+        {# タブボタン #}
+        <div class="mem-pool-tabs mb-2">
+          <button class="mem-pool-tab active" onclick="memSwitchTab('skill', this)">
+            <i class="bi bi-lightning-charge-fill"></i> スキル
+          </button>
+          <button class="mem-pool-tab" onclick="memSwitchTab('area', this)">
+            <i class="bi bi-diagram-3"></i> 業務
+          </button>
+          <button class="mem-pool-tab" onclick="memSwitchTab('cert', this)">
+            <i class="bi bi-patch-check"></i> 資格
+          </button>
+          <button class="mem-pool-tab" onclick="memSwitchTab('exam', this)">
+            <i class="bi bi-clipboard-check"></i> 試験
+          </button>
+        </div>
+
+        {# 検索ボックス #}
+        <input type="text" id="memPoolSearch" class="form-control form-control-sm mb-2"
+               placeholder="検索..." oninput="memFilterPool()" style="border-radius:20px;">
+
+        {# スキル タブ（カタログ単位チップ＋サブスキルチップ）#}
+        <div id="memTabSkill" class="mem-tab-content">
+          {% for cat_name, cat_data in skills_by_category.items() %}
+          <div class="mem-pool-group mem-pool-collapsed">
+            <div class="mem-pool-group-header" onclick="memToggleGroup(this)">
+              <i class="bi bi-chevron-right mem-group-icon"></i>
+              {% if cat_data.category %}<span class="mem-cat-dot" style="background:{{ cat_data.category.color or '#6366f1' }};"></span>{% endif %}
+              <span class="text-muted small">{{ cat_name }}</span>
+            </div>
+            <div class="mem-pool-leaf-list">
+              {% for sk in cat_data.skills %}
+              {# スキルカタログ単位チップ #}
+              <div class="mem-pool-chip mem-pool-skill-cat" data-plan-type="skill" data-id="{{ sk.id }}"
+                   data-search="{{ sk.name|lower }}"
+                   title="{{ sk.name }}（スキル習得目標）｜ ドラッグまたはクリックで登録"
+                   onclick="memChipClick(this)">
+                <i class="bi bi-grip-vertical mem-chip-grip"></i>
+                <i class="bi bi-lightning-charge-fill" style="color:#6366f1;font-size:.75rem;"></i>
+                <span class="mem-pool-chip-label fw-semibold">{{ sk.name }}</span>
+                {% if sk.sub_skills %}<span class="badge bg-light text-muted ms-auto" style="font-size:.6rem;">{{ sk.sub_skills|length }}</span>{% endif %}
+              </div>
+              {# サブスキルチップ（インデント） #}
+              {% for ss in sk.sub_skills %}
+              <div class="mem-pool-chip mem-pool-sub-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}"
+                   data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}"
+                   title="{{ sk.name }} › {{ ss.name }} ｜ ドラッグまたはクリックで登録"
+                   onclick="memChipClick(this)">
+                <i class="bi bi-grip-vertical mem-chip-grip"></i>
+                <span class="mem-pool-chip-label"><span class="mem-pool-chip-parent">{{ sk.name }} ›</span> {{ ss.name }}</span>
+              </div>
+              {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+          {% if not skills_by_category %}
+          <p class="text-muted small p-2 mb-0">スキルがありません</p>
+          {% endif %}
+        </div>
+
+        {# 業務エリア タブ #}
+        <div id="memTabArea" class="mem-tab-content d-none">
+          <div class="mem-pool-leaf-list">
+            {% for opt in area_options %}
+            <div class="mem-pool-chip" data-plan-type="business_area" data-id="{{ opt.id }}"
+                 data-search="{{ opt.label|lower }}"
+                 title="{{ opt.label }} ｜ ドラッグまたはクリックで登録"
+                 onclick="memChipClick(this)">
+              <i class="bi bi-grip-vertical mem-chip-grip"></i>
+              <span class="mem-pool-chip-label">{{ opt.label }}</span>
+            </div>
+            {% endfor %}
+            {% if not area_options %}
+            <p class="text-muted small p-2 mb-0">業務エリアがありません</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {# 資格 タブ #}
+        <div id="memTabCert" class="mem-tab-content d-none">
+          <div class="mem-pool-leaf-list">
+            {% for c in cert_catalog %}
+            <div class="mem-pool-chip" data-plan-type="certification" data-id="{{ c.id }}"
+                 data-search="{{ c.name|lower }}"
+                 title="{{ c.name }} ｜ ドラッグまたはクリックで登録"
+                 onclick="memChipClick(this)">
+              <i class="bi bi-grip-vertical mem-chip-grip"></i>
+              <span class="mem-pool-chip-label">{{ c.name }}</span>
+            </div>
+            {% endfor %}
+            {% if not cert_catalog %}
+            <p class="text-muted small p-2 mb-0">資格がありません</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {# 試験 タブ #}
+        <div id="memTabExam" class="mem-tab-content d-none">
+          <div class="mem-pool-leaf-list">
+            {% for e in exams %}
+            <div class="mem-pool-chip" data-plan-type="exam" data-id="{{ e.id }}"
+                 data-search="{{ e.title|lower }}"
+                 title="{{ e.title }} ｜ ドラッグまたはクリックで登録"
+                 onclick="memChipClick(this)">
+              <i class="bi bi-grip-vertical mem-chip-grip"></i>
+              <span class="mem-pool-chip-label">{{ e.title }}</span>
+            </div>
+            {% endfor %}
+            {% if not exams %}
+            <p class="text-muted small p-2 mb-0">試験がありません</p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ── 右: マトリクス ── #}
+  <div class="col-lg-10" style="min-width:0;">
+    {# 凡例 #}
+    <div class="d-flex gap-3 mb-2" style="font-size:.77rem;color:#64748b;">
+      <span><span class="mem-legend-dot" style="background:#22c55e;"></span>達成済み</span>
+      <span><span class="mem-legend-dot" style="background:#ef4444;"></span>期限切れ</span>
+      <span><span class="mem-legend-dot" style="background:#94a3b8;"></span>予定</span>
+      <span class="ms-auto" style="color:#94a3b8;"><i class="bi bi-arrows-move me-1"></i>左のリストからドラッグしてカレンダーに計画を追加</span>
+    </div>
+
+    {# マトリクステーブル #}
+    <div class="mem-table-wrap card mb-4">
+      <div style="overflow-x:auto;">
+        <table class="mem-matrix-table" id="memMatrix">
+          <thead>
+            <tr>
+              <th class="mem-name-col">メンバー</th>
+              {% for mo in range(1, 13) %}
+              <th class="mem-month-col {% if today.year == year and today.month == mo %}mem-month-current{% endif %}">{{ mo }}月</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in members %}
+            {% set uid = m.id %}
+            {% set oc = overdue_count_by_uid.get(uid, 0) %}
+            <tr class="mem-member-row" data-name="{{ (m.display_name or m.username)|lower }}"
+                onclick="memToggleRowHighlight(this)" style="cursor:pointer;">
+              <td class="mem-name-cell {% if oc > 0 %}mem-row-overdue{% endif %}">
+                <a href="/members/{{ uid }}/skills" class="text-decoration-none fw-semibold" style="color:#1e293b;font-size:.85rem;" onclick="event.stopPropagation()">
+                  <i class="bi bi-person-circle me-1" style="color:#94a3b8;"></i>{{ m.display_name or m.username }}
+                </a>
+                {% if oc > 0 %}
+                <span class="mem-overdue-badge">
+                  <i class="bi bi-exclamation-triangle-fill"></i> 期限切れ {{ oc }}件
+                </span>
+                {% endif %}
+              </td>
+              {% for mo in range(1, 13) %}
+              <td class="mem-cell" data-uid="{{ uid }}" data-month="{{ mo }}">
+                {% for r in matrix[uid][mo] %}
+                <div class="mem-chip mem-chip-{{ r.plan_type }} {% if r.achieved %}mem-chip-done{% elif r.is_overdue %}mem-chip-overdue{% else %}mem-chip-pending{% endif %}"
+                     data-bs-toggle="tooltip" data-bs-placement="top"
+                     title="{{ r.label }} — {{ PLAN_TYPES[r.plan_type] }} {{ r.target_date_short }}"
+                     onclick='memOpenDetail({{ r | tojson }})'
+                     data-id="{{ r.id }}">
+                  <i class="bi {{ PLAN_TYPE_ICONS[r.plan_type] }}"></i>
+                  <span class="mem-chip-label">{{ r.label | truncate(10, true, '…') }}</span>
+                </div>
+                {% endfor %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>{# end col-lg-9 #}
+</div>{# end row #}
+
+{% endif %}{# end members #}
+
+{# ── 追加モーダル ── #}
+<div class="modal fade" id="memAddModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:2px solid #6366f1;">
+        <h6 class="modal-title fw-bold"><i class="bi bi-calendar-plus me-2" style="color:#6366f1;"></i>育成計画を追加</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 p-2 rounded" style="background:#f0f4ff;font-size:.85rem;">
+          <i class="bi bi-person-circle me-1" style="color:#6366f1;"></i>
+          対象: <strong id="memAddTargetName"></strong>
+        </div>
+        <form id="memAddForm" method="post" action="">
+          <input type="hidden" name="for_user_id" id="memAddUserId">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">種別</label>
+            <select id="memAddType" class="form-select" style="border-radius:10px;" onchange="memOnTypeChange()" name="plan_type">
+              <option value="skill">{{ PLAN_TYPES.skill }}</option>
+              <option value="sub_skill">{{ PLAN_TYPES.sub_skill }}</option>
+              <option value="business_area">{{ PLAN_TYPES.business_area }}</option>
+              <option value="certification">{{ PLAN_TYPES.certification }}</option>
+              <option value="exam">{{ PLAN_TYPES.exam }}</option>
+            </select>
+          </div>
+          {# スキル（カタログ単位）ピッカー #}
+          <div class="mb-3" id="memSkillPicker">
+            <label class="form-label fw-semibold small">対象のスキル</label>
+            <select name="skill_id" id="memSkillSelect" class="form-select" style="border-radius:10px;">
+              {% for cat_name, cat_data in skills_by_category.items() %}
+              <optgroup label="{{ cat_name }}">
+                {% for sk in cat_data.skills %}
+                <option value="{{ sk.id }}">{{ sk.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3" id="memSkillLevelPicker">
+            <label class="form-label fw-semibold small">目標レベル</label>
+            <select name="target_level" id="memSkillLevelSelect" class="form-select" style="border-radius:10px;">
+              {% for lv, lv_name in SKILL_LEVELS.items() %}
+              {% if lv > 0 %}
+              <option value="{{ lv }}">{{ lv }} — {{ lv_name }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          {# サブスキルピッカー #}
+          <div class="mb-3" id="memSubSkillPicker">
+            <label class="form-label fw-semibold small">対象のサブスキル</label>
+            <select name="target_id" id="memSubSkillSelect" class="form-select" style="border-radius:10px;">
+              {% for cat_name, cat_data in skills_by_category.items() %}
+              {% for sk in cat_data.skills %}
+              {% if sk.sub_skills %}
+              <optgroup label="{{ sk.name }}">
+                {% for ss in sk.sub_skills %}
+                <option value="{{ ss.id }}">{{ ss.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endif %}
+              {% endfor %}
+              {% endfor %}
+            </select>
+          </div>
+          {# 業務エリアピッカー #}
+          <div class="mb-3 d-none" id="memAreaPicker">
+            <label class="form-label fw-semibold small">対象の業務エリア</label>
+            <select name="target_id" id="memAreaSelect" class="form-select" style="border-radius:10px;" disabled>
+              {% for opt in area_options %}
+              <option value="{{ opt.id }}">{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {# 資格ピッカー #}
+          <div class="mb-3 d-none" id="memCertPicker">
+            <label class="form-label fw-semibold small">対象の資格</label>
+            <select name="target_id" id="memCertSelect" class="form-select" style="border-radius:10px;" disabled>
+              {% for c in cert_catalog %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {# 試験ピッカー #}
+          <div class="mb-3 d-none" id="memExamPicker">
+            <label class="form-label fw-semibold small">対象の試験</label>
+            <select name="target_id" id="memExamSelect" class="form-select" style="border-radius:10px;" disabled>
+              {% for e in exams %}
+              <option value="{{ e.id }}">{{ e.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">目標日</label>
+            <input type="date" name="target_date" id="memAddDate" class="form-control" style="border-radius:10px;" required>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">メモ（任意）</label>
+            <input type="text" name="note" class="form-control" style="border-radius:10px;" maxlength="200">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" style="border-radius:20px;" onclick="memSubmitAdd()">
+          <i class="bi bi-check me-1"></i>登録
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── 詳細・編集・削除モーダル ── #}
+<div class="modal fade" id="memDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header" style="border-bottom:1px solid #e2e8f0;">
+        <h6 class="modal-title fw-bold" id="memDetailTitle"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2" id="memDetailStatus"></div>
+        <table class="table table-sm" style="font-size:.85rem;">
+          <tr><th style="width:30%;">種別</th><td id="memDetailType"></td></tr>
+          <tr><th>目標日</th><td id="memDetailDate"></td></tr>
+          <tr><th>メモ</th><td id="memDetailNote" style="color:#64748b;"></td></tr>
+        </table>
+        {# 編集フォーム #}
+        <form id="memEditForm" method="post" action="" class="border-top pt-3 mt-1">
+          <input type="hidden" name="redirect_to" value="/annual-plan/members?year={{ year }}">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">目標日を変更</label>
+              <input type="date" name="target_date" id="memEditDate" class="form-control form-control-sm" style="border-radius:8px;" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">メモ</label>
+              <input type="text" name="note" id="memEditNote" class="form-control form-control-sm" style="border-radius:8px;" maxlength="200">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-outline-primary btn-sm mt-2" style="border-radius:20px;">
+            <i class="bi bi-pencil me-1"></i>更新
+          </button>
+        </form>
+      </div>
+      <div class="modal-footer" style="border-top:none;">
+        <form id="memDeleteForm" method="post" action="" onsubmit="return confirm('この計画を削除しますか？');">
+          <input type="hidden" name="redirect_to" value="/annual-plan/members?year={{ year }}">
+          <button type="submit" class="btn btn-outline-danger btn-sm" style="border-radius:20px;">
+            <i class="bi bi-trash me-1"></i>削除
+          </button>
+        </form>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:20px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── サマリー・凡例 ── */
+.mem-summary-bar { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.mem-legend-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+
+/* ── プールパネル ── */
+.mem-pool-card { position:sticky; top:70px; max-height:calc(100vh - 90px); overflow-y:auto; border-radius:14px; border:1px solid #e2e8f0; }
+.mem-pool-tabs { display:grid; grid-template-columns:repeat(4, 1fr); gap:3px; }
+.mem-pool-tab {
+  padding:.35rem .2rem; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;
+  font-size:.72rem; font-weight:600; color:#64748b; cursor:pointer; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:2px; line-height:1.2;
+  transition:all .15s;
+}
+.mem-pool-tab i { font-size:.95rem; }
+.mem-pool-tab:hover { background:#eff6ff; border-color:#93c5fd; color:#3b82f6; }
+.mem-pool-tab.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+.mem-tab-content { overflow-y:auto; }
+.mem-pool-group { margin-bottom:2px; }
+.mem-pool-group-header {
+  display:flex; align-items:center; gap:.35rem; padding:.3rem .5rem; cursor:pointer;
+  border-radius:6px; font-size:.78rem; color:#64748b; user-select:none;
+}
+.mem-pool-group-header:hover { background:#f1f5f9; }
+.mem-group-icon { font-size:.65rem; color:#94a3b8; transition:transform .15s; }
+.mem-pool-group.mem-pool-collapsed .mem-group-icon { transform:rotate(0deg); }
+.mem-pool-group:not(.mem-pool-collapsed) .mem-group-icon { transform:rotate(90deg); }
+.mem-pool-group.mem-pool-collapsed .mem-pool-leaf-list { display:none; }
+.mem-cat-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.mem-pool-chip {
+  display:flex; align-items:center; gap:.3rem; padding:.28rem .5rem; margin:.15rem .3rem;
+  border-radius:8px; font-size:.78rem; cursor:grab; border:1px solid #e2e8f0; background:#fff;
+  transition:background .12s, box-shadow .12s; user-select:none;
+}
+.mem-pool-chip:hover { background:#eff6ff; border-color:#93c5fd; box-shadow:0 1px 4px rgba(59,130,246,.15); }
+.mem-pool-chip:active { cursor:grabbing; }
+.mem-chip-grip { color:#cbd5e1; font-size:.85rem; flex-shrink:0; }
+.mem-pool-chip-label { line-height:1.3; overflow-wrap:break-word; word-break:break-word; min-width:0; }
+.mem-pool-chip-parent { color:#94a3b8; font-size:.72rem; }
+.sortable-ghost { opacity:.35; }
+.mem-cell-drag-over { background:#eff6ff !important; outline:2px dashed #93c5fd; }
+
+/* ── 年ナビゲーション ── */
+.mem-year-nav {
+  display:flex; align-items:stretch;
+  border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+}
+.mem-year-btn {
+  display:flex; align-items:center; justify-content:center;
+  padding:.4rem .8rem; color:#64748b; text-decoration:none;
+  font-size:.95rem; background:#fff; transition:all .18s;
+}
+.mem-year-btn:hover { background:#6366f1; color:#fff; }
+.mem-year-label {
+  padding:.4rem 1.1rem; font-weight:700; font-size:1.05rem; color:#1e293b;
+  background:#f8fafc; border-left:1.5px solid #e2e8f0; border-right:1.5px solid #e2e8f0;
+  display:flex; align-items:center; white-space:nowrap;
+}
+[data-theme="dark"] .mem-year-nav { background:#1e1e3a; border-color:var(--card-border); }
+[data-theme="dark"] .mem-year-btn { background:#1e1e3a; color:#94a3b8; }
+[data-theme="dark"] .mem-year-btn:hover { background:#6366f1; color:#fff; }
+[data-theme="dark"] .mem-year-label { background:#252540; color:#e2e8f0; border-color:var(--card-border); }
+
+/* ── マトリクステーブル ── */
+.mem-table-wrap { border-radius:14px; border:1px solid #e2e8f0; }
+.mem-matrix-table { border-collapse:collapse; width:100%; table-layout:fixed; }
+.mem-matrix-table thead th { background:#f8fafc; font-size:.78rem; font-weight:700; color:#64748b; text-align:center; padding:.5rem .25rem; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+.mem-name-col { width:120px; text-align:left !important; padding-left:.8rem !important; }
+.mem-month-col { width:calc((100% - 120px) / 12); border-right:1px solid #e2e8f0; }
+.mem-month-current { background:#fff7ed !important; color:#ea580c !important; }
+.mem-member-row:not(:last-child) td { border-bottom:1px solid #f1f5f9; }
+.mem-name-cell { padding:.6rem .5rem .6rem .8rem; vertical-align:middle; white-space:nowrap; border-left:3px solid transparent; transition:border-color .15s; }
+.mem-cell { padding:.3rem .25rem; vertical-align:top; min-height:56px; border-right:1px solid #f1f5f9; }
+.mem-cell:hover { background:#f8fafc; }
+/* 期限切れ・行ハイライト */
+.mem-overdue-badge { display:block; font-size:.68rem; color:#b91c1c; font-weight:600; margin-top:.15rem; white-space:nowrap; }
+.mem-row-overdue .mem-name-cell { border-left-color:#ef4444; }
+.mem-member-row.mem-row-selected td { background:rgba(99,102,241,.05) !important; }
+.mem-member-row.mem-row-selected .mem-name-cell { border-left-color:#6366f1 !important; }
+.mem-chip {
+  display:flex; align-items:center; gap:3px; padding:.18rem .35rem; border-radius:6px; font-size:.68rem;
+  cursor:pointer; margin-bottom:2px; white-space:nowrap; max-width:100%; overflow:hidden;
+  border:1px solid transparent; transition:opacity .15s;
+}
+.mem-chip:hover { opacity:.8; }
+.mem-chip-done { background:#dcfce7; border-color:#86efac; color:#166534; }
+.mem-chip-overdue { background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+.mem-chip-pending { background:#f1f5f9; border-color:#cbd5e1; color:#475569; }
+.mem-chip-label { overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.mem-pool-skill-cat { background:#f0f0ff; border-color:#c7d2fe; }
+.mem-pool-skill-cat:hover { background:#e0e7ff; border-color:#818cf8; }
+.mem-pool-sub-chip { padding-left:1.1rem; }
+
+/* ── ダーク対応 ── */
+[data-theme="dark"] .mem-summary-bar,
+[data-theme="dark"] .mem-table-wrap,
+[data-theme="dark"] .mem-pool-card { background:var(--card-bg); border-color:var(--card-border); }
+[data-theme="dark"] .mem-pool-chip { background:var(--card-bg); border-color:var(--card-border); }
+[data-theme="dark"] .mem-pool-chip:hover { background:#252540; border-color:#4f46e5; }
+[data-theme="dark"] .mem-pool-tab { background:#1e1e3a; border-color:var(--card-border); color:#94a3b8; }
+[data-theme="dark"] .mem-pool-tab:hover { background:#252540; }
+[data-theme="dark"] .mem-pool-tab.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+[data-theme="dark"] .mem-matrix-table thead th { background:#1e1e3a; }
+[data-theme="dark"] .mem-cell:hover { background:#1a1a2e; }
+[data-theme="dark"] .mem-chip-pending { background:#252540; border-color:#3d3d6b; color:#94a3b8; }
+[data-theme="dark"] .mem-pool-group-header:hover { background:#1e1e3a; }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+const MEM_PLAN_TYPES = {{ PLAN_TYPES | tojson }};
+const MEM_PLAN_TYPE_ICONS = {{ PLAN_TYPE_ICONS | tojson }};
+const MEM_YEAR = {{ year }};
+const MEM_NAMES = {
+  {% for m in members %}{{ m.id }}: {{ (m.display_name or m.username) | tojson }}{% if not loop.last %},{% endif %}{% endfor %}
+};
+
+// ── 行ハイライト ──
+function memToggleRowHighlight(row) {
+  const alreadySelected = row.classList.contains('mem-row-selected');
+  document.querySelectorAll('.mem-member-row.mem-row-selected').forEach(r => r.classList.remove('mem-row-selected'));
+  if (!alreadySelected) row.classList.add('mem-row-selected');
+}
+
+// ── メンバー検索 ──
+function memFilterRows() {
+  const q = document.getElementById('memSearch').value.trim().toLowerCase();
+  document.querySelectorAll('#memMatrix .mem-member-row').forEach(row => {
+    row.style.display = (!q || row.dataset.name.includes(q)) ? '' : 'none';
+  });
+}
+
+// ── タブ切替 ──
+const MEM_TAB_MAP = { skill: 'memTabSkill', area: 'memTabArea', cert: 'memTabCert', exam: 'memTabExam' };
+function memSwitchTab(tabKey, btn) {
+  document.querySelectorAll('.mem-pool-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  Object.values(MEM_TAB_MAP).forEach(id => document.getElementById(id).classList.add('d-none'));
+  document.getElementById(MEM_TAB_MAP[tabKey]).classList.remove('d-none');
+  // タブ切替時に検索をリセット
+  document.getElementById('memPoolSearch').value = '';
+  memFilterPool();
+}
+
+// ── プール検索（アクティブタブ内のみ）──
+function memFilterPool() {
+  const q = document.getElementById('memPoolSearch').value.trim().toLowerCase();
+  const activeTab = document.querySelector('.mem-tab-content:not(.d-none)');
+  if (!activeTab) return;
+  if (!q) {
+    // 検索なし: 表示をリセット（グループは折りたたみ状態を維持して全表示）
+    activeTab.querySelectorAll('.mem-pool-chip').forEach(c => c.style.display = '');
+    activeTab.querySelectorAll('.mem-pool-group').forEach(g => g.style.display = '');
+    return;
+  }
+  activeTab.querySelectorAll('.mem-pool-chip').forEach(chip => {
+    chip.style.display = (chip.dataset.search || '').includes(q) ? '' : 'none';
+  });
+  activeTab.querySelectorAll('.mem-pool-group').forEach(grp => {
+    const hasVisible = [...grp.querySelectorAll('.mem-pool-chip')].some(c => c.style.display !== 'none');
+    grp.style.display = hasVisible ? '' : 'none';
+    if (hasVisible) grp.classList.remove('mem-pool-collapsed');
+  });
+}
+
+// ── グループの折りたたみ ──
+function memToggleGroup(header) {
+  header.closest('.mem-pool-group').classList.toggle('mem-pool-collapsed');
+}
+
+// ── 種別切替（モーダル内ピッカー）──
+function memOnTypeChange() {
+  const type = document.getElementById('memAddType').value;
+  const userId = document.getElementById('memAddUserId').value;
+
+  // スキル専用ピッカー（カタログ単位）
+  const isSkill = type === 'skill';
+  document.getElementById('memSkillPicker').classList.toggle('d-none', !isSkill);
+  document.getElementById('memSkillSelect').disabled = !isSkill;
+  document.getElementById('memSkillLevelPicker').classList.toggle('d-none', !isSkill);
+  document.getElementById('memSkillLevelSelect').disabled = !isSkill;
+
+  // その他のピッカー
+  const pickers = {
+    sub_skill:     ['memSubSkillPicker',  'memSubSkillSelect'],
+    business_area: ['memAreaPicker',      'memAreaSelect'],
+    certification: ['memCertPicker',      'memCertSelect'],
+    exam:          ['memExamPicker',      'memExamSelect'],
+  };
+  Object.entries(pickers).forEach(([t, [wrapId, selId]]) => {
+    const wrap = document.getElementById(wrapId);
+    const sel  = document.getElementById(selId);
+    const show = (t === type);
+    wrap.classList.toggle('d-none', !show);
+    sel.disabled = !show;
+    if (show) sel.setAttribute('name', 'target_id');
+    else sel.removeAttribute('name');
+  });
+
+  // フォームのaction URLを種別で切り替え
+  if (userId) {
+    document.getElementById('memAddForm').action = isSkill
+      ? '/annual-plan/members/' + userId + '/skill-goal'
+      : '/annual-plan/members/' + userId + '/items/new';
+  }
+}
+
+// ── 追加モーダルを開く（ドラッグドロップ・チップクリック共通）──
+function memOpenAdd(userId, year, month, memberName, planType, targetId) {
+  document.getElementById('memAddUserId').value = userId;
+  document.getElementById('memAddTargetName').textContent = memberName;
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('memAddDate').value = year + '-' + pad(month) + '-01';
+  document.getElementById('memAddType').value = planType || 'sub_skill';
+  memOnTypeChange();  // ピッカーとform actionを更新
+  if (targetId) {
+    const pickers = {
+      skill: 'memSkillSelect',
+      sub_skill: 'memSubSkillSelect', business_area: 'memAreaSelect',
+      certification: 'memCertSelect', exam: 'memExamSelect'
+    };
+    const sel = document.getElementById(pickers[planType]);
+    if (sel) sel.value = targetId;
+  }
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('memAddModal')).show();
+}
+
+// ── プールチップのクリック（メンバー・月未選択でモーダルを開く）──
+function memChipClick(chip) {
+  // クリックでは対象メンバーと月を選ばせる（日付未入力・月未確定）
+  // まずメンバーと月を選ぶUIが必要なため、シンプルに追加モーダルを種別プリセット付きで開く
+  // ユーザーが自分でメンバー・日付を指定する
+  const planType = chip.dataset.planType;
+  const targetId = chip.dataset.id;
+  // 選択済みメンバーがあれば流用、なければ最初のメンバーをデフォルトに
+  const firstUid = Object.keys(MEM_NAMES)[0];
+  if (!firstUid) return;
+  // モーダルを開いてメンバーと月は手動選択してもらう
+  memOpenAdd(parseInt(firstUid), MEM_YEAR, new Date().getMonth() + 1, MEM_NAMES[firstUid], planType, targetId);
+}
+
+// ── 詳細モーダル（チップクリック）──
+function memOpenDetail(item) {
+  document.getElementById('memDetailTitle').innerHTML =
+    '<i class="bi ' + (MEM_PLAN_TYPE_ICONS[item.plan_type] || '') + ' me-2"></i>' + item.label;
+  document.getElementById('memDetailType').textContent = MEM_PLAN_TYPES[item.plan_type] || item.plan_type;
+  document.getElementById('memDetailDate').textContent = item.target_date;
+  document.getElementById('memDetailNote').textContent = item.note || '—';
+  let st = '';
+  if (item.achieved) {
+    st = '<span class="badge" style="background:#22c55e;font-size:.8rem;"><i class="bi bi-check-circle me-1"></i>達成済み</span>';
+  } else if (item.is_overdue) {
+    st = '<span class="badge" style="background:#ef4444;font-size:.8rem;"><i class="bi bi-exclamation-circle me-1"></i>期限切れ（' + item.days_overdue + '日）</span>';
+  } else {
+    st = '<span class="badge bg-secondary" style="font-size:.8rem;">予定</span>';
+  }
+  document.getElementById('memDetailStatus').innerHTML = st;
+  document.getElementById('memEditForm').action = '/annual-plan/items/' + item.id + '/edit';
+  document.getElementById('memEditDate').value = item.target_date;
+  document.getElementById('memEditNote').value = item.note || '';
+  document.getElementById('memDeleteForm').action = '/annual-plan/items/' + item.id + '/delete';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('memDetailModal')).show();
+}
+
+function memSubmitAdd() {
+  const form = document.getElementById('memAddForm');
+  form.requestSubmit ? form.requestSubmit() : form.submit();
+}
+
+// ── Bootstrap tooltip 初期化 ──
+function memInitTooltips() {
+  document.querySelectorAll('.mem-chip[data-bs-toggle="tooltip"]').forEach(el => {
+    bootstrap.Tooltip.getOrCreateInstance(el, { trigger: 'hover', delay: { show: 300, hide: 0 } });
+  });
+}
+
+// ── SortableJS: ドラッグ&ドロップ初期化 ──
+document.addEventListener('DOMContentLoaded', () => {
+  memOnTypeChange();
+  memInitTooltips();
+
+  // プールの葉チップリスト（クローン元）
+  document.querySelectorAll('.mem-pool-leaf-list').forEach(list => {
+    new Sortable(list, {
+      group: { name: 'mem-pool', pull: 'clone', put: false },
+      sort: false, animation: 150, ghostClass: 'sortable-ghost',
+    });
+  });
+
+  // マトリクスのセル（ドロップ先）
+  document.querySelectorAll('.mem-cell').forEach(cell => {
+    new Sortable(cell, {
+      group: { name: 'mem-pool', pull: false, put: true },
+      sort: false, animation: 150, ghostClass: 'sortable-ghost',
+      onAdd(evt) {
+        const chip = evt.item;
+        chip.remove();  // クローンを即削除
+        const planType = chip.dataset.planType;
+        const targetId  = chip.dataset.id;
+        const uid   = parseInt(cell.dataset.uid);
+        const month = parseInt(cell.dataset.month);
+        const name  = MEM_NAMES[uid] || '';
+        memOpenAdd(uid, MEM_YEAR, month, name, planType, targetId);
+      },
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -480,7 +480,7 @@
         <a id="navEducation" href="/education" class="nav-link-item {% if '/education' in request.url.path %}active{% endif %}" data-label="学習パス">
           <i class="bi bi-signpost-split nav-icon"></i><span class="nav-text">学習パス</span>
         </a>
-        <a id="navAnnualPlan" href="/annual-plan" class="nav-link-item {% if '/annual-plan' in request.url.path %}active{% endif %}" data-label="年間計画">
+        <a id="navAnnualPlan" href="/annual-plan" class="nav-link-item {% if request.url.path == '/annual-plan' %}active{% endif %}" data-label="年間計画">
           <i class="bi bi-calendar-check nav-icon"></i><span class="nav-text">年間計画</span>
         </a>
         <a id="navCertifications" href="/certifications" class="nav-link-item {% if request.url.path == '/certifications' %}active{% endif %}" data-label="資格">
@@ -540,8 +540,8 @@
         <a id="navMatrix" href="/skills/matrix" class="nav-link-item {% if '/skills/matrix' in request.url.path %}active{% endif %}" data-label="スキルマトリクス">
           <i class="bi bi-grid-3x3-gap nav-icon"></i><span class="nav-text" data-i18n="nav.matrix">スキルマトリクス</span>
         </a>
-        <a id="navAnnualPlanTeam" href="/annual-plan/team" class="nav-link-item {% if '/annual-plan/team' in request.url.path %}active{% endif %}" data-label="チームの年間計画">
-          <i class="bi bi-people nav-icon"></i><span class="nav-text">チームの年間計画</span>
+        <a id="navAnnualPlanMembers" href="/annual-plan/members" class="nav-link-item {% if '/annual-plan/members' in request.url.path %}active{% endif %}" data-label="メンバー年間育成計画">
+          <i class="bi bi-people nav-icon"></i><span class="nav-text">メンバー年間育成計画</span>
         </a>
       </div>
     </div>
@@ -565,7 +565,7 @@
         <a href="/categories" class="nav-link-item {% if '/categories' in request.url.path %}active{% endif %}" data-label="カテゴリー">
           <i class="bi bi-tags nav-icon"></i><span class="nav-text" data-i18n="nav.categories">カテゴリー</span>
         </a>
-        <a href="/business-map/manage" class="nav-link-item {% if '/business-map' in request.url.path %}active{% endif %}" data-label="業務マップ">
+        <a id="navBusinessMapManage" href="/business-map/manage" class="nav-link-item {% if '/business-map' in request.url.path %}active{% endif %}" data-label="業務マップ">
           <i class="bi bi-diagram-3 nav-icon"></i><span class="nav-text">業務マップ</span>
         </a>
       </div>
@@ -1949,87 +1949,91 @@ window.openNewTicket = function() {
   // ── User ロール ──────────────────────────────────────────────
   const TOUR_STEPS_USER = [
     { el: null, title: 'Skill View. へようこそ！',
-      body: 'このシステムで自分のスキルを記録し、チームの成長を一緒に可視化しましょう。\n全 8 ステップで主な機能をご紹介します。', icon: 'bi-map' },
+      body: '自分のスキルを記録し、チームの成長を可視化するシステムです。\n全 10 ステップで主な機能をご紹介します。', icon: 'bi-map' },
 
-    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
-      title: '① ダッシュボード',
-      body: '自分のスキル申告状況・平均レベル・成長グラフを確認できます。\nグループや全メンバーの状況も一覧で見られます。' },
-
-    { el: '#navSkills', pos: 'right', icon: 'bi-lightning-charge',
-      title: '② スキルマップ（自己申告）',
-      body: '難易度ティア（C級〜A級）ごとのカードをクリックしてスキル一覧へ。\n「全スキルを一覧表示」で全ティアを一画面で確認できます。' },
+    { el: '#navSkills', pos: 'right', icon: 'bi-lightning-charge-fill',
+      title: '① スキルマップ（直接申告）',
+      body: 'サイドバーの「スキルマップ」をクリックすると、難易度ティアごとのカードが表示されます。\nカードをクリック → スキル一覧 → ●ドットやプルダウンでレベルを選択して申告します。' },
 
     { el: null, isHowto: 'skills', title: 'スキルの登録方法', icon: 'bi-lightning-charge-fill' },
 
-    { el: '#navMyApprovals', pos: 'right', icon: 'bi-send',
-      title: '③ 自分の申請状況',
-      body: '申告したスキルはManagerまたはAdminが承認・差し戻しします。\nここで進捗を確認してください。差し戻された場合はコメントを確認しましょう。' },
-
-    { el: '#navTimeline', pos: 'right', icon: 'bi-graph-up-arrow',
-      title: '④ 成長タイムライン',
-      body: '承認されたスキルの変化を時系列グラフで振り返ることができます。\n自分の成長を定期的に確認しましょう。' },
+    { el: '#navSkills', pos: 'right', icon: 'bi-diagram-3',
+      title: '③ 業務マップでの申告',
+      body: '「スキルマップ」入口ページで「業務マップから選択」を選ぶと、\n実際の業務エリア単位でスキルを探して申告できます。\nマインドマップ・ブロック表示など3つの表示方法があります。' },
 
     { el: '#navEducation', pos: 'right', icon: 'bi-signpost-split',
-      title: '⑤ 学習パス',
-      body: 'スキルごとの学習ステップが順番に表示されます。\n各ステップを「完了」にすることで進捗を管理できます。' },
+      title: '④ 学習パス',
+      body: 'スキルごとの学習ステップが順番に表示されます。\n各ステップを「完了」にすることで進捗を管理できます。\n教育リソースへのリンクも確認できます。' },
 
-    { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
-      title: '⑥ 問い合わせ・要望',
-      body: '操作方法がわからない場合や機能の要望は、右下のチャットアイコンまたはここから送信できます。\nAdminが返信すると通知が届きます。' },
+    { el: '#navExamsMy', pos: 'right', icon: 'bi-pencil-square',
+      title: '⑤ 試験',
+      body: 'Managerから割り当てられた試験を受験できます。\n学科（選択問題・自動採点）と実技（エビデンス提出・採点待ち）の2種類があります。\n受験資格（スキル習熟度の条件）が設定された試験もあります。' },
+
+    { el: '#navAnnualPlan', pos: 'right', icon: 'bi-calendar-check',
+      title: '⑥ 年間計画',
+      body: '左側のリストからスキル・業務エリア・資格・試験をカレンダーにドラッグ＆ドロップして計画を登録できます。\n月・週・日・年の4ビューで管理できます。' },
+
+    { el: '#navMyApprovals', pos: 'right', icon: 'bi-send',
+      title: '⑦ 自分の申請状況',
+      body: '申告したスキルの承認状況を確認できます。\n差し戻された場合はコメントを確認し、修正して再申告しましょう。' },
+
+    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
+      title: '⑧ ダッシュボード',
+      body: '自分のスキル申告状況・平均レベル・成長グラフを確認できます。\nグループや全メンバーの状況も一覧で見られます。' },
 
     { el: '#globalSearch', pos: 'bottom', icon: 'bi-search',
-      title: '⑦ グローバル検索',
-      body: 'スキル名・メンバー名・グループ名をリアルタイムで横断検索できます。\nキーボードショートカットとしても便利です。' },
-
-    { el: '#sidebarUserArea', pos: 'top', icon: 'bi-person-circle',
-      title: '⑧ プロフィール・表示設定',
-      body: 'アバター・表示名・パスワードの変更はプロフィールページで行えます。\nカラーテーマ（Warm/Cool）や言語（日本語/English）も切り替えられます。' },
+      title: '⑨ グローバル検索',
+      body: 'スキル名・メンバー名・グループ名をリアルタイムで横断検索できます。\nキーボードショートカット（Ctrl+K / ⌘K）としても便利です。' },
 
     { el: '#navQuickStart', pos: 'right', icon: 'bi-play-circle-fill',
       title: 'ツアー完了！',
-      body: '「クイックスタート」はいつでもここから再実行できます。\nマニュアルも左のナビゲーターにあります。困ったときはお気軽にご活用ください！' },
+      body: '「クイックスタート」はいつでもここから再実行できます。\n困ったときはマニュアルやお問い合わせもご活用ください！' },
   ];
 
   // ── Manager ロール ───────────────────────────────────────────
   const TOUR_STEPS_MANAGER = [
     { el: null, title: 'Manager権限へようこそ！',
-      body: 'チームのスキル承認・グループ管理・スキルカタログ管理を担当します。\n全 9 ステップで主な操作をご案内します。', icon: 'bi-people-fill' },
-
-    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
-      title: '① ダッシュボード',
-      body: '担当グループのスキル状況・ギャップ分析・成長トレンドを確認できます。\nフィルターでグループ別に絞り込んで分析しましょう。' },
+      body: 'チームメンバーのスキル承認・育成計画管理・グループ管理を担当します。\n全 10 ステップでManager特有の操作をご案内します。', icon: 'bi-people-fill' },
 
     { el: '#navApprovals', pos: 'right', icon: 'bi-check2-square',
-      title: '② 承認依頼',
-      body: 'メンバーから申告されたスキルを承認・差し戻しします。\nチェックボックスで複数件を一括処理できます。コメントで理由を伝えましょう。' },
+      title: '① 承認依頼（最重要）',
+      body: 'メンバーから申告されたスキルを承認・差し戻しします。\n複数件を一括処理でき、コメントで理由を伝えられます。\n新しい申請があると件数バッジで通知されます。' },
 
     { el: '#navMatrix', pos: 'right', icon: 'bi-grid-3x3-gap',
-      title: '③ スキルマトリクス',
-      body: 'メンバー × スキルのヒートマップ（暖色 = 理解度高）でカバレッジを把握できます。\n「分析チャートを表示」で詳細なグラフも確認できます。' },
+      title: '② スキルマトリクス',
+      body: 'メンバー × スキルのヒートマップでチーム全体のスキルカバレッジを把握できます。\n分析チャートでカテゴリー別の傾向も確認できます。' },
+
+    { el: '#navAnnualPlanMembers', pos: 'right', icon: 'bi-people',
+      title: '③ メンバー年間育成計画',
+      body: '行=メンバー・列=月のマトリクスで育成計画を一覧管理できます。\n左側のリストからスキル・試験・資格をドラッグして各月のセルに計画を登録できます。\nメンバーが自分の年間計画に入れた予定もここに反映されます。' },
 
     { el: '#navCatalog', pos: 'right', icon: 'bi-collection',
       title: '④ スキルカタログ管理',
-      body: 'Managerが担当グループに割り当てたスキルのみ表示されます。\nスキルの追加・編集・ティア変更などを行えます。' },
+      body: '担当グループに割り当てたスキルを管理します。\nスキルの追加・編集・ティア変更・アーカイブが行えます。' },
 
     { el: '#navGroups', pos: 'right', icon: 'bi-people-fill',
       title: '⑤ グループ管理',
-      body: 'グループの作成・メンバー追加・必須スキル設定を行います。\nManagerを複数名設定でき、階層構造（親子グループ）にも対応しています。' },
+      body: 'グループの作成・メンバー追加・必須スキル設定を行います。\n複数のManagerを設定でき、階層構造（親子グループ）にも対応しています。' },
 
-    { el: '#navEducation', pos: 'right', icon: 'bi-signpost-split',
-      title: '⑥ 学習パス管理',
-      body: 'スキルに紐づく学習ステップを追加・編集できます。\nメンバーが段階的に学習できるよう順番を整えましょう。' },
+    { el: '#navBusinessMapManage', pos: 'right', icon: 'bi-diagram-3-fill',
+      title: '⑥ 業務マップ管理',
+      body: '業務エリアの階層を作成し、スキルカタログのサブスキルを紐づけます。\nメンバーが「業務マップから申告」するときの入口になります。' },
 
-    { el: '#navTickets', pos: 'right', icon: 'bi-chat-dots-fill',
-      title: '⑦ 問い合わせ・要望',
-      body: 'メンバーからの問い合わせや要望が届きます（Adminが主担当）。\n要望は優先度付きで管理されます。' },
+    { el: '#navExams', pos: 'right', icon: 'bi-clipboard-check',
+      title: '⑦ 試験管理',
+      body: '試験の作成（学科・実技）・受験者への割り当て・採点を行います。\n受験資格（スキル習熟度の条件）を設定して特定メンバーだけに割り当てることもできます。' },
 
-    { el: '#globalSearch', pos: 'bottom', icon: 'bi-search',
-      title: '⑧ グローバル検索',
-      body: 'スキル・メンバー・グループを横断して素早く検索できます。' },
+    { el: '#navEducation', pos: 'right', icon: 'bi-mortarboard-fill',
+      title: '⑧ 学習パス管理',
+      body: 'スキルに紐づく学習ステップを追加・編集できます。\nメンバーが段階的に学習できるよう、手順と学習リソースを整えましょう。' },
+
+    { el: '#navDashboard', pos: 'right', icon: 'bi-speedometer2',
+      title: '⑨ ダッシュボード',
+      body: '担当グループのスキル状況・ギャップ分析・成長トレンドを確認できます。\nグループフィルターで絞り込んで分析しましょう。' },
 
     { el: '#navQuickStart', pos: 'right', icon: 'bi-play-circle-fill',
       title: 'ツアー完了！',
-      body: 'クイックスタートはいつでも再実行できます。\n詳細はナビゲーターの「利用マニュアル」もご参照ください。' },
+      body: 'クイックスタートはいつでも再実行できます。\n詳細は「利用マニュアル」にも全機能の説明があります。' },
   ];
 
   // ── Admin ロール ─────────────────────────────────────────────
@@ -2078,7 +2082,7 @@ window.openNewTicket = function() {
       body: 'クイックスタートはいつでも再実行できます。\n「利用マニュアル」に全機能の詳細説明があります。' },
   ];
 
-  const TOUR_STEPS = TOUR_ROLE === 'user'
+  let TOUR_STEPS = TOUR_ROLE === 'user'
     ? TOUR_STEPS_USER
     : TOUR_ROLE === 'manager'
       ? TOUR_STEPS_MANAGER
@@ -2373,11 +2377,67 @@ window.openNewTicket = function() {
     if (e.key === 'Escape' && tourActive) endTour(true);
   });
 
+  // ロール選択カード（初回ログイン時）
+  function showRoleSelectionCard() {
+    const ov = document.createElement('div');
+    ov.id = 'tourOverlay';
+    document.body.appendChild(ov);
+    const card = document.createElement('div');
+    card.id = 'tourWelcomeCard';
+    const isUserOnly = TOUR_ROLE === 'user';
+    card.innerHTML = `
+      <div class="tour-card-header" style="text-align:center;">
+        <span style="font-size:1.8rem;">🎉</span>
+        <div style="font-weight:800;font-size:1.1rem;color:#431407;margin-top:.4rem;">Skill View. へようこそ！</div>
+        <div style="font-size:.82rem;color:#94a3b8;margin-top:.25rem;">どちらのガイドツアーを開始しますか？</div>
+      </div>
+      <div class="tour-card-body">
+        <div style="display:flex;flex-direction:column;gap:.7rem;padding:.5rem 0;">
+          <button onclick="startTourAs('user')"
+            style="padding:.75rem 1rem;border-radius:12px;border:2px solid #f97316;
+                   background:#fff7ed;color:#c2410c;font-weight:700;font-size:.88rem;
+                   cursor:pointer;text-align:left;display:flex;align-items:center;gap:.6rem;width:100%;">
+            <i class="bi bi-lightning-charge-fill" style="font-size:1.2rem;color:#f97316;flex-shrink:0;"></i>
+            <div>
+              <div>ユーザーとして使う</div>
+              <div style="font-size:.73rem;font-weight:400;color:#64748b;margin-top:.1rem;">スキル申告・業務マップ・学習パス・試験・年間計画の使い方</div>
+            </div>
+          </button>
+          ${!isUserOnly ? `
+          <button onclick="startTourAs('manager')"
+            style="padding:.75rem 1rem;border-radius:12px;border:2px solid #6366f1;
+                   background:#f0f4ff;color:#4338ca;font-weight:700;font-size:.88rem;
+                   cursor:pointer;text-align:left;display:flex;align-items:center;gap:.6rem;width:100%;">
+            <i class="bi bi-people-fill" style="font-size:1.2rem;color:#6366f1;flex-shrink:0;"></i>
+            <div>
+              <div>Manager・管理者として使う</div>
+              <div style="font-size:.73rem;font-weight:400;color:#64748b;margin-top:.1rem;">承認依頼・育成計画・試験管理・業務マップ管理などの使い方</div>
+            </div>
+          </button>` : ''}
+        </div>
+        <div style="text-align:center;margin-top:.6rem;">
+          <button onclick="endTour(true)"
+            style="background:none;border:none;color:#94a3b8;font-size:.78rem;cursor:pointer;text-decoration:underline;">
+            スキップしてアプリを使い始める
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(card);
+  }
+
+  function startTourAs(role) {
+    TOUR_STEPS = role === 'user' ? TOUR_STEPS_USER
+      : role === 'manager' ? TOUR_STEPS_MANAGER
+      : TOUR_STEPS_ADMIN;
+    startTour(0);
+  }
+
   // 初回ログイン判定（ページ読み込み後 1.2 秒待ってから自動起動）
   document.addEventListener('DOMContentLoaded', () => {
     {% if current_user %}
     if (!localStorage.getItem('skillmap_quickstart_done')) {
-      setTimeout(() => startTour(0), 1200);
+      setTimeout(() => showRoleSelectionCard(), 1200);
     } else {
       // ツアー完了済み → NEW バッジを非表示
       const badge = document.querySelector('#navQuickStart .badge');

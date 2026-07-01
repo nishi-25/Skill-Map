@@ -118,8 +118,14 @@ def manual_annual_plan(request: Request, db: Session = Depends(get_db)):
 
 # ─── Manager以上 ──────────────────────────────────────────────
 @router.get("/annual-plan-team", response_class=HTMLResponse)
-def manual_annual_plan_team(request: Request, db: Session = Depends(get_db)):
-    return _page(request, db, "annual-plan-team", "manual/annual-plan-team.html")
+def manual_annual_plan_team_redirect(request: Request, db: Session = Depends(get_db)):
+    from fastapi.responses import RedirectResponse as _Redirect
+    return _Redirect("/manual/annual-plan-members", status_code=303)
+
+
+@router.get("/annual-plan-members", response_class=HTMLResponse)
+def manual_annual_plan_members(request: Request, db: Session = Depends(get_db)):
+    return _page(request, db, "annual-plan-members", "manual/annual-plan-members.html")
 
 
 @router.get("/approvals", response_class=HTMLResponse)

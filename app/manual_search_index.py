@@ -24,7 +24,7 @@ PAGES = [
     {"key": "exams-my", "url": "/manual/exams-my", "title": "試験を受ける", "icon": "bi-pencil-square", "group": "User機能", "min_role": None, "last_updated": "2026-06-21"},
     {"key": "annual-plan", "url": "/manual/annual-plan", "title": "年間計画", "icon": "bi-calendar-check", "group": "User機能", "min_role": None, "last_updated": "2026-06-30"},
 
-    {"key": "annual-plan-team", "url": "/manual/annual-plan-team", "title": "チームの年間計画", "icon": "bi-people", "group": "Manager以上", "min_role": "manager", "last_updated": "2026-06-30"},
+    {"key": "annual-plan-members", "url": "/manual/annual-plan-members", "title": "メンバー年間育成計画", "icon": "bi-people", "group": "Manager以上", "min_role": "manager", "last_updated": "2026-07-01"},
     {"key": "approvals", "url": "/manual/approvals", "title": "承認依頼", "icon": "bi-check2-square", "group": "Manager以上", "min_role": "manager", "last_updated": "2026-06-30"},
     {"key": "matrix", "url": "/manual/matrix", "title": "スキルマトリクス", "icon": "bi-grid-3x3-gap", "group": "Manager以上", "min_role": "manager", "last_updated": "2026-06-21"},
     {"key": "catalog", "url": "/manual/catalog", "title": "スキルカタログ管理", "icon": "bi-collection", "group": "Manager以上", "min_role": "manager", "last_updated": "2026-06-21"},
@@ -178,9 +178,12 @@ MANUAL_INDEX = [
      "keywords": "年間計画 達成 未達成 期限切れ 目標日 資格 試験",
      "snippet": "資格・試験は目標日までに取得・合格していないと未達成になります（サブスキル等は期日を問いません）。"},
 
-    {"page_url": "/manual/annual-plan-team", "anchor": "cards", "title": "チームメンバーの期限切れ・未達成計画を確認", "breadcrumb": "Manager以上 › チームの年間計画",
-     "keywords": "チーム 年間計画 期限切れ 未達成 遅れ フォロー マネージャー",
-     "snippet": "担当グループのメンバーの年間計画のうち、目標日を過ぎても達成できていない計画だけを一覧で確認できます。"},
+    {"page_url": "/manual/annual-plan-members", "anchor": "matrix", "title": "メンバー年間育成計画のマトリクス表示と計画入力", "breadcrumb": "Manager以上 › メンバー年間育成計画",
+     "keywords": "育成計画 マトリクス メンバー 月 計画追加 Manager 年間",
+     "snippet": "行=メンバー・列=月のマトリクスで各メンバーの年間育成計画を一覧表示し、Manager が計画を追加できます。"},
+    {"page_url": "/manual/annual-plan-members", "anchor": "overdue", "title": "期限切れ・未達成計画の確認", "breadcrumb": "Manager以上 › メンバー年間育成計画",
+     "keywords": "期限切れ 未達成 遅れ フォロー マネージャー 育成計画",
+     "snippet": "ページ下部の「期限切れサマリー」でメンバーごとの遅延計画を確認できます。"},
 
     {"page_url": "/manual/approvals", "anchor": "single-approval", "title": "個別承認・差し戻し", "breadcrumb": "Manager以上 › 承認依頼",
      "keywords": "承認 差し戻し コメント 却下",

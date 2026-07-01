@@ -61,73 +61,49 @@
 <div class="row g-3">
   <div class="col-lg-3">
     <div class="card ap-pool-card">
-      <div class="card-body">
-        <input type="text" id="apPoolSearch" class="form-control form-control-sm mb-3" placeholder="スキル・業務・資格・試験を検索..." oninput="apFilterPool()" style="border-radius:20px;">
-
-        <div class="ap-pool-section">
-          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
-            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
-            <i class="bi bi-lightning-charge" style="color:#6366f1;"></i>
-            <span class="fw-semibold small">スキル</span>
-          </div>
-          <div class="ap-pool-section-body">
-            {% for cat_name, cat_data in skills_by_category.items() %}
-            <div class="ap-pool-cat ap-collapsed">
-              <div class="ap-pool-cat-header" onclick="apToggleCat(this)">
-                <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
-                {% if cat_data.category %}<span class="ap-cat-dot" style="background:{{ cat_data.category.color }};"></span>{% endif %}
-                <span class="text-muted">{{ cat_name }}</span>
-                <span class="badge bg-light text-muted" style="font-size:.68rem;">{{ cat_data.skills|length }}</span>
-              </div>
-              <div class="ap-pool-list ap-pool-parent-list">
-                {% for sk in cat_data.skills %}
-                <div class="ap-pool-cat ap-collapsed" data-plan-type="skill" data-id="{{ sk.id }}" data-label="{{ sk.name }}" data-search="{{ sk.name|lower }}">
-                  <div class="ap-pool-cat-header" onclick="apToggleCat(this)" title="{{ sk.name }} ｜ ドラッグでスキル全体（カタログ単位）を登録、クリックで配下のサブスキルを展開/折りたたみ">
-                    <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
-                    <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
-                    <span class="ap-chip-label">{{ sk.name }}</span>
-                    {% if sk.sub_skills %}<span class="badge bg-light text-muted" style="font-size:.62rem;">{{ sk.sub_skills|length }}</span>{% endif %}
-                  </div>
-                  {% if sk.sub_skills %}
-                  <div class="ap-pool-list">
-                    {% for ss in sk.sub_skills %}
-                    <div class="ap-pool-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}" data-label="{{ sk.name }} › {{ ss.name }}" data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}" onclick="apHandleChipClick(this)" title="{{ sk.name }} › {{ ss.name }} ｜ ドラッグ、またはクリックで登録（サブスキル単位）">
-                      <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
-                      <span class="ap-chip-label"><span class="ap-chip-parent">{{ sk.name }} ›</span> {{ ss.name }}</span>
-                    </div>
-                    {% endfor %}
-                  </div>
-                  {% endif %}
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-            {% endfor %}
-          </div>
+      <div class="card-body p-2">
+        {# タブボタン #}
+        <div class="ap-pool-tabs mb-2">
+          <button class="ap-pool-tab active" onclick="apSwitchTab('skill', this)">
+            <i class="bi bi-lightning-charge-fill"></i> スキル
+          </button>
+          <button class="ap-pool-tab" onclick="apSwitchTab('area', this)">
+            <i class="bi bi-diagram-3"></i> 業務
+          </button>
+          <button class="ap-pool-tab" onclick="apSwitchTab('cert', this)">
+            <i class="bi bi-patch-check"></i> 資格
+          </button>
+          <button class="ap-pool-tab" onclick="apSwitchTab('exam', this)">
+            <i class="bi bi-clipboard-check"></i> 試験
+          </button>
         </div>
+        <input type="text" id="apPoolSearch" class="form-control form-control-sm mb-2" placeholder="検索..." oninput="apFilterPool()" style="border-radius:20px;">
 
-        <div class="ap-pool-section">
-          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
-            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
-            <i class="bi bi-diagram-3" style="color:#10b981;"></i>
-            <span class="fw-semibold small">業務</span>
-          </div>
-          <div class="ap-pool-section-body">
+        {# スキル タブ #}
+        <div id="apTabSkill" class="ap-tab-content">
+          {% for cat_name, cat_data in skills_by_category.items() %}
+          <div class="ap-pool-cat ap-collapsed">
+            <div class="ap-pool-cat-header" onclick="apToggleCat(this)">
+              <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
+              {% if cat_data.category %}<span class="ap-cat-dot" style="background:{{ cat_data.category.color }};"></span>{% endif %}
+              <span class="text-muted">{{ cat_name }}</span>
+              <span class="badge bg-light text-muted" style="font-size:.68rem;">{{ cat_data.skills|length }}</span>
+            </div>
             <div class="ap-pool-list ap-pool-parent-list">
-              {% for area in area_pool %}
-              <div class="ap-pool-cat ap-collapsed" data-plan-type="business_area" data-id="{{ area.id }}" data-label="{{ area.label }}" data-search="{{ area.label|lower }}">
-                <div class="ap-pool-cat-header" onclick="apToggleCat(this)" title="{{ area.label }} ｜ ドラッグで業務エリア全体を登録、クリックで配下のサブスキルを展開/折りたたみ">
+              {% for sk in cat_data.skills %}
+              <div class="ap-pool-cat ap-collapsed" data-plan-type="skill" data-id="{{ sk.id }}" data-label="{{ sk.name }}" data-search="{{ sk.name|lower }}">
+                <div class="ap-pool-cat-header" onclick="apToggleCat(this)" title="{{ sk.name }} ｜ ドラッグでスキル全体（カタログ単位）を登録、クリックで配下のサブスキルを展開/折りたたみ">
                   <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
                   <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
-                  <span class="ap-chip-label">{{ area.label }}</span>
-                  {% if area.sub_skills %}<span class="badge bg-light text-muted" style="font-size:.62rem;">{{ area.sub_skills|length }}</span>{% endif %}
+                  <span class="ap-chip-label">{{ sk.name }}</span>
+                  {% if sk.sub_skills %}<span class="badge bg-light text-muted" style="font-size:.62rem;">{{ sk.sub_skills|length }}</span>{% endif %}
                 </div>
-                {% if area.sub_skills %}
+                {% if sk.sub_skills %}
                 <div class="ap-pool-list">
-                  {% for ss in area.sub_skills %}
-                  <div class="ap-pool-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}" data-label="{{ ss.skill_name }} › {{ ss.name }}" data-search="{{ (ss.skill_name ~ ' ' ~ ss.name)|lower }}" onclick="apHandleChipClick(this)" title="{{ ss.skill_name }} › {{ ss.name }} ｜ ドラッグ、またはクリックで登録（サブスキル単位）">
+                  {% for ss in sk.sub_skills %}
+                  <div class="ap-pool-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}" data-label="{{ sk.name }} › {{ ss.name }}" data-search="{{ (sk.name ~ ' ' ~ ss.name)|lower }}" onclick="apHandleChipClick(this)" title="{{ sk.name }} › {{ ss.name }} ｜ ドラッグ、またはクリックで登録（サブスキル単位）">
                     <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
-                    <span class="ap-chip-label"><span class="ap-chip-parent">{{ ss.skill_name }} ›</span> {{ ss.name }}</span>
+                    <span class="ap-chip-label"><span class="ap-chip-parent">{{ sk.name }} ›</span> {{ ss.name }}</span>
                   </div>
                   {% endfor %}
                 </div>
@@ -136,43 +112,59 @@
               {% endfor %}
             </div>
           </div>
+          {% endfor %}
         </div>
 
-        <div class="ap-pool-section">
-          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
-            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
-            <i class="bi bi-patch-check" style="color:#0ea5e9;"></i>
-            <span class="fw-semibold small">資格</span>
-          </div>
-          <div class="ap-pool-section-body">
-            <div class="ap-pool-list">
-              {% for c in cert_catalog %}
-              <div class="ap-pool-chip" data-plan-type="certification" data-id="{{ c.id }}" data-label="{{ c.name }}" data-search="{{ c.name|lower }}" onclick="apHandleChipClick(this)" title="ドラッグ、またはクリックで登録">
+        {# 業務 タブ #}
+        <div id="apTabArea" class="ap-tab-content d-none">
+          <div class="ap-pool-list ap-pool-parent-list">
+            {% for area in area_pool %}
+            <div class="ap-pool-cat ap-collapsed" data-plan-type="business_area" data-id="{{ area.id }}" data-label="{{ area.label }}" data-search="{{ area.label|lower }}">
+              <div class="ap-pool-cat-header" onclick="apToggleCat(this)" title="{{ area.label }} ｜ ドラッグで業務エリア全体を登録、クリックで配下のサブスキルを展開/折りたたみ">
+                <i class="bi bi-chevron-right ap-cat-toggle-icon"></i>
                 <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
-                <span class="ap-chip-label">{{ c.name }}</span>
+                <span class="ap-chip-label">{{ area.label }}</span>
+                {% if area.sub_skills %}<span class="badge bg-light text-muted" style="font-size:.62rem;">{{ area.sub_skills|length }}</span>{% endif %}
               </div>
-              {% endfor %}
+              {% if area.sub_skills %}
+              <div class="ap-pool-list">
+                {% for ss in area.sub_skills %}
+                <div class="ap-pool-chip" data-plan-type="sub_skill" data-id="{{ ss.id }}" data-label="{{ ss.skill_name }} › {{ ss.name }}" data-search="{{ (ss.skill_name ~ ' ' ~ ss.name)|lower }}" onclick="apHandleChipClick(this)" title="{{ ss.skill_name }} › {{ ss.name }} ｜ ドラッグ、またはクリックで登録（サブスキル単位）">
+                  <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+                  <span class="ap-chip-label"><span class="ap-chip-parent">{{ ss.skill_name }} ›</span> {{ ss.name }}</span>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
             </div>
+            {% endfor %}
           </div>
         </div>
 
-        <div class="ap-pool-section">
-          <div class="ap-pool-section-header" onclick="apToggleSection(this)">
-            <i class="bi bi-chevron-down ap-section-toggle-icon"></i>
-            <i class="bi bi-clipboard-check" style="color:#f59e0b;"></i>
-            <span class="fw-semibold small">試験</span>
-          </div>
-          <div class="ap-pool-section-body">
-            <div class="ap-pool-list">
-              {% for e in exams %}
-              <div class="ap-pool-chip" data-plan-type="exam" data-id="{{ e.id }}" data-label="{{ e.title }}" data-search="{{ e.title|lower }}" onclick="apHandleChipClick(this)" title="ドラッグ、またはクリックで登録">
-                <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
-                <span class="ap-chip-label">{{ e.title }}</span>
-              </div>
-              {% endfor %}
+        {# 資格 タブ #}
+        <div id="apTabCert" class="ap-tab-content d-none">
+          <div class="ap-pool-list">
+            {% for c in cert_catalog %}
+            <div class="ap-pool-chip" data-plan-type="certification" data-id="{{ c.id }}" data-label="{{ c.name }}" data-search="{{ c.name|lower }}" onclick="apHandleChipClick(this)" title="{{ c.name }} ｜ ドラッグ、またはクリックで登録">
+              <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+              <span class="ap-chip-label">{{ c.name }}</span>
             </div>
+            {% endfor %}
           </div>
         </div>
+
+        {# 試験 タブ #}
+        <div id="apTabExam" class="ap-tab-content d-none">
+          <div class="ap-pool-list">
+            {% for e in exams %}
+            <div class="ap-pool-chip" data-plan-type="exam" data-id="{{ e.id }}" data-label="{{ e.title }}" data-search="{{ e.title|lower }}" onclick="apHandleChipClick(this)" title="{{ e.title }} ｜ ドラッグ、またはクリックで登録">
+              <i class="bi bi-grip-vertical text-muted ap-chip-grip"></i>
+              <span class="ap-chip-label">{{ e.title }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -501,12 +493,17 @@
 .ap-week-col-body .ap-day-item-head .badge { display:none; }
 
 /* ── ドラッグ用プールパネル ── */
-.ap-pool-card { max-height:calc(100vh - 14rem); overflow-y:auto; }
-.ap-pool-section { margin-bottom:.75rem; }
-.ap-pool-section-header { display:flex; align-items:center; gap:.4rem; cursor:pointer; padding:.3rem .2rem; border-radius:8px; user-select:none; }
-.ap-pool-section-header:hover { background:#f1f5f9; }
-.ap-pool-section.ap-collapsed .ap-pool-section-body { display:none; }
-.ap-pool-section.ap-collapsed .ap-section-toggle-icon { transform:rotate(-90deg); }
+.ap-pool-card { max-height:calc(100vh - 12rem); overflow-y:auto; }
+.ap-pool-tabs { display:grid; grid-template-columns:repeat(4, 1fr); gap:3px; }
+.ap-pool-tab {
+  padding:.35rem .2rem; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;
+  font-size:.72rem; font-weight:600; color:#64748b; cursor:pointer; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:2px; line-height:1.2; transition:all .15s;
+}
+.ap-pool-tab i { font-size:.95rem; }
+.ap-pool-tab:hover { background:#eff6ff; border-color:#93c5fd; color:#3b82f6; }
+.ap-pool-tab.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+.ap-tab-content { overflow-y:auto; }
 .ap-pool-cat-header { display:flex; align-items:flex-start; gap:.4rem; cursor:pointer; padding:.25rem .3rem; border-radius:6px; user-select:none; font-size:.8rem; }
 .ap-pool-cat-header:hover { background:#f1f5f9; }
 .ap-pool-cat-header .ap-cat-toggle-icon, .ap-pool-cat-header .ap-chip-grip { margin-top:.15rem; flex-shrink:0; }
@@ -700,28 +697,39 @@ function apCellClick(cell) {
   }
 }
 
-function apToggleSection(headerEl) {
-  headerEl.closest('.ap-pool-section').classList.toggle('ap-collapsed');
-}
-
 function apToggleCat(headerEl) {
   headerEl.closest('.ap-pool-cat').classList.toggle('ap-collapsed');
 }
 
+// タブ切替
+const AP_TAB_MAP = { skill: 'apTabSkill', area: 'apTabArea', cert: 'apTabCert', exam: 'apTabExam' };
+function apSwitchTab(tabKey, btn) {
+  document.querySelectorAll('.ap-pool-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  Object.values(AP_TAB_MAP).forEach(id => document.getElementById(id).classList.add('d-none'));
+  document.getElementById(AP_TAB_MAP[tabKey]).classList.remove('d-none');
+  document.getElementById('apPoolSearch').value = '';
+  apFilterPool();
+}
+
 function apFilterPool() {
   const q = document.getElementById('apPoolSearch').value.trim().toLowerCase();
-  // 葉チップ（資格／試験／サブスキル）: 自分の data-search で判定
-  document.querySelectorAll('.ap-pool-chip').forEach(chip => {
-    const match = !q || (chip.dataset.search || '').includes(q);
-    chip.style.display = match ? '' : 'none';
+  const activeTab = document.querySelector('.ap-tab-content:not(.d-none)');
+  if (!activeTab) return;
+  if (!q) {
+    activeTab.querySelectorAll('.ap-pool-chip').forEach(c => c.style.display = '');
+    activeTab.querySelectorAll('.ap-pool-cat').forEach(c => c.style.display = '');
+    return;
+  }
+  activeTab.querySelectorAll('.ap-pool-chip').forEach(chip => {
+    chip.style.display = (chip.dataset.search || '').includes(q) ? '' : 'none';
   });
-  // カテゴリ／スキル／業務エリア（入れ子グループ）: 自分の名前 or 配下の葉チップのいずれかが一致すれば表示
-  document.querySelectorAll('.ap-pool-cat').forEach(catEl => {
-    const selfMatch = !q || (catEl.dataset.search || '').includes(q);
+  activeTab.querySelectorAll('.ap-pool-cat').forEach(catEl => {
+    const selfMatch = (catEl.dataset.search || '').includes(q);
     const childMatch = [...catEl.querySelectorAll('.ap-pool-chip')].some(c => c.style.display !== 'none');
     const visible = selfMatch || childMatch;
     catEl.style.display = visible ? '' : 'none';
-    if (q && visible) catEl.classList.remove('ap-collapsed');
+    if (visible) catEl.classList.remove('ap-collapsed');
   });
 }
 

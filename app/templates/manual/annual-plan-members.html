@@ -1,0 +1,39 @@
+{% extends "manual/_layout.html" %}
+{% block title %}メンバー年間育成計画{% endblock %}
+{% block breadcrumb %}<a href="/manual">マニュアル</a> / <span>Manager以上</span> / <span>メンバー年間育成計画</span>{% endblock %}
+{% block content %}
+<h1><i class="bi bi-people text-primary"></i>メンバー年間育成計画
+  <span class="role-badge role-manager">Manager</span>
+  <span class="role-badge role-admin">Admin</span>
+</h1>
+<p>サイドバーの「メンバー年間育成計画」から、担当グループのメンバーの年間計画を<strong>行=メンバー・列=月</strong>のマトリクス形式で確認・入力できます。</p>
+
+<h2 id="matrix"><i class="bi bi-table"></i>マトリクスの見方</h2>
+<p>各行がメンバー1名に対応し、各列（1〜12月）にそのメンバーの計画がチップ（色付きタグ）で表示されます。</p>
+<ul style="font-size:.88rem;">
+  <li><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#22c55e;vertical-align:middle;margin-right:4px;"></span><strong>緑</strong>: 達成済み</li>
+  <li><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;vertical-align:middle;margin-right:4px;"></span><strong>赤</strong>: 期限切れ・未達成</li>
+  <li><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#94a3b8;vertical-align:middle;margin-right:4px;"></span><strong>グレー</strong>: 予定（未達成・期限内）</li>
+</ul>
+<div class="tip-box"><i class="bi bi-info-circle me-1"></i>ページ上部の年ナビ（◀ ▶）で年を切り替えられます。</div>
+
+<h2 id="add"><i class="bi bi-plus-circle"></i>Manager による計画の追加</h2>
+<div class="step-item"><span class="step-badge">1</span><span>追加したいメンバーの行の対象月セル右端にある「+」ボタンをクリック</span></div>
+<div class="step-item"><span class="step-badge">2</span><span>モーダルが開くので、種別（サブスキル習得・業務エリア完了・資格取得・試験合格）・対象・目標日・メモを入力</span></div>
+<div class="step-item"><span class="step-badge">3</span><span>「登録」をクリックするとマトリクスに反映される</span></div>
+<div class="tip-box"><i class="bi bi-people me-1"></i>Managerは担当グループのメンバーのみ計画を追加できます。Adminは全メンバーが対象です。</div>
+
+<h2 id="sync"><i class="bi bi-arrow-left-right"></i>メンバーの年間計画との双方向連携</h2>
+<p>育成計画に登録したアイテムは、同一データを参照するため自動的に双方向で反映されます。</p>
+<ul style="font-size:.88rem;">
+  <li><strong>ManagerがここでメンバーXの計画を追加</strong> → メンバーXが<a href="/manual/annual-plan">年間計画</a>ページを開くと追加した計画が表示される</li>
+  <li><strong>メンバーXが自分の年間計画で計画を登録</strong> → このマトリクスにも即時反映される</li>
+</ul>
+<div class="warn-box"><i class="bi bi-exclamation-triangle me-1"></i>育成計画で追加した計画とメンバー自身が追加した計画を区別する表示はありません。誰が入力したかは確認できないため、必要に応じてメモ欄を活用してください。</div>
+
+<h2 id="edit-delete"><i class="bi bi-pencil-square"></i>編集・削除</h2>
+<p>チップをクリックすると詳細モーダルが開き、目標日・メモの編集や削除ができます。Managerは担当メンバーの計画を編集・削除できます。</p>
+
+<h2 id="overdue"><i class="bi bi-exclamation-triangle"></i>期限切れサマリー</h2>
+<p>マトリクス下部の「期限切れ・未達成の計画」アコーディオンを開くと、全期間を通じた期限切れ計画をメンバー別に確認できます（年フィルタなし）。</p>
+{% endblock %}

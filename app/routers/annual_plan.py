@@ -165,6 +165,46 @@ def _area_breadcrumb_label(area: "models.BusinessMapArea") -> str:
     return " > ".join(reversed(chain))
 
 
+def _build_area_pool_tree(all_areas, is_visible=None):
+    """Build hierarchical tree of BusinessMapAreas that have content (sub_skills) anywhere in their subtree."""
+
+    def _has_content(area):
+        direct = [s for s in area.area_sub_skills
+                  if s.sub_skill and s.sub_skill.skill and not s.sub_skill.skill.is_archived]
+        if direct:
+            return True
+        for child in area.children:
+            if is_visible is None or is_visible(child):
+                if _has_content(child):
+                    return True
+        return False
+
+    def _build_node(area):
+        has_subs = bool([s for s in area.area_sub_skills
+                         if s.sub_skill and s.sub_skill.skill and not s.sub_skill.skill.is_archived])
+        children_nodes = []
+        for child in sorted(area.children, key=lambda x: x.name):
+            if is_visible is not None and not is_visible(child):
+                continue
+            if _has_content(child):
+                children_nodes.append(_build_node(child))
+        return {"id": area.id, "name": area.name, "has_subs": has_subs, "children": children_nodes}
+
+    roots = [a for a in sorted(all_areas, key=lambda x: x.name)
+             if a.parent_id is None and (is_visible is None or is_visible(a)) and _has_content(a)]
+    return [_build_node(a) for a in roots]
+
+
+def _flatten_area_tree(nodes, depth=0, result=None):
+    """Flatten area tree to list for modal <select> with indented names."""
+    if result is None:
+        result = []
+    for node in nodes:
+        result.append({"id": node["id"], "label": "　" * depth + node["name"]})
+        _flatten_area_tree(node["children"], depth + 1, result)
+    return result
+
+
 def _collect_all_rows(db: Session, user: "models.User") -> list:
     """ユーザーの全計画行（スキル目標／サブスキル習得／業務エリア完了／資格取得／試験合格）を年で絞り込まず収集する"""
     today = _date.today()
@@ -433,58 +473,83 @@ def annual_plan_item_new(
     return RedirectResponse(f"/annual-plan?view=month&date={td.isoformat()}", status_code=303)
 
 
+def _get_managed_member_ids(user: "models.User", db: Session) -> set:
+    """Manager が管理するメンバーの user_id セットを返す（primary / co 両方）"""
+    managed_group_ids = {g.id for g in _get_managed_groups(user, db)}
+    return {
+        m.user_id
+        for gid in managed_group_ids
+        for m in db.query(models.GroupMembership).filter(models.GroupMembership.group_id == gid).all()
+    }
+
+
+def _is_manageable(item: "models.AnnualPlanItem", current_user: "models.User", db: Session) -> bool:
+    """current_user が item を編集・削除してよいか判定する"""
+    if item.user_id == current_user.id:
+        return True
+    if current_user.role == "admin":
+        return True
+    if current_user.role == "manager":
+        return item.user_id in _get_managed_member_ids(current_user, db)
+    return False
+
+
 @router.post("/annual-plan/items/{item_id}/edit")
 def annual_plan_item_edit(
     item_id: int,
     request: Request,
     target_date: str = Form(...),
     note: str = Form(""),
+    redirect_to: str = Form(""),
     db: Session = Depends(get_db),
 ):
     user = auth.require_approved(request, db)
-    item = db.query(models.AnnualPlanItem).filter(
-        models.AnnualPlanItem.id == item_id,
-        models.AnnualPlanItem.user_id == user.id,
-    ).first()
-    if not item:
-        return RedirectResponse("/annual-plan", status_code=303)
+    item = db.query(models.AnnualPlanItem).filter(models.AnnualPlanItem.id == item_id).first()
+    if not item or not _is_manageable(item, user, db):
+        return RedirectResponse(redirect_to or "/annual-plan", status_code=303)
     try:
         td = _date.fromisoformat(target_date.strip())
     except ValueError:
-        return RedirectResponse(f"/annual-plan?view=month&date={item.target_date.isoformat()}", status_code=303)
+        return RedirectResponse(redirect_to or f"/annual-plan?view=month&date={item.target_date.isoformat()}", status_code=303)
     item.target_date = td
     item.note = note.strip() or None
     db.commit()
-    return RedirectResponse(f"/annual-plan?view=month&date={td.isoformat()}", status_code=303)
+    return RedirectResponse(redirect_to or f"/annual-plan?view=month&date={td.isoformat()}", status_code=303)
 
 
 @router.post("/annual-plan/items/{item_id}/delete")
-def annual_plan_item_delete(item_id: int, request: Request, db: Session = Depends(get_db)):
+def annual_plan_item_delete(
+    item_id: int,
+    request: Request,
+    redirect_to: str = Form(""),
+    db: Session = Depends(get_db),
+):
     user = auth.require_approved(request, db)
-    item = db.query(models.AnnualPlanItem).filter(
-        models.AnnualPlanItem.id == item_id,
-        models.AnnualPlanItem.user_id == user.id,
-    ).first()
+    item = db.query(models.AnnualPlanItem).filter(models.AnnualPlanItem.id == item_id).first()
     anchor_date = item.target_date.isoformat() if item else _date.today().isoformat()
-    if item:
+    if item and _is_manageable(item, user, db):
         db.delete(item)
         db.commit()
-    return RedirectResponse(f"/annual-plan?view=month&date={anchor_date}", status_code=303)
+    return RedirectResponse(redirect_to or f"/annual-plan?view=month&date={anchor_date}", status_code=303)
 
 
 @router.get("/annual-plan/team", response_class=HTMLResponse)
-def annual_plan_team_view(request: Request, db: Session = Depends(get_db)):
-    """Manager/Admin向け: 担当メンバーの年間計画の遅延状況を一覧確認する"""
+def annual_plan_team_redirect(request: Request):
+    """旧 URL からのリダイレクト"""
+    return RedirectResponse("/annual-plan/members", status_code=303)
+
+
+@router.get("/annual-plan/members", response_class=HTMLResponse)
+def annual_plan_members_view(request: Request, year: int = 0, db: Session = Depends(get_db)):
+    """Manager/Admin向け: 行=メンバー、列=月のマトリクスで年間育成計画を管理する"""
     user = auth.require_manager_or_admin(request, db)
+    today = _date.today()
+    if not year:
+        year = today.year
 
     is_manager = user.role == "manager"
     if is_manager:
-        managed_group_ids = {g.id for g in _get_managed_groups(user, db)}
-        managed_member_ids = {
-            m.user_id
-            for gid in managed_group_ids
-            for m in db.query(models.GroupMembership).filter(models.GroupMembership.group_id == gid).all()
-        }
+        managed_member_ids = _get_managed_member_ids(user, db)
         members = (
             db.query(models.User)
             .filter(
@@ -503,26 +568,160 @@ def annual_plan_team_view(request: Request, db: Session = Depends(get_db)):
             .all()
         )
 
-    today = _date.today()
-    member_rows = []
+    def _chip(r: dict) -> dict:
+        """テンプレートのchipとJSモーダルに渡す JSON-safe な辞書に変換する"""
+        is_ov = r["is_overdue"]
+        td = r["target_date"]
+        return {
+            "id": r["id"],
+            "plan_type": r["plan_type"],
+            "label": r["label"],
+            "target_date": td.isoformat(),
+            "target_date_short": td.strftime("%m/%d"),
+            "note": r.get("note") or "",
+            "achieved": r["achieved"],
+            "is_overdue": is_ov,
+            "days_overdue": (today - td).days if is_ov else 0,
+        }
+
+    # _collect_all_rows を使って各メンバーの全行を取得し、年でフィルタして月別マトリクスを構築
+    matrix: dict = {m.id: {mo: [] for mo in range(1, 13)} for m in members}
+    overdue_rows = []
     for m in members:
         rows = _collect_all_rows(db, m)
-        overdue = sorted((r for r in rows if r["is_overdue"]), key=lambda r: r["target_date"])
+        for r in rows:
+            if r["target_date"].year == year:
+                matrix[m.id][r["target_date"].month].append(_chip(r))
+        overdue = sorted([r for r in rows if r["is_overdue"]], key=lambda r: r["target_date"])
         for r in overdue:
             r["days_overdue"] = (today - r["target_date"]).days
-        member_rows.append({
-            "user": m,
-            "total": len(rows),
-            "achieved": sum(1 for r in rows if r["achieved"]),
-            "overdue_items": overdue,
-        })
-    member_rows.sort(key=lambda x: -len(x["overdue_items"]))
+        if overdue:
+            overdue_rows.append({"user": m, "overdue_items": overdue})
+    overdue_rows.sort(key=lambda x: -len(x["overdue_items"]))
 
-    return templates.TemplateResponse(request, "annual_plan_team.html", {
+    # モーダル用プール（annual_plan_view と同じクエリ）
+    skills = db.query(models.Skill).filter(models.Skill.is_archived == False).order_by(models.Skill.name).all()
+    skills_by_category: "OrderedDict" = OrderedDict()
+    for sk in skills:
+        cat_name = sk.category.name if sk.category else "未分類"
+        if cat_name not in skills_by_category:
+            skills_by_category[cat_name] = {"category": sk.category, "skills": []}
+        skills_by_category[cat_name]["skills"].append(sk)
+
+    cert_catalog = (
+        db.query(models.CertificationCatalog)
+        .filter(models.CertificationCatalog.is_archived == False)
+        .order_by(models.CertificationCatalog.name)
+        .all()
+    )
+    exams = db.query(models.Exam).filter(models.Exam.is_archived == False).order_by(models.Exam.title).all()
+    all_areas = db.query(models.BusinessMapArea).order_by(models.BusinessMapArea.name).all()
+    area_options = []
+    for a in all_areas:
+        subs = [a_sk for a_sk in a.area_sub_skills if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived]
+        if not subs:
+            continue
+        area_options.append({"id": a.id, "label": _area_breadcrumb_label(a)})
+    area_options.sort(key=lambda x: x["label"])
+
+    total_items = sum(len(d) for uid_dict in matrix.values() for d in uid_dict.values())
+    overdue_count_by_uid = {row["user"].id: len(row["overdue_items"]) for row in overdue_rows}
+
+    return templates.TemplateResponse(request, "annual_plan_members.html", {
         "current_user": user,
         "is_manager": is_manager,
-        "member_rows": member_rows,
-        "total_overdue": sum(len(x["overdue_items"]) for x in member_rows),
+        "members": members,
+        "matrix": matrix,
+        "year": year,
+        "prev_year": year - 1,
+        "next_year": year + 1,
+        "today": today,
+        "total_items": total_items,
+        "overdue_rows": overdue_rows,
+        "overdue_count_by_uid": overdue_count_by_uid,
+        "total_overdue": sum(len(x["overdue_items"]) for x in overdue_rows),
         "PLAN_TYPES": models.PLAN_TYPES,
         "PLAN_TYPE_ICONS": PLAN_TYPE_ICONS,
+        "skills_by_category": skills_by_category,
+        "area_options": area_options,
+        "cert_catalog": cert_catalog,
+        "exams": exams,
     })
+
+
+@router.post("/annual-plan/members/{for_user_id}/items/new")
+def annual_plan_member_item_new(
+    for_user_id: int,
+    request: Request,
+    plan_type: str = Form(...),
+    target_id: int = Form(...),
+    target_date: str = Form(...),
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Manager/Admin がメンバーの育成計画アイテムを追加する"""
+    current_user = auth.require_manager_or_admin(request, db)
+    if plan_type not in ("sub_skill", "business_area", "certification", "exam"):
+        return RedirectResponse("/annual-plan/members", status_code=303)
+    try:
+        td = _date.fromisoformat(target_date.strip())
+    except ValueError:
+        return RedirectResponse("/annual-plan/members", status_code=303)
+
+    # Manager は自分の担当メンバーのみ、Admin は全員
+    if current_user.role == "manager":
+        managed_ids = _get_managed_member_ids(current_user, db)
+        if for_user_id not in managed_ids:
+            return RedirectResponse("/annual-plan/members", status_code=303)
+
+    item = models.AnnualPlanItem(
+        user_id=for_user_id, plan_type=plan_type, target_date=td, note=note.strip() or None,
+    )
+    if plan_type == "sub_skill":
+        item.sub_skill_id = target_id
+    elif plan_type == "business_area":
+        item.business_map_area_id = target_id
+    elif plan_type == "certification":
+        item.certification_catalog_id = target_id
+    elif plan_type == "exam":
+        item.exam_id = target_id
+    db.add(item)
+    db.commit()
+    return RedirectResponse(f"/annual-plan/members?year={td.year}", status_code=303)
+
+
+@router.post("/annual-plan/members/{for_user_id}/skill-goal")
+def annual_plan_member_skill_goal(
+    for_user_id: int,
+    request: Request,
+    skill_id: int = Form(...),
+    target_level: int = Form(2),
+    target_date: str = Form(...),
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Manager/Admin がメンバーの SkillGoal（スキルカタログ単位の目標）を登録・更新する"""
+    current_user = auth.require_manager_or_admin(request, db)
+    try:
+        td = _date.fromisoformat(target_date.strip())
+    except ValueError:
+        return RedirectResponse("/annual-plan/members", status_code=303)
+
+    if current_user.role == "manager":
+        managed_ids = _get_managed_member_ids(current_user, db)
+        if for_user_id not in managed_ids:
+            return RedirectResponse("/annual-plan/members", status_code=303)
+
+    existing = db.query(models.SkillGoal).filter_by(user_id=for_user_id, skill_id=skill_id).first()
+    if existing:
+        existing.target_level = max(1, min(4, target_level))
+        existing.target_date = td
+        existing.note = note.strip() or None
+    else:
+        db.add(models.SkillGoal(
+            user_id=for_user_id, skill_id=skill_id,
+            target_level=max(1, min(4, target_level)),
+            target_date=td, note=note.strip() or None,
+        ))
+    db.commit()
+    return RedirectResponse(f"/annual-plan/members?year={td.year}", status_code=303)
