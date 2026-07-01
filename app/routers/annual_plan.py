@@ -615,14 +615,9 @@ def annual_plan_members_view(request: Request, year: int = 0, db: Session = Depe
         .all()
     )
     exams = db.query(models.Exam).filter(models.Exam.is_archived == False).order_by(models.Exam.title).all()
-    all_areas = db.query(models.BusinessMapArea).order_by(models.BusinessMapArea.name).all()
-    area_options = []
-    for a in all_areas:
-        subs = [a_sk for a_sk in a.area_sub_skills if a_sk.sub_skill and a_sk.sub_skill.skill and not a_sk.sub_skill.skill.is_archived]
-        if not subs:
-            continue
-        area_options.append({"id": a.id, "label": _area_breadcrumb_label(a)})
-    area_options.sort(key=lambda x: x["label"])
+    all_areas = db.query(models.BusinessMapArea).all()
+    area_tree = _build_area_pool_tree(all_areas)
+    area_options = _flatten_area_tree(area_tree)
 
     total_items = sum(len(d) for uid_dict in matrix.values() for d in uid_dict.values())
     overdue_count_by_uid = {row["user"].id: len(row["overdue_items"]) for row in overdue_rows}
@@ -643,6 +638,7 @@ def annual_plan_members_view(request: Request, year: int = 0, db: Session = Depe
         "PLAN_TYPES": models.PLAN_TYPES,
         "PLAN_TYPE_ICONS": PLAN_TYPE_ICONS,
         "skills_by_category": skills_by_category,
+        "area_tree": area_tree,
         "area_options": area_options,
         "cert_catalog": cert_catalog,
         "exams": exams,

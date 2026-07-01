@@ -2,6 +2,42 @@
 {% block title %}メンバー年間育成計画 - Skill View.{% endblock %}
 
 {% block content %}
+{# ── 業務エリアプールの再帰レンダリングマクロ ── #}
+{% macro render_area_node(node) %}
+{% if node.children %}
+<div class="mem-pool-group mem-pool-collapsed">
+  <div class="mem-pool-group-header" onclick="memToggleGroup(this)">
+    <i class="bi bi-chevron-right mem-group-icon"></i>
+    <i class="bi bi-diagram-3-fill" style="color:#f97316;font-size:.78rem;flex-shrink:0;"></i>
+    <span class="text-muted small" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ node.name }}</span>
+    <span class="badge bg-light text-muted ms-1" style="font-size:.6rem;flex-shrink:0;">{{ node.children|length }}</span>
+  </div>
+  <div class="mem-pool-leaf-list">
+    <div class="mem-pool-chip mem-pool-area-chip" data-plan-type="business_area" data-id="{{ node.id }}"
+         data-search="{{ node.name|lower }}"
+         title="{{ node.name }} — 配下を含む一括ドロップ ｜ ドラッグまたはクリックで登録"
+         onclick="memChipClick(this)">
+      <i class="bi bi-grip-vertical mem-chip-grip"></i>
+      <i class="bi bi-layers-fill" style="color:#f97316;font-size:.72rem;"></i>
+      <span class="mem-pool-chip-label fw-semibold">{{ node.name }}（一括）</span>
+    </div>
+    {% for child in node.children %}
+    {{ render_area_node(child) }}
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="mem-pool-chip mem-pool-area-chip" data-plan-type="business_area" data-id="{{ node.id }}"
+     data-search="{{ node.name|lower }}"
+     title="{{ node.name }} ｜ ドラッグまたはクリックで登録"
+     onclick="memChipClick(this)">
+  <i class="bi bi-grip-vertical mem-chip-grip"></i>
+  <i class="bi bi-diagram-3" style="color:#f97316;font-size:.72rem;"></i>
+  <span class="mem-pool-chip-label">{{ node.name }}</span>
+</div>
+{% endif %}
+{% endmacro %}
+
 {# ページヘッダー #}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
@@ -103,19 +139,13 @@
           {% endif %}
         </div>
 
-        {# 業務エリア タブ #}
+        {# 業務エリア タブ（階層ツリー） #}
         <div id="memTabArea" class="mem-tab-content d-none">
-          <div class="mem-pool-leaf-list">
-            {% for opt in area_options %}
-            <div class="mem-pool-chip" data-plan-type="business_area" data-id="{{ opt.id }}"
-                 data-search="{{ opt.label|lower }}"
-                 title="{{ opt.label }} ｜ ドラッグまたはクリックで登録"
-                 onclick="memChipClick(this)">
-              <i class="bi bi-grip-vertical mem-chip-grip"></i>
-              <span class="mem-pool-chip-label">{{ opt.label }}</span>
-            </div>
+          <div class="mem-pool-leaf-list mem-area-root">
+            {% for node in area_tree %}
+            {{ render_area_node(node) }}
             {% endfor %}
-            {% if not area_options %}
+            {% if not area_tree %}
             <p class="text-muted small p-2 mb-0">業務エリアがありません</p>
             {% endif %}
           </div>
@@ -476,6 +506,13 @@
 .mem-pool-skill-cat { background:#f0f0ff; border-color:#c7d2fe; }
 .mem-pool-skill-cat:hover { background:#e0e7ff; border-color:#818cf8; }
 .mem-pool-sub-chip { padding-left:1.1rem; }
+.mem-pool-area-chip { background:#fff7ed; border-color:#fed7aa; }
+.mem-pool-area-chip:hover { background:#ffedd5; border-color:#fb923c; }
+/* 業務エリア階層ツリー — グループアイコン回転（直接子要素のみ対象） */
+.mem-pool-group.mem-pool-collapsed > .mem-pool-group-header > .mem-group-icon { transform:rotate(0deg); }
+.mem-pool-group:not(.mem-pool-collapsed) > .mem-pool-group-header > .mem-group-icon { transform:rotate(90deg); }
+/* 業務エリア葉ノードのインデント（グループ内の葉チップ） */
+.mem-pool-leaf-list .mem-pool-area-chip:not(.mem-pool-group .mem-pool-group .mem-pool-chip) { margin-left:.25rem; }
 
 /* ── ダーク対応 ── */
 [data-theme="dark"] .mem-summary-bar,
@@ -669,9 +706,11 @@ document.addEventListener('DOMContentLoaded', () => {
   memInitTooltips();
 
   // プールの葉チップリスト（クローン元）
+  // draggable: '.mem-pool-chip' で .mem-pool-group（折りたたみブロック）が誤ってドラッグされるのを防ぐ
   document.querySelectorAll('.mem-pool-leaf-list').forEach(list => {
     new Sortable(list, {
       group: { name: 'mem-pool', pull: 'clone', put: false },
+      draggable: '.mem-pool-chip',
       sort: false, animation: 150, ghostClass: 'sortable-ghost',
     });
   });
